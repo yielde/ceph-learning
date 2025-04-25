@@ -12290,7 +12290,7 @@ bool OSDMonitor::prepare_command_impl(MonOpRequestRef op,
       }
       break;
 
-    case OP_PG_UPMAP_ITEMS:
+    case OP_PG_UPMAP_ITEMS: // 
       {
         vector<int64_t> id_vec;
         if (!cmd_getval(cmdmap, "id", id_vec)) {

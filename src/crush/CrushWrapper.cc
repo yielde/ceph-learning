@@ -2381,7 +2381,7 @@ int CrushWrapper::add_simple_rule(
 
 float CrushWrapper::_get_take_weight_osd_map(int root,
 					     map<int,float> *pmap) const
-{
+{ 
   float sum = 0.0;
   list<int> q;
   q.push_back(root);
@@ -2393,8 +2393,8 @@ float CrushWrapper::_get_take_weight_osd_map(int root,
     ceph_assert(b);
     for (unsigned j=0; j<b->size; ++j) {
       int item_id = b->items[j];
-      if (item_id >= 0) { //it's an OSD
-	float w = crush_get_bucket_item_weight(b, j);
+      if (item_id >= 0) { //it's an OSD， ceph osd crush dump下的buckets数组
+	float w = crush_get_bucket_item_weight(b, j); // 拿到OSD的权重
 	(*pmap)[item_id] = w;
 	sum += w;
       } else { //not an OSD, expand the child later
@@ -2407,8 +2407,8 @@ float CrushWrapper::_get_take_weight_osd_map(int root,
 
 void CrushWrapper::_normalize_weight_map(float sum,
 					 const map<int,float>& m,
-					 map<int,float> *pmap) const
-{
+					 map<int,float> *pmap) const // sum是OSD权重的总和、m是从crush_rule找到的权重字典、pmap是个空的item，返回上层
+{//计算OSD的权重的比值，例如：osd1的权重/整个crushrule下面的所有OSD权重的和
   for (auto& p : m) {
     map<int,float>::iterator q = pmap->find(p.first);
     if (q == pmap->end()) {
@@ -2451,7 +2451,7 @@ int CrushWrapper::get_rule_weight_osd_map(unsigned ruleno,
 	m[n] = 1.0;
 	sum = 1.0;
       } else {
-	sum += _get_take_weight_osd_map(n, &m);
+	sum += _get_take_weight_osd_map(n, &m); // m记录osdid和weight的map
       }
     }
     _normalize_weight_map(sum, m, pmap);

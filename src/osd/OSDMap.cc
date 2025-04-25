@@ -2786,7 +2786,7 @@ void OSDMap::pg_to_raw_upmap(pg_t pg, vector<int>*raw,
     raw_upmap->clear();
     return;
   }
-  _pg_to_raw_osds(*pool, pg, raw, NULL);
+  _pg_to_raw_osds(*pool, pg, raw, NULL); // 根据crush规则要落在哪里
   *raw_upmap = *raw;
   _apply_upmap(*pool, pg, raw_upmap);
 }
@@ -4823,14 +4823,14 @@ int OSDMap::calc_pg_upmaps(
     for (unsigned ps = 0; ps < i.second.get_pg_num(); ++ps) {
       pg_t pg(ps, i.first);
       vector<int> up;
-      tmp.pg_to_up_acting_osds(pg, &up, nullptr, nullptr, nullptr);
+      tmp.pg_to_up_acting_osds(pg, &up, nullptr, nullptr, nullptr); // acting set表示当下真正的pg映射状态，up set表示crush的映射状态，此函数只关心up set
       ldout(cct, 20) << __func__ << " " << pg << " up " << up << dendl;
       for (auto osd : up) {
         if (osd != CRUSH_ITEM_NONE)
-	  pgs_by_osd[osd].insert(pg);
+	  pgs_by_osd[osd].insert(pg); // osd.1 -> pg.1, osd.2 -> pg.1, osd.3 -> pg.1
       }
     }
-    total_pgs += i.second.get_size() * i.second.get_pg_num();
+    total_pgs += i.second.get_size() * i.second.get_pg_num(); // pool size * pg num
 
     map<int,float> pmap;
     int ruleno = tmp.crush->find_rule(i.second.get_crush_rule(),
@@ -4842,7 +4842,7 @@ int OSDMap::calc_pg_upmaps(
                   << " weight-map " << pmap
                   << dendl;
     for (auto p : pmap) {
-      auto adjusted_weight = tmp.get_weightf(p.first) * p.second;
+      auto adjusted_weight = tmp.get_weightf(p.first) * p.second; // reweight * weight ?
       if (adjusted_weight == 0) {
         continue;
       }
@@ -4868,7 +4868,7 @@ int OSDMap::calc_pg_upmaps(
   ldout(cct, 10) << " osd_weight_total " << osd_weight_total << dendl;
   ldout(cct, 10) << " pgs_per_weight " << pgs_per_weight << dendl;
 
-  if (max <= 0) {
+  if (max <= 0) { // 尝试的
     lderr(cct) << __func__ << " abort due to max <= 0" << dendl;
     return 0;
   }
@@ -4879,8 +4879,8 @@ int OSDMap::calc_pg_upmaps(
   for (auto& i : pgs_by_osd) {
     // make sure osd is still there (belongs to this crush-tree)
     ceph_assert(osd_weight.count(i.first));
-    float target = osd_weight[i.first] * pgs_per_weight;
-    float deviation = (float)i.second.size() - target;
+    float target = osd_weight[i.first] * pgs_per_weight; // 每个osd应该有多少个pg
+    float deviation = (float)i.second.size() - target; // 偏离了多少个pg
     ldout(cct, 20) << " osd." << i.first
                    << "\tpgs " << i.second.size()
                    << "\ttarget " << target
@@ -4903,7 +4903,7 @@ int OSDMap::calc_pg_upmaps(
     cct->_conf.get_val<bool>("osd_calc_pg_upmaps_aggressively");
   auto local_fallback_retries =
     cct->_conf.get_val<uint64_t>("osd_calc_pg_upmaps_local_fallback_retries");
-  while (max--) {
+  while (max--) { // 优化的轮次，开始优化
     ldout(cct, 30) << "Top of loop #" << max+1 << dendl;
     // build overfull and underfull
     set<int> overfull;
@@ -4915,9 +4915,9 @@ int OSDMap::calc_pg_upmaps(
         ldout(cct, 30) << " check " << i->first << " <= " << max_deviation << dendl;
 	if (i->first <= 0)
 	  break;
-        if (i->first > max_deviation) {
+        if (i->first > max_deviation) { // 设置的允许最大偏离的PG数，默认是5
 	  ldout(cct, 30) << " add overfull osd." << i->second << dendl;
-          overfull.insert(i->second);
+          overfull.insert(i->second); // 加入过载集合
 	} else {
           more_overfull.insert(i->second);
 	}
@@ -4929,7 +4929,7 @@ int OSDMap::calc_pg_upmaps(
           break;
         if (i->first < -(int)max_deviation) {
 	  ldout(cct, 30) << " add underfull osd." << i->second << dendl;
-          underfull.push_back(i->second);
+          underfull.push_back(i->second); // 加入欠满集合
 	} else {
           more_underfull.push_back(i->second);
 	}
@@ -5004,7 +5004,7 @@ int OSDMap::calc_pg_upmaps(
           continue;
         mempool::osdmap::vector<pair<int32_t,int32_t>> new_upmap_items;
         for (auto q : p->second) {
-	  if (q.second == osd) {
+	  if (q.second == osd) { // 发现以前的upmap里面，现在pg所在的OSD过载了，删除这条规则，还原成最初的
             ldout(cct, 10) << " will try dropping existing"
                            << " remapping pair "
                            << q.first << " -> " << q.second
@@ -5023,7 +5023,7 @@ int OSDMap::calc_pg_upmaps(
                          << " remapped " << pg << " into overfull osd." << osd
                          << ", will try cancelling it entirely"
                          << dendl;
-          to_unmap.insert(pg);
+          to_unmap.insert(pg); // 这个pg不需要upmap了，一会儿执行取消upmap
           goto test_change;
         } else if (new_upmap_items.size() != p->second.size()) {
           // drop single remapping pair, updating
@@ -5032,7 +5032,7 @@ int OSDMap::calc_pg_upmaps(
                          << " remapped " << pg << " into overfull osd." << osd
                          << ", new_pg_upmap_items now " << new_upmap_items
                          << dendl;
-          to_upmap[pg] = new_upmap_items;
+          to_upmap[pg] = new_upmap_items; // 需要更新upmap
           goto test_change;
         }
       }
@@ -5074,7 +5074,7 @@ int OSDMap::calc_pg_upmaps(
         }
 	ldout(cct, 10) << " trying " << pg << dendl;
         vector<int> raw, orig, out;
-        tmp.pg_to_raw_upmap(pg, &raw, &orig); // including existing upmaps too
+        tmp.pg_to_raw_upmap(pg, &raw, &orig); // including existing upmaps too 原来真正的映射表，包括crush生成的和upmap修改过的
 	if (!try_pg_upmap(cct, pg, overfull, underfull, more_underfull, &orig, &out)) {
 	  continue;
 	}
@@ -5121,7 +5121,13 @@ int OSDMap::calc_pg_upmaps(
     ceph_assert(!(to_unmap.size() || to_upmap.size()));
     ldout(cct, 10) << " failed to find any changes for overfull osds"
                    << dendl;
-    for (auto& p : deviation_osd) {
+    for (auto& p : deviation_osd) { // 优化欠满的OSD
+      if (p.first >= 0) {
+        ldout(cct, 10) << " hitting overfull osds now"
+                       << " when trying to remap underfull osds"
+                       << dendl;
+        break;
+      }
       if (std::find(underfull.begin(), underfull.end(), p.second) ==
                     underfull.end())
         break;
@@ -5214,7 +5220,7 @@ int OSDMap::calc_pg_upmaps(
     skip_overfull = false;
     continue;
 
-  test_change:
+  test_change:// 修改了upmap，即上面的unmap和upmap导致upmap规则做了映射就立马来做测试
 
     // test change, apply if change is good
     ceph_assert(to_unmap.size() || to_upmap.size());
@@ -5222,12 +5228,12 @@ int OSDMap::calc_pg_upmaps(
     map<int,float> temp_osd_deviation;
     multimap<float,int> temp_deviation_osd;
     float cur_max_deviation = 0;
-    for (auto& i : temp_pgs_by_osd) {
+    for (auto& i : temp_pgs_by_osd) { // 例如pg 3.2c osd.1 -> osd.2，已经从osd.1的pg列表中删除了3.2c，在osd.2的pg列表中添加3.2c
       // make sure osd is still there (belongs to this crush-tree)
       ceph_assert(osd_weight.count(i.first));
-      float target = osd_weight[i.first] * pgs_per_weight;
-      float deviation = (float)i.second.size() - target;
-      ldout(cct, 20) << " osd." << i.first
+      float target = osd_weight[i.first] * pgs_per_weight; // 根据crush和reweight计算出的目标偏PG
+      float deviation = (float)i.second.size() - target; // 调整完的PG - 目标PG
+      ldout(cct, 20) << " osd." << i.first // osd.1     pgs 26  target 23.6417  deviation 2.35834
                      << "\tpgs " << i.second.size()
                      << "\ttarget " << target
                      << "\tdeviation " << deviation
@@ -5239,7 +5245,7 @@ int OSDMap::calc_pg_upmaps(
         cur_max_deviation = fabsf(deviation);
     }
     ldout(cct, 10) << " stddev " << stddev << " -> " << new_stddev << dendl;
-    if (new_stddev >= stddev) {
+    if (new_stddev >= stddev) { // 调整完的新的PG数标准差比原来的大，说明调整失败了
       if (!aggressive) {
         ldout(cct, 10) << " break because stddev is not decreasing"
                        << " and aggressive mode is not enabled"
@@ -5251,7 +5257,7 @@ int OSDMap::calc_pg_upmaps(
         // does not make progress
         // flip *skip_overfull* so both overfull and underfull
         // get equal (in)attention
-        skip_overfull = !skip_overfull;
+        skip_overfull = !skip_overfull; // 修改策略，如果是先处理overfull，改为先处理underfull
         ldout(cct, 10) << " hit local_fallback_retries "
                        << local_fallback_retries
                        << dendl;
@@ -5277,7 +5283,7 @@ int OSDMap::calc_pg_upmaps(
       ldout(cct, 10) << " unmap pg " << i << dendl;
       ceph_assert(tmp.pg_upmap_items.count(i));
       tmp.pg_upmap_items.erase(i);
-      pending_inc->old_pg_upmap_items.insert(i);
+      pending_inc->old_pg_upmap_items.insert(i); // upmap的增量改动
       ++num_changed;
     }
     for (auto& i : to_upmap) {

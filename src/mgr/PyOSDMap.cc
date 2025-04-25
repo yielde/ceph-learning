@@ -148,7 +148,7 @@ static PyObject *osdmap_calc_pg_upmaps(BasePyOSDMap* self, PyObject *args)
 	   << " pools " << pools
 	   << dendl;
   PyThreadState *tstate = PyEval_SaveThread();
-  int r = self->osdmap->calc_pg_upmaps(g_ceph_context,
+  int r = self->osdmap->calc_pg_upmaps(g_ceph_context, // 对接OSDMap.cc calc_pg_upmaps
 				 max_deviation,
 				 max_iterations,
 				 pools,

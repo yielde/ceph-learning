@@ -668,7 +668,7 @@ class Module(MgrModule):
                 self.log.debug('Running')
                 name = 'auto_%s' % time.strftime(TIME_FORMAT, time.gmtime())
                 osdmap = self.get_osdmap()
-                allow = self.get_module_option('pool_ids')
+                allow = self.get_module_option('pool_ids') # 需要均衡的pool
                 final = []
                 if allow != '':
                     allow = allow.split(',')
@@ -709,7 +709,7 @@ class Module(MgrModule):
             plan = MsPlan(name,
                           mode,
                           MappingState(osdmap,
-                                       self.get("pg_stats"),
+                                       self.get("pg_stats"), # ceph pg dump -f json-pretty|jq '.pg_map.pool_stats'|less 可以换成 pg_stats/osd_stats
                                        self.get("pool_stats"),
                                        'plan %s initial' % name),
                           pools)
@@ -749,7 +749,7 @@ class Module(MgrModule):
         rootids = ms.crush.find_takes()
         roots = []
         for rootid in rootids:
-            ls = ms.osdmap.get_pools_by_take(rootid)
+            ls = ms.osdmap.get_pools_by_take(rootid) # 返回pool id
             want = []
             # find out roots associating with pools we are passed in
             for candidate in ls:
@@ -764,8 +764,8 @@ class Module(MgrModule):
                 pe.root_pools[root].append(pe.pool_name[poolid])
             pe.root_ids[root] = rootid
             roots.append(root)
-            weight_map = ms.crush.get_take_weight_osd_map(rootid)
-            adjusted_map = {
+            weight_map = ms.crush.get_take_weight_osd_map(rootid) # src/crush/CrushWrapper.cc 下的对应函数
+            adjusted_map = { # 根据crush计算过的比值调整当前osd的REWEIGHT
                 osd: cw * osd_weight[osd]
                 for osd,cw in weight_map.items() if osd in osd_weight and cw > 0
             }

@@ -74,7 +74,7 @@ download_boost() {
     shift
     boost_version_underscore=$(echo $boost_version | sed 's/\./_/g')
     boost_fname=boost_${boost_version_underscore}.tar.bz2
-    download_from $boost_fname $boost_sha256 $*
+    # download_from $boost_fname $boost_sha256 $*
     tar xjf $boost_fname -C src \
         --exclude="$boost_version_underscore/libs/*/doc" \
         --exclude="$boost_version_underscore/libs/*/example" \
@@ -96,7 +96,7 @@ download_liburing() {
     liburing_sha256=$1
     shift
     liburing_fname=liburing-${liburing_version}.tar.gz
-    download_from $liburing_fname $liburing_sha256 $*
+    # download_from $liburing_fname $liburing_sha256 $*
     tar xzf $liburing_fname -C src  \
         --exclude=debian \
         --exclude=examples \
@@ -132,7 +132,7 @@ build_dashboard_frontend() {
 
   $CURR_DIR/src/tools/setup-virtualenv.sh $TEMP_DIR
   $TEMP_DIR/bin/pip install nodeenv
-  $TEMP_DIR/bin/nodeenv --verbose -p --node=12.18.2
+  $TEMP_DIR/bin/nodeenv --verbose -p --node=16.14.2
   cd src/pybind/mgr/dashboard/frontend
 
   . $TEMP_DIR/bin/activate

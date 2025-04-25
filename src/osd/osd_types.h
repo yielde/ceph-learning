@@ -394,8 +394,8 @@ WRITE_CLASS_ENCODER(old_pg_t)
 
 // placement group id
 struct pg_t {
-  uint64_t m_pool;
-  uint32_t m_seed;
+  uint64_t m_pool; // pool id
+  uint32_t m_seed; // 该pool下pg的编号
 
   pg_t() : m_pool(0), m_seed(0) {}
   pg_t(ps_t seed, uint64_t pool) :

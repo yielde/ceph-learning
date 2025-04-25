@@ -82,3 +82,5 @@ GTAGS
 
 # Python building things where it shouldn't
 /src/python-common/build/
+.own_test/
+ceph-build-deps_16.2.15-1_arm64.buildinfo

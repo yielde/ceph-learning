@@ -1663,7 +1663,7 @@ class MgrModule(ceph_module.BaseMgrModule, MgrModuleLoggingMixin):
     def get_osdmap(self) -> OSDMap:
         """
         Get a handle to an OSDMap.  If epoch==0, get a handle for the latest
-        OSDMap.
+        OSDMap. 用到了src/mgr/ClusterState.h 的 class ClusterState
         :return: OSDMap
         """
         return cast(OSDMap, self._ceph_get_osdmap())
