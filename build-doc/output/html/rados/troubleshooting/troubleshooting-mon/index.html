@@ -1,0 +1,750 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Troubleshooting Monitors &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/css/custom.css" />
+    <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/jquery.js"></script>
+    <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../../genindex/" />
+    <link rel="search" title="Search" href="../../../search/" />
+    <link rel="next" title="Troubleshooting OSDs" href="../troubleshooting-osd/" />
+    <link rel="prev" title="The Ceph Community" href="../community/" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../troubleshooting-osd/" title="Troubleshooting OSDs"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../community/" title="The Ceph Community"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../" >Ceph Storage Cluster</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../../operations/" accesskey="U">Cluster Operations</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Troubleshooting Monitors</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="troubleshooting-monitors">
+<span id="rados-troubleshooting-mon"></span><h1>Troubleshooting Monitors<a class="headerlink" href="#troubleshooting-monitors" title="Permalink to this heading">¶</a></h1>
+<p id="index-0">When a cluster encounters monitor-related troubles there’s a tendency to
+panic, and sometimes with good reason. Losing one or more monitors doesn’t
+necessarily mean that your cluster is down, so long as a majority are up,
+running, and form a quorum.
+Regardless of how bad the situation is, the first thing you should do is to
+calm down, take a breath, and step through the below troubleshooting steps.</p>
+<section id="initial-troubleshooting">
+<h2>Initial Troubleshooting<a class="headerlink" href="#initial-troubleshooting" title="Permalink to this heading">¶</a></h2>
+<p><strong>Are the monitors running?</strong></p>
+<blockquote>
+<div><p>First of all, we need to make sure the monitor (<em>mon</em>) daemon processes
+(<code class="docutils literal notranslate"><span class="pre">ceph-mon</span></code>) are running.  You would be amazed by how often Ceph admins
+forget to start the mons, or to restart them after an upgrade. There’s no
+shame, but try to not lose a couple of hours looking for a deeper problem.
+When running Kraken or later releases also ensure that the manager
+daemons (<code class="docutils literal notranslate"><span class="pre">ceph-mgr</span></code>) are running, usually alongside each <code class="docutils literal notranslate"><span class="pre">ceph-mon</span></code>.</p>
+</div></blockquote>
+<p><strong>Are you able to reach to the mon nodes?</strong></p>
+<blockquote>
+<div><p>Doesn’t happen often, but sometimes there are <code class="docutils literal notranslate"><span class="pre">iptables</span></code> rules that
+block accesse to mon nodes or TCP ports. These may be leftovers from
+prior stress-testing or rule development. Try SSHing into
+the server and, if that succeeds, try connecting to the monitor’s ports
+(<code class="docutils literal notranslate"><span class="pre">tcp/3300</span></code> and <code class="docutils literal notranslate"><span class="pre">tcp/6789</span></code>) using a <code class="docutils literal notranslate"><span class="pre">telnet</span></code>, <code class="docutils literal notranslate"><span class="pre">nc</span></code>, or similar tools.</p>
+</div></blockquote>
+<p><strong>Does ceph -s run and obtain a reply from the cluster?</strong></p>
+<blockquote>
+<div><p>If the answer is yes then your cluster is up and running.  One thing you
+can take for granted is that the monitors will only answer to a <code class="docutils literal notranslate"><span class="pre">status</span></code>
+request if there is a formed quorum.  Also check that at least one <code class="docutils literal notranslate"><span class="pre">mgr</span></code>
+daemon is reported as running, ideally all of them.</p>
+<p>If <code class="docutils literal notranslate"><span class="pre">ceph</span> <span class="pre">-s</span></code> hangs without obtaining a reply from the cluster
+or showing <code class="docutils literal notranslate"><span class="pre">fault</span></code> messages, then it is likely that your monitors
+are either down completely or just a fraction are up – a fraction
+insufficient to form a majority quorum.  This check will connect to an
+arbitrary mon; in rare cases it may be illuminating to bind to specific
+mons in sequence by adding e.g. <code class="docutils literal notranslate"><span class="pre">-m</span> <span class="pre">mymon1</span></code> to the command.</p>
+</div></blockquote>
+<p><strong>What if ceph -s doesn’t come back?</strong></p>
+<blockquote>
+<div><p>If you haven’t gone through all the steps so far, please go back and do.</p>
+<p>You can contact each monitor individually asking them for their status,
+regardless of a quorum being formed. This can be achieved using
+<code class="docutils literal notranslate"><span class="pre">ceph</span> <span class="pre">tell</span> <span class="pre">mon.ID</span> <span class="pre">mon_status</span></code>, ID being the monitor’s identifier. You should
+perform this for each monitor in the cluster. In section <a class="reference internal" href="#understanding-mon-status">Understanding
+mon_status</a> we will explain how to interpret the output of this command.</p>
+<p>You may instead SSH into each mon node and query the daemon’s admin socket.</p>
+</div></blockquote>
+</section>
+<section id="using-the-monitor-s-admin-socket">
+<h2>Using the monitor’s admin socket<a class="headerlink" href="#using-the-monitor-s-admin-socket" title="Permalink to this heading">¶</a></h2>
+<p>The admin socket allows you to interact with a given daemon directly using a
+Unix socket file. This file can be found in your monitor’s <code class="docutils literal notranslate"><span class="pre">run</span></code> directory.
+By default, the admin socket will be kept in <code class="docutils literal notranslate"><span class="pre">/var/run/ceph/ceph-mon.ID.asok</span></code>
+but this may be elsewhere if you have overridden the default directory. If you
+don’t find it there, check your <code class="docutils literal notranslate"><span class="pre">ceph.conf</span></code> for an alternative path or
+run:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span><span class="o">-</span><span class="n">conf</span> <span class="o">--</span><span class="n">name</span> <span class="n">mon</span><span class="o">.</span><span class="n">ID</span> <span class="o">--</span><span class="n">show</span><span class="o">-</span><span class="n">config</span><span class="o">-</span><span class="n">value</span> <span class="n">admin_socket</span>
+</pre></div>
+</div>
+<p>Bear in mind that the admin socket will be available only while the monitor
+daemon is running. When the monitor is properly shut down, the admin socket
+will be removed. If however the monitor is not running and the admin socket
+persists, it is likely that the monitor was improperly shut down.
+Regardless, if the monitor is not running, you will not be able to use the
+admin socket, with <code class="docutils literal notranslate"><span class="pre">ceph</span></code> likely returning <code class="docutils literal notranslate"><span class="pre">Error</span> <span class="pre">111:</span> <span class="pre">Connection</span> <span class="pre">Refused</span></code>.</p>
+<p>Accessing the admin socket is as simple as running <code class="docutils literal notranslate"><span class="pre">ceph</span> <span class="pre">tell</span></code> on the daemon
+you are interested in. For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span> <span class="n">tell</span> <span class="n">mon</span><span class="o">.&lt;</span><span class="nb">id</span><span class="o">&gt;</span> <span class="n">mon_status</span>
+</pre></div>
+</div>
+<p>Under the hood, this passes the command <code class="docutils literal notranslate"><span class="pre">help</span></code> to the running MON daemon
+<code class="docutils literal notranslate"><span class="pre">&lt;id&gt;</span></code> via its “admin socket”, which is a file ending in <code class="docutils literal notranslate"><span class="pre">.asok</span></code>
+somewhere under <code class="docutils literal notranslate"><span class="pre">/var/run/ceph</span></code>. Once you know the full path to the file,
+you can even do this yourself:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span> <span class="o">--</span><span class="n">admin</span><span class="o">-</span><span class="n">daemon</span> <span class="o">&lt;</span><span class="n">full_path_to_asok_file</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">command</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<p>Using <code class="docutils literal notranslate"><span class="pre">help</span></code> as the command to the <code class="docutils literal notranslate"><span class="pre">ceph</span></code> tool will show you the
+supported commands available through the admin socket. Please take a look
+at <code class="docutils literal notranslate"><span class="pre">config</span> <span class="pre">get</span></code>, <code class="docutils literal notranslate"><span class="pre">config</span> <span class="pre">show</span></code>, <code class="docutils literal notranslate"><span class="pre">mon</span> <span class="pre">stat</span></code> and <code class="docutils literal notranslate"><span class="pre">quorum_status</span></code>,
+as those can be enlightening when troubleshooting a monitor.</p>
+</section>
+<section id="understanding-mon-status">
+<h2>Understanding mon_status<a class="headerlink" href="#understanding-mon-status" title="Permalink to this heading">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">mon_status</span></code> can always be obtained via the admin socket. This command will
+output a multitude of information about the monitor, including the same output
+you would get with <code class="docutils literal notranslate"><span class="pre">quorum_status</span></code>.</p>
+<p>Take the following example output of <code class="docutils literal notranslate"><span class="pre">ceph</span> <span class="pre">tell</span> <span class="pre">mon.c</span> <span class="pre">mon_status</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span> <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;c&quot;</span><span class="p">,</span>
+  <span class="s2">&quot;rank&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
+  <span class="s2">&quot;state&quot;</span><span class="p">:</span> <span class="s2">&quot;peon&quot;</span><span class="p">,</span>
+  <span class="s2">&quot;election_epoch&quot;</span><span class="p">:</span> <span class="mi">38</span><span class="p">,</span>
+  <span class="s2">&quot;quorum&quot;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="mi">1</span><span class="p">,</span>
+        <span class="mi">2</span><span class="p">],</span>
+  <span class="s2">&quot;outside_quorum&quot;</span><span class="p">:</span> <span class="p">[],</span>
+  <span class="s2">&quot;extra_probe_peers&quot;</span><span class="p">:</span> <span class="p">[],</span>
+  <span class="s2">&quot;sync_provider&quot;</span><span class="p">:</span> <span class="p">[],</span>
+  <span class="s2">&quot;monmap&quot;</span><span class="p">:</span> <span class="p">{</span> <span class="s2">&quot;epoch&quot;</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span>
+      <span class="s2">&quot;fsid&quot;</span><span class="p">:</span> <span class="s2">&quot;5c4e9d53-e2e1-478a-8061-f543f8be4cf8&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;modified&quot;</span><span class="p">:</span> <span class="s2">&quot;2013-10-30 04:12:01.945629&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;created&quot;</span><span class="p">:</span> <span class="s2">&quot;2013-10-29 14:14:41.914786&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;mons&quot;</span><span class="p">:</span> <span class="p">[</span>
+            <span class="p">{</span> <span class="s2">&quot;rank&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+              <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;a&quot;</span><span class="p">,</span>
+              <span class="s2">&quot;addr&quot;</span><span class="p">:</span> <span class="s2">&quot;127.0.0.1:6789\/0&quot;</span><span class="p">},</span>
+            <span class="p">{</span> <span class="s2">&quot;rank&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+              <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;b&quot;</span><span class="p">,</span>
+              <span class="s2">&quot;addr&quot;</span><span class="p">:</span> <span class="s2">&quot;127.0.0.1:6790\/0&quot;</span><span class="p">},</span>
+            <span class="p">{</span> <span class="s2">&quot;rank&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
+              <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;c&quot;</span><span class="p">,</span>
+              <span class="s2">&quot;addr&quot;</span><span class="p">:</span> <span class="s2">&quot;127.0.0.1:6795\/0&quot;</span><span class="p">}]}}</span>
+</pre></div>
+</div>
+<p>A couple of things are obvious: we have three monitors in the monmap (<em>a</em>, <em>b</em>
+and <em>c</em>), the quorum is formed by only two monitors, and <em>c</em> is in the quorum
+as a <em>peon</em>.</p>
+<p>Which monitor is out of the quorum?</p>
+<blockquote>
+<div><p>The answer would be <strong>a</strong>.</p>
+</div></blockquote>
+<p>Why?</p>
+<blockquote>
+<div><p>Take a look at the <code class="docutils literal notranslate"><span class="pre">quorum</span></code> set. We have two monitors in this set: <em>1</em>
+and <em>2</em>. These are not monitor names. These are monitor ranks, as established
+in the current monmap. We are missing the monitor with rank 0, and according
+to the monmap that would be <code class="docutils literal notranslate"><span class="pre">mon.a</span></code>.</p>
+</div></blockquote>
+<p>By the way, how are ranks established?</p>
+<blockquote>
+<div><p>Ranks are (re)calculated whenever you add or remove monitors and follow a
+simple rule: the <strong>greater</strong> the <code class="docutils literal notranslate"><span class="pre">IP:PORT</span></code> combination, the <strong>lower</strong> the
+rank is. In this case, considering that <code class="docutils literal notranslate"><span class="pre">127.0.0.1:6789</span></code> is lower than all
+the remaining <code class="docutils literal notranslate"><span class="pre">IP:PORT</span></code> combinations, <code class="docutils literal notranslate"><span class="pre">mon.a</span></code> has rank 0.</p>
+</div></blockquote>
+</section>
+<section id="most-common-monitor-issues">
+<h2>Most Common Monitor Issues<a class="headerlink" href="#most-common-monitor-issues" title="Permalink to this heading">¶</a></h2>
+<section id="have-quorum-but-at-least-one-monitor-is-down">
+<h3>Have Quorum but at least one Monitor is down<a class="headerlink" href="#have-quorum-but-at-least-one-monitor-is-down" title="Permalink to this heading">¶</a></h3>
+<p>When this happens, depending on the version of Ceph you are running,
+you should be seeing something similar to:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ ceph health detail
+[snip]
+mon.a (rank 0) addr 127.0.0.1:6789/0 is down (out of quorum)
+</pre></div>
+</div>
+<p>How to troubleshoot this?</p>
+<blockquote>
+<div><p>First, make sure <code class="docutils literal notranslate"><span class="pre">mon.a</span></code> is running.</p>
+<p>Second, make sure you are able to connect to <code class="docutils literal notranslate"><span class="pre">mon.a</span></code>’s node from the
+other mon nodes. Check the TCP ports as well. Check <code class="docutils literal notranslate"><span class="pre">iptables</span></code> and
+<code class="docutils literal notranslate"><span class="pre">nf_conntrack</span></code> on all nodes and ensure that you are not
+dropping/rejecting connections.</p>
+<p>If this initial troubleshooting doesn’t solve your problems, then it’s
+time to go deeper.</p>
+<p>First, check the problematic monitor’s <code class="docutils literal notranslate"><span class="pre">mon_status</span></code> via the admin
+socket as explained in <a class="reference internal" href="#using-the-monitor-s-admin-socket">Using the monitor’s admin socket</a> and
+<a class="reference internal" href="#understanding-mon-status">Understanding mon_status</a>.</p>
+<p>If the monitor is out of the quorum, its state should be one of
+<code class="docutils literal notranslate"><span class="pre">probing</span></code>, <code class="docutils literal notranslate"><span class="pre">electing</span></code> or <code class="docutils literal notranslate"><span class="pre">synchronizing</span></code>. If it happens to be either
+<code class="docutils literal notranslate"><span class="pre">leader</span></code> or <code class="docutils literal notranslate"><span class="pre">peon</span></code>, then the monitor believes to be in quorum, while
+the remaining cluster is sure it is not; or maybe it got into the quorum
+while we were troubleshooting the monitor, so check you <code class="docutils literal notranslate"><span class="pre">ceph</span> <span class="pre">-s</span></code> again
+just to make sure. Proceed if the monitor is not yet in the quorum.</p>
+</div></blockquote>
+<p>What if the state is <code class="docutils literal notranslate"><span class="pre">probing</span></code>?</p>
+<blockquote>
+<div><p>This means the monitor is still looking for the other monitors. Every time
+you start a monitor, the monitor will stay in this state for some time
+while trying to connect the rest of the monitors specified in the <code class="docutils literal notranslate"><span class="pre">monmap</span></code>.
+The time a monitor will spend in this state can vary. For instance, when on
+a single-monitor cluster (never do this in production),
+the monitor will pass through the probing state almost instantaneously.
+In a multi-monitor cluster, the monitors will stay in this state until they
+find enough monitors to form a quorum – this means that if you have 2 out
+of 3 monitors down, the one remaining monitor will stay in this state
+indefinitely until you bring one of the other monitors up.</p>
+<p>If you have a quorum the starting daemon should be able to find the
+other monitors quickly, as long as they can be reached. If your
+monitor is stuck probing and you have gone through with all the communication
+troubleshooting, then there is a fair chance that the monitor is trying
+to reach the other monitors on a wrong address. <code class="docutils literal notranslate"><span class="pre">mon_status</span></code> outputs the
+<code class="docutils literal notranslate"><span class="pre">monmap</span></code> known to the monitor: check if the other monitor’s locations
+match reality. If they don’t, jump to
+<a class="reference internal" href="#recovering-a-monitor-s-broken-monmap">Recovering a Monitor’s Broken monmap</a>; if they do, then it may be related
+to severe clock skews amongst the monitor nodes and you should refer to
+<a class="reference internal" href="#clock-skews">Clock Skews</a> first, but if that doesn’t solve your problem then it is
+the time to prepare some logs and reach out to the community (please refer
+to <a class="reference internal" href="#preparing-your-logs">Preparing your logs</a> on how to best prepare your logs).</p>
+</div></blockquote>
+<p>What if state is <code class="docutils literal notranslate"><span class="pre">electing</span></code>?</p>
+<blockquote>
+<div><p>This means the monitor is in the middle of an election. With recent Ceph
+releases these typically complete quickly, but at times the monitors can
+get stuck in what is known as an <em>election storm</em>. This can indicate
+clock skew among the monitor nodes; jump to
+<a class="reference internal" href="#clock-skews">Clock Skews</a> for more information. If all your clocks are properly
+synchronized, you should search the mailing lists and tracker.
+This is not a state that is likely to persist and aside from
+(<em>really</em>) old bugs there is not an obvious reason besides clock skews on
+why this would happen.  Worst case, if there are enough surviving mons,
+down the problematic one while you investigate.</p>
+</div></blockquote>
+<p>What if state is <code class="docutils literal notranslate"><span class="pre">synchronizing</span></code>?</p>
+<blockquote>
+<div><p>This means the monitor is catching up with the rest of the cluster in
+order to join the quorum. Time to synchronize is a function of the size
+of your monitor store and thus of cluster size and state, so if you have a
+large or degraded cluster this may take a while.</p>
+<p>If you notice that the monitor jumps from <code class="docutils literal notranslate"><span class="pre">synchronizing</span></code> to
+<code class="docutils literal notranslate"><span class="pre">electing</span></code> and then back to <code class="docutils literal notranslate"><span class="pre">synchronizing</span></code>, then you do have a
+problem: the cluster state may be advancing (i.e., generating new maps)
+too fast for the synchronization process to keep up. This was a more common
+thing in early days (Cuttlefish), but since then the synchronization process
+has been refactored and enhanced to avoid this dynamic. If you experience
+this in later versions please let us know via a bug tracker. And bring some logs
+(see <a class="reference internal" href="#preparing-your-logs">Preparing your logs</a>).</p>
+</div></blockquote>
+<p>What if state is <code class="docutils literal notranslate"><span class="pre">leader</span></code> or <code class="docutils literal notranslate"><span class="pre">peon</span></code>?</p>
+<blockquote>
+<div><p>This should not happen:  famous last words.  If it does, however, it likely
+has a lot to do with clock skew – see <a class="reference internal" href="#clock-skews">Clock Skews</a>. If you are not
+suffering from clock skew, then please prepare your logs (see
+<a class="reference internal" href="#preparing-your-logs">Preparing your logs</a>) and reach out to the community.</p>
+</div></blockquote>
+</section>
+<section id="recovering-a-monitor-s-broken-monmap">
+<h3>Recovering a Monitor’s Broken <code class="docutils literal notranslate"><span class="pre">monmap</span></code><a class="headerlink" href="#recovering-a-monitor-s-broken-monmap" title="Permalink to this heading">¶</a></h3>
+<p>This is how a <code class="docutils literal notranslate"><span class="pre">monmap</span></code> usually looks, depending on the number of
+monitors:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">epoch</span> <span class="mi">3</span>
+<span class="n">fsid</span> <span class="mi">5</span><span class="n">c4e9d53</span><span class="o">-</span><span class="n">e2e1</span><span class="o">-</span><span class="mi">478</span><span class="n">a</span><span class="o">-</span><span class="mi">8061</span><span class="o">-</span><span class="n">f543f8be4cf8</span>
+<span class="n">last_changed</span> <span class="mi">2013</span><span class="o">-</span><span class="mi">10</span><span class="o">-</span><span class="mi">30</span> <span class="mi">04</span><span class="p">:</span><span class="mi">12</span><span class="p">:</span><span class="mf">01.945629</span>
+<span class="n">created</span> <span class="mi">2013</span><span class="o">-</span><span class="mi">10</span><span class="o">-</span><span class="mi">29</span> <span class="mi">14</span><span class="p">:</span><span class="mi">14</span><span class="p">:</span><span class="mf">41.914786</span>
+<span class="mi">0</span><span class="p">:</span> <span class="mf">127.0.0.1</span><span class="p">:</span><span class="mi">6789</span><span class="o">/</span><span class="mi">0</span> <span class="n">mon</span><span class="o">.</span><span class="n">a</span>
+<span class="mi">1</span><span class="p">:</span> <span class="mf">127.0.0.1</span><span class="p">:</span><span class="mi">6790</span><span class="o">/</span><span class="mi">0</span> <span class="n">mon</span><span class="o">.</span><span class="n">b</span>
+<span class="mi">2</span><span class="p">:</span> <span class="mf">127.0.0.1</span><span class="p">:</span><span class="mi">6795</span><span class="o">/</span><span class="mi">0</span> <span class="n">mon</span><span class="o">.</span><span class="n">c</span>
+</pre></div>
+</div>
+<p>This may not be what you have however. For instance, in some versions of
+early Cuttlefish there was a bug that could cause your <code class="docutils literal notranslate"><span class="pre">monmap</span></code>
+to be nullified.  Completely filled with zeros. This means that not even
+<code class="docutils literal notranslate"><span class="pre">monmaptool</span></code> would be able to make sense of cold, hard, inscrutable zeros.
+It’s also possible to end up with a monitor with a severely outdated monmap,
+notably if the node has been down for months while you fight with your vendor’s
+TAC.  The subject <code class="docutils literal notranslate"><span class="pre">ceph-mon</span></code> daemon might be unable to find the surviving
+monitors (e.g., say <code class="docutils literal notranslate"><span class="pre">mon.c</span></code> is down; you add a new monitor <code class="docutils literal notranslate"><span class="pre">mon.d</span></code>,
+then remove <code class="docutils literal notranslate"><span class="pre">mon.a</span></code>, then add a new monitor <code class="docutils literal notranslate"><span class="pre">mon.e</span></code> and remove
+<code class="docutils literal notranslate"><span class="pre">mon.b</span></code>; you will end up with a totally different monmap from the one
+<code class="docutils literal notranslate"><span class="pre">mon.c</span></code> knows).</p>
+<p>In this situation you have two possible solutions:</p>
+<p>Scrap the monitor and redeploy</p>
+<blockquote>
+<div><p>You should only take this route if you are positive that you won’t
+lose the information kept by that monitor; that you have other monitors
+and that they are running just fine so that your new monitor is able
+to synchronize from the remaining monitors. Keep in mind that destroying
+a monitor, if there are no other copies of its contents, may lead to
+loss of data.</p>
+</div></blockquote>
+<p>Inject a monmap into the monitor</p>
+<blockquote>
+<div><p>Usually the safest path. You should grab the monmap from the remaining
+monitors and inject it into the monitor with the corrupted/lost monmap.</p>
+<p>These are the basic steps:</p>
+<ol class="arabic">
+<li><p>Is there a formed quorum? If so, grab the monmap from the quorum:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ ceph mon getmap -o /tmp/monmap
+</pre></div>
+</div>
+</li>
+<li><p>No quorum? Grab the monmap directly from another monitor (this
+assumes the monitor you are grabbing the monmap from has id ID-FOO
+and has been stopped):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ ceph-mon -i ID-FOO --extract-monmap /tmp/monmap
+</pre></div>
+</div>
+</li>
+<li><p>Stop the monitor you are going to inject the monmap into.</p></li>
+<li><p>Inject the monmap:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ ceph-mon -i ID --inject-monmap /tmp/monmap
+</pre></div>
+</div>
+</li>
+<li><p>Start the monitor</p></li>
+</ol>
+<p>Please keep in mind that the ability to inject monmaps is a powerful
+feature that can cause havoc with your monitors if misused as it will
+overwrite the latest, existing monmap kept by the monitor.</p>
+</div></blockquote>
+</section>
+<section id="clock-skews">
+<h3>Clock Skews<a class="headerlink" href="#clock-skews" title="Permalink to this heading">¶</a></h3>
+<p>Monitor operation can be severely affected by clock skew among the quorum’s
+mons, as the PAXOS consensus algorithm requires tight time alignment.
+Skew can result in weird behavior with no obvious
+cause. To avoid such issues, you must run a clock synchronization tool
+on your monitor nodes:  <code class="docutils literal notranslate"><span class="pre">Chrony</span></code> or the legacy <code class="docutils literal notranslate"><span class="pre">ntpd</span></code>.  Be sure to
+configure the mon nodes with the <cite>iburst</cite> option and multiple peers:</p>
+<ul class="simple">
+<li><p>Each other</p></li>
+<li><p>Internal <code class="docutils literal notranslate"><span class="pre">NTP</span></code> servers</p></li>
+<li><p>Multiple external, public pool servers</p></li>
+</ul>
+<p>For good measure, <em>all</em> nodes in your cluster should also sync against
+internal and external servers, and perhaps even your mons.  <code class="docutils literal notranslate"><span class="pre">NTP</span></code> servers
+should run on bare metal; VM virtualized clocks are not suitable for steady
+timekeeping.  Visit <a class="reference external" href="https://www.ntp.org">https://www.ntp.org</a> for more info.  Your
+organization may already have quality internal <code class="docutils literal notranslate"><span class="pre">NTP</span></code> servers you can use.
+Sources for <code class="docutils literal notranslate"><span class="pre">NTP</span></code> server appliances include:</p>
+<ul class="simple">
+<li><p>Microsemi (formerly Symmetricom) <a class="reference external" href="https://www.microsemi.com/product-directory/3425-timing-synchronization">https://microsemi.com</a></p></li>
+<li><p>EndRun <a class="reference external" href="https://endruntechnologies.com/products/ntp-time-servers">https://endruntechnologies.com</a></p></li>
+<li><p>Netburner <a class="reference external" href="https://www.netburner.com/products/network-time-server/pk70-ex-ntp-network-time-server">https://www.netburner.com</a></p></li>
+</ul>
+<p>What’s the maximum tolerated clock skew?</p>
+<blockquote>
+<div><p>By default the monitors will allow clocks to drift up to 0.05 seconds (50 ms).</p>
+</div></blockquote>
+<p>Can I increase the maximum tolerated clock skew?</p>
+<blockquote>
+<div><p>The maximum tolerated clock skew is configurable via the
+<code class="docutils literal notranslate"><span class="pre">mon-clock-drift-allowed</span></code> option, and
+although you <em>CAN</em> you almost certainly <em>SHOULDN’T</em>. The clock skew mechanism
+is in place because clock-skewed monitors are liely to misbehave. We, as
+developers and QA aficionados, are comfortable with the current default
+value, as it will alert the user before the monitors get out hand. Changing
+this value may cause unforeseen effects on the
+stability of the monitors and overall cluster health.</p>
+</div></blockquote>
+<p>How do I know there’s a clock skew?</p>
+<blockquote>
+<div><p>The monitors will warn you via the cluster status <code class="docutils literal notranslate"><span class="pre">HEALTH_WARN</span></code>. <code class="docutils literal notranslate"><span class="pre">ceph</span> <span class="pre">health</span>
+<span class="pre">detail</span></code> or <code class="docutils literal notranslate"><span class="pre">ceph</span> <span class="pre">status</span></code> should show something like:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">mon</span><span class="o">.</span><span class="n">c</span> <span class="n">addr</span> <span class="mf">10.10.0.1</span><span class="p">:</span><span class="mi">6789</span><span class="o">/</span><span class="mi">0</span> <span class="n">clock</span> <span class="n">skew</span> <span class="mf">0.08235</span><span class="n">s</span> <span class="o">&gt;</span> <span class="nb">max</span> <span class="mf">0.05</span><span class="n">s</span> <span class="p">(</span><span class="n">latency</span> <span class="mf">0.0045</span><span class="n">s</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>That means that <code class="docutils literal notranslate"><span class="pre">mon.c</span></code> has been flagged as suffering from a clock skew.</p>
+<p>On releases beginning with Luminous you can issue the
+<code class="docutils literal notranslate"><span class="pre">ceph</span> <span class="pre">time-sync-status</span></code> command to check status.  Note that the lead mon
+is typically the one with the numerically lowest IP address.  It will always
+show <code class="docutils literal notranslate"><span class="pre">0</span></code>: the reported offsets of other mons are relative to
+the lead mon, not to any external reference source.</p>
+</div></blockquote>
+<p>What should I do if there’s a clock skew?</p>
+<blockquote>
+<div><p>Synchronize your clocks. Running an NTP client may help. If you are already
+using one and you hit this sort of issues, check if you are using some NTP
+server remote to your network and consider hosting your own NTP server on
+your network.  This last option tends to reduce the amount of issues with
+monitor clock skews.</p>
+</div></blockquote>
+</section>
+<section id="client-can-t-connect-or-mount">
+<h3>Client Can’t Connect or Mount<a class="headerlink" href="#client-can-t-connect-or-mount" title="Permalink to this heading">¶</a></h3>
+<p>Check your IP tables. Some OS install utilities add a <code class="docutils literal notranslate"><span class="pre">REJECT</span></code> rule to
+<code class="docutils literal notranslate"><span class="pre">iptables</span></code>. The rule rejects all clients trying to connect to the host except
+for <code class="docutils literal notranslate"><span class="pre">ssh</span></code>. If your monitor host’s IP tables have such a <code class="docutils literal notranslate"><span class="pre">REJECT</span></code> rule in
+place, clients connecting from a separate node will fail to mount with a timeout
+error. You need to address <code class="docutils literal notranslate"><span class="pre">iptables</span></code> rules that reject clients trying to
+connect to Ceph daemons.  For example, you would need to address rules that look
+like this appropriately:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">REJECT</span> <span class="nb">all</span> <span class="o">--</span> <span class="n">anywhere</span> <span class="n">anywhere</span> <span class="n">reject</span><span class="o">-</span><span class="k">with</span> <span class="n">icmp</span><span class="o">-</span><span class="n">host</span><span class="o">-</span><span class="n">prohibited</span>
+</pre></div>
+</div>
+<p>You may also need to add rules to IP tables on your Ceph hosts to ensure
+that clients can access the ports associated with your Ceph monitors (i.e., port
+6789 by default) and Ceph OSDs (i.e., 6800 through 7300 by default). For
+example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">iptables</span> <span class="o">-</span><span class="n">A</span> <span class="n">INPUT</span> <span class="o">-</span><span class="n">m</span> <span class="n">multiport</span> <span class="o">-</span><span class="n">p</span> <span class="n">tcp</span> <span class="o">-</span><span class="n">s</span> <span class="p">{</span><span class="n">ip</span><span class="o">-</span><span class="n">address</span><span class="p">}</span><span class="o">/</span><span class="p">{</span><span class="n">netmask</span><span class="p">}</span> <span class="o">--</span><span class="n">dports</span> <span class="mi">6789</span><span class="p">,</span><span class="mi">6800</span><span class="p">:</span><span class="mi">7300</span> <span class="o">-</span><span class="n">j</span> <span class="n">ACCEPT</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="monitor-store-failures">
+<h2>Monitor Store Failures<a class="headerlink" href="#monitor-store-failures" title="Permalink to this heading">¶</a></h2>
+<section id="symptoms-of-store-corruption">
+<h3>Symptoms of store corruption<a class="headerlink" href="#symptoms-of-store-corruption" title="Permalink to this heading">¶</a></h3>
+<p>Ceph monitor stores the <a class="reference internal" href="../../../glossary/#term-Cluster-Map"><span class="xref std std-term">Cluster Map</span></a> in a key/value store such as LevelDB. If
+a monitor fails due to the key/value store corruption, following error messages
+might be found in the monitor log:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Corruption</span><span class="p">:</span> <span class="n">error</span> <span class="ow">in</span> <span class="n">middle</span> <span class="n">of</span> <span class="n">record</span>
+</pre></div>
+</div>
+<p>or:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Corruption</span><span class="p">:</span> <span class="mi">1</span> <span class="n">missing</span> <span class="n">files</span><span class="p">;</span> <span class="n">e</span><span class="o">.</span><span class="n">g</span><span class="o">.</span><span class="p">:</span> <span class="o">/</span><span class="n">var</span><span class="o">/</span><span class="n">lib</span><span class="o">/</span><span class="n">ceph</span><span class="o">/</span><span class="n">mon</span><span class="o">/</span><span class="n">mon</span><span class="o">.</span><span class="n">foo</span><span class="o">/</span><span class="n">store</span><span class="o">.</span><span class="n">db</span><span class="o">/</span><span class="mf">1234567.</span><span class="n">ldb</span>
+</pre></div>
+</div>
+</section>
+<section id="recovery-using-healthy-monitor-s">
+<h3>Recovery using healthy monitor(s)<a class="headerlink" href="#recovery-using-healthy-monitor-s" title="Permalink to this heading">¶</a></h3>
+<p>If there are any survivors, we can always <a class="reference internal" href="../../operations/add-or-rm-mons/#adding-and-removing-monitors"><span class="std std-ref">replace</span></a> the corrupted one with a
+new one. After booting up, the new joiner will sync up with a healthy
+peer, and once it is fully sync’ed, it will be able to serve the clients.</p>
+</section>
+<section id="recovery-using-osds">
+<span id="mon-store-recovery-using-osds"></span><h3>Recovery using OSDs<a class="headerlink" href="#recovery-using-osds" title="Permalink to this heading">¶</a></h3>
+<p>But what if all monitors fail at the same time? Since users are encouraged to
+deploy at least three (and preferably five) monitors in a Ceph cluster, the chance of simultaneous
+failure is rare. But unplanned power-downs in a data center with improperly
+configured disk/fs settings could fail the underlying file system, and hence
+kill all the monitors. In this case, we can recover the monitor store with the
+information stored in OSDs.:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>ms=/root/mon-store
+mkdir $ms
+
+# collect the cluster map from stopped OSDs
+for host in $hosts; do
+  rsync -avz $ms/. user@$host:$ms.remote
+  rm -rf $ms
+  ssh user@$host &lt;&lt;EOF
+    for osd in /var/lib/ceph/osd/ceph-*; do
+      ceph-objectstore-tool --data-path \$osd --no-mon-config --op update-mon-db --mon-store-path $ms.remote
+    done
+EOF
+  rsync -avz user@$host:$ms.remote/. $ms
+done
+
+# rebuild the monitor store from the collected map, if the cluster does not
+# use cephx authentication, we can skip the following steps to update the
+# keyring with the caps, and there is no need to pass the &quot;--keyring&quot; option.
+# i.e. just use &quot;ceph-monstore-tool $ms rebuild&quot; instead
+ceph-authtool /path/to/admin.keyring -n mon. \
+  --cap mon &#39;allow *&#39;
+ceph-authtool /path/to/admin.keyring -n client.admin \
+  --cap mon &#39;allow *&#39; --cap osd &#39;allow *&#39; --cap mds &#39;allow *&#39;
+# add one or more ceph-mgr&#39;s key to the keyring. in this case, an encoded key
+# for mgr.x is added, you can find the encoded key in
+# /etc/ceph/${cluster}.${mgr_name}.keyring on the machine where ceph-mgr is
+# deployed
+ceph-authtool /path/to/admin.keyring --add-key &#39;AQDN8kBe9PLWARAAZwxXMr+n85SBYbSlLcZnMA==&#39; -n mgr.x \
+  --cap mon &#39;allow profile mgr&#39; --cap osd &#39;allow *&#39; --cap mds &#39;allow *&#39;
+# if your monitors&#39; ids are not single characters like &#39;a&#39;, &#39;b&#39;, &#39;c&#39;, please
+# specify them in the command line by passing them as arguments of the &quot;--mon-ids&quot;
+# option. if you are not sure, please check your ceph.conf to see if there is any
+# sections named like &#39;[mon.foo]&#39;. don&#39;t pass the &quot;--mon-ids&quot; option, if you are
+# using DNS SRV for looking up monitors.
+ceph-monstore-tool $ms rebuild -- --keyring /path/to/admin.keyring --mon-ids alpha beta gamma
+
+# make a backup of the corrupted store.db just in case!  repeat for
+# all monitors.
+mv /var/lib/ceph/mon/mon.foo/store.db /var/lib/ceph/mon/mon.foo/store.db.corrupted
+
+# move rebuild store.db into place.  repeat for all monitors.
+mv $ms/store.db /var/lib/ceph/mon/mon.foo/store.db
+chown -R ceph:ceph /var/lib/ceph/mon/mon.foo/store.db
+</pre></div>
+</div>
+<p>The steps above</p>
+<ol class="arabic simple">
+<li><p>collect the map from all OSD hosts,</p></li>
+<li><p>then rebuild the store,</p></li>
+<li><p>fill the entities in keyring file with appropriate caps</p></li>
+<li><p>replace the corrupted store on <code class="docutils literal notranslate"><span class="pre">mon.foo</span></code> with the recovered copy.</p></li>
+</ol>
+<section id="known-limitations">
+<h4>Known limitations<a class="headerlink" href="#known-limitations" title="Permalink to this heading">¶</a></h4>
+<p>Following information are not recoverable using the steps above:</p>
+<ul class="simple">
+<li><p><strong>some added keyrings</strong>: all the OSD keyrings added using <code class="docutils literal notranslate"><span class="pre">ceph</span> <span class="pre">auth</span> <span class="pre">add</span></code> command
+are recovered from the OSD’s copy. And the <code class="docutils literal notranslate"><span class="pre">client.admin</span></code> keyring is imported
+using <code class="docutils literal notranslate"><span class="pre">ceph-monstore-tool</span></code>. But the MDS keyrings and other keyrings are missing
+in the recovered monitor store. You might need to re-add them manually.</p></li>
+<li><p><strong>creating pools</strong>: If any RADOS pools were in the process of being creating, that state is lost.  The recovery tool assumes that all pools have been created.  If there are PGs that are stuck in the ‘unknown’ after the recovery for a partially created pool, you can force creation of the <em>empty</em> PG with the <code class="docutils literal notranslate"><span class="pre">ceph</span> <span class="pre">osd</span> <span class="pre">force-create-pg</span></code> command.  Note that this will create an <em>empty</em> PG, so only do this if you know the pool is empty.</p></li>
+<li><p><strong>MDS Maps</strong>: the MDS maps are lost.</p></li>
+</ul>
+</section>
+</section>
+</section>
+<section id="everything-failed-now-what">
+<h2>Everything Failed! Now What?<a class="headerlink" href="#everything-failed-now-what" title="Permalink to this heading">¶</a></h2>
+<section id="reaching-out-for-help">
+<h3>Reaching out for help<a class="headerlink" href="#reaching-out-for-help" title="Permalink to this heading">¶</a></h3>
+<p>You can find us on IRC at #ceph and #ceph-devel at OFTC (server irc.oftc.net)
+and on <code class="docutils literal notranslate"><span class="pre">ceph-devel&#64;vger.kernel.org</span></code> and <code class="docutils literal notranslate"><span class="pre">ceph-users&#64;lists.ceph.com</span></code>. Make
+sure you have grabbed your logs and have them ready if someone asks: the faster
+the interaction and lower the latency in response, the better chances everyone’s
+time is optimized.</p>
+</section>
+<section id="preparing-your-logs">
+<h3>Preparing your logs<a class="headerlink" href="#preparing-your-logs" title="Permalink to this heading">¶</a></h3>
+<p>Monitor logs are, by default, kept in <code class="docutils literal notranslate"><span class="pre">/var/log/ceph/ceph-mon.FOO.log*</span></code>. We
+may want them. However, your logs may not have the necessary information. If
+you don’t find your monitor logs at their default location, you can check
+where they should be by running:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span><span class="o">-</span><span class="n">conf</span> <span class="o">--</span><span class="n">name</span> <span class="n">mon</span><span class="o">.</span><span class="n">FOO</span> <span class="o">--</span><span class="n">show</span><span class="o">-</span><span class="n">config</span><span class="o">-</span><span class="n">value</span> <span class="n">log_file</span>
+</pre></div>
+</div>
+<p>The amount of information in the logs are subject to the debug levels being
+enforced by your configuration files. If you have not enforced a specific
+debug level then Ceph is using the default levels and your logs may not
+contain important information to track down you issue.
+A first step in getting relevant information into your logs will be to raise
+debug levels. In this case we will be interested in the information from the
+monitor.
+Similarly to what happens on other components, different parts of the monitor
+will output their debug information on different subsystems.</p>
+<p>You will have to raise the debug levels of those subsystems more closely
+related to your issue. This may not be an easy task for someone unfamiliar
+with troubleshooting Ceph. For most situations, setting the following options
+on your monitors will be enough to pinpoint a potential source of the issue:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">debug</span> <span class="n">mon</span> <span class="o">=</span> <span class="mi">10</span>
+<span class="n">debug</span> <span class="n">ms</span> <span class="o">=</span> <span class="mi">1</span>
+</pre></div>
+</div>
+<p>If we find that these debug levels are not enough, there’s a chance we may
+ask you to raise them or even define other debug subsystems to obtain infos
+from – but at least we started off with some useful information, instead
+of a massively empty log without much to go on with.</p>
+</section>
+<section id="do-i-need-to-restart-a-monitor-to-adjust-debug-levels">
+<h3>Do I need to restart a monitor to adjust debug levels?<a class="headerlink" href="#do-i-need-to-restart-a-monitor-to-adjust-debug-levels" title="Permalink to this heading">¶</a></h3>
+<p>No. You may do it in one of two ways:</p>
+<p>You have quorum</p>
+<blockquote>
+<div><p>Either inject the debug option into the monitor you want to debug:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span> <span class="n">tell</span> <span class="n">mon</span><span class="o">.</span><span class="n">FOO</span> <span class="n">config</span> <span class="nb">set</span> <span class="n">debug_mon</span> <span class="mi">10</span><span class="o">/</span><span class="mi">10</span>
+</pre></div>
+</div>
+<p>or into all monitors at once:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span> <span class="n">tell</span> <span class="n">mon</span><span class="o">.*</span> <span class="n">config</span> <span class="nb">set</span> <span class="n">debug_mon</span> <span class="mi">10</span><span class="o">/</span><span class="mi">10</span>
+</pre></div>
+</div>
+</div></blockquote>
+<p>No quorum</p>
+<blockquote>
+<div><p>Use the monitor’s admin socket and directly adjust the configuration
+options:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span> <span class="n">daemon</span> <span class="n">mon</span><span class="o">.</span><span class="n">FOO</span> <span class="n">config</span> <span class="nb">set</span> <span class="n">debug_mon</span> <span class="mi">10</span><span class="o">/</span><span class="mi">10</span>
+</pre></div>
+</div>
+</div></blockquote>
+<p>Going back to default values is as easy as rerunning the above commands
+using the debug level <code class="docutils literal notranslate"><span class="pre">1/10</span></code> instead.  You can check your current
+values using the admin socket and the following commands:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span> <span class="n">daemon</span> <span class="n">mon</span><span class="o">.</span><span class="n">FOO</span> <span class="n">config</span> <span class="n">show</span>
+</pre></div>
+</div>
+<p>or:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span> <span class="n">daemon</span> <span class="n">mon</span><span class="o">.</span><span class="n">FOO</span> <span class="n">config</span> <span class="n">get</span> <span class="s1">&#39;OPTION_NAME&#39;</span>
+</pre></div>
+</div>
+</section>
+<section id="reproduced-the-problem-with-appropriate-debug-levels-now-what">
+<h3>Reproduced the problem with appropriate debug levels. Now what?<a class="headerlink" href="#reproduced-the-problem-with-appropriate-debug-levels-now-what" title="Permalink to this heading">¶</a></h3>
+<p>Ideally you would send us only the relevant portions of your logs.
+We realise that figuring out the corresponding portion may not be the
+easiest of tasks. Therefore, we won’t hold it to you if you provide the
+full log, but common sense should be employed. If your log has hundreds
+of thousands of lines, it may get tricky to go through the whole thing,
+specially if we are not aware at which point, whatever your issue is,
+happened. For instance, when reproducing, keep in mind to write down
+current time and date and to extract the relevant portions of your logs
+based on that.</p>
+<p>Finally, you should reach out to us on the mailing lists, on IRC or file
+a new issue on the <a class="reference external" href="http://tracker.ceph.com/projects/ceph/issues/new">tracker</a>.</p>
+</section>
+</section>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../../">
+              <img class="logo" src="../../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../install/">Installing Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cephadm/">Cephadm</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../">Ceph Storage Cluster</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../../configuration/">Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../cephadm/">Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../operations/">Operations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../man/">Man Pages</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../">Troubleshooting</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../community/">The Ceph Community</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../log-and-debug/">Logging and Debugging</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Troubleshooting Monitors</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#initial-troubleshooting">Initial Troubleshooting</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#using-the-monitor-s-admin-socket">Using the monitor’s admin socket</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#understanding-mon-status">Understanding mon_status</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#most-common-monitor-issues">Most Common Monitor Issues</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#have-quorum-but-at-least-one-monitor-is-down">Have Quorum but at least one Monitor is down</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#recovering-a-monitor-s-broken-monmap">Recovering a Monitor’s Broken <code class="docutils literal notranslate"><span class="pre">monmap</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="#clock-skews">Clock Skews</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#client-can-t-connect-or-mount">Client Can’t Connect or Mount</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#monitor-store-failures">Monitor Store Failures</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#symptoms-of-store-corruption">Symptoms of store corruption</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#recovery-using-healthy-monitor-s">Recovery using healthy monitor(s)</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#recovery-using-osds">Recovery using OSDs</a><ul>
+<li class="toctree-l6"><a class="reference internal" href="#known-limitations">Known limitations</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#everything-failed-now-what">Everything Failed! Now What?</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#reaching-out-for-help">Reaching out for help</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#preparing-your-logs">Preparing your logs</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#do-i-need-to-restart-a-monitor-to-adjust-debug-levels">Do I need to restart a monitor to adjust debug levels?</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#reproduced-the-problem-with-appropriate-debug-levels-now-what">Reproduced the problem with appropriate debug levels. Now what?</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../troubleshooting-osd/">Troubleshooting OSDs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../troubleshooting-pg/">Troubleshooting PGs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../memory-profiling/">Memory Profiling</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../cpu-profiling/">CPU Profiling</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/">APIs</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cephfs/">Ceph File System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../rbd/">Ceph Block Device</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../radosgw/">Ceph Object Gateway</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../mgr/">Ceph Manager Daemon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../mgr/dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dev/developer_guide/">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dev/internals/">Ceph Internals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../../../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../troubleshooting-osd/" title="Troubleshooting OSDs"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../community/" title="The Ceph Community"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../" >Ceph Storage Cluster</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../../operations/" >Cluster Operations</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Troubleshooting Monitors</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

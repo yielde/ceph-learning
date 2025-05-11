@@ -1,0 +1,673 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Hardware Recommendations &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css" />
+    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../genindex/" />
+    <link rel="search" title="Search" href="../../search/" />
+    <link rel="next" title="OS Recommendations" href="../os-recommendations/" />
+    <link rel="prev" title="Intro to Ceph" href="../intro/" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../os-recommendations/" title="OS Recommendations"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../intro/" title="Intro to Ceph"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../intro/" accesskey="U">Intro to Ceph</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Hardware Recommendations</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="hardware-recommendations">
+<span id="id1"></span><h1>Hardware Recommendations<a class="headerlink" href="#hardware-recommendations" title="Permalink to this heading">¶</a></h1>
+<p>Ceph was designed to run on commodity hardware, which makes building and
+maintaining petabyte-scale data clusters economically feasible.
+When planning out your cluster hardware, you will need to balance a number
+of considerations, including failure domains and potential performance
+issues. Hardware planning should include distributing Ceph daemons and
+other processes that use Ceph across many hosts. Generally, we recommend
+running Ceph daemons of a specific type on a host configured for that type
+of daemon. We recommend using other hosts for processes that utilize your
+data cluster (e.g., OpenStack, CloudStack, etc).</p>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>Check out the <a class="reference external" href="https://ceph.com/community/blog/">Ceph blog</a> too.</p>
+</div>
+<section id="cpu">
+<h2>CPU<a class="headerlink" href="#cpu" title="Permalink to this heading">¶</a></h2>
+<p>CephFS metadata servers (MDS) are CPU-intensive. CephFS metadata servers (MDS)
+should therefore have quad-core (or better) CPUs and high clock rates (GHz). OSD
+nodes need enough processing power to run the RADOS service, to calculate data
+placement with CRUSH, to replicate data, and to maintain their own copies of the
+cluster map.</p>
+<p>The requirements of one Ceph cluster are not the same as the requirements of
+another, but here are some general guidelines.</p>
+<p>In earlier versions of Ceph, we would make hardware recommendations based on
+the number of cores per OSD, but this cores-per-OSD metric is no longer as
+useful a metric as the number of cycles per IOP and the number of IOPs per OSD.
+For example, for NVMe drives, Ceph can easily utilize five or six cores on real
+clusters and up to about fourteen cores on single OSDs in isolation. So cores
+per OSD are no longer as pressing a concern as they were. When selecting
+hardware, select for IOPs per core.</p>
+<p>Monitor nodes and manager nodes have no heavy CPU demands and require only
+modest processors. If your host machines will run CPU-intensive processes in
+addition to Ceph daemons, make sure that you have enough processing power to
+run both the CPU-intensive processes and the Ceph daemons. (OpenStack Nova is
+one such example of a CPU-intensive process.) We recommend that you run
+non-Ceph CPU-intensive processes on separate hosts (that is, on hosts that are
+not your monitor and manager nodes) in order to avoid resource contention.</p>
+</section>
+<section id="ram">
+<h2>RAM<a class="headerlink" href="#ram" title="Permalink to this heading">¶</a></h2>
+<p>Generally, more RAM is better.  Monitor / manager nodes for a modest cluster
+might do fine with 64GB; for a larger cluster with hundreds of OSDs 128GB
+is a reasonable target.  There is a memory target for BlueStore OSDs that
+defaults to 4GB.  Factor in a prudent margin for the operating system and
+administrative tasks (like monitoring and metrics) as well as increased
+consumption during recovery:  provisioning ~8GB per BlueStore OSD
+is advised.</p>
+<section id="monitors-and-managers-ceph-mon-and-ceph-mgr">
+<h3>Monitors and managers (ceph-mon and ceph-mgr)<a class="headerlink" href="#monitors-and-managers-ceph-mon-and-ceph-mgr" title="Permalink to this heading">¶</a></h3>
+<p>Monitor and manager daemon memory usage generally scales with the size of the
+cluster.  Note that at boot-time and during topology changes and recovery these
+daemons will need more RAM than they do during steady-state operation, so plan
+for peak usage. For very small clusters, 32 GB suffices. For clusters of up to,
+say, 300 OSDs go with 64GB. For clusters built with (or which will grow to)
+even more OSDs you should provision 128GB. You may also want to consider
+tuning the following settings:</p>
+<ul class="simple">
+<li><p><cite>mon_osd_cache_size</cite></p></li>
+<li><p><cite>rocksdb_cache_size</cite></p></li>
+</ul>
+</section>
+<section id="metadata-servers-ceph-mds">
+<h3>Metadata servers (ceph-mds)<a class="headerlink" href="#metadata-servers-ceph-mds" title="Permalink to this heading">¶</a></h3>
+<p>The metadata daemon memory utilization depends on how much memory its cache is
+configured to consume.  We recommend 1 GB as a minimum for most systems.  See
+<code class="docutils literal notranslate"><span class="pre">mds_cache_memory</span></code>.</p>
+</section>
+</section>
+<section id="memory">
+<h2>Memory<a class="headerlink" href="#memory" title="Permalink to this heading">¶</a></h2>
+<p>Bluestore uses its own memory to cache data rather than relying on the
+operating system’s page cache. In Bluestore you can adjust the amount of memory
+that the OSD attempts to consume by changing the <cite>osd_memory_target</cite>
+configuration option.</p>
+<ul class="simple">
+<li><p>Setting the <cite>osd_memory_target</cite> below 2GB is typically not
+recommended (Ceph may fail to keep the memory consumption under 2GB and
+this may cause extremely slow performance).</p></li>
+<li><p>Setting the memory target between 2GB and 4GB typically works but may result
+in degraded performance: metadata may be read from disk during IO unless the
+active data set is relatively small.</p></li>
+<li><p>4GB is the current default <cite>osd_memory_target</cite> size. This default
+was chosen for typical use cases, and is intended to balance memory
+requirements and OSD performance.</p></li>
+<li><p>Setting the <cite>osd_memory_target</cite> higher than 4GB can improve
+performance when there many (small) objects or when large (256GB/OSD
+or more) data sets are processed.</p></li>
+</ul>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>OSD memory autotuning is “best effort”. Although the OSD may
+unmap memory to allow the kernel to reclaim it, there is no guarantee that
+the kernel will actually reclaim freed memory within a specific time
+frame. This applies especially in older versions of Ceph, where transparent
+huge pages can prevent the kernel from reclaiming memory that was freed from
+fragmented huge pages. Modern versions of Ceph disable transparent huge
+pages at the application level to avoid this, but that does not
+guarantee that the kernel will immediately reclaim unmapped memory. The OSD
+may still at times exceed its memory target. We recommend budgeting
+approximately 20% extra memory on your system to prevent OSDs from going OOM
+(<strong>O</strong>ut <strong>O</strong>f <strong>M</strong>emory) during temporary spikes or due to delay in
+the kernel reclaiming freed pages. That 20% value might be more or less than
+needed, depending on the exact configuration of the system.</p>
+</div>
+<p>When using the legacy FileStore back end, the page cache is used for caching
+data, so no tuning is normally needed. When using the legacy FileStore backend,
+the OSD memory consumption is related to the number of PGs per daemon in the
+system.</p>
+</section>
+<section id="data-storage">
+<h2>Data Storage<a class="headerlink" href="#data-storage" title="Permalink to this heading">¶</a></h2>
+<p>Plan your data storage configuration carefully. There are significant cost and
+performance tradeoffs to consider when planning for data storage. Simultaneous
+OS operations and simultaneous requests from multiple daemons for read and
+write operations against a single drive can slow performance.</p>
+<section id="hard-disk-drives">
+<h3>Hard Disk Drives<a class="headerlink" href="#hard-disk-drives" title="Permalink to this heading">¶</a></h3>
+<p>OSDs should have plenty of storage drive space for object data. We recommend a
+minimum disk drive size of 1 terabyte. Consider the cost-per-gigabyte advantage
+of larger disks. We recommend dividing the price of the disk drive by the
+number of gigabytes to arrive at a cost per gigabyte, because larger drives may
+have a significant impact on the cost-per-gigabyte. For example, a 1 terabyte
+hard disk priced at $75.00 has a cost of $0.07 per gigabyte (i.e., $75 / 1024 =
+0.0732). By contrast, a 3 terabyte disk priced at $150.00 has a cost of $0.05
+per gigabyte (i.e., $150 / 3072 = 0.0488). In the foregoing example, using the
+1 terabyte disks would generally increase the cost per gigabyte by
+40%–rendering your cluster substantially less cost efficient.</p>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>Running multiple OSDs on a single SAS / SATA drive
+is <strong>NOT</strong> a good idea.  NVMe drives, however, can achieve
+improved performance by being split into two or more OSDs.</p>
+</div>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>Running an OSD and a monitor or a metadata server on a single
+drive is also <strong>NOT</strong> a good idea.</p>
+</div>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>With spinning disks, the SATA and SAS interface increasingly
+becomes a bottleneck at larger capacities. See also the <a class="reference external" href="https://www.snia.org/forums/cmsi/programs/TCOcalc">Storage Networking
+Industry Association’s Total Cost of Ownership calculator</a>.</p>
+</div>
+<p>Storage drives are subject to limitations on seek time, access time, read and
+write times, as well as total throughput. These physical limitations affect
+overall system performance–especially during recovery. We recommend using a
+dedicated (ideally mirrored) drive for the operating system and software, and
+one drive for each Ceph OSD Daemon you run on the host (modulo NVMe above).
+Many “slow OSD” issues (when they are not attributable to hardware failure)
+arise from running an operating system and multiple OSDs on the same drive.</p>
+<p>It is technically possible to run multiple Ceph OSD Daemons per SAS / SATA
+drive, but this will lead to resource contention and diminish overall
+throughput.</p>
+<p>To get the best performance out of Ceph, run the following on separate drives:
+(1) operating systems, (2) OSD data, and (3) BlueStore db.  For more
+information on how to effectively use a mix of fast drives and slow drives in
+your Ceph cluster, see the <a class="reference external" href="https://docs.ceph.com/en/latest/rados/configuration/bluestore-config-ref/#block-and-block-db">block and block.db</a> section of the Bluestore
+Configuration Reference.</p>
+</section>
+<section id="solid-state-drives">
+<h3>Solid State Drives<a class="headerlink" href="#solid-state-drives" title="Permalink to this heading">¶</a></h3>
+<p>Ceph performance can be improved by using solid-state drives (SSDs). This
+reduces random access time and reduces latency while accelerating throughput.</p>
+<p>SSDs cost more per gigabyte than do hard disk drives, but SSDs often offer
+access times that are, at a minimum, 100 times faster than hard disk drives.
+SSDs avoid hotspot issues and bottleneck issues within busy clusters, and
+they may offer better economics when TCO is evaluated holistically.</p>
+<p>SSDs do not have moving mechanical parts, so they are not necessarily subject
+to the same types of limitations as hard disk drives. SSDs do have significant
+limitations though. When evaluating SSDs, it is important to consider the
+performance of sequential reads and writes.</p>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>We recommend exploring the use of SSDs to improve performance.
+However, before making a significant investment in SSDs, we <strong>strongly
+recommend</strong> reviewing the performance metrics of an SSD and testing the
+SSD in a test configuration in order to gauge performance.</p>
+</div>
+<p>Relatively inexpensive SSDs may appeal to your sense of economy. Use caution.
+Acceptable IOPS are not the only factor to consider when selecting an SSD for
+use with Ceph.</p>
+<p>SSDs have historically been cost prohibitive for object storage, but emerging
+QLC drives are closing the gap, offering greater density with lower power
+consumption and less power spent on cooling. HDD OSDs may see a significant
+performance improvement by offloading WAL+DB onto an SSD.</p>
+<p>To get a better sense of the factors that determine the cost of storage, you
+might use the <a class="reference external" href="https://www.snia.org/forums/cmsi/programs/TCOcalc">Storage Networking Industry Association’s Total Cost of
+Ownership calculator</a></p>
+<section id="partition-alignment">
+<h4>Partition Alignment<a class="headerlink" href="#partition-alignment" title="Permalink to this heading">¶</a></h4>
+<p>When using SSDs with Ceph, make sure that your partitions are properly aligned.
+Improperly aligned partitions suffer slower data transfer speeds than do
+properly aligned partitions. For more information about proper partition
+alignment and example commands that show how to align partitions properly, see
+<a class="reference external" href="https://www.thomas-krenn.com/en/wiki/Partition_Alignment_detailed_explanation">Werner Fischer’s blog post on partition alignment</a>.</p>
+</section>
+<section id="cephfs-metadata-segregation">
+<h4>CephFS Metadata Segregation<a class="headerlink" href="#cephfs-metadata-segregation" title="Permalink to this heading">¶</a></h4>
+<p>One way that Ceph accelerates CephFS file system performance is by segregating
+the storage of CephFS metadata from the storage of the CephFS file contents.
+Ceph provides a default <code class="docutils literal notranslate"><span class="pre">metadata</span></code> pool for CephFS metadata. You will never
+have to create a pool for CephFS metadata, but you can create a CRUSH map
+hierarchy for your CephFS metadata pool that points only to SSD storage media.
+See <a class="reference internal" href="../../rados/operations/crush-map-edits/#crush-map-device-class"><span class="std std-ref">CRUSH Device Class</span></a> for details.</p>
+</section>
+</section>
+<section id="controllers">
+<h3>Controllers<a class="headerlink" href="#controllers" title="Permalink to this heading">¶</a></h3>
+<p>Disk controllers (HBAs) can have a significant impact on write throughput.
+Carefully consider your selection of HBAs to ensure that they do not create a
+performance bottleneck. Notably, RAID-mode (IR) HBAs may exhibit higher latency
+than simpler “JBOD” (IT) mode HBAs. The RAID SoC, write cache, and battery
+backup can substantially increase hardware and maintenance costs. Some RAID
+HBAs can be configured with an IT-mode “personality”.</p>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>The <a class="reference external" href="https://ceph.com/community/blog/">Ceph blog</a> is often an excellent source of information on Ceph
+performance issues. See <a class="reference external" href="http://ceph.com/community/ceph-performance-part-1-disk-controller-write-throughput/">Ceph Write Throughput 1</a> and <a class="reference external" href="http://ceph.com/community/ceph-performance-part-2-write-throughput-without-ssd-journals/">Ceph Write
+Throughput 2</a> for additional details.</p>
+</div>
+</section>
+<section id="benchmarking">
+<h3>Benchmarking<a class="headerlink" href="#benchmarking" title="Permalink to this heading">¶</a></h3>
+<p>BlueStore opens block devices in O_DIRECT and uses fsync frequently to ensure
+that data is safely persisted to media. You can evaluate a drive’s low-level
+write performance using <code class="docutils literal notranslate"><span class="pre">fio</span></code>. For example, 4kB random write performance is
+measured as follows:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp"># </span>fio<span class="w"> </span>--name<span class="o">=</span>/dev/sdX<span class="w"> </span>--ioengine<span class="o">=</span>libaio<span class="w"> </span>--direct<span class="o">=</span><span class="m">1</span><span class="w"> </span>--fsync<span class="o">=</span><span class="m">1</span><span class="w"> </span>--readwrite<span class="o">=</span>randwrite<span class="w"> </span>--blocksize<span class="o">=</span>4k<span class="w"> </span>--runtime<span class="o">=</span><span class="m">300</span>
+</pre></div>
+</div>
+</section>
+<section id="write-caches">
+<h3>Write Caches<a class="headerlink" href="#write-caches" title="Permalink to this heading">¶</a></h3>
+<p>Enterprise SSDs and HDDs normally include power loss protection features which
+use multi-level caches to speed up direct or synchronous writes.  These devices
+can be toggled between two caching modes – a volatile cache flushed to
+persistent media with fsync, or a non-volatile cache written synchronously.</p>
+<p>These two modes are selected by either “enabling” or “disabling” the write
+(volatile) cache.  When the volatile cache is enabled, Linux uses a device in
+“write back” mode, and when disabled, it uses “write through”.</p>
+<p>The default configuration (normally caching enabled) may not be optimal, and
+OSD performance may be dramatically increased in terms of increased IOPS and
+decreased commit_latency by disabling the write cache.</p>
+<p>Users are therefore encouraged to benchmark their devices with <code class="docutils literal notranslate"><span class="pre">fio</span></code> as
+described earlier and persist the optimal cache configuration for their
+devices.</p>
+<p>The cache configuration can be queried with <code class="docutils literal notranslate"><span class="pre">hdparm</span></code>, <code class="docutils literal notranslate"><span class="pre">sdparm</span></code>,
+<code class="docutils literal notranslate"><span class="pre">smartctl</span></code> or by reading the values in <code class="docutils literal notranslate"><span class="pre">/sys/class/scsi_disk/*/cache_type</span></code>,
+for example:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp"># </span>hdparm<span class="w"> </span>-W<span class="w"> </span>/dev/sda
+
+<span class="go">/dev/sda:</span>
+<span class="go"> write-caching =  1 (on)</span>
+
+<span class="gp"># </span>sdparm<span class="w"> </span>--get<span class="w"> </span>WCE<span class="w"> </span>/dev/sda
+<span class="go">    /dev/sda: ATA       TOSHIBA MG07ACA1  0101</span>
+<span class="go">WCE           1  [cha: y]</span>
+<span class="gp"># </span>smartctl<span class="w"> </span>-g<span class="w"> </span>wcache<span class="w"> </span>/dev/sda
+<span class="go">smartctl 7.1 2020-04-05 r5049 [x86_64-linux-4.18.0-305.19.1.el8_4.x86_64] (local build)</span>
+<span class="go">Copyright (C) 2002-19, Bruce Allen, Christian Franke, www.smartmontools.org</span>
+
+<span class="go">Write cache is:   Enabled</span>
+
+<span class="gp"># </span>cat<span class="w"> </span>/sys/class/scsi_disk/0<span class="se">\:</span><span class="m">0</span><span class="se">\:</span><span class="m">0</span><span class="se">\:</span><span class="m">0</span>/cache_type
+<span class="go">write back</span>
+</pre></div>
+</div>
+<p>The write cache can be disabled with those same tools:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp"># </span>hdparm<span class="w"> </span>-W0<span class="w"> </span>/dev/sda
+
+<span class="go">/dev/sda:</span>
+<span class="go"> setting drive write-caching to 0 (off)</span>
+<span class="go"> write-caching =  0 (off)</span>
+
+<span class="gp"># </span>sdparm<span class="w"> </span>--clear<span class="w"> </span>WCE<span class="w"> </span>/dev/sda
+<span class="go">    /dev/sda: ATA       TOSHIBA MG07ACA1  0101</span>
+<span class="gp"># </span>smartctl<span class="w"> </span>-s<span class="w"> </span>wcache,off<span class="w"> </span>/dev/sda
+<span class="go">smartctl 7.1 2020-04-05 r5049 [x86_64-linux-4.18.0-305.19.1.el8_4.x86_64] (local build)</span>
+<span class="go">Copyright (C) 2002-19, Bruce Allen, Christian Franke, www.smartmontools.org</span>
+
+<span class="go">=== START OF ENABLE/DISABLE COMMANDS SECTION ===</span>
+<span class="go">Write cache disabled</span>
+</pre></div>
+</div>
+<p>Normally, disabling the cache using <code class="docutils literal notranslate"><span class="pre">hdparm</span></code>, <code class="docutils literal notranslate"><span class="pre">sdparm</span></code>, or <code class="docutils literal notranslate"><span class="pre">smartctl</span></code>
+results in the cache_type changing automatically to “write through”. If this is
+not the case, you can try setting it directly as follows. (Users should note
+that setting cache_type also correctly persists the caching mode of the device
+until the next reboot):</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp"># </span><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;write through&quot;</span><span class="w"> </span>&gt;<span class="w"> </span>/sys/class/scsi_disk/0<span class="se">\:</span><span class="m">0</span><span class="se">\:</span><span class="m">0</span><span class="se">\:</span><span class="m">0</span>/cache_type
+
+<span class="gp"># </span>hdparm<span class="w"> </span>-W<span class="w"> </span>/dev/sda
+
+<span class="go">/dev/sda:</span>
+<span class="go"> write-caching =  0 (off)</span>
+</pre></div>
+</div>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>This udev rule (tested on CentOS 8) will set all SATA/SAS device cache_types to “write
+through”:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp"># </span>cat<span class="w"> </span>/etc/udev/rules.d/99-ceph-write-through.rules
+<span class="go">ACTION==&quot;add&quot;, SUBSYSTEM==&quot;scsi_disk&quot;, ATTR{cache_type}:=&quot;write through&quot;</span>
+</pre></div>
+</div>
+</div>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>This udev rule (tested on CentOS 7) will set all SATA/SAS device cache_types to “write
+through”:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp"># </span>cat<span class="w"> </span>/etc/udev/rules.d/99-ceph-write-through-el7.rules
+<span class="go">ACTION==&quot;add&quot;, SUBSYSTEM==&quot;scsi_disk&quot;, RUN+=&quot;/bin/sh -c &#39;echo write through &gt; /sys/class/scsi_disk/$kernel/cache_type&#39;&quot;</span>
+</pre></div>
+</div>
+</div>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">sdparm</span></code> utility can be used to view/change the volatile write
+cache on several devices at once:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp"># </span>sdparm<span class="w"> </span>--get<span class="w"> </span>WCE<span class="w"> </span>/dev/sd*
+<span class="go">    /dev/sda: ATA       TOSHIBA MG07ACA1  0101</span>
+<span class="go">WCE           0  [cha: y]</span>
+<span class="go">    /dev/sdb: ATA       TOSHIBA MG07ACA1  0101</span>
+<span class="go">WCE           0  [cha: y]</span>
+<span class="gp"># </span>sdparm<span class="w"> </span>--clear<span class="w"> </span>WCE<span class="w"> </span>/dev/sd*
+<span class="go">    /dev/sda: ATA       TOSHIBA MG07ACA1  0101</span>
+<span class="go">    /dev/sdb: ATA       TOSHIBA MG07ACA1  0101</span>
+</pre></div>
+</div>
+</div>
+</section>
+<section id="additional-considerations">
+<h3>Additional Considerations<a class="headerlink" href="#additional-considerations" title="Permalink to this heading">¶</a></h3>
+<p>You typically will run multiple OSDs per host, but you should ensure that the
+aggregate throughput of your OSD drives doesn’t exceed the network bandwidth
+required to service a client’s need to read or write data. You should also
+consider what percentage of the overall data the cluster stores on each host. If
+the percentage on a particular host is large and the host fails, it can lead to
+problems such as exceeding the <code class="docutils literal notranslate"><span class="pre">full</span> <span class="pre">ratio</span></code>,  which causes Ceph to halt
+operations as a safety precaution that prevents data loss.</p>
+<p>When you run multiple OSDs per host, you also need to ensure that the kernel
+is up to date. See <a class="reference external" href="../os-recommendations">OS Recommendations</a> for notes on <code class="docutils literal notranslate"><span class="pre">glibc</span></code> and
+<code class="docutils literal notranslate"><span class="pre">syncfs(2)</span></code> to ensure that your hardware performs as expected when running
+multiple OSDs per host.</p>
+</section>
+</section>
+<section id="networks">
+<h2>Networks<a class="headerlink" href="#networks" title="Permalink to this heading">¶</a></h2>
+<p>Provision at least 10 Gb/s networking in your racks.</p>
+<section id="speed">
+<h3>Speed<a class="headerlink" href="#speed" title="Permalink to this heading">¶</a></h3>
+<p>It takes three hours to replicate 1 TB of data across a 1 Gb/s network and it
+takes thirty hours to replicate 10 TB across a 1 Gb/s network. But it takes only
+twenty minutes to replicate 1 TB across a 10 Gb/s network, and it takes
+only one hour to replicate 10 TB across a 10 Gb/s network.</p>
+</section>
+<section id="cost">
+<h3>Cost<a class="headerlink" href="#cost" title="Permalink to this heading">¶</a></h3>
+<p>The larger the Ceph cluster, the more common OSD failures will be.
+The faster that a placement group (PG) can recover from a <code class="docutils literal notranslate"><span class="pre">degraded</span></code> state to
+an <code class="docutils literal notranslate"><span class="pre">active</span> <span class="pre">+</span> <span class="pre">clean</span></code> state, the better. Notably, fast recovery minimizes
+the liklihood of multiple, overlapping failures that can cause data to become
+temporarily unavailable or even lost. Of course, when provisioning your
+network, you will have to balance price against performance.</p>
+<p>Some deployment tools employ VLANs to make hardware and network cabling more
+manageable. VLANs that use the 802.1q protocol require VLAN-capable NICs and
+switches. The added expense of this hardware may be offset by the operational
+cost savings on network setup and maintenance. When using VLANs to handle VM
+traffic between the cluster and compute stacks (e.g., OpenStack, CloudStack,
+etc.), there is additional value in using 10 Gb/s Ethernet or better; 40 Gb/s or
+25/50/100 Gb/s networking as of 2022 is common for production clusters.</p>
+<p>Top-of-rack (TOR) switches also need fast and redundant uplinks to spind
+spine switches / routers, often at least 40 Gb/s.</p>
+</section>
+<section id="baseboard-management-controller-bmc">
+<h3>Baseboard Management Controller (BMC)<a class="headerlink" href="#baseboard-management-controller-bmc" title="Permalink to this heading">¶</a></h3>
+<p>Your server chassis should have a Baseboard Management Controller (BMC).
+Well-known examples are iDRAC (Dell), CIMC (Cisco UCS), and iLO (HPE).
+Administration and deployment tools may also use BMCs extensively, especially
+via IPMI or Redfish, so consider the cost/benefit tradeoff of an out-of-band
+network for security and administration.  Hypervisor SSH access, VM image uploads,
+OS image installs, management sockets, etc. can impose significant loads on a network.
+Running three networks may seem like overkill, but each traffic path represents
+a potential capacity, throughput and/or performance bottleneck that you should
+carefully consider before deploying a large scale data cluster.</p>
+</section>
+</section>
+<section id="failure-domains">
+<h2>Failure Domains<a class="headerlink" href="#failure-domains" title="Permalink to this heading">¶</a></h2>
+<p>A failure domain is any failure that prevents access to one or more OSDs. That
+could be a stopped daemon on a host; a disk failure, an OS crash, a
+malfunctioning NIC, a failed power supply, a network outage, a power outage,
+and so forth. When planning out your hardware needs, you must balance the
+temptation to reduce costs by placing too many responsibilities into too few
+failure domains, and the added costs of isolating every potential failure
+domain.</p>
+</section>
+<section id="minimum-hardware-recommendations">
+<h2>Minimum Hardware Recommendations<a class="headerlink" href="#minimum-hardware-recommendations" title="Permalink to this heading">¶</a></h2>
+<p>Ceph can run on inexpensive commodity hardware. Small production clusters
+and development clusters can run successfully with modest hardware.</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 20%" />
+<col style="width: 23%" />
+<col style="width: 58%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Process</p></th>
+<th class="head"><p>Criteria</p></th>
+<th class="head"><p>Minimum Recommended</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td rowspan="5"><p><code class="docutils literal notranslate"><span class="pre">ceph-osd</span></code></p></td>
+<td><p>Processor</p></td>
+<td><ul class="simple">
+<li><p>1 core minimum</p></li>
+<li><p>1 core per 200-500 MB/s</p></li>
+<li><p>1 core per 1000-3000 IOPS</p></li>
+</ul>
+<ul class="simple">
+<li><p>Results are before replication.</p></li>
+<li><p>Results may vary with different
+CPU models and Ceph features.
+(erasure coding, compression, etc)</p></li>
+<li><p>ARM processors specifically may
+require additional cores.</p></li>
+<li><p>Actual performance depends on many
+factors including drives, net, and
+client throughput and latency.
+Benchmarking is highly recommended.</p></li>
+</ul>
+</td>
+</tr>
+<tr class="row-odd"><td><p>RAM</p></td>
+<td><ul class="simple">
+<li><p>4GB+ per daemon (more is better)</p></li>
+<li><p>2-4GB often functions (may be slow)</p></li>
+<li><p>Less than 2GB not recommended</p></li>
+</ul>
+</td>
+</tr>
+<tr class="row-even"><td><p>Volume Storage</p></td>
+<td><p>1x storage drive per daemon</p></td>
+</tr>
+<tr class="row-odd"><td><p>DB/WAL</p></td>
+<td><p>1x SSD partition per daemon (optional)</p></td>
+</tr>
+<tr class="row-even"><td><p>Network</p></td>
+<td><p>1x 1GbE+ NICs (10GbE+ recommended)</p></td>
+</tr>
+<tr class="row-odd"><td rowspan="4"><p><code class="docutils literal notranslate"><span class="pre">ceph-mon</span></code></p></td>
+<td><p>Processor</p></td>
+<td><ul class="simple">
+<li><p>2 cores minimum</p></li>
+</ul>
+</td>
+</tr>
+<tr class="row-even"><td><p>RAM</p></td>
+<td><p>2-4GB+ per daemon</p></td>
+</tr>
+<tr class="row-odd"><td><p>Disk Space</p></td>
+<td><p>60 GB per daemon</p></td>
+</tr>
+<tr class="row-even"><td><p>Network</p></td>
+<td><p>1x 1GbE+ NICs</p></td>
+</tr>
+<tr class="row-odd"><td rowspan="4"><p><code class="docutils literal notranslate"><span class="pre">ceph-mds</span></code></p></td>
+<td><p>Processor</p></td>
+<td><ul class="simple">
+<li><p>2 cores minimum</p></li>
+</ul>
+</td>
+</tr>
+<tr class="row-even"><td><p>RAM</p></td>
+<td><p>2GB+ per daemon</p></td>
+</tr>
+<tr class="row-odd"><td><p>Disk Space</p></td>
+<td><p>1 MB per daemon</p></td>
+</tr>
+<tr class="row-even"><td><p>Network</p></td>
+<td><p>1x 1GbE+ NICs</p></td>
+</tr>
+</tbody>
+</table>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>If you are running an OSD with a single disk, create a
+partition for your volume storage that is separate from the partition
+containing the OS. Generally, we recommend separate disks for the
+OS and the volume storage.</p>
+</div>
+</section>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../">
+              <img class="logo" src="../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../intro/">Intro to Ceph</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Hardware Recommendations</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#cpu">CPU</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ram">RAM</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#monitors-and-managers-ceph-mon-and-ceph-mgr">Monitors and managers (ceph-mon and ceph-mgr)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#metadata-servers-ceph-mds">Metadata servers (ceph-mds)</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#memory">Memory</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#data-storage">Data Storage</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#hard-disk-drives">Hard Disk Drives</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#solid-state-drives">Solid State Drives</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#partition-alignment">Partition Alignment</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#cephfs-metadata-segregation">CephFS Metadata Segregation</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#controllers">Controllers</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#benchmarking">Benchmarking</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#write-caches">Write Caches</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#additional-considerations">Additional Considerations</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#networks">Networks</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#speed">Speed</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#cost">Cost</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#baseboard-management-controller-bmc">Baseboard Management Controller (BMC)</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#failure-domains">Failure Domains</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#minimum-hardware-recommendations">Minimum Hardware Recommendations</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../os-recommendations/">OS Recommendations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../get-involved/">Get Involved in the Ceph Community!</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../documenting-ceph/">Documenting Ceph</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../install/">Installing Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cephadm/">Cephadm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rados/">Ceph Storage Cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cephfs/">Ceph File System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rbd/">Ceph Block Device</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../radosgw/">Ceph Object Gateway</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/">Ceph Manager Daemon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dev/developer_guide/">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dev/internals/">Ceph Internals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../os-recommendations/" title="OS Recommendations"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../intro/" title="Intro to Ceph"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../intro/" >Intro to Ceph</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Hardware Recommendations</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

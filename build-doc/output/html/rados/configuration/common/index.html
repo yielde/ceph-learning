@@ -1,0 +1,372 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Common Settings &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/css/custom.css" />
+    <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/jquery.js"></script>
+    <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../../genindex/" />
+    <link rel="search" title="Search" href="../../../search/" />
+    <link rel="next" title="Network Configuration Reference" href="../network-config-ref/" />
+    <link rel="prev" title="Configuring Ceph" href="../ceph-conf/" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../network-config-ref/" title="Network Configuration Reference"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../ceph-conf/" title="Configuring Ceph"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../" >Ceph Storage Cluster</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../" accesskey="U">Configuration</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Common Settings</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="common-settings">
+<span id="ceph-conf-common-settings"></span><h1>Common Settings<a class="headerlink" href="#common-settings" title="Permalink to this heading">¶</a></h1>
+<p>The <a class="reference external" href="../../../start/hardware-recommendations">Hardware Recommendations</a> section provides some hardware guidelines for
+configuring a Ceph Storage Cluster. It is possible for a single <a class="reference internal" href="../../../glossary/#term-Ceph-Node"><span class="xref std std-term">Ceph
+Node</span></a> to run multiple daemons. For example, a single node with multiple drives
+ususally runs one <code class="docutils literal notranslate"><span class="pre">ceph-osd</span></code> for each drive. Ideally, each node will be
+assigned to a particular type of process. For example, some nodes might run
+<code class="docutils literal notranslate"><span class="pre">ceph-osd</span></code> daemons, other nodes might run <code class="docutils literal notranslate"><span class="pre">ceph-mds</span></code> daemons, and still
+other nodes might run <code class="docutils literal notranslate"><span class="pre">ceph-mon</span></code> daemons.</p>
+<p>Each node has a name. The name of a node can be found in its <code class="docutils literal notranslate"><span class="pre">host</span></code> setting.
+Monitors also specify a network address and port (that is, a domain name or IP
+address) that can be found in the <code class="docutils literal notranslate"><span class="pre">addr</span></code> setting. A basic configuration file
+typically specifies only minimal settings for each instance of monitor daemons.
+For example:</p>
+<div class="highlight-ini notranslate"><div class="highlight"><pre><span></span><span class="k">[global]</span>
+<span class="na">mon_initial_members</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">ceph1</span>
+<span class="na">mon_host</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">10.0.0.1</span>
+</pre></div>
+</div>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">host</span></code> setting’s value is the short name of the node. It
+is not an FQDN. It is <strong>NOT</strong> an IP address. To retrieve the name of the
+node, enter <code class="docutils literal notranslate"><span class="pre">hostname</span> <span class="pre">-s</span></code> on the command line. Unless you are deploying
+Ceph manually, do not use <code class="docutils literal notranslate"><span class="pre">host</span></code> settings for anything other than initial
+monitor setup.  <strong>DO NOT</strong> specify the <code class="docutils literal notranslate"><span class="pre">host</span></code> setting under individual
+daemons when using deployment tools like <code class="docutils literal notranslate"><span class="pre">chef</span></code> or <code class="docutils literal notranslate"><span class="pre">cephadm</span></code>. Such tools
+are designed to enter the appropriate values for you in the cluster map.</p>
+</div>
+</section>
+<section id="networks">
+<span id="ceph-network-config"></span><h1>Networks<a class="headerlink" href="#networks" title="Permalink to this heading">¶</a></h1>
+<p>For more about configuring a network for use with Ceph, see the <a class="reference external" href="../network-config-ref">Network
+Configuration Reference</a> .</p>
+</section>
+<section id="monitors">
+<h1>Monitors<a class="headerlink" href="#monitors" title="Permalink to this heading">¶</a></h1>
+<p>Ceph production clusters typically provision at least three <a class="reference internal" href="../../../glossary/#term-Ceph-Monitor"><span class="xref std std-term">Ceph
+Monitor</span></a> daemons to ensure availability in the event of a monitor instance
+crash. A minimum of three <a class="reference internal" href="../../../glossary/#term-Ceph-Monitor"><span class="xref std std-term">Ceph Monitor</span></a> daemons ensures that the Paxos
+algorithm is able to determine which version of the <a class="reference internal" href="../../../glossary/#term-Ceph-Cluster-Map"><span class="xref std std-term">Ceph Cluster Map</span></a> is
+the most recent. It makes this determination by consulting a majority of Ceph
+Monitors in the quorum.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>You may deploy Ceph with a single monitor, but if the instance fails,
+the lack of other monitors might interrupt data-service availability.</p>
+</div>
+<p>Ceph Monitors normally listen on port <code class="docutils literal notranslate"><span class="pre">3300</span></code> for the new v2 protocol, and on
+port <code class="docutils literal notranslate"><span class="pre">6789</span></code> for the old v1 protocol.</p>
+<p>By default, Ceph expects to store monitor data on the following path:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>/var/lib/ceph/mon/$cluster-$id
+</pre></div>
+</div>
+<p>You or a deployment tool (for example, <code class="docutils literal notranslate"><span class="pre">cephadm</span></code>) must create the
+corresponding directory. With metavariables fully expressed and a cluster named
+“ceph”, the path specified in the above example evaluates to:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">/</span><span class="n">var</span><span class="o">/</span><span class="n">lib</span><span class="o">/</span><span class="n">ceph</span><span class="o">/</span><span class="n">mon</span><span class="o">/</span><span class="n">ceph</span><span class="o">-</span><span class="n">a</span>
+</pre></div>
+</div>
+<p>For additional details, see the <a class="reference external" href="../mon-config-ref">Monitor Config Reference</a>.</p>
+</section>
+<section id="authentication">
+<span id="ceph-osd-config"></span><h1>Authentication<a class="headerlink" href="#authentication" title="Permalink to this heading">¶</a></h1>
+<div class="versionadded">
+<p><span class="versionmodified added">New in version Bobtail: </span>0.56</p>
+</div>
+<p>Authentication is explicitly enabled or disabled in the <code class="docutils literal notranslate"><span class="pre">[global]</span></code> section of
+the Ceph configuration file, as shown here:</p>
+<div class="highlight-ini notranslate"><div class="highlight"><pre><span></span><span class="na">auth_cluster_required</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">cephx</span>
+<span class="na">auth_service_required</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">cephx</span>
+<span class="na">auth_client_required</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">cephx</span>
+</pre></div>
+</div>
+<p>In addition, you should enable message signing. For details, see <a class="reference external" href="../auth-config-ref">Cephx Config
+Reference</a>.</p>
+</section>
+<section id="osds">
+<span id="ceph-monitor-config"></span><h1>OSDs<a class="headerlink" href="#osds" title="Permalink to this heading">¶</a></h1>
+<p>When Ceph production clusters deploy <a class="reference internal" href="../../../glossary/#term-Ceph-OSD-Daemons"><span class="xref std std-term">Ceph OSD Daemons</span></a>, the typical
+arrangement is that one node has one OSD daemon running Filestore on one
+storage device. BlueStore is now the default back end, but when using Filestore
+you must specify a journal size. For example:</p>
+<div class="highlight-ini notranslate"><div class="highlight"><pre><span></span><span class="k">[osd]</span>
+<span class="na">osd_journal_size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">10000</span>
+
+<span class="k">[osd.0]</span>
+<span class="na">host</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">{hostname}</span><span class="w"> </span><span class="c1">#manual deployments only.</span>
+</pre></div>
+</div>
+<p>By default, Ceph expects to store a Ceph OSD Daemon’s data on the following
+path:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>/var/lib/ceph/osd/$cluster-$id
+</pre></div>
+</div>
+<p>You or a deployment tool (for example, <code class="docutils literal notranslate"><span class="pre">cephadm</span></code>) must create the
+corresponding directory. With metavariables fully expressed and a cluster named
+“ceph”, the path specified in the above example evaluates to:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">/</span><span class="n">var</span><span class="o">/</span><span class="n">lib</span><span class="o">/</span><span class="n">ceph</span><span class="o">/</span><span class="n">osd</span><span class="o">/</span><span class="n">ceph</span><span class="o">-</span><span class="mi">0</span>
+</pre></div>
+</div>
+<p>You can override this path using the <code class="docutils literal notranslate"><span class="pre">osd_data</span></code> setting. We recommend that
+you do not change the default location. To create the default directory on your
+OSD host, run the following commands:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><style type="text/css">
+span.prompt1:before {
+  content: "$ ";
+}
+</style><span class="prompt1">ssh<span class="w"> </span><span class="o">{</span>osd-host<span class="o">}</span></span>
+<span class="prompt1">sudo<span class="w"> </span>mkdir<span class="w"> </span>/var/lib/ceph/osd/ceph-<span class="o">{</span>osd-number<span class="o">}</span></span>
+</pre></div></div><p>The <code class="docutils literal notranslate"><span class="pre">osd_data</span></code> path ought to lead to a mount point that has mounted on it a
+device that is distinct from the device that contains the operating system and
+the daemons. To use a device distinct from the device that contains the
+operating system and the daemons, prepare it for use with Ceph and mount it on
+the directory you just created by running the following commands:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ssh<span class="w"> </span><span class="o">{</span>new-osd-host<span class="o">}</span></span>
+<span class="prompt1">sudo<span class="w"> </span>mkfs<span class="w"> </span>-t<span class="w"> </span><span class="o">{</span>fstype<span class="o">}</span><span class="w"> </span>/dev/<span class="o">{</span>disk<span class="o">}</span></span>
+<span class="prompt1">sudo<span class="w"> </span>mount<span class="w"> </span>-o<span class="w"> </span>user_xattr<span class="w"> </span>/dev/<span class="o">{</span>disk<span class="o">}</span><span class="w"> </span>/var/lib/ceph/osd/ceph-<span class="o">{</span>osd-number<span class="o">}</span></span>
+</pre></div></div><p>We recommend using the <code class="docutils literal notranslate"><span class="pre">xfs</span></code> file system when running <strong class="command">mkfs</strong>. (The
+<code class="docutils literal notranslate"><span class="pre">btrfs</span></code> and <code class="docutils literal notranslate"><span class="pre">ext4</span></code> file systems are not recommended and are no longer
+tested.)</p>
+<p>For additional configuration details, see <a class="reference external" href="../osd-config-ref">OSD Config Reference</a>.</p>
+</section>
+<section id="heartbeats">
+<h1>Heartbeats<a class="headerlink" href="#heartbeats" title="Permalink to this heading">¶</a></h1>
+<p>During runtime operations, Ceph OSD Daemons check up on other Ceph OSD Daemons
+and report their findings to the Ceph Monitor. This process does not require
+you to provide any settings. However, if you have network latency issues, you
+might want to modify the default settings.</p>
+<p>For additional details, see <a class="reference external" href="../mon-osd-interaction">Configuring Monitor/OSD Interaction</a>.</p>
+</section>
+<section id="logs-debugging">
+<span id="ceph-logging-and-debugging"></span><h1>Logs / Debugging<a class="headerlink" href="#logs-debugging" title="Permalink to this heading">¶</a></h1>
+<p>You might sometimes encounter issues with Ceph that require you to use Ceph’s
+logging and debugging features. For details on log rotation, see <a class="reference external" href="../../troubleshooting/log-and-debug">Debugging and
+Logging</a>.</p>
+</section>
+<section id="example-ceph-conf">
+<h1>Example ceph.conf<a class="headerlink" href="#example-ceph-conf" title="Permalink to this heading">¶</a></h1>
+<div class="highlight-ini notranslate"><div class="highlight"><pre><span></span><span class="k">[global]</span>
+<span class="na">fsid</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">{cluster-id}</span>
+<span class="na">mon_initial_ members</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">{hostname}[, {hostname}]</span>
+<span class="na">mon_host</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">{ip-address}[, {ip-address}]</span>
+
+<span class="c1">#All clusters have a front-side public network.</span>
+<span class="c1">#If you have two network interfaces, you can configure a private / cluster </span>
+<span class="c1">#network for RADOS object replication, heartbeats, backfill,</span>
+<span class="c1">#recovery, etc.</span>
+<span class="na">public_network</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">{network}[, {network}]</span>
+<span class="c1">#cluster_network = {network}[, {network}] </span>
+
+<span class="c1">#Clusters require authentication by default.</span>
+<span class="na">auth_cluster_required</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">cephx</span>
+<span class="na">auth_service_required</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">cephx</span>
+<span class="na">auth_client_required</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">cephx</span>
+
+<span class="c1">#Choose reasonable numbers for journals, number of replicas</span>
+<span class="c1">#and placement groups.</span>
+<span class="na">osd_journal_size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">{n}</span>
+<span class="na">osd_pool_default_size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">{n}</span><span class="w">  </span><span class="c1"># Write an object n times.</span>
+<span class="na">osd_pool_default_min size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">{n}</span><span class="w"> </span><span class="c1"># Allow writing n copy in a degraded state.</span>
+<span class="na">osd_pool_default_pg num</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">{n}</span>
+<span class="na">osd_pool_default_pgp num</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">{n}</span>
+
+<span class="c1">#Choose a reasonable crush leaf type.</span>
+<span class="c1">#0 for a 1-node cluster.</span>
+<span class="c1">#1 for a multi node cluster in a single rack</span>
+<span class="c1">#2 for a multi node, multi chassis cluster with multiple hosts in a chassis</span>
+<span class="c1">#3 for a multi node cluster with hosts across racks, etc.</span>
+<span class="na">osd_crush_chooseleaf_type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">{n}</span>
+</pre></div>
+</div>
+</section>
+<section id="running-multiple-clusters-deprecated">
+<span id="ceph-runtime-config"></span><h1>Running Multiple Clusters (DEPRECATED)<a class="headerlink" href="#running-multiple-clusters-deprecated" title="Permalink to this heading">¶</a></h1>
+<p>Each Ceph cluster has an internal name. This internal name is used as part of
+configuration, and as part of “log file” names as well as part of directory
+names and as part of mountpoint names. This name defaults to “ceph”. Previous
+releases of Ceph allowed one to specify a custom name instead, for example
+“ceph2”. This option was intended to facilitate the running of multiple logical
+clusters on the same physical hardware, but in practice it was rarely
+exploited. Custom cluster names should no longer be attempted. Old
+documentation might lead readers to wrongly think that unique cluster names are
+required to use <code class="docutils literal notranslate"><span class="pre">rbd-mirror</span></code>. They are not required.</p>
+<p>Custom cluster names are now considered deprecated and the ability to deploy
+them has already been removed from some tools, although existing custom-name
+deployments continue to operate. The ability to run and manage clusters with
+custom names might be progressively removed by future Ceph releases, so <strong>it is
+strongly recommended to deploy all new clusters with the default name “ceph”</strong>.</p>
+<p>Some Ceph CLI commands accept a <code class="docutils literal notranslate"><span class="pre">--cluster</span></code> (cluster name) option. This
+option is present only for the sake of backward compatibility. New tools and
+deployments cannot be relied upon to accommodate this option.</p>
+<p>If you need to allow multiple clusters to exist on the same host, use
+<a class="reference internal" href="../../../cephadm/#cephadm"><span class="std std-ref">Cephadm</span></a>, which uses containers to fully isolate each cluster.</p>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../../">
+              <img class="logo" src="../../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../install/">Installing Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cephadm/">Cephadm</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../">Ceph Storage Cluster</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../">Configuration</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../storage-devices/">Storage devices</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../ceph-conf/">Configuring Ceph</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Common Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#networks">Networks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#monitors">Monitors</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#authentication">Authentication</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#osds">OSDs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#heartbeats">Heartbeats</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#logs-debugging">Logs / Debugging</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#example-ceph-conf">Example ceph.conf</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#running-multiple-clusters-deprecated">Running Multiple Clusters (DEPRECATED)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../network-config-ref/">Network Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../msgr2/">Messenger v2 protocol</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../auth-config-ref/">Auth Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../mon-config-ref/">Monitor Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../mon-lookup-dns/">Looking up Monitors through DNS</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../mon-osd-interaction/">Heartbeat Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../osd-config-ref/">OSD Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../mclock-config-ref/">DmClock Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../bluestore-config-ref/">BlueStore Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../filestore-config-ref/">FileStore Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../journal-ref/">Journal Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../pool-pg-config-ref/">Pool, PG &amp; CRUSH Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../ms-ref/">Messaging Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../general-config-ref/">General Settings</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../cephadm/">Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../operations/">Operations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../man/">Man Pages</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../troubleshooting/">Troubleshooting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/">APIs</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cephfs/">Ceph File System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../rbd/">Ceph Block Device</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../radosgw/">Ceph Object Gateway</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../mgr/">Ceph Manager Daemon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../mgr/dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dev/developer_guide/">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dev/internals/">Ceph Internals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../../../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../network-config-ref/" title="Network Configuration Reference"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../ceph-conf/" title="Configuring Ceph"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../" >Ceph Storage Cluster</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../" >Configuration</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Common Settings</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

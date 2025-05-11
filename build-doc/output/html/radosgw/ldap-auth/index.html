@@ -1,0 +1,353 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>LDAP Authentication &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css" />
+    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../genindex/" />
+    <link rel="search" title="Search" href="../../search/" />
+    <link rel="next" title="Encryption" href="../encryption/" />
+    <link rel="prev" title="Compression" href="../compression/" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../encryption/" title="Encryption"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../compression/" title="Compression"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../" accesskey="U">Ceph Object Gateway</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">LDAP Authentication</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="ldap-authentication">
+<h1>LDAP Authentication<a class="headerlink" href="#ldap-authentication" title="Permalink to this heading">¶</a></h1>
+<div class="versionadded">
+<p><span class="versionmodified added">New in version Jewel.</span></p>
+</div>
+<p>You can delegate the Ceph Object Gateway authentication to an LDAP server.</p>
+<section id="how-it-works">
+<h2>How it works<a class="headerlink" href="#how-it-works" title="Permalink to this heading">¶</a></h2>
+<p>The Ceph Object Gateway extracts the users LDAP credentials from a token. A
+search filter is constructed with the user name. The Ceph Object Gateway uses
+the configured service account to search the directory for a matching entry. If
+an entry is found, the Ceph Object Gateway attempts to bind to the found
+distinguished name with the password from the token. If the credentials are
+valid, the bind will succeed, and the Ceph Object Gateway will grant access and
+radosgw-user will be created with the provided username.</p>
+<p>You can limit the allowed users by setting the base for the search to a
+specific organizational unit or by specifying a custom search filter, for
+example requiring specific group membership, custom object classes, or
+attributes.</p>
+<p>The LDAP credentials must be available on the server to perform the LDAP
+authentication. Make sure to set the <code class="docutils literal notranslate"><span class="pre">rgw</span></code> log level low enough to hide the
+base-64-encoded credentials / access tokens.</p>
+</section>
+<section id="requirements">
+<h2>Requirements<a class="headerlink" href="#requirements" title="Permalink to this heading">¶</a></h2>
+<ul class="simple">
+<li><p><strong>LDAP or Active Directory:</strong> A running LDAP instance accessible by the Ceph
+Object Gateway</p></li>
+<li><p><strong>Service account:</strong> LDAP credentials to be used by the Ceph Object Gateway
+with search permissions</p></li>
+<li><p><strong>User account:</strong> At least one user account in the LDAP directory</p></li>
+<li><p><strong>Do not overlap LDAP and local users:</strong> You should not use the same user
+names for local users and for users being authenticated by using LDAP. The
+Ceph Object Gateway cannot distinguish them and it treats them as the same
+user.</p></li>
+</ul>
+</section>
+<section id="sanity-checks">
+<h2>Sanity checks<a class="headerlink" href="#sanity-checks" title="Permalink to this heading">¶</a></h2>
+<p>Use the <code class="docutils literal notranslate"><span class="pre">ldapsearch</span></code> utility to verify the service account or the LDAP connection:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># ldapsearch -x -D &quot;uid=ceph,ou=system,dc=example,dc=com&quot; -W \</span>
+<span class="o">-</span><span class="n">H</span> <span class="n">ldaps</span><span class="p">:</span><span class="o">//</span><span class="n">example</span><span class="o">.</span><span class="n">com</span> <span class="o">-</span><span class="n">b</span> <span class="s2">&quot;ou=users,dc=example,dc=com&quot;</span> <span class="s1">&#39;uid=*&#39;</span> <span class="n">dn</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Make sure to use the same LDAP parameters like in the Ceph configuration file to
+eliminate possible problems.</p>
+</div>
+</section>
+<section id="configuring-the-ceph-object-gateway-to-use-ldap-authentication">
+<h2>Configuring the Ceph Object Gateway to use LDAP authentication<a class="headerlink" href="#configuring-the-ceph-object-gateway-to-use-ldap-authentication" title="Permalink to this heading">¶</a></h2>
+<p>The following parameters in the Ceph configuration file are related to the LDAP
+authentication:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">rgw_s3_auth_use_ldap</span></code>: Set this to <code class="docutils literal notranslate"><span class="pre">true</span></code> to enable S3 authentication with LDAP</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">rgw_ldap_uri</span></code>:  Specifies the LDAP server to use. Make sure to use the
+<code class="docutils literal notranslate"><span class="pre">ldaps://&lt;fqdn&gt;:&lt;port&gt;</span></code> parameter to not transmit clear text credentials
+over the wire.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">rgw_ldap_binddn</span></code>: The Distinguished Name (DN) of the service account used
+by the Ceph Object Gateway</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">rgw_ldap_secret</span></code>: Path to file containing credentials for <code class="docutils literal notranslate"><span class="pre">rgw_ldap_binddn</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">rgw_ldap_searchdn</span></code>: Specifies the base in the directory information tree
+for searching users. This might be your users organizational unit or some
+more specific Organizational Unit (OU).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">rgw_ldap_dnattr</span></code>: The attribute being used in the constructed search
+filter to match a username. Depending on your Directory Information Tree
+(DIT) this would probably be <code class="docutils literal notranslate"><span class="pre">uid</span></code> or <code class="docutils literal notranslate"><span class="pre">cn</span></code>. The generated filter string
+will be, e.g., <code class="docutils literal notranslate"><span class="pre">cn=some_username</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">rgw_ldap_searchfilter</span></code>: If not specified, the Ceph Object Gateway
+automatically constructs the search filter with the <code class="docutils literal notranslate"><span class="pre">rgw_ldap_dnattr</span></code>
+setting. Use this parameter to narrow the list of allowed users in very
+flexible ways. Consult the <em>Using a custom search filter to limit user access
+section</em> for details</p></li>
+</ul>
+</section>
+<section id="using-a-custom-search-filter-to-limit-user-access">
+<h2>Using a custom search filter to limit user access<a class="headerlink" href="#using-a-custom-search-filter-to-limit-user-access" title="Permalink to this heading">¶</a></h2>
+<p>There are two ways to use the <code class="docutils literal notranslate"><span class="pre">rgw_search_filter</span></code> parameter:</p>
+<section id="specifying-a-partial-filter-to-further-limit-the-constructed-search-filter">
+<h3>Specifying a partial filter to further limit the constructed search filter<a class="headerlink" href="#specifying-a-partial-filter-to-further-limit-the-constructed-search-filter" title="Permalink to this heading">¶</a></h3>
+<p>An example for a partial filter:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="s2">&quot;objectclass=inetorgperson&quot;</span>
+</pre></div>
+</div>
+<p>The Ceph Object Gateway will generate the search filter as usual with the
+user name from the token and the value of <code class="docutils literal notranslate"><span class="pre">rgw_ldap_dnattr</span></code>. The constructed
+filter is then combined with the partial filter from the <code class="docutils literal notranslate"><span class="pre">rgw_search_filter</span></code>
+attribute. Depending on the user name and the settings the final search filter
+might become:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="s2">&quot;(&amp;(uid=hari)(objectclass=inetorgperson))&quot;</span>
+</pre></div>
+</div>
+<p>So user <code class="docutils literal notranslate"><span class="pre">hari</span></code> will only be granted access if he is found in the LDAP
+directory, has an object class of <code class="docutils literal notranslate"><span class="pre">inetorgperson</span></code>, and did specify a valid
+password.</p>
+</section>
+<section id="specifying-a-complete-filter">
+<h3>Specifying a complete filter<a class="headerlink" href="#specifying-a-complete-filter" title="Permalink to this heading">¶</a></h3>
+<p>A complete filter must contain a <code class="docutils literal notranslate"><span class="pre">&#64;USERNAME&#64;</span></code> token which will be substituted
+with the user name during the authentication attempt. The <code class="docutils literal notranslate"><span class="pre">rgw_ldap_dnattr</span></code>
+parameter is not used anymore in this case. For example, to limit valid users
+to a specific group, use the following filter:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="s2">&quot;(&amp;(uid=@USERNAME@)(memberOf=cn=ceph-users,ou=groups,dc=mycompany,dc=com))&quot;</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Using the <code class="docutils literal notranslate"><span class="pre">memberOf</span></code> attribute in LDAP searches requires server side
+support from you specific LDAP server implementation.</p>
+</div>
+</section>
+</section>
+<section id="generating-an-access-token-for-ldap-authentication">
+<h2>Generating an access token for LDAP authentication<a class="headerlink" href="#generating-an-access-token-for-ldap-authentication" title="Permalink to this heading">¶</a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">radosgw-token</span></code> utility generates the access token based on the LDAP
+user name and password. It will output a base-64 encoded string which is the
+access token.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># export RGW_ACCESS_KEY_ID=&quot;&lt;username&gt;&quot;</span>
+<span class="c1"># export RGW_SECRET_ACCESS_KEY=&quot;&lt;password&gt;&quot;</span>
+<span class="c1"># radosgw-token --encode</span>
+</pre></div>
+</div>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>The access token is a base-64 encoded JSON struct and contains
+the LDAP credentials as a clear text.</p>
+</div>
+<p>Alternatively, users can also generate the token manually by base-64-encoding
+this JSON snippet, if they do not have the <code class="docutils literal notranslate"><span class="pre">radosgw-token</span></code> tool installed.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+  <span class="s2">&quot;RGW_TOKEN&quot;</span><span class="p">:</span> <span class="p">{</span>
+    <span class="s2">&quot;version&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;ldap&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="s2">&quot;your_username&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;key&quot;</span><span class="p">:</span> <span class="s2">&quot;your_clear_text_password_here&quot;</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+<section id="using-the-access-token">
+<h2>Using the access token<a class="headerlink" href="#using-the-access-token" title="Permalink to this heading">¶</a></h2>
+<p>Use your favorite S3 client and specify the token as the access key in your
+client or environment variables.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># export AWS_ACCESS_KEY_ID=&lt;base64-encoded token generated by radosgw-token&gt;</span>
+<span class="c1"># export AWS_SECRET_ACCESS_KEY=&quot;&quot; # define this with an empty string, otherwise tools might complain about missing env variables.</span>
+</pre></div>
+</div>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>The access token is a base-64 encoded JSON struct and contains
+the LDAP credentials as a clear text. DO NOT share it unless
+you want to share your clear text password!</p>
+</div>
+</section>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../">
+              <img class="logo" src="../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../install/">Installing Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cephadm/">Cephadm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rados/">Ceph Storage Cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cephfs/">Ceph File System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rbd/">Ceph Block Device</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../">Ceph Object Gateway</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../frontends/">HTTP Frontends</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../placement/">Pool Placement and Storage Classes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../multisite/">Multisite Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../multisite-sync-policy/">Multisite Sync Policy Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pools/">Configuring Pools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../config-ref/">Config Reference</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../admin/">Admin Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../s3/">S3 API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rgw-cache/">Data caching and CDN</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../swift/">Swift API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../adminops/">Admin Ops API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/">Python binding</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../nfs/">Export over NFS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../keystone/">OpenStack Keystone Integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../barbican/">OpenStack Barbican Integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../vault/">HashiCorp Vault Integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../kmip/">KMIP Integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../opa/">Open Policy Agent Integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../multitenancy/">Multi-tenancy</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../compression/">Compression</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">LDAP Authentication</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#how-it-works">How it works</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#requirements">Requirements</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#sanity-checks">Sanity checks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#configuring-the-ceph-object-gateway-to-use-ldap-authentication">Configuring the Ceph Object Gateway to use LDAP authentication</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#using-a-custom-search-filter-to-limit-user-access">Using a custom search filter to limit user access</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#specifying-a-partial-filter-to-further-limit-the-constructed-search-filter">Specifying a partial filter to further limit the constructed search filter</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#specifying-a-complete-filter">Specifying a complete filter</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#generating-an-access-token-for-ldap-authentication">Generating an access token for LDAP authentication</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#using-the-access-token">Using the access token</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../encryption/">Server-Side Encryption</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../bucketpolicy/">Bucket Policy</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../dynamicresharding/">Dynamic bucket index resharding</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../mfa/">Multi factor authentication</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../sync-modules/">Sync Modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../notifications/">Bucket Notifications</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../layout/">Data Layout in RADOS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../STS/">STS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../STSLite/">STS Lite</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../keycloak/">Keycloak</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../session-tags/">Session Tags</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../role/">Role</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../orphans/">Orphan List and Associated Tooling</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../oidc/">OpenID Connect Provider</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../troubleshooting/">Troubleshooting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../man/8/radosgw/">Manpage radosgw</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../man/8/radosgw-admin/">Manpage radosgw-admin</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../qat-accel/">QAT Acceleration for Encryption and Compression</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../s3select/">S3-select</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../lua-scripting/">Lua Scripting</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/">Ceph Manager Daemon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dev/developer_guide/">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dev/internals/">Ceph Internals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../encryption/" title="Encryption"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../compression/" title="Compression"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../" >Ceph Object Gateway</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">LDAP Authentication</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

@@ -1,0 +1,361 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Snapshot Scheduling Module &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css" />
+    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../genindex/" />
+    <link rel="search" title="Search" href="../../search/" />
+    <link rel="next" title="CephFS Snapshot Mirroring" href="../cephfs-mirroring/" />
+    <link rel="prev" title="CephFS Top Utility" href="../cephfs-top/" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../cephfs-mirroring/" title="CephFS Snapshot Mirroring"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../cephfs-top/" title="CephFS Top Utility"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../" accesskey="U">Ceph File System</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Snapshot Scheduling Module</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="snapshot-scheduling-module">
+<span id="snap-schedule"></span><h1>Snapshot Scheduling Module<a class="headerlink" href="#snapshot-scheduling-module" title="Permalink to this heading">¶</a></h1>
+<p>This module implements scheduled snapshots for CephFS.
+It provides a user interface to add, query and remove snapshots schedules and
+retention policies, as well as a scheduler that takes the snapshots and prunes
+existing snapshots accordingly.</p>
+<section id="how-to-enable">
+<h2>How to enable<a class="headerlink" href="#how-to-enable" title="Permalink to this heading">¶</a></h2>
+<p>The <em>snap_schedule</em> module is enabled with:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span> <span class="n">mgr</span> <span class="n">module</span> <span class="n">enable</span> <span class="n">snap_schedule</span>
+</pre></div>
+</div>
+</section>
+<section id="usage">
+<h2>Usage<a class="headerlink" href="#usage" title="Permalink to this heading">¶</a></h2>
+<p>This module uses <a class="reference internal" href="../../dev/cephfs-snapshots/"><span class="doc">CephFS Snapshots</span></a>, please consider this documentation
+as well.</p>
+<p>This module’s subcommands live under the <cite>ceph fs snap-schedule</cite> namespace.
+Arguments can either be supplied as positional arguments or as keyword
+arguments. Once a keyword argument was encountered, all following arguments are
+assumed to be keyword arguments too.</p>
+<p>Snapshot schedules are identified by path, their repeat interval and their start
+time. The
+repeat interval defines the time between two subsequent snapshots. It is
+specified by a number and a period multiplier, one of <cite>h(our)</cite>, <cite>d(ay)</cite> and
+<cite>w(eek)</cite>. E.g. a repeat interval of <cite>12h</cite> specifies one snapshot every 12
+hours.
+The start time is specified as a time string (more details about passing times
+below). By default
+the start time is last midnight. So when a snapshot schedule with repeat
+interval <cite>1h</cite> is added at 13:50
+with the default start time, the first snapshot will be taken at 14:00.
+The time zone is assumed to be UTC if none is explicitly included in the string.
+An explicit time zone will be mapped to UTC at execution.
+The start time must be in ISO8601 format. Examples below:</p>
+<p>UTC: 2022-08-08T05:30:00 i.e. 5:30 AM UTC, without explicit time zone offset
+IDT: 2022-08-08T09:00:00+03:00 i.e. 6:00 AM UTC
+EDT: 2022-08-08T05:30:00-04:00 i.e. 9:30 AM UTC</p>
+<p>Retention specifications are identified by path and the retention spec itself. A
+retention spec consists of either a number and a time period separated by a
+space or concatenated pairs of <cite>&lt;number&gt;&lt;time period&gt;</cite>.
+The semantics are that a spec will ensure <cite>&lt;number&gt;</cite> snapshots are kept that are
+at least <cite>&lt;time period&gt;</cite> apart. For Example <cite>7d</cite> means the user wants to keep 7
+snapshots that are at least one day (but potentially longer) apart from each other.
+The following time periods are recognized: <cite>h(our), d(ay), w(eek), m(onth),
+y(ear)</cite> and <cite>n</cite>. The latter is a special modifier where e.g. <cite>10n</cite> means keep
+the last 10 snapshots regardless of timing,</p>
+<p>All subcommands take optional <cite>fs</cite> argument to specify paths in
+multi-fs setups and <a class="reference internal" href="../fs-volumes/"><span class="doc">FS volumes and subvolumes</span></a> managed setups. If not
+passed <cite>fs</cite> defaults to the first file system listed in the fs_map.
+When using <a class="reference internal" href="../fs-volumes/"><span class="doc">FS volumes and subvolumes</span></a> the argument <cite>fs</cite> is equivalent to a
+<cite>volume</cite>.</p>
+<p>When a timestamp is passed (the <cite>start</cite> argument in the <cite>add</cite>, <cite>remove</cite>,
+<cite>activate</cite> and <cite>deactivate</cite> subcommands) the ISO format <cite>%Y-%m-%dT%H:%M:%S</cite> will
+always be accepted. When either python3.7 or newer is used or
+<a class="reference external" href="https://github.com/movermeyer/backports.datetime_fromisoformat">https://github.com/movermeyer/backports.datetime_fromisoformat</a> is installed, any
+valid ISO timestamp that is parsed by python’s <cite>datetime.fromisoformat</cite> is valid.</p>
+<p>When no subcommand is supplied a synopsis is printed:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1">#&gt; ceph fs snap-schedule</span>
+<span class="n">no</span> <span class="n">valid</span> <span class="n">command</span> <span class="n">found</span><span class="p">;</span> <span class="mi">8</span> <span class="n">closest</span> <span class="n">matches</span><span class="p">:</span>
+<span class="n">fs</span> <span class="n">snap</span><span class="o">-</span><span class="n">schedule</span> <span class="n">status</span> <span class="p">[</span><span class="o">&lt;</span><span class="n">path</span><span class="o">&gt;</span><span class="p">]</span> <span class="p">[</span><span class="o">&lt;</span><span class="n">fs</span><span class="o">&gt;</span><span class="p">]</span> <span class="p">[</span><span class="o">&lt;</span><span class="nb">format</span><span class="o">&gt;</span><span class="p">]</span>
+<span class="n">fs</span> <span class="n">snap</span><span class="o">-</span><span class="n">schedule</span> <span class="nb">list</span> <span class="o">&lt;</span><span class="n">path</span><span class="o">&gt;</span> <span class="p">[</span><span class="o">--</span><span class="n">recursive</span><span class="p">]</span> <span class="p">[</span><span class="o">&lt;</span><span class="n">fs</span><span class="o">&gt;</span><span class="p">]</span> <span class="p">[</span><span class="o">&lt;</span><span class="nb">format</span><span class="o">&gt;</span><span class="p">]</span>
+<span class="n">fs</span> <span class="n">snap</span><span class="o">-</span><span class="n">schedule</span> <span class="n">add</span> <span class="o">&lt;</span><span class="n">path</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">snap_schedule</span><span class="o">&gt;</span> <span class="p">[</span><span class="o">&lt;</span><span class="n">start</span><span class="o">&gt;</span><span class="p">]</span> <span class="p">[</span><span class="o">&lt;</span><span class="n">fs</span><span class="o">&gt;</span><span class="p">]</span>
+<span class="n">fs</span> <span class="n">snap</span><span class="o">-</span><span class="n">schedule</span> <span class="n">remove</span> <span class="o">&lt;</span><span class="n">path</span><span class="o">&gt;</span> <span class="p">[</span><span class="o">&lt;</span><span class="n">repeat</span><span class="o">&gt;</span><span class="p">]</span> <span class="p">[</span><span class="o">&lt;</span><span class="n">start</span><span class="o">&gt;</span><span class="p">]</span> <span class="p">[</span><span class="o">&lt;</span><span class="n">fs</span><span class="o">&gt;</span><span class="p">]</span>
+<span class="n">fs</span> <span class="n">snap</span><span class="o">-</span><span class="n">schedule</span> <span class="n">retention</span> <span class="n">add</span> <span class="o">&lt;</span><span class="n">path</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">retention_spec_or_period</span><span class="o">&gt;</span> <span class="p">[</span><span class="o">&lt;</span><span class="n">retention_count</span><span class="o">&gt;</span><span class="p">]</span> <span class="p">[</span><span class="o">&lt;</span><span class="n">fs</span><span class="o">&gt;</span><span class="p">]</span>
+<span class="n">fs</span> <span class="n">snap</span><span class="o">-</span><span class="n">schedule</span> <span class="n">retention</span> <span class="n">remove</span> <span class="o">&lt;</span><span class="n">path</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">retention_spec_or_period</span><span class="o">&gt;</span> <span class="p">[</span><span class="o">&lt;</span><span class="n">retention_count</span><span class="o">&gt;</span><span class="p">]</span> <span class="p">[</span><span class="o">&lt;</span><span class="n">fs</span><span class="o">&gt;</span><span class="p">]</span>
+<span class="n">fs</span> <span class="n">snap</span><span class="o">-</span><span class="n">schedule</span> <span class="n">activate</span> <span class="o">&lt;</span><span class="n">path</span><span class="o">&gt;</span> <span class="p">[</span><span class="o">&lt;</span><span class="n">repeat</span><span class="o">&gt;</span><span class="p">]</span> <span class="p">[</span><span class="o">&lt;</span><span class="n">start</span><span class="o">&gt;</span><span class="p">]</span> <span class="p">[</span><span class="o">&lt;</span><span class="n">fs</span><span class="o">&gt;</span><span class="p">]</span>
+<span class="n">fs</span> <span class="n">snap</span><span class="o">-</span><span class="n">schedule</span> <span class="n">deactivate</span> <span class="o">&lt;</span><span class="n">path</span><span class="o">&gt;</span> <span class="p">[</span><span class="o">&lt;</span><span class="n">repeat</span><span class="o">&gt;</span><span class="p">]</span> <span class="p">[</span><span class="o">&lt;</span><span class="n">start</span><span class="o">&gt;</span><span class="p">]</span> <span class="p">[</span><span class="o">&lt;</span><span class="n">fs</span><span class="o">&gt;</span><span class="p">]</span>
+<span class="n">Error</span> <span class="n">EINVAL</span><span class="p">:</span> <span class="n">invalid</span> <span class="n">command</span>
+</pre></div>
+</div>
+<section id="note">
+<h3>Note:<a class="headerlink" href="#note" title="Permalink to this heading">¶</a></h3>
+<p>A <cite>subvolume</cite> argument is no longer accepted by the commands.</p>
+<section id="inspect-snapshot-schedules">
+<h4>Inspect snapshot schedules<a class="headerlink" href="#inspect-snapshot-schedules" title="Permalink to this heading">¶</a></h4>
+<p>The module offers two subcommands to inspect existing schedules: <cite>list</cite> and
+<cite>status</cite>. Bother offer plain and json output via the optional <cite>format</cite> argument.
+The default is plain.
+The <cite>list</cite> sub-command will list all schedules on a path in a short single line
+format. It offers a <cite>recursive</cite> argument to list all schedules in the specified
+directory and all contained directories.
+The <cite>status</cite> subcommand prints all available schedules and retention specs for a
+path.</p>
+<p>Examples:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span> <span class="n">fs</span> <span class="n">snap</span><span class="o">-</span><span class="n">schedule</span> <span class="n">status</span> <span class="o">/</span>
+<span class="n">ceph</span> <span class="n">fs</span> <span class="n">snap</span><span class="o">-</span><span class="n">schedule</span> <span class="n">status</span> <span class="o">/</span><span class="n">foo</span><span class="o">/</span><span class="n">bar</span> <span class="o">--</span><span class="nb">format</span><span class="o">=</span><span class="n">json</span>
+<span class="n">ceph</span> <span class="n">fs</span> <span class="n">snap</span><span class="o">-</span><span class="n">schedule</span> <span class="nb">list</span> <span class="o">/</span>
+<span class="n">ceph</span> <span class="n">fs</span> <span class="n">snap</span><span class="o">-</span><span class="n">schedule</span> <span class="nb">list</span> <span class="o">/</span> <span class="o">--</span><span class="n">recursive</span><span class="o">=</span><span class="n">true</span> <span class="c1"># list all schedules in the tree</span>
+</pre></div>
+</div>
+</section>
+<section id="add-and-remove-schedules">
+<h4>Add and remove schedules<a class="headerlink" href="#add-and-remove-schedules" title="Permalink to this heading">¶</a></h4>
+<p>The <cite>add</cite> and <cite>remove</cite> subcommands add and remove snapshots schedules
+respectively. Both require at least a <cite>path</cite> argument, <cite>add</cite> additionally
+requires a <cite>schedule</cite> argument as described in the USAGE section.</p>
+<p>Multiple different schedules can be added to a path. Two schedules are considered
+different from each other if they differ in their repeat interval and their
+start time.</p>
+<p>If multiple schedules have been set on a path, <cite>remove</cite> can remove individual
+schedules on a path by specifying the exact repeat interval and start time, or
+the subcommand can remove all schedules on a path when just a <cite>path</cite> is
+specified.</p>
+<p>Examples:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span> <span class="n">fs</span> <span class="n">snap</span><span class="o">-</span><span class="n">schedule</span> <span class="n">add</span> <span class="o">/</span> <span class="mi">1</span><span class="n">h</span>
+<span class="n">ceph</span> <span class="n">fs</span> <span class="n">snap</span><span class="o">-</span><span class="n">schedule</span> <span class="n">add</span> <span class="o">/</span> <span class="mi">1</span><span class="n">h</span> <span class="mi">11</span><span class="p">:</span><span class="mi">55</span>
+<span class="n">ceph</span> <span class="n">fs</span> <span class="n">snap</span><span class="o">-</span><span class="n">schedule</span> <span class="n">add</span> <span class="o">/</span> <span class="mi">2</span><span class="n">h</span> <span class="mi">11</span><span class="p">:</span><span class="mi">55</span>
+<span class="n">ceph</span> <span class="n">fs</span> <span class="n">snap</span><span class="o">-</span><span class="n">schedule</span> <span class="n">remove</span> <span class="o">/</span> <span class="mi">1</span><span class="n">h</span> <span class="mi">11</span><span class="p">:</span><span class="mi">55</span> <span class="c1"># removes one single schedule</span>
+<span class="n">ceph</span> <span class="n">fs</span> <span class="n">snap</span><span class="o">-</span><span class="n">schedule</span> <span class="n">remove</span> <span class="o">/</span> <span class="mi">1</span><span class="n">h</span> <span class="c1"># removes all schedules with --repeat=1h</span>
+<span class="n">ceph</span> <span class="n">fs</span> <span class="n">snap</span><span class="o">-</span><span class="n">schedule</span> <span class="n">remove</span> <span class="o">/</span> <span class="c1"># removes all schedules on path /</span>
+</pre></div>
+</div>
+</section>
+<section id="add-and-remove-retention-policies">
+<h4>Add and remove retention policies<a class="headerlink" href="#add-and-remove-retention-policies" title="Permalink to this heading">¶</a></h4>
+<p>The <cite>retention add</cite> and <cite>retention remove</cite> subcommands allow to manage
+retention policies. One path has exactly one retention policy. A policy can
+however contain multiple count-time period pairs in order to specify complex
+retention policies.
+Retention policies can be added and removed individually or in bulk via the
+forms <cite>ceph fs snap-schedule retention add &lt;path&gt; &lt;time period&gt; &lt;count&gt;</cite> and
+<cite>ceph fs snap-schedule retention add &lt;path&gt; &lt;countTime period&gt;[countTime period]</cite></p>
+<p>Examples:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span> <span class="n">fs</span> <span class="n">snap</span><span class="o">-</span><span class="n">schedule</span> <span class="n">retention</span> <span class="n">add</span> <span class="o">/</span> <span class="n">h</span> <span class="mi">24</span> <span class="c1"># keep 24 snapshots at least an hour apart</span>
+<span class="n">ceph</span> <span class="n">fs</span> <span class="n">snap</span><span class="o">-</span><span class="n">schedule</span> <span class="n">retention</span> <span class="n">add</span> <span class="o">/</span> <span class="n">d</span> <span class="mi">7</span> <span class="c1"># and 7 snapshots at least a day apart</span>
+<span class="n">ceph</span> <span class="n">fs</span> <span class="n">snap</span><span class="o">-</span><span class="n">schedule</span> <span class="n">retention</span> <span class="n">remove</span> <span class="o">/</span> <span class="n">h</span> <span class="mi">24</span> <span class="c1"># remove retention for 24 hourlies</span>
+<span class="n">ceph</span> <span class="n">fs</span> <span class="n">snap</span><span class="o">-</span><span class="n">schedule</span> <span class="n">retention</span> <span class="n">add</span> <span class="o">/</span> <span class="mi">24</span><span class="n">h4w</span> <span class="c1"># add 24 hourly and 4 weekly to retention</span>
+<span class="n">ceph</span> <span class="n">fs</span> <span class="n">snap</span><span class="o">-</span><span class="n">schedule</span> <span class="n">retention</span> <span class="n">remove</span> <span class="o">/</span> <span class="mi">7</span><span class="n">d4w</span> <span class="c1"># remove 7 daily and 4 weekly, leaves 24 hourly</span>
+</pre></div>
+</div>
+</section>
+<section id="active-and-inactive-schedules">
+<h4>Active and inactive schedules<a class="headerlink" href="#active-and-inactive-schedules" title="Permalink to this heading">¶</a></h4>
+<p>Snapshot schedules can be added for a path that doesn’t exist yet in the
+directory tree. Similarly a path can be removed without affecting any snapshot
+schedules on that path.
+If a directory is not present when a snapshot is scheduled to be taken, the
+schedule will be set to inactive and will be excluded from scheduling until
+it is activated again.
+A schedule can manually be set to inactive to pause the creating of scheduled
+snapshots.
+The module provides the <cite>activate</cite> and <cite>deactivate</cite> subcommands for this
+purpose.</p>
+<p>Examples:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span> <span class="n">fs</span> <span class="n">snap</span><span class="o">-</span><span class="n">schedule</span> <span class="n">activate</span> <span class="o">/</span> <span class="c1"># activate all schedules on the root directory</span>
+<span class="n">ceph</span> <span class="n">fs</span> <span class="n">snap</span><span class="o">-</span><span class="n">schedule</span> <span class="n">deactivate</span> <span class="o">/</span> <span class="mi">1</span><span class="n">d</span> <span class="c1"># deactivates daily snapshots on the root directory</span>
+</pre></div>
+</div>
+</section>
+<section id="limitations">
+<h4>Limitations<a class="headerlink" href="#limitations" title="Permalink to this heading">¶</a></h4>
+<p>Snapshots are scheduled using python Timers. Under normal circumstances
+specifying 1h as the schedule will result in snapshots 1 hour apart fairly
+precisely. If the mgr daemon is under heavy load however, the Timer threads
+might not get scheduled right away, resulting in a slightly delayed snapshot. If
+this happens, the next snapshot will be schedule as if the previous one was not
+delayed, i.e. one or more delayed snapshots will not cause drift in the overall
+schedule.</p>
+<p>In order to somewhat limit the overall number of snapshots in a file system, the
+module will only keep a maximum of 50 snapshots per directory. If the retention
+policy results in more then 50 retained snapshots, the retention list will be
+shortened to the newest 50 snapshots.</p>
+</section>
+<section id="data-storage">
+<h4>Data storage<a class="headerlink" href="#data-storage" title="Permalink to this heading">¶</a></h4>
+<p>The snapshot schedule data is stored in a rados object in the cephfs metadata
+pool. At runtime all data lives in a sqlite database that is serialized and
+stored as a rados object.</p>
+</section>
+</section>
+</section>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../">
+              <img class="logo" src="../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../install/">Installing Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cephadm/">Cephadm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rados/">Ceph Storage Cluster</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../">Ceph File System</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../#getting-started-with-cephfs">Getting Started with CephFS</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../#administration">Administration</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../createfs/"> Create a CephFS file system</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../administration/"> Administrative commands</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../multifs/"> Creating Multiple File Systems</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../add-remove-mds/"> Provision/Add/Remove MDS(s)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../standby/">Terminology</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../standby/#referring-to-mds-daemons">Referring to MDS daemons</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../standby/#managing-failover">Managing failover</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../standby/#configuring-standby-replay">Configuring standby-replay</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../standby/#configuring-mds-file-system-affinity">Configuring MDS file system affinity</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../cache-configuration/"> MDS Cache Configuration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../mds-config-ref/"> MDS Configuration Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../man/8/ceph-mds/"> Manual: ceph-mds</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../nfs/"> Export over NFS</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../app-best-practices/"> Application best practices</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../fs-volumes/"> FS volume and subvolumes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../quota/"> CephFS Quotas</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../health-messages/"> Health messages</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../upgrading/">Upgrading the MDS Cluster</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../upgrading/#upgrading-pre-firefly-file-systems-past-jewel">Upgrading pre-Firefly file systems past Jewel</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../cephfs-top/"> CephFS Top Utility</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#"> Scheduled Snapshots</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#how-to-enable">How to enable</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#usage">Usage</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#note">Note:</a><ul>
+<li class="toctree-l6"><a class="reference internal" href="#inspect-snapshot-schedules">Inspect snapshot schedules</a></li>
+<li class="toctree-l6"><a class="reference internal" href="#add-and-remove-schedules">Add and remove schedules</a></li>
+<li class="toctree-l6"><a class="reference internal" href="#add-and-remove-retention-policies">Add and remove retention policies</a></li>
+<li class="toctree-l6"><a class="reference internal" href="#active-and-inactive-schedules">Active and inactive schedules</a></li>
+<li class="toctree-l6"><a class="reference internal" href="#limitations">Limitations</a></li>
+<li class="toctree-l6"><a class="reference internal" href="#data-storage">Data storage</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../cephfs-mirroring/"> CephFS Snapshot Mirroring</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../#mounting-cephfs">Mounting CephFS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../#cephfs-concepts">CephFS Concepts</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../#troubleshooting-and-disaster-recovery">Troubleshooting and Disaster Recovery</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../#developer-guides">Developer Guides</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../#additional-details">Additional Details</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../rbd/">Ceph Block Device</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../radosgw/">Ceph Object Gateway</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/">Ceph Manager Daemon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dev/developer_guide/">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dev/internals/">Ceph Internals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../cephfs-mirroring/" title="CephFS Snapshot Mirroring"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../cephfs-top/" title="CephFS Top Utility"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../" >Ceph File System</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Snapshot Scheduling Module</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

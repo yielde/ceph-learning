@@ -1,0 +1,501 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>crimson &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/css/custom.css" />
+    <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/jquery.js"></script>
+    <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../../genindex/" />
+    <link rel="search" title="Search" href="../../../search/" />
+    <link rel="next" title="error handling" href="../error-handling/" />
+    <link rel="prev" title="Crimson developer documentation" href="../" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../error-handling/" title="error handling"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../" title="Crimson developer documentation"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../internals/" >Ceph Internals</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../" accesskey="U">Crimson developer documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">crimson</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="crimson">
+<h1>crimson<a class="headerlink" href="#crimson" title="Permalink to this heading">¶</a></h1>
+<p>Crimson is the code name of crimson-osd, which is the next generation ceph-osd.
+It targets fast networking devices, fast storage devices by leveraging state of
+the art technologies like DPDK and SPDK, for better performance. And it will
+keep the support of HDDs and low-end SSDs via BlueStore. Crismon will try to
+be backward compatible with classic OSD.</p>
+<section id="building-crimson">
+<h2>Building Crimson<a class="headerlink" href="#building-crimson" title="Permalink to this heading">¶</a></h2>
+<p>Crismon is not enabled by default. To enable it:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span><span class="nv">WITH_SEASTAR</span><span class="o">=</span><span class="nb">true</span><span class="w"> </span>./install-deps.sh
+<span class="gp">$ </span>mkdir<span class="w"> </span>build<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">cd</span><span class="w"> </span>build
+<span class="gp">$ </span>cmake<span class="w"> </span>-DWITH_SEASTAR<span class="o">=</span>ON<span class="w"> </span>..
+</pre></div>
+</div>
+<p>Please note, <a class="reference external" href="https://github.com/google/sanitizers/wiki/AddressSanitizer">ASan</a> is enabled by default if crimson is built from a source
+cloned using git.</p>
+<p>Also, Seastar uses its own lockless allocator which does not play well with
+the alien threads. So, to use alienstore / bluestore backend, you might want to
+pass <code class="docutils literal notranslate"><span class="pre">-DSeastar_CXX_FLAGS=-DSEASTAR_DEFAULT_ALLOCATOR</span></code> to <code class="docutils literal notranslate"><span class="pre">cmake</span></code> when
+configuring this project to use the libc allocator, like:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>cmake<span class="w"> </span>-DWITH_SEASTAR<span class="o">=</span>ON<span class="w"> </span>-DSeastar_CXX_FLAGS<span class="o">=</span>-DSEASTAR_DEFAULT_ALLOCATOR<span class="w"> </span>..
+</pre></div>
+</div>
+</section>
+<section id="running-crimson">
+<h2>Running Crimson<a class="headerlink" href="#running-crimson" title="Permalink to this heading">¶</a></h2>
+<p>As you might expect, crimson is not featurewise on par with its predecessor yet.</p>
+<section id="object-store-backend">
+<h3>object store backend<a class="headerlink" href="#object-store-backend" title="Permalink to this heading">¶</a></h3>
+<p>At the moment <code class="docutils literal notranslate"><span class="pre">crimson-osd</span></code> offers two object store backends:</p>
+<ul class="simple">
+<li><p>CyanStore: CyanStore is modeled after memstore in classic OSD.</p></li>
+<li><p>AlienStore: AlienStore is short for Alienized BlueStore.</p></li>
+</ul>
+<p>Seastore is still under active development.</p>
+</section>
+<section id="daemonize">
+<h3>daemonize<a class="headerlink" href="#daemonize" title="Permalink to this heading">¶</a></h3>
+<p>Unlike <code class="docutils literal notranslate"><span class="pre">ceph-osd</span></code>, <code class="docutils literal notranslate"><span class="pre">crimson-osd</span></code> does daemonize itself even if the
+<code class="docutils literal notranslate"><span class="pre">daemonize</span></code> option is enabled. Because, to read this option, <code class="docutils literal notranslate"><span class="pre">crimson-osd</span></code>
+needs to ready its config sharded service, but this sharded service lives
+in the seastar reactor. If we fork a child process and exit the parent after
+starting the Seastar engine, that will leave us with a single thread which is
+the replica of the thread calls <a class="reference external" href="http://pubs.opengroup.org/onlinepubs/9699919799/functions/fork.html">fork()</a>. This would unnecessarily complicate
+the code, if we would have tackled this problem in crimson.</p>
+<p>Since a lot of GNU/Linux distros are using systemd nowadays, which is able to
+daemonize the application, there is no need to daemonize by ourselves. For
+those who are using sysvinit, they can use <code class="docutils literal notranslate"><span class="pre">start-stop-daemon</span></code> for daemonizing
+<code class="docutils literal notranslate"><span class="pre">crimson-osd</span></code>. If this is not acceptable, we can whip up a helper utility
+to do the trick.</p>
+</section>
+<section id="logging">
+<h3>logging<a class="headerlink" href="#logging" title="Permalink to this heading">¶</a></h3>
+<p>Currently, <code class="docutils literal notranslate"><span class="pre">crimson-osd</span></code> uses the logging utility offered by Seastar. see
+<code class="docutils literal notranslate"><span class="pre">src/common/dout.h</span></code> for the mapping between different logging levels to
+the severity levels in Seastar. For instance, the messages sent to <code class="docutils literal notranslate"><span class="pre">derr</span></code>
+will be printed using <code class="docutils literal notranslate"><span class="pre">logger::error()</span></code>, and the messages with debug level
+over <code class="docutils literal notranslate"><span class="pre">20</span></code> will be printed using <code class="docutils literal notranslate"><span class="pre">logger::trace()</span></code>.</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p>ceph</p></td>
+<td><p>seastar</p></td>
+</tr>
+<tr class="row-even"><td><p>&lt; 0</p></td>
+<td><p>error</p></td>
+</tr>
+<tr class="row-odd"><td><p>0</p></td>
+<td><p>warn</p></td>
+</tr>
+<tr class="row-even"><td><p>[1, 5)</p></td>
+<td><p>info</p></td>
+</tr>
+<tr class="row-odd"><td><p>[5, 20]</p></td>
+<td><p>debug</p></td>
+</tr>
+<tr class="row-even"><td><p>&gt;  20</p></td>
+<td><p>trace</p></td>
+</tr>
+</tbody>
+</table>
+<p>Please note, <code class="docutils literal notranslate"><span class="pre">crimson-osd</span></code>
+does not send the logging message to specified <code class="docutils literal notranslate"><span class="pre">log_file</span></code>. It writes
+the logging messages to stdout and/or syslog. Again, this behavior can be
+changed using <code class="docutils literal notranslate"><span class="pre">--log-to-stdout</span></code> and <code class="docutils literal notranslate"><span class="pre">--log-to-syslog</span></code> command line
+options. By default, <code class="docutils literal notranslate"><span class="pre">log-to-stdout</span></code> is enabled, and the latter disabled.</p>
+</section>
+<section id="vstart-sh">
+<h3>vstart.sh<a class="headerlink" href="#vstart-sh" title="Permalink to this heading">¶</a></h3>
+<p>To facilitate the development of crimson, following options would be handy when
+using <code class="docutils literal notranslate"><span class="pre">vstart.sh</span></code>,</p>
+<dl>
+<dt><code class="docutils literal notranslate"><span class="pre">--crimson</span></code></dt><dd><p>start <code class="docutils literal notranslate"><span class="pre">crimson-osd</span></code> instead of <code class="docutils literal notranslate"><span class="pre">ceph-osd</span></code></p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">--nodaemon</span></code></dt><dd><p>do not daemonize the service</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">--redirect-output</span></code></dt><dd><p>redirect the stdout and stderr of service to <code class="docutils literal notranslate"><span class="pre">out/$type.$num.stdout</span></code>.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">--osd-args</span></code></dt><dd><p>pass extra command line options to crimson-osd or ceph-osd. It’s quite
+useful for passing Seastar options to crimson-osd. For instance, you could
+use <code class="docutils literal notranslate"><span class="pre">--osd-args</span> <span class="pre">&quot;--memory</span> <span class="pre">2G&quot;</span></code> to set the memory to use. Please refer
+the output of:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">crimson-osd --help-seastar</span>
+</pre></div>
+</div>
+<p>for more Seastar specific command line options.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">--memstore</span></code></dt><dd><p>use the CyanStore as the object store backend.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">--bluestore</span></code></dt><dd><p>use the AlienStore as the object store backend. This is the default setting,
+if not specified otherwise.</p>
+</dd>
+</dl>
+<p>So, a typical command to start a single-crimson-node cluster is:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$  </span><span class="nv">MGR</span><span class="o">=</span><span class="m">1</span><span class="w"> </span><span class="nv">MON</span><span class="o">=</span><span class="m">1</span><span class="w"> </span><span class="nv">OSD</span><span class="o">=</span><span class="m">1</span><span class="w"> </span><span class="nv">MDS</span><span class="o">=</span><span class="m">0</span><span class="w"> </span><span class="nv">RGW</span><span class="o">=</span><span class="m">0</span><span class="w"> </span>../src/vstart.sh<span class="w"> </span>-n<span class="w"> </span>-x<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--without-dashboard<span class="w"> </span>--memstore<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--crimson<span class="w"> </span>--nodaemon<span class="w"> </span>--redirect-output<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--osd-args<span class="w"> </span><span class="s2">&quot;--memory 4G&quot;</span>
+</pre></div>
+</div>
+<p>Where we assign 4 GiB memory, a single thread running on core-0 to crimson-osd.</p>
+<p>You could stop the vstart cluster using:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>../src/stop.sh<span class="w"> </span>--crimson
+</pre></div>
+</div>
+</section>
+</section>
+<section id="cbt-based-testing">
+<h2>CBT Based Testing<a class="headerlink" href="#cbt-based-testing" title="Permalink to this heading">¶</a></h2>
+<p>We can use <a class="reference external" href="https://github.com/ceph/cbt">cbt</a> for performing perf tests:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>git<span class="w"> </span>checkout<span class="w"> </span>master
+<span class="gp">$ </span>make<span class="w"> </span>crimson-osd
+<span class="gp">$ </span>../src/script/run-cbt.sh<span class="w"> </span>--cbt<span class="w"> </span>~/dev/cbt<span class="w"> </span>-a<span class="w"> </span>/tmp/baseline<span class="w"> </span>../src/test/crimson/cbt/radosbench_4K_read.yaml
+<span class="gp">$ </span>git<span class="w"> </span>checkout<span class="w"> </span>yet-another-pr
+<span class="gp">$ </span>make<span class="w"> </span>crimson-osd
+<span class="gp">$ </span>../src/script/run-cbt.sh<span class="w"> </span>--cbt<span class="w"> </span>~/dev/cbt<span class="w"> </span>-a<span class="w"> </span>/tmp/yap<span class="w"> </span>../src/test/crimson/cbt/radosbench_4K_read.yaml
+<span class="gp">$ </span>~/dev/cbt/compare.py<span class="w"> </span>-b<span class="w"> </span>/tmp/baseline<span class="w"> </span>-a<span class="w"> </span>/tmp/yap<span class="w"> </span>-v
+<span class="go">19:48:23 - INFO     - cbt      - prefill/gen8/0: bandwidth: (or (greater) (near 0.05)):: 0.183165/0.186155  =&gt; accepted</span>
+<span class="go">19:48:23 - INFO     - cbt      - prefill/gen8/0: iops_avg: (or (greater) (near 0.05)):: 46.0/47.0  =&gt; accepted</span>
+<span class="go">19:48:23 - WARNING  - cbt      - prefill/gen8/0: iops_stddev: (or (less) (near 0.05)):: 10.4403/6.65833  =&gt; rejected</span>
+<span class="go">19:48:23 - INFO     - cbt      - prefill/gen8/0: latency_avg: (or (less) (near 0.05)):: 0.340868/0.333712  =&gt; accepted</span>
+<span class="go">19:48:23 - INFO     - cbt      - prefill/gen8/1: bandwidth: (or (greater) (near 0.05)):: 0.190447/0.177619  =&gt; accepted</span>
+<span class="go">19:48:23 - INFO     - cbt      - prefill/gen8/1: iops_avg: (or (greater) (near 0.05)):: 48.0/45.0  =&gt; accepted</span>
+<span class="go">19:48:23 - INFO     - cbt      - prefill/gen8/1: iops_stddev: (or (less) (near 0.05)):: 6.1101/9.81495  =&gt; accepted</span>
+<span class="go">19:48:23 - INFO     - cbt      - prefill/gen8/1: latency_avg: (or (less) (near 0.05)):: 0.325163/0.350251  =&gt; accepted</span>
+<span class="go">19:48:23 - INFO     - cbt      - seq/gen8/0: bandwidth: (or (greater) (near 0.05)):: 1.24654/1.22336  =&gt; accepted</span>
+<span class="go">19:48:23 - INFO     - cbt      - seq/gen8/0: iops_avg: (or (greater) (near 0.05)):: 319.0/313.0  =&gt; accepted</span>
+<span class="go">19:48:23 - INFO     - cbt      - seq/gen8/0: iops_stddev: (or (less) (near 0.05)):: 0.0/0.0  =&gt; accepted</span>
+<span class="go">19:48:23 - INFO     - cbt      - seq/gen8/0: latency_avg: (or (less) (near 0.05)):: 0.0497733/0.0509029  =&gt; accepted</span>
+<span class="go">19:48:23 - INFO     - cbt      - seq/gen8/1: bandwidth: (or (greater) (near 0.05)):: 1.22717/1.11372  =&gt; accepted</span>
+<span class="go">19:48:23 - INFO     - cbt      - seq/gen8/1: iops_avg: (or (greater) (near 0.05)):: 314.0/285.0  =&gt; accepted</span>
+<span class="go">19:48:23 - INFO     - cbt      - seq/gen8/1: iops_stddev: (or (less) (near 0.05)):: 0.0/0.0  =&gt; accepted</span>
+<span class="go">19:48:23 - INFO     - cbt      - seq/gen8/1: latency_avg: (or (less) (near 0.05)):: 0.0508262/0.0557337  =&gt; accepted</span>
+<span class="go">19:48:23 - WARNING  - cbt      - 1 tests failed out of 16</span>
+</pre></div>
+</div>
+<p>Where we compile and run the same test against two branches. One is <code class="docutils literal notranslate"><span class="pre">master</span></code>, another is <code class="docutils literal notranslate"><span class="pre">yet-another-pr</span></code> branch.
+And then we compare the test results. Along with every test case, a set of rules is defined to check if we have
+performance regressions when comparing two set of test results. If a possible regression is found, the rule and
+corresponding test results are highlighted.</p>
+</section>
+<section id="hacking-crimson">
+<h2>Hacking Crimson<a class="headerlink" href="#hacking-crimson" title="Permalink to this heading">¶</a></h2>
+<section id="seastar-documents">
+<h3>Seastar Documents<a class="headerlink" href="#seastar-documents" title="Permalink to this heading">¶</a></h3>
+<p>See <a class="reference external" href="https://github.com/scylladb/seastar/blob/master/doc/tutorial.md">Seastar Tutorial</a> .
+Or build a browsable version and start an HTTP server:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span><span class="nb">cd</span><span class="w"> </span>seastar
+<span class="gp">$ </span>./configure.py<span class="w"> </span>--mode<span class="w"> </span>debug
+<span class="gp">$ </span>ninja<span class="w"> </span>-C<span class="w"> </span>build/debug<span class="w"> </span>docs
+<span class="gp">$ </span>python3<span class="w"> </span>-m<span class="w"> </span>http.server<span class="w"> </span>-d<span class="w"> </span>build/debug/doc/html
+</pre></div>
+</div>
+<p>You might want to install <code class="docutils literal notranslate"><span class="pre">pandoc</span></code> and other dependencies beforehand.</p>
+</section>
+</section>
+<section id="debugging-crimson">
+<h2>Debugging Crimson<a class="headerlink" href="#debugging-crimson" title="Permalink to this heading">¶</a></h2>
+<section id="debugging-with-gdb">
+<h3>Debugging with GDB<a class="headerlink" href="#debugging-with-gdb" title="Permalink to this heading">¶</a></h3>
+<p>The <a class="reference external" href="https://github.com/scylladb/scylla/blob/master/docs/debugging.md#tips-and-tricks">tips</a> for debugging Scylla also apply to Crimson.</p>
+</section>
+<section id="human-readable-backtraces-with-addr2line">
+<h3>Human-readable backtraces with addr2line<a class="headerlink" href="#human-readable-backtraces-with-addr2line" title="Permalink to this heading">¶</a></h3>
+<p>When a seastar application crashes, it leaves us with a serial of addresses, like:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">Segmentation fault.</span>
+<span class="go">Backtrace:</span>
+<span class="go">  0x00000000108254aa</span>
+<span class="go">  0x00000000107f74b9</span>
+<span class="go">  0x00000000105366cc</span>
+<span class="go">  0x000000001053682c</span>
+<span class="go">  0x00000000105d2c2e</span>
+<span class="go">  0x0000000010629b96</span>
+<span class="go">  0x0000000010629c31</span>
+<span class="go">  0x00002a02ebd8272f</span>
+<span class="go">  0x00000000105d93ee</span>
+<span class="go">  0x00000000103eff59</span>
+<span class="go">  0x000000000d9c1d0a</span>
+<span class="go">  /lib/x86_64-linux-gnu/libc.so.6+0x000000000002409a</span>
+<span class="go">  0x000000000d833ac9</span>
+<span class="go">Segmentation fault</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">seastar-addr2line</span></code> offered by Seastar can be used to decipher these
+addresses. After running the script, it will be waiting for input from stdin,
+so we need to copy and paste the above addresses, then send the EOF by inputting
+<code class="docutils literal notranslate"><span class="pre">control-D</span></code> in the terminal:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>../src/seastar/scripts/seastar-addr2line<span class="w"> </span>-e<span class="w"> </span>bin/crimson-osd
+
+<span class="go">  0x00000000108254aa</span>
+<span class="go">  0x00000000107f74b9</span>
+<span class="go">  0x00000000105366cc</span>
+<span class="go">  0x000000001053682c</span>
+<span class="go">  0x00000000105d2c2e</span>
+<span class="go">  0x0000000010629b96</span>
+<span class="go">  0x0000000010629c31</span>
+<span class="go">  0x00002a02ebd8272f</span>
+<span class="go">  0x00000000105d93ee</span>
+<span class="go">  0x00000000103eff59</span>
+<span class="go">  0x000000000d9c1d0a</span>
+<span class="go">  0x00000000108254aa</span>
+<span class="go">[Backtrace #0]</span>
+<span class="go">seastar::backtrace_buffer::append_backtrace() at /home/kefu/dev/ceph/build/../src/seastar/src/core/reactor.cc:1136</span>
+<span class="go">seastar::print_with_backtrace(seastar::backtrace_buffer&amp;) at /home/kefu/dev/ceph/build/../src/seastar/src/core/reactor.cc:1157</span>
+<span class="go">seastar::print_with_backtrace(char const*) at /home/kefu/dev/ceph/build/../src/seastar/src/core/reactor.cc:1164</span>
+<span class="go">seastar::sigsegv_action() at /home/kefu/dev/ceph/build/../src/seastar/src/core/reactor.cc:5119</span>
+<span class="go">seastar::install_oneshot_signal_handler&lt;11, &amp;seastar::sigsegv_action&gt;()::{lambda(int, siginfo_t*, void*)#1}::operator()(int, siginfo_t*, void*) const at /home/kefu/dev/ceph/build/../src/seastar/src/core/reactor.cc:5105</span>
+<span class="go">seastar::install_oneshot_signal_handler&lt;11, &amp;seastar::sigsegv_action&gt;()::{lambda(int, siginfo_t*, void*)#1}::_FUN(int, siginfo_t*, void*) at /home/kefu/dev/ceph/build/../src/seastar/src/core/reactor.cc:5101</span>
+<span class="go">?? ??:0</span>
+<span class="go">seastar::smp::configure(boost::program_options::variables_map, seastar::reactor_config) at /home/kefu/dev/ceph/build/../src/seastar/src/core/reactor.cc:5418</span>
+<span class="go">seastar::app_template::run_deprecated(int, char**, std::function&lt;void ()&gt;&amp;&amp;) at /home/kefu/dev/ceph/build/../src/seastar/src/core/app-template.cc:173 (discriminator 5)</span>
+<span class="go">main at /home/kefu/dev/ceph/build/../src/crimson/osd/main.cc:131 (discriminator 1)</span>
+</pre></div>
+</div>
+<p>Please note, <code class="docutils literal notranslate"><span class="pre">seastar-addr2line</span></code> is able to extract the addresses from
+the input, so you can also paste the log messages like:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">2020-07-22T11:37:04.500 INFO:teuthology.orchestra.run.smithi061.stderr:Backtrace:</span>
+<span class="go">2020-07-22T11:37:04.500 INFO:teuthology.orchestra.run.smithi061.stderr:  0x0000000000e78dbc</span>
+<span class="go">2020-07-22T11:37:04.501 INFO:teuthology.orchestra.run.smithi061.stderr:  0x0000000000e3e7f0</span>
+<span class="go">2020-07-22T11:37:04.501 INFO:teuthology.orchestra.run.smithi061.stderr:  0x0000000000e3e8b8</span>
+<span class="go">2020-07-22T11:37:04.501 INFO:teuthology.orchestra.run.smithi061.stderr:  0x0000000000e3e985</span>
+<span class="go">2020-07-22T11:37:04.501 INFO:teuthology.orchestra.run.smithi061.stderr:  /lib64/libpthread.so.0+0x0000000000012dbf</span>
+</pre></div>
+</div>
+<p>Unlike classic OSD, crimson does not print a human-readable backtrace when it
+handles fatal signals like <cite>SIGSEGV</cite> or <cite>SIGABRT</cite>. And it is more complicated
+when it comes to a stripped binary. So before planting a signal handler for
+those signals in crimson, we could to use <cite>script/ceph-debug-docker.sh</cite> to parse
+the addresses in the backtrace:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp"># </span>assuming<span class="w"> </span>you<span class="w"> </span>are<span class="w"> </span>under<span class="w"> </span>the<span class="w"> </span><span class="nb">source</span><span class="w"> </span>tree<span class="w"> </span>of<span class="w"> </span>ceph
+<span class="gp">$ </span>./src/script/ceph-debug-docker.sh<span class="w">  </span>--flavor<span class="w"> </span>crimson<span class="w"> </span>master:27e237c137c330ebb82627166927b7681b20d0aa<span class="w"> </span>centos:8
+<span class="go">....</span>
+<span class="gp">[root@3deb50a8ad51 ~]# </span>wget<span class="w"> </span>-q<span class="w"> </span>https://raw.githubusercontent.com/scylladb/seastar/master/scripts/seastar-addr2line
+<span class="gp">[root@3deb50a8ad51 ~]# </span>dnf<span class="w"> </span>install<span class="w"> </span>-q<span class="w"> </span>-y<span class="w"> </span>file
+<span class="gp">[root@3deb50a8ad51 ~]# </span>python3<span class="w"> </span>seastar-addr2line<span class="w"> </span>-e<span class="w"> </span>/usr/bin/crimson-osd
+<span class="gp"># </span>paste<span class="w"> </span>the<span class="w"> </span>backtrace<span class="w"> </span>here
+</pre></div>
+</div>
+</section>
+</section>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../../">
+              <img class="logo" src="../../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../install/">Installing Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cephadm/">Cephadm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../rados/">Ceph Storage Cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cephfs/">Ceph File System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../rbd/">Ceph Block Device</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../radosgw/">Ceph Object Gateway</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../mgr/">Ceph Manager Daemon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../mgr/dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../developer_guide/">Developer Guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../internals/">Ceph Internals</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../../blkin/">Tracing Ceph With Blkin</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../bluestore/">BlueStore Internals</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../cache-pool/">Cache pool</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../ceph_krb_auth/">A Detailed Documentation on How to Set up Ceph Kerberos Authentication</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../cephfs-mirroring/">CephFS Mirroring</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../cephfs-reclaim/">CephFS Reclaim Interface</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../cephfs-snapshots/">CephFS Snapshots</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../cephx/">Cephx</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../cephx_protocol/">A Detailed Description of the Cephx Authentication Protocol</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../config/">Configuration Management System</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../config-key/">config-key layout</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../context/">CephContext</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../continuous-integration/">Continuous Integration Architecture</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../corpus/">Corpus structure</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../cpu-profiler/">Installing Oprofile</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../cxx/">C++17 and libstdc++ ABI</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../delayed-delete/">CephFS delayed deletion</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../dev_cluster_deployement/">Deploying a development cluster</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../dev_cluster_deployement/#deploying-multiple-development-clusters-on-the-same-machine">Deploying multiple development clusters on the same machine</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../development-workflow/">Development workflows</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../documenting/">Documenting Ceph</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../encoding/">Serialization (encode/decode)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../erasure-coded-pool/">Erasure Coded pool</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../file-striping/">File striping</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../freebsd/">FreeBSD Implementation details</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../generatedocs/">Building Ceph Documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../iana/">IANA Numbers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../kubernetes/">Hacking on Ceph in Kubernetes with Rook</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../libs/">Library architecture</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../logging/">Use of the cluster log</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../logs/">Debug logs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../macos/">build on MacOS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../messenger/">Messenger notes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../mon-bootstrap/">Monitor bootstrap</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../mon-elections/">Monitor Elections</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../mon-on-disk-formats/">ON-DISK FORMAT</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../mon-osdmap-prune/">FULL OSDMAP VERSION PRUNING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../msgr2/">msgr2 protocol (msgr2.0 and msgr2.1)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../network-encoding/">Network Encoding</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../network-protocol/">Network Protocol</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../object-store/">Object Store Architecture Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../osd-class-path/">OSD class path issues</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../peering/">Peering</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../perf/">Using perf</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../perf_counters/">Perf counters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../perf_histograms/">Perf histograms</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../placement-group/">PG (Placement Group) notes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../quick_guide/">Developer Guide (Quick)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../rados-client-protocol/">RADOS client protocol</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../rbd-diff/">RBD Incremental Backup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../rbd-export/">RBD Export &amp; Import</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../rbd-layering/">RBD Layering</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../release-checklists/">Release checklists</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../release-process/">Ceph Release Process</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../seastore/">SeaStore</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../sepia/">Sepia community test lab</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../session_authentication/">Session Authentication for the Cephx Protocol</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../testing/">Testing notes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../versions/">Public OSD Version</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../vstart-ganesha/">NFS CephFS-RGW Developer Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../wireshark/">Wireshark Dissector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../zoned-storage/">Zoned Storage Support</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../osd_internals/">OSD developer documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../mds_internals/">MDS developer documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../radosgw/">RADOS Gateway developer documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../ceph-volume/">ceph-volume developer documentation</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../">Crimson developer documentation</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">crimson</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#building-crimson">Building Crimson</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#running-crimson">Running Crimson</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#object-store-backend">object store backend</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#daemonize">daemonize</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#logging">logging</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#vstart-sh">vstart.sh</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#cbt-based-testing">CBT Based Testing</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#hacking-crimson">Hacking Crimson</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#seastar-documents">Seastar Documents</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#debugging-crimson">Debugging Crimson</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#debugging-with-gdb">Debugging with GDB</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#human-readable-backtraces-with-addr2line">Human-readable backtraces with addr2line</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../error-handling/">error handling</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../poseidonstore/">PoseidonStore</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../../../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../error-handling/" title="error handling"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../" title="Crimson developer documentation"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../internals/" >Ceph Internals</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../" >Crimson developer documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">crimson</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

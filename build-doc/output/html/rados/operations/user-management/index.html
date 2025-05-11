@@ -1,0 +1,926 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>User Management &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/css/custom.css" />
+    <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/jquery.js"></script>
+    <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../../genindex/" />
+    <link rel="search" title="Search" href="../../../search/" />
+    <link rel="next" title="Repairing PG Inconsistencies" href="../pg-repair/" />
+    <link rel="prev" title="Monitoring OSDs and PGs" href="../monitoring-osd-pg/" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../pg-repair/" title="Repairing PG Inconsistencies"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../monitoring-osd-pg/" title="Monitoring OSDs and PGs"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../" >Ceph Storage Cluster</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../" accesskey="U">Cluster Operations</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">User Management</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="user-management">
+<span id="id1"></span><h1>User Management<a class="headerlink" href="#user-management" title="Permalink to this heading">¶</a></h1>
+<p>This document describes <a class="reference internal" href="../../../glossary/#term-Ceph-Client"><span class="xref std std-term">Ceph Client</span></a> users, and describes the process by
+which they perform authentication and authorization so that they can access the
+<a class="reference internal" href="../../../glossary/#term-Ceph-Storage-Cluster"><span class="xref std std-term">Ceph Storage Cluster</span></a>. Users are either individuals or system actors
+(for example, applications) that use Ceph clients to interact with the Ceph
+Storage Cluster daemons.</p>
+<p class="ditaa">
+<img src="../../../_images/ditaa-e4363571a389f38b579ed95f21e5b3b8e719866e.png"/>
+</p>
+<p>When Ceph runs with authentication and authorization enabled (both are enabled
+by default), you must specify a user name and a keyring that contains the
+secret key of the specified user (usually these are specified via the command
+line). If you do not specify a user name, Ceph will use <code class="docutils literal notranslate"><span class="pre">client.admin</span></code> as the
+default user name. If you do not specify a keyring, Ceph will look for a
+keyring via the <code class="docutils literal notranslate"><span class="pre">keyring</span></code> setting in the Ceph configuration. For example, if
+you execute the <code class="docutils literal notranslate"><span class="pre">ceph</span> <span class="pre">health</span></code> command without specifying a user or a keyring,
+Ceph will assume that the keyring is in <code class="docutils literal notranslate"><span class="pre">/etc/ceph/ceph.client.admin.keyring</span></code>
+and will attempt to use that keyring. The following illustrates this behavior:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><style type="text/css">
+span.prompt1:before {
+  content: "$ ";
+}
+</style><span class="prompt1">ceph<span class="w"> </span>health</span>
+</pre></div></div><p>Ceph will interpret the command like this:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>-n<span class="w"> </span>client.admin<span class="w"> </span>--keyring<span class="o">=</span>/etc/ceph/ceph.client.admin.keyring<span class="w"> </span>health</span>
+</pre></div></div><p>Alternatively, you may use the <code class="docutils literal notranslate"><span class="pre">CEPH_ARGS</span></code> environment variable to avoid
+re-entry of the user name and secret.</p>
+<p>For details on configuring the Ceph Storage Cluster to use authentication, see
+<a class="reference external" href="../../configuration/auth-config-ref">Cephx Config Reference</a>. For details on the architecture of Cephx, see
+<a class="reference external" href="../../../architecture#high-availability-authentication">Architecture - High Availability Authentication</a>.</p>
+<section id="background">
+<h2>Background<a class="headerlink" href="#background" title="Permalink to this heading">¶</a></h2>
+<p>No matter what type of Ceph client is used (for example: Block Device, Object
+Storage, Filesystem, native API), Ceph stores all data as RADOS objects within
+<a class="reference external" href="../pools">pools</a>.  Ceph users must have access to a given pool in order to read and
+write data, and Ceph users must have execute permissions in order to use Ceph’s
+administrative commands. The following concepts will help you understand
+Ceph[‘s] user management.</p>
+<section id="user">
+<span id="rados-ops-user"></span><h3>User<a class="headerlink" href="#user" title="Permalink to this heading">¶</a></h3>
+<p>A user is either an individual or a system actor (for example, an application).
+Creating users allows you to control who (or what) can access your Ceph Storage
+Cluster, its pools, and the data within those pools.</p>
+<p>Ceph has the concept of a <code class="docutils literal notranslate"><span class="pre">type</span></code> of user. For purposes of user management,
+the type will always be <code class="docutils literal notranslate"><span class="pre">client</span></code>. Ceph identifies users in a “period-
+delimited form” that consists of the user type and the user ID: for example,
+<code class="docutils literal notranslate"><span class="pre">TYPE.ID</span></code>, <code class="docutils literal notranslate"><span class="pre">client.admin</span></code>, or <code class="docutils literal notranslate"><span class="pre">client.user1</span></code>. The reason for user typing
+is that the Cephx protocol is used not only by clients but also non-clients,
+such as Ceph Monitors, OSDs, and Metadata Servers. Distinguishing the user type
+helps to distinguish between client users and other users. This distinction
+streamlines access control, user monitoring, and traceability.</p>
+<p>Sometimes Ceph’s user type might seem confusing, because the Ceph command line
+allows you to specify a user with or without the type, depending upon your
+command line usage. If you specify <code class="docutils literal notranslate"><span class="pre">--user</span></code> or <code class="docutils literal notranslate"><span class="pre">--id</span></code>, you can omit the
+type. For example, <code class="docutils literal notranslate"><span class="pre">client.user1</span></code> can be entered simply as <code class="docutils literal notranslate"><span class="pre">user1</span></code>. On the
+other hand, if you specify <code class="docutils literal notranslate"><span class="pre">--name</span></code> or <code class="docutils literal notranslate"><span class="pre">-n</span></code>, you must supply the type and
+name: for example, <code class="docutils literal notranslate"><span class="pre">client.user1</span></code>. We recommend using the type and name as a
+best practice wherever possible.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>A Ceph Storage Cluster user is not the same as a Ceph Object Storage
+user or a Ceph File System user. The Ceph Object Gateway uses a Ceph Storage
+Cluster user to communicate between the gateway daemon and the storage
+cluster, but the Ceph Object Gateway has its own user-management
+functionality for end users. The Ceph File System uses POSIX semantics, and
+the user space associated with the Ceph File System is not the same as the
+user space associated with a Ceph Storage Cluster user.</p>
+</div>
+</section>
+<section id="authorization-capabilities">
+<h3>Authorization (Capabilities)<a class="headerlink" href="#authorization-capabilities" title="Permalink to this heading">¶</a></h3>
+<p>Ceph uses the term “capabilities” (caps) to describe the permissions granted to
+an authenticated user to exercise the functionality of the monitors, OSDs, and
+metadata servers. Capabilities can also restrict access to data within a pool,
+a namespace within a pool, or a set of pools based on their application tags.
+A Ceph administrative user specifies the capabilities of a user when creating
+or updating that user.</p>
+<p>Capability syntax follows this form:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span><span class="n">daemon</span><span class="o">-</span><span class="nb">type</span><span class="p">}</span> <span class="s1">&#39;{cap-spec}[, {cap-spec} ...]&#39;</span>
+</pre></div>
+</div>
+<ul>
+<li><p><strong>Monitor Caps:</strong> Monitor capabilities include <code class="docutils literal notranslate"><span class="pre">r</span></code>, <code class="docutils literal notranslate"><span class="pre">w</span></code>, <code class="docutils literal notranslate"><span class="pre">x</span></code> access
+settings, and can be applied in aggregate from pre-defined profiles with
+<code class="docutils literal notranslate"><span class="pre">profile</span> <span class="pre">{name}</span></code>. For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">mon</span> <span class="s1">&#39;allow {access-spec} [network {network/prefix}]&#39;</span>
+
+<span class="n">mon</span> <span class="s1">&#39;profile </span><span class="si">{name}</span><span class="s1">&#39;</span>
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">{access-spec}</span></code> syntax is as follows:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">*</span> <span class="o">|</span> <span class="nb">all</span> <span class="o">|</span> <span class="p">[</span><span class="n">r</span><span class="p">][</span><span class="n">w</span><span class="p">][</span><span class="n">x</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>The optional <code class="docutils literal notranslate"><span class="pre">{network/prefix}</span></code> is a standard network name and prefix
+length in CIDR notation (for example, <code class="docutils literal notranslate"><span class="pre">10.3.0.0/16</span></code>).  If
+<code class="docutils literal notranslate"><span class="pre">{network/prefix}</span></code> is present, the monitor capability can be used only by
+clients that connect from the specified network.</p>
+</li>
+<li><p><strong>OSD Caps:</strong> OSD capabilities include <code class="docutils literal notranslate"><span class="pre">r</span></code>, <code class="docutils literal notranslate"><span class="pre">w</span></code>, <code class="docutils literal notranslate"><span class="pre">x</span></code>, and
+<code class="docutils literal notranslate"><span class="pre">class-read</span></code> and <code class="docutils literal notranslate"><span class="pre">class-write</span></code> access settings. OSD capabilities can be
+applied in aggregate from pre-defined profiles with <code class="docutils literal notranslate"><span class="pre">profile</span> <span class="pre">{name}</span></code>. In
+addition, OSD capabilities allow for pool and namespace settings.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">osd</span> <span class="s1">&#39;allow {access-spec} [{match-spec}] [network {network/prefix}]&#39;</span>
+
+<span class="n">osd</span> <span class="s1">&#39;profile </span><span class="si">{name}</span><span class="s1"> [pool={pool-name} [namespace={namespace-name}]] [network {network/prefix}]&#39;</span>
+</pre></div>
+</div>
+<p>There are two alternative forms of the <code class="docutils literal notranslate"><span class="pre">{access-spec}</span></code> syntax:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>* | all | [r][w][x] [class-read] [class-write]
+
+class {class name} [{method name}]
+</pre></div>
+</div>
+<p>There are two alternative forms of the optional <code class="docutils literal notranslate"><span class="pre">{match-spec}</span></code> syntax:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pool</span><span class="o">=</span><span class="p">{</span><span class="n">pool</span><span class="o">-</span><span class="n">name</span><span class="p">}</span> <span class="p">[</span><span class="n">namespace</span><span class="o">=</span><span class="p">{</span><span class="n">namespace</span><span class="o">-</span><span class="n">name</span><span class="p">}]</span> <span class="p">[</span><span class="n">object_prefix</span> <span class="p">{</span><span class="n">prefix</span><span class="p">}]</span>
+
+<span class="p">[</span><span class="n">namespace</span><span class="o">=</span><span class="p">{</span><span class="n">namespace</span><span class="o">-</span><span class="n">name</span><span class="p">}]</span> <span class="n">tag</span> <span class="p">{</span><span class="n">application</span><span class="p">}</span> <span class="p">{</span><span class="n">key</span><span class="p">}</span><span class="o">=</span><span class="p">{</span><span class="n">value</span><span class="p">}</span>
+</pre></div>
+</div>
+<p>The optional <code class="docutils literal notranslate"><span class="pre">{network/prefix}</span></code> is a standard network name and prefix
+length in CIDR notation (for example, <code class="docutils literal notranslate"><span class="pre">10.3.0.0/16</span></code>). If
+<code class="docutils literal notranslate"><span class="pre">{network/prefix}</span></code> is present, the OSD capability can be used only by
+clients that connect from the specified network.</p>
+</li>
+<li><p><strong>Manager Caps:</strong> Manager (<code class="docutils literal notranslate"><span class="pre">ceph-mgr</span></code>) capabilities include <code class="docutils literal notranslate"><span class="pre">r</span></code>, <code class="docutils literal notranslate"><span class="pre">w</span></code>,
+<code class="docutils literal notranslate"><span class="pre">x</span></code> access settings, and can be applied in aggregate from pre-defined
+profiles with <code class="docutils literal notranslate"><span class="pre">profile</span> <span class="pre">{name}</span></code>. For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">mgr</span> <span class="s1">&#39;allow {access-spec} [network {network/prefix}]&#39;</span>
+
+<span class="n">mgr</span> <span class="s1">&#39;profile </span><span class="si">{name}</span><span class="s1"> [</span><span class="si">{key1}</span><span class="s1"> {match-type} </span><span class="si">{value1}</span><span class="s1"> ...] [network {network/prefix}]&#39;</span>
+</pre></div>
+</div>
+<p>Manager capabilities can also be specified for specific commands, for all
+commands exported by a built-in manager service, or for all commands exported
+by a specific add-on module. For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">mgr</span> <span class="s1">&#39;allow command &quot;{command-prefix}&quot; [with </span><span class="si">{key1}</span><span class="s1"> {match-type} </span><span class="si">{value1}</span><span class="s1"> ...] [network {network/prefix}]&#39;</span>
+
+<span class="n">mgr</span> <span class="s1">&#39;allow service {service-name} {access-spec} [network {network/prefix}]&#39;</span>
+
+<span class="n">mgr</span> <span class="s1">&#39;allow module {module-name} [with </span><span class="si">{key1}</span><span class="s1"> {match-type} </span><span class="si">{value1}</span><span class="s1"> ...] {access-spec} [network {network/prefix}]&#39;</span>
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">{access-spec}</span></code> syntax is as follows:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">*</span> <span class="o">|</span> <span class="nb">all</span> <span class="o">|</span> <span class="p">[</span><span class="n">r</span><span class="p">][</span><span class="n">w</span><span class="p">][</span><span class="n">x</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">{service-name}</span></code> is one of the following:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">mgr</span> <span class="o">|</span> <span class="n">osd</span> <span class="o">|</span> <span class="n">pg</span> <span class="o">|</span> <span class="n">py</span>
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">{match-type}</span></code> is one of the following:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">=</span> <span class="o">|</span> <span class="n">prefix</span> <span class="o">|</span> <span class="n">regex</span>
+</pre></div>
+</div>
+</li>
+<li><p><strong>Metadata Server Caps:</strong> For administrators, use <code class="docutils literal notranslate"><span class="pre">allow</span> <span class="pre">*</span></code>. For all other
+users (for example, CephFS clients), consult <a class="reference internal" href="../../../cephfs/client-auth/"><span class="doc">CephFS Client Capabilities</span></a></p></li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The Ceph Object Gateway daemon (<code class="docutils literal notranslate"><span class="pre">radosgw</span></code>) is a client of the
+Ceph Storage Cluster. For this reason, it is not represented as
+a Ceph Storage Cluster daemon type.</p>
+</div>
+<p>The following entries describe access capabilities.</p>
+<p><code class="docutils literal notranslate"><span class="pre">allow</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Precedes access settings for a daemon. Implies <code class="docutils literal notranslate"><span class="pre">rw</span></code>
+for MDS only.</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">r</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Gives the user read access. Required with monitors to retrieve
+the CRUSH map.</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">w</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Gives the user write access to objects.</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">x</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Gives the user the capability to call class methods
+(that is, both read and write) and to conduct <code class="docutils literal notranslate"><span class="pre">auth</span></code>
+operations on monitors.</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">class-read</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Descriptions</dt>
+<dd class="field-odd"><p>Gives the user the capability to call class read methods.
+Subset of <code class="docutils literal notranslate"><span class="pre">x</span></code>.</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">class-write</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Gives the user the capability to call class write methods.
+Subset of <code class="docutils literal notranslate"><span class="pre">x</span></code>.</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">*</span></code>, <code class="docutils literal notranslate"><span class="pre">all</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Gives the user read, write, and execute permissions for a
+particular daemon/pool, as well as the ability to execute
+admin commands.</p>
+</dd>
+</dl>
+<p>The following entries describe valid capability profiles:</p>
+<p><code class="docutils literal notranslate"><span class="pre">profile</span> <span class="pre">osd</span></code> (Monitor only)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Gives a user permissions to connect as an OSD to other OSDs or
+monitors. Conferred on OSDs in order to enable OSDs to handle replication
+heartbeat traffic and status reporting.</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">profile</span> <span class="pre">mds</span></code> (Monitor only)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Gives a user permissions to connect as an MDS to other MDSs or
+monitors.</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">profile</span> <span class="pre">bootstrap-osd</span></code> (Monitor only)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Gives a user permissions to bootstrap an OSD. Conferred on
+deployment tools such as <code class="docutils literal notranslate"><span class="pre">ceph-volume</span></code> and <code class="docutils literal notranslate"><span class="pre">cephadm</span></code>
+so that they have permissions to add keys when
+bootstrapping an OSD.</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">profile</span> <span class="pre">bootstrap-mds</span></code> (Monitor only)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Gives a user permissions to bootstrap a metadata server.
+Conferred on deployment tools such as <code class="docutils literal notranslate"><span class="pre">cephadm</span></code>
+so that they have permissions to add keys when bootstrapping
+a metadata server.</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">profile</span> <span class="pre">bootstrap-rbd</span></code> (Monitor only)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Gives a user permissions to bootstrap an RBD user.
+Conferred on deployment tools such as <code class="docutils literal notranslate"><span class="pre">cephadm</span></code>
+so that they have permissions to add keys when bootstrapping
+an RBD user.</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">profile</span> <span class="pre">bootstrap-rbd-mirror</span></code> (Monitor only)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Gives a user permissions to bootstrap an <code class="docutils literal notranslate"><span class="pre">rbd-mirror</span></code> daemon
+user. Conferred on deployment tools such as <code class="docutils literal notranslate"><span class="pre">cephadm</span></code> so that
+they have permissions to add keys when bootstrapping an
+<code class="docutils literal notranslate"><span class="pre">rbd-mirror</span></code> daemon.</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">profile</span> <span class="pre">rbd</span></code> (Manager, Monitor, and OSD)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Gives a user permissions to manipulate RBD images. When used as a
+Monitor cap, it provides the user with the minimal privileges
+required by an RBD client application; such privileges include
+the ability to blocklist other client users. When used as an OSD
+cap, it provides an RBD client application with read-write access
+to the specified pool. The Manager cap supports optional <code class="docutils literal notranslate"><span class="pre">pool</span></code>
+and <code class="docutils literal notranslate"><span class="pre">namespace</span></code> keyword arguments.</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">profile</span> <span class="pre">rbd-mirror</span></code> (Monitor only)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Gives a user permissions to manipulate RBD images and retrieve
+RBD mirroring config-key secrets. It provides the minimal
+privileges required for the user to manipulate the <code class="docutils literal notranslate"><span class="pre">rbd-mirror</span></code>
+daemon.</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">profile</span> <span class="pre">rbd-read-only</span></code> (Manager and OSD)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Gives a user read-only permissions to RBD images. The Manager cap
+supports optional <code class="docutils literal notranslate"><span class="pre">pool</span></code> and <code class="docutils literal notranslate"><span class="pre">namespace</span></code> keyword arguments.</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">profile</span> <span class="pre">simple-rados-client</span></code> (Monitor only)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Gives a user read-only permissions for monitor, OSD, and PG data.
+Intended for use by direct librados client applications.</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">profile</span> <span class="pre">simple-rados-client-with-blocklist</span></code> (Monitor only)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Gives a user read-only permissions for monitor, OSD, and PG data.
+Intended for use by direct librados client applications. Also
+includes permissions to add blocklist entries to build
+high-availability (HA) applications.</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">profile</span> <span class="pre">fs-client</span></code> (Monitor only)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Gives a user read-only permissions for monitor, OSD, PG, and MDS
+data. Intended for CephFS clients.</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">profile</span> <span class="pre">role-definer</span></code> (Monitor and Auth)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Gives a user <strong>all</strong> permissions for the auth subsystem, read-only
+access to monitors, and nothing else. Useful for automation
+tools. Do not assign this unless you really, <strong>really</strong> know what
+you’re doing, as the security ramifications are substantial and
+pervasive.</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">profile</span> <span class="pre">crash</span></code> (Monitor only)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Gives a user read-only access to monitors. Used in conjunction
+with the manager <code class="docutils literal notranslate"><span class="pre">crash</span></code> module to upload daemon crash
+dumps into monitor storage for later analysis.</p>
+</dd>
+</dl>
+</section>
+<section id="pool">
+<h3>Pool<a class="headerlink" href="#pool" title="Permalink to this heading">¶</a></h3>
+<p>A pool is a logical partition where users store data.
+In Ceph deployments, it is common to create a pool as a logical partition for
+similar types of data. For example, when deploying Ceph as a back end for
+OpenStack, a typical deployment would have pools for volumes, images, backups
+and virtual machines, and such users as <code class="docutils literal notranslate"><span class="pre">client.glance</span></code> and <code class="docutils literal notranslate"><span class="pre">client.cinder</span></code>.</p>
+</section>
+<section id="application-tags">
+<h3>Application Tags<a class="headerlink" href="#application-tags" title="Permalink to this heading">¶</a></h3>
+<p>Access may be restricted to specific pools as defined by their application
+metadata. The <code class="docutils literal notranslate"><span class="pre">*</span></code> wildcard may be used for the <code class="docutils literal notranslate"><span class="pre">key</span></code> argument, the
+<code class="docutils literal notranslate"><span class="pre">value</span></code> argument, or both. The <code class="docutils literal notranslate"><span class="pre">all</span></code> tag is a synonym for <code class="docutils literal notranslate"><span class="pre">*</span></code>.</p>
+</section>
+<section id="namespace">
+<h3>Namespace<a class="headerlink" href="#namespace" title="Permalink to this heading">¶</a></h3>
+<p>Objects within a pool can be associated to a namespace: that is, to a logical group of
+objects within the pool. A user’s access to a pool can be associated with a
+namespace so that reads and writes by the user can take place only within the
+namespace. Objects written to a namespace within the pool can be accessed only
+by users who have access to the namespace.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Namespaces are primarily useful for applications written on top of
+<code class="docutils literal notranslate"><span class="pre">librados</span></code>. In such situations, the logical grouping provided by
+namespaces  can obviate the need to create different pools. In Luminous and
+later releases, Ceph Object Gateway uses namespaces for various metadata
+objects.</p>
+</div>
+<p>The rationale for namespaces is this: namespaces are relatively less
+computationally expensive than pools, which (pools) can be a computationally
+expensive method of segregating data sets between different authorized users.</p>
+<p>For example, a pool ought to host approximately 100 placement-group replicas
+per OSD. This means that a cluster with 1000 OSDs and three 3R replicated pools
+would have (in a single pool) 100,000 placement-group replicas, and that means
+that it has 33,333 Placement Groups.</p>
+<p>By contrast, writing an object to a namespace simply associates the namespace
+to the object name without incurring the computational overhead of a separate
+pool. Instead of creating a separate pool for a user or set of users, you can
+use a namespace.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Namespaces are available only when using <code class="docutils literal notranslate"><span class="pre">librados</span></code>.</p>
+</div>
+<p>Access may be restricted to specific RADOS namespaces by use of the <code class="docutils literal notranslate"><span class="pre">namespace</span></code>
+capability. Limited globbing of namespaces (that is, use of wildcards (<code class="docutils literal notranslate"><span class="pre">*</span></code>)) is supported: if the last character
+of the specified namespace is <code class="docutils literal notranslate"><span class="pre">*</span></code>, then access is granted to any namespace
+starting with the provided argument.</p>
+</section>
+</section>
+<section id="managing-users">
+<h2>Managing Users<a class="headerlink" href="#managing-users" title="Permalink to this heading">¶</a></h2>
+<p>User management functionality provides Ceph Storage Cluster administrators with
+the ability to create, update, and delete users directly in the Ceph Storage
+Cluster.</p>
+<p>When you create or delete users in the Ceph Storage Cluster, you might need to
+distribute keys to clients so that they can be added to keyrings. For details, see <a class="reference internal" href="#keyring-management">Keyring
+Management</a>.</p>
+<section id="listing-users">
+<h3>Listing Users<a class="headerlink" href="#listing-users" title="Permalink to this heading">¶</a></h3>
+<p>To list the users in your cluster, run the following command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>auth<span class="w"> </span>ls</span>
+</pre></div></div><p>Ceph will list all users in your cluster. For example, in a two-node
+cluster, <code class="docutils literal notranslate"><span class="pre">ceph</span> <span class="pre">auth</span> <span class="pre">ls</span></code> will provide an output that resembles the following:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">installed</span> <span class="n">auth</span> <span class="n">entries</span><span class="p">:</span>
+
+<span class="n">osd</span><span class="mf">.0</span>
+    <span class="n">key</span><span class="p">:</span> <span class="n">AQCvCbtToC6MDhAATtuT70Sl</span><span class="o">+</span><span class="n">DymPCfDSsyV4w</span><span class="o">==</span>
+    <span class="n">caps</span><span class="p">:</span> <span class="p">[</span><span class="n">mon</span><span class="p">]</span> <span class="n">allow</span> <span class="n">profile</span> <span class="n">osd</span>
+    <span class="n">caps</span><span class="p">:</span> <span class="p">[</span><span class="n">osd</span><span class="p">]</span> <span class="n">allow</span> <span class="o">*</span>
+<span class="n">osd</span><span class="mf">.1</span>
+    <span class="n">key</span><span class="p">:</span> <span class="n">AQC4CbtTCFJBChAAVq5spj0ff4eHZICxIOVZeA</span><span class="o">==</span>
+    <span class="n">caps</span><span class="p">:</span> <span class="p">[</span><span class="n">mon</span><span class="p">]</span> <span class="n">allow</span> <span class="n">profile</span> <span class="n">osd</span>
+    <span class="n">caps</span><span class="p">:</span> <span class="p">[</span><span class="n">osd</span><span class="p">]</span> <span class="n">allow</span> <span class="o">*</span>
+<span class="n">client</span><span class="o">.</span><span class="n">admin</span>
+    <span class="n">key</span><span class="p">:</span> <span class="n">AQBHCbtT6APDHhAA5W00cBchwkQjh3dkKsyPjw</span><span class="o">==</span>
+    <span class="n">caps</span><span class="p">:</span> <span class="p">[</span><span class="n">mds</span><span class="p">]</span> <span class="n">allow</span>
+    <span class="n">caps</span><span class="p">:</span> <span class="p">[</span><span class="n">mon</span><span class="p">]</span> <span class="n">allow</span> <span class="o">*</span>
+    <span class="n">caps</span><span class="p">:</span> <span class="p">[</span><span class="n">osd</span><span class="p">]</span> <span class="n">allow</span> <span class="o">*</span>
+<span class="n">client</span><span class="o">.</span><span class="n">bootstrap</span><span class="o">-</span><span class="n">mds</span>
+    <span class="n">key</span><span class="p">:</span> <span class="n">AQBICbtTOK9uGBAAdbe5zcIGHZL3T</span><span class="o">/</span><span class="n">u2g6EBww</span><span class="o">==</span>
+    <span class="n">caps</span><span class="p">:</span> <span class="p">[</span><span class="n">mon</span><span class="p">]</span> <span class="n">allow</span> <span class="n">profile</span> <span class="n">bootstrap</span><span class="o">-</span><span class="n">mds</span>
+<span class="n">client</span><span class="o">.</span><span class="n">bootstrap</span><span class="o">-</span><span class="n">osd</span>
+    <span class="n">key</span><span class="p">:</span> <span class="n">AQBHCbtT4GxqORAADE5u7RkpCN</span><span class="o">/</span><span class="n">oo4e5W0uBtw</span><span class="o">==</span>
+    <span class="n">caps</span><span class="p">:</span> <span class="p">[</span><span class="n">mon</span><span class="p">]</span> <span class="n">allow</span> <span class="n">profile</span> <span class="n">bootstrap</span><span class="o">-</span><span class="n">osd</span>
+</pre></div>
+</div>
+<p>Note that, according to the <code class="docutils literal notranslate"><span class="pre">TYPE.ID</span></code> notation for users, <code class="docutils literal notranslate"><span class="pre">osd.0</span></code> is a
+user of type <code class="docutils literal notranslate"><span class="pre">osd</span></code> and an ID of <code class="docutils literal notranslate"><span class="pre">0</span></code>, and <code class="docutils literal notranslate"><span class="pre">client.admin</span></code> is a user of type
+<code class="docutils literal notranslate"><span class="pre">client</span></code> and an ID of <code class="docutils literal notranslate"><span class="pre">admin</span></code> (that is, the default <code class="docutils literal notranslate"><span class="pre">client.admin</span></code> user).
+Note too that each entry has a <code class="docutils literal notranslate"><span class="pre">key:</span> <span class="pre">&lt;value&gt;</span></code> entry, and also has one or more
+<code class="docutils literal notranslate"><span class="pre">caps:</span></code> entries.</p>
+<p>To save the output of <code class="docutils literal notranslate"><span class="pre">ceph</span> <span class="pre">auth</span> <span class="pre">ls</span></code> to a file, use the <code class="docutils literal notranslate"><span class="pre">-o</span> <span class="pre">{filename}</span></code> option.</p>
+</section>
+<section id="getting-a-user">
+<h3>Getting a User<a class="headerlink" href="#getting-a-user" title="Permalink to this heading">¶</a></h3>
+<p>To retrieve a specific user, key, and capabilities, run the following command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>auth<span class="w"> </span>get<span class="w"> </span><span class="o">{</span>TYPE.ID<span class="o">}</span></span>
+</pre></div></div><p>For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>auth<span class="w"> </span>get<span class="w"> </span>client.admin</span>
+</pre></div></div><p>To save the output of <code class="docutils literal notranslate"><span class="pre">ceph</span> <span class="pre">auth</span> <span class="pre">get</span></code> to a file, use the <code class="docutils literal notranslate"><span class="pre">-o</span> <span class="pre">{filename}</span></code> option. Developers may also run the following command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>auth<span class="w"> </span><span class="nb">export</span><span class="w"> </span><span class="o">{</span>TYPE.ID<span class="o">}</span></span>
+</pre></div></div><p>The <code class="docutils literal notranslate"><span class="pre">auth</span> <span class="pre">export</span></code> command is identical to <code class="docutils literal notranslate"><span class="pre">auth</span> <span class="pre">get</span></code>.</p>
+</section>
+<section id="adding-a-user">
+<span id="rados-ops-adding-a-user"></span><h3>Adding a User<a class="headerlink" href="#adding-a-user" title="Permalink to this heading">¶</a></h3>
+<p>Adding a user creates a user name (that is, <code class="docutils literal notranslate"><span class="pre">TYPE.ID</span></code>), a secret key, and
+any capabilities specified in the command that creates the user.</p>
+<p>A user’s key allows the user to authenticate with the Ceph Storage Cluster.
+The user’s capabilities authorize the user to read, write, or execute on Ceph
+monitors (<code class="docutils literal notranslate"><span class="pre">mon</span></code>), Ceph OSDs (<code class="docutils literal notranslate"><span class="pre">osd</span></code>) or Ceph Metadata Servers (<code class="docutils literal notranslate"><span class="pre">mds</span></code>).</p>
+<p>There are a few ways to add a user:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">ceph</span> <span class="pre">auth</span> <span class="pre">add</span></code>: This command is the canonical way to add a user. It
+will create the user, generate a key, and add any specified capabilities.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ceph</span> <span class="pre">auth</span> <span class="pre">get-or-create</span></code>: This command is often the most convenient way
+to create a user, because it returns a keyfile format with the user name
+(in brackets) and the key. If the user already exists, this command
+simply returns the user name and key in the keyfile format. To save the output to
+a file, use the <code class="docutils literal notranslate"><span class="pre">-o</span> <span class="pre">{filename}</span></code> option.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ceph</span> <span class="pre">auth</span> <span class="pre">get-or-create-key</span></code>: This command is a convenient way to create
+a user and return the user’s key and nothing else. This is useful for clients that
+need only the key (for example, libvirt). If the user already exists, this command
+simply returns the key. To save the output to
+a file, use the <code class="docutils literal notranslate"><span class="pre">-o</span> <span class="pre">{filename}</span></code> option.</p></li>
+</ul>
+<p>It is possible, when creating client users, to create a user with no capabilities. A user
+with no capabilities is useless beyond mere authentication, because the client
+cannot retrieve the cluster map from the monitor. However, you might want to create a user
+with no capabilities and wait until later to add capabilities to the user by using the <code class="docutils literal notranslate"><span class="pre">ceph</span> <span class="pre">auth</span> <span class="pre">caps</span></code> comand.</p>
+<p>A typical user has at least read capabilities on the Ceph monitor and
+read and write capabilities on Ceph OSDs. A user’s OSD permissions
+are often restricted so that the user can access only one particular pool.
+In the following example, the commands (1) add a client named <code class="docutils literal notranslate"><span class="pre">john</span></code> that has read capabilities on the Ceph monitor
+and read and write capabilities on the pool named <code class="docutils literal notranslate"><span class="pre">liverpool</span></code>, (2) authorize a client named <code class="docutils literal notranslate"><span class="pre">paul</span></code> to have read capabilities on the Ceph monitor and
+read and write capabilities on the pool named <code class="docutils literal notranslate"><span class="pre">liverpool</span></code>, (3) authorize a client named <code class="docutils literal notranslate"><span class="pre">george</span></code> to have read capabilities on the Ceph monitor and
+read and write capabilities on the pool named <code class="docutils literal notranslate"><span class="pre">liverpool</span></code> and use the keyring named <code class="docutils literal notranslate"><span class="pre">george.keyring</span></code> to make this authorization, and (4) authorize
+a client named <code class="docutils literal notranslate"><span class="pre">ringo</span></code> to have read capabilities on the Ceph monitor and read and write capabilities on the pool named <code class="docutils literal notranslate"><span class="pre">liverpool</span></code> and use the key
+named <code class="docutils literal notranslate"><span class="pre">ringo.key</span></code> to make this authorization:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>auth<span class="w"> </span>add<span class="w"> </span>client.john<span class="w"> </span>mon<span class="w"> </span><span class="s1">&#39;allow r&#39;</span><span class="w"> </span>osd<span class="w"> </span><span class="s1">&#39;allow rw pool=liverpool&#39;</span></span>
+<span class="prompt1">ceph<span class="w"> </span>auth<span class="w"> </span>get-or-create<span class="w"> </span>client.paul<span class="w"> </span>mon<span class="w"> </span><span class="s1">&#39;allow r&#39;</span><span class="w"> </span>osd<span class="w"> </span><span class="s1">&#39;allow rw pool=liverpool&#39;</span></span>
+<span class="prompt1">ceph<span class="w"> </span>auth<span class="w"> </span>get-or-create<span class="w"> </span>client.george<span class="w"> </span>mon<span class="w"> </span><span class="s1">&#39;allow r&#39;</span><span class="w"> </span>osd<span class="w"> </span><span class="s1">&#39;allow rw pool=liverpool&#39;</span><span class="w"> </span>-o<span class="w"> </span>george.keyring</span>
+<span class="prompt1">ceph<span class="w"> </span>auth<span class="w"> </span>get-or-create-key<span class="w"> </span>client.ringo<span class="w"> </span>mon<span class="w"> </span><span class="s1">&#39;allow r&#39;</span><span class="w"> </span>osd<span class="w"> </span><span class="s1">&#39;allow rw pool=liverpool&#39;</span><span class="w"> </span>-o<span class="w"> </span>ringo.key</span>
+</pre></div></div><div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>Any user that has capabilities on OSDs will have access to ALL pools in the cluster
+unless that user’s access has been restricted to a proper subset of the pools in the cluster.</p>
+</div>
+</section>
+<section id="modifying-user-capabilities">
+<span id="modify-user-capabilities"></span><h3>Modifying User Capabilities<a class="headerlink" href="#modifying-user-capabilities" title="Permalink to this heading">¶</a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">ceph</span> <span class="pre">auth</span> <span class="pre">caps</span></code> command allows you to specify a user and change that
+user’s capabilities. Setting new capabilities will overwrite current capabilities.
+To view current capabilities, run <code class="docutils literal notranslate"><span class="pre">ceph</span> <span class="pre">auth</span> <span class="pre">get</span> <span class="pre">USERTYPE.USERID</span></code>.
+To add capabilities, run a command of the following form (and be sure to specify the existing capabilities):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>auth<span class="w"> </span>caps<span class="w"> </span>USERTYPE.USERID<span class="w"> </span><span class="o">{</span>daemon<span class="o">}</span><span class="w"> </span><span class="s1">&#39;allow [r|w|x|*|...] [pool={pool-name}] [namespace={namespace-name}]&#39;</span><span class="w"> </span><span class="o">[{</span>daemon<span class="o">}</span><span class="w"> </span><span class="s1">&#39;allow [r|w|x|*|...] [pool={pool-name}] [namespace={namespace-name}]&#39;</span><span class="o">]</span></span>
+</pre></div></div><p>For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>auth<span class="w"> </span>get<span class="w"> </span>client.john</span>
+<span class="prompt1">ceph<span class="w"> </span>auth<span class="w"> </span>caps<span class="w"> </span>client.john<span class="w"> </span>mon<span class="w"> </span><span class="s1">&#39;allow r&#39;</span><span class="w"> </span>osd<span class="w"> </span><span class="s1">&#39;allow rw pool=liverpool&#39;</span></span>
+<span class="prompt1">ceph<span class="w"> </span>auth<span class="w"> </span>caps<span class="w"> </span>client.paul<span class="w"> </span>mon<span class="w"> </span><span class="s1">&#39;allow rw&#39;</span><span class="w"> </span>osd<span class="w"> </span><span class="s1">&#39;allow rwx pool=liverpool&#39;</span></span>
+<span class="prompt1">ceph<span class="w"> </span>auth<span class="w"> </span>caps<span class="w"> </span>client.brian-manager<span class="w"> </span>mon<span class="w"> </span><span class="s1">&#39;allow *&#39;</span><span class="w"> </span>osd<span class="w"> </span><span class="s1">&#39;allow *&#39;</span></span>
+</pre></div></div><p>For additional details on capabilities, see <a class="reference internal" href="#authorization-capabilities">Authorization (Capabilities)</a>.</p>
+</section>
+<section id="deleting-a-user">
+<h3>Deleting a User<a class="headerlink" href="#deleting-a-user" title="Permalink to this heading">¶</a></h3>
+<p>To delete a user, use <code class="docutils literal notranslate"><span class="pre">ceph</span> <span class="pre">auth</span> <span class="pre">del</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>auth<span class="w"> </span>del<span class="w"> </span><span class="o">{</span>TYPE<span class="o">}</span>.<span class="o">{</span>ID<span class="o">}</span></span>
+</pre></div></div><p>Here <code class="docutils literal notranslate"><span class="pre">{TYPE}</span></code> is either <code class="docutils literal notranslate"><span class="pre">client</span></code>, <code class="docutils literal notranslate"><span class="pre">osd</span></code>, <code class="docutils literal notranslate"><span class="pre">mon</span></code>, or <code class="docutils literal notranslate"><span class="pre">mds</span></code>,
+and <code class="docutils literal notranslate"><span class="pre">{ID}</span></code> is the user name or the ID of the daemon.</p>
+</section>
+<section id="printing-a-user-s-key">
+<h3>Printing a User’s Key<a class="headerlink" href="#printing-a-user-s-key" title="Permalink to this heading">¶</a></h3>
+<p>To print a user’s authentication key to standard output, run the following command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>auth<span class="w"> </span>print-key<span class="w"> </span><span class="o">{</span>TYPE<span class="o">}</span>.<span class="o">{</span>ID<span class="o">}</span></span>
+</pre></div></div><p>Here <code class="docutils literal notranslate"><span class="pre">{TYPE}</span></code> is either <code class="docutils literal notranslate"><span class="pre">client</span></code>, <code class="docutils literal notranslate"><span class="pre">osd</span></code>, <code class="docutils literal notranslate"><span class="pre">mon</span></code>, or <code class="docutils literal notranslate"><span class="pre">mds</span></code>,
+and <code class="docutils literal notranslate"><span class="pre">{ID}</span></code> is the user name or the ID of the daemon.</p>
+<p>When it is necessary to populate client software with a user’s key (as in the case of libvirt),
+you can print the user’s key by running the following command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">mount<span class="w"> </span>-t<span class="w"> </span>ceph<span class="w"> </span>serverhost:/<span class="w"> </span>mountpoint<span class="w"> </span>-o<span class="w"> </span><span class="nv">name</span><span class="o">=</span>client.user,secret<span class="o">=</span><span class="sb">`</span>ceph<span class="w"> </span>auth<span class="w"> </span>print-key<span class="w"> </span>client.user<span class="sb">`</span></span>
+</pre></div></div></section>
+<section id="importing-a-user">
+<h3>Importing a User<a class="headerlink" href="#importing-a-user" title="Permalink to this heading">¶</a></h3>
+<p>To import one or more users, use <code class="docutils literal notranslate"><span class="pre">ceph</span> <span class="pre">auth</span> <span class="pre">import</span></code> and
+specify a keyring as follows:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>auth<span class="w"> </span>import<span class="w"> </span>-i<span class="w"> </span>/path/to/keyring</span>
+</pre></div></div><p>For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">sudo<span class="w"> </span>ceph<span class="w"> </span>auth<span class="w"> </span>import<span class="w"> </span>-i<span class="w"> </span>/etc/ceph/ceph.keyring</span>
+</pre></div></div><div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The Ceph storage cluster will add new users, their keys, and their
+capabilities and will update existing users, their keys, and their
+capabilities.</p>
+</div>
+</section>
+</section>
+<section id="keyring-management">
+<h2>Keyring Management<a class="headerlink" href="#keyring-management" title="Permalink to this heading">¶</a></h2>
+<p>When you access Ceph via a Ceph client, the Ceph client will look for a local
+keyring. Ceph presets the <code class="docutils literal notranslate"><span class="pre">keyring</span></code> setting with four keyring
+names by default. For this reason, you do not have to set the keyring names in your Ceph configuration file
+unless you want to override these defaults (which is not recommended). The four default keyring names are as follows:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">/etc/ceph/$cluster.$name.keyring</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">/etc/ceph/$cluster.keyring</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">/etc/ceph/keyring</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">/etc/ceph/keyring.bin</span></code></p></li>
+</ul>
+<p>The <code class="docutils literal notranslate"><span class="pre">$cluster</span></code> metavariable found in the first two default keyring names above
+is your Ceph cluster name as defined by the name of the Ceph configuration
+file: for example, if the Ceph configuration file is named <code class="docutils literal notranslate"><span class="pre">ceph.conf</span></code>,
+then your Ceph cluster name is <code class="docutils literal notranslate"><span class="pre">ceph</span></code> and the second name above would be
+<code class="docutils literal notranslate"><span class="pre">ceph.keyring</span></code>. The <code class="docutils literal notranslate"><span class="pre">$name</span></code> metavariable is the user type and user ID:
+for example, given the user <code class="docutils literal notranslate"><span class="pre">client.admin</span></code>, the first name above would be
+<code class="docutils literal notranslate"><span class="pre">ceph.client.admin.keyring</span></code>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>When running commands that read or write to <code class="docutils literal notranslate"><span class="pre">/etc/ceph</span></code>, you might
+need to use <code class="docutils literal notranslate"><span class="pre">sudo</span></code> to run the command as <code class="docutils literal notranslate"><span class="pre">root</span></code>.</p>
+</div>
+<p>After you create a user (for example, <code class="docutils literal notranslate"><span class="pre">client.ringo</span></code>), you must get the key and add
+it to a keyring on a Ceph client so that the user can access the Ceph Storage
+Cluster.</p>
+<p>The <a class="reference internal" href="#id1">User Management</a> section details how to list, get, add, modify, and delete
+users directly in the Ceph Storage Cluster. In addition, Ceph provides the
+<code class="docutils literal notranslate"><span class="pre">ceph-authtool</span></code> utility to allow you to manage keyrings from a Ceph client.</p>
+<section id="creating-a-keyring">
+<h3>Creating a Keyring<a class="headerlink" href="#creating-a-keyring" title="Permalink to this heading">¶</a></h3>
+<p>When you use the procedures in the <a class="reference internal" href="#managing-users">Managing Users</a> section to create users,
+you must provide user keys to the Ceph client(s). This is required so that the Ceph client(s)
+can retrieve the key for the specified user and authenticate that user against the Ceph
+Storage Cluster. Ceph clients access keyrings in order to look up a user name and
+retrieve the user’s key.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">ceph-authtool</span></code> utility allows you to create a keyring. To create an
+empty keyring, use <code class="docutils literal notranslate"><span class="pre">--create-keyring</span></code> or <code class="docutils literal notranslate"><span class="pre">-C</span></code>. For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph-authtool<span class="w"> </span>--create-keyring<span class="w"> </span>/path/to/keyring</span>
+</pre></div></div><p>When creating a keyring with multiple users, we recommend using the cluster name
+(of the form <code class="docutils literal notranslate"><span class="pre">$cluster.keyring</span></code>) for the keyring filename and saving the keyring in the
+<code class="docutils literal notranslate"><span class="pre">/etc/ceph</span></code> directory. By doing this, you ensure that the <code class="docutils literal notranslate"><span class="pre">keyring</span></code> configuration default setting
+will pick up the filename without requiring you to specify the filename in the local copy
+of your Ceph configuration file. For example, you can create <code class="docutils literal notranslate"><span class="pre">ceph.keyring</span></code> by
+running the following command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">sudo<span class="w"> </span>ceph-authtool<span class="w"> </span>-C<span class="w"> </span>/etc/ceph/ceph.keyring</span>
+</pre></div></div><p>When creating a keyring with a single user, we recommend using the cluster name,
+the user type, and the user name, and saving the keyring in the <code class="docutils literal notranslate"><span class="pre">/etc/ceph</span></code> directory.
+For example, we recommend that the <code class="docutils literal notranslate"><span class="pre">client.admin</span></code> user use <code class="docutils literal notranslate"><span class="pre">ceph.client.admin.keyring</span></code>.</p>
+<p>To create a keyring in <code class="docutils literal notranslate"><span class="pre">/etc/ceph</span></code>, you must do so as <code class="docutils literal notranslate"><span class="pre">root</span></code>. This means
+that the file will have <code class="docutils literal notranslate"><span class="pre">rw</span></code> permissions for the <code class="docutils literal notranslate"><span class="pre">root</span></code> user only, which is
+appropriate when the keyring contains administrator keys. However, if you
+intend to use the keyring for a particular user or group of users, be sure to use <code class="docutils literal notranslate"><span class="pre">chown</span></code> or <code class="docutils literal notranslate"><span class="pre">chmod</span></code> to establish appropriate keyring
+ownership and access.</p>
+</section>
+<section id="adding-a-user-to-a-keyring">
+<h3>Adding a User to a Keyring<a class="headerlink" href="#adding-a-user-to-a-keyring" title="Permalink to this heading">¶</a></h3>
+<p>When you <a class="reference internal" href="#rados-ops-adding-a-user"><span class="std std-ref">Add a user</span></a> to the Ceph Storage
+Cluster, you can use the <a class="reference internal" href="#getting-a-user">Getting a User</a> procedure to retrieve a user, key,
+and capabilities and then save the user to a keyring.</p>
+<p>If you want to use only one user per keyring, the <a class="reference internal" href="#getting-a-user">Getting a User</a> procedure with
+the <code class="docutils literal notranslate"><span class="pre">-o</span></code> option will save the output in the keyring file format. For example,
+to create a keyring for the <code class="docutils literal notranslate"><span class="pre">client.admin</span></code> user, run the following command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">sudo<span class="w"> </span>ceph<span class="w"> </span>auth<span class="w"> </span>get<span class="w"> </span>client.admin<span class="w"> </span>-o<span class="w"> </span>/etc/ceph/ceph.client.admin.keyring</span>
+</pre></div></div><p>Notice that the file format in this command is the file format conventionally used when manipulating the keyrings of individual users.</p>
+<p>If you want to import users to a keyring, you can use <code class="docutils literal notranslate"><span class="pre">ceph-authtool</span></code>
+to specify the destination keyring and the source keyring.
+For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">sudo<span class="w"> </span>ceph-authtool<span class="w"> </span>/etc/ceph/ceph.keyring<span class="w"> </span>--import-keyring<span class="w"> </span>/etc/ceph/ceph.client.admin.keyring</span>
+</pre></div></div></section>
+<section id="creating-a-user">
+<h3>Creating a User<a class="headerlink" href="#creating-a-user" title="Permalink to this heading">¶</a></h3>
+<p>Ceph provides the <a class="reference internal" href="#adding-a-user">Adding a User</a> function to create a user directly in the Ceph
+Storage Cluster. However, you can also create a user, keys, and capabilities
+directly on a Ceph client keyring, and then import the user to the Ceph
+Storage Cluster. For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">sudo<span class="w"> </span>ceph-authtool<span class="w"> </span>-n<span class="w"> </span>client.ringo<span class="w"> </span>--cap<span class="w"> </span>osd<span class="w"> </span><span class="s1">&#39;allow rwx&#39;</span><span class="w"> </span>--cap<span class="w"> </span>mon<span class="w"> </span><span class="s1">&#39;allow rwx&#39;</span><span class="w"> </span>/etc/ceph/ceph.keyring</span>
+</pre></div></div><p>For additional details on capabilities, see <a class="reference internal" href="#authorization-capabilities">Authorization (Capabilities)</a>.</p>
+<p>You can also create a keyring and add a new user to the keyring simultaneously.
+For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">sudo<span class="w"> </span>ceph-authtool<span class="w"> </span>-C<span class="w"> </span>/etc/ceph/ceph.keyring<span class="w"> </span>-n<span class="w"> </span>client.ringo<span class="w"> </span>--cap<span class="w"> </span>osd<span class="w"> </span><span class="s1">&#39;allow rwx&#39;</span><span class="w"> </span>--cap<span class="w"> </span>mon<span class="w"> </span><span class="s1">&#39;allow rwx&#39;</span><span class="w"> </span>--gen-key</span>
+</pre></div></div><p>In the above examples, the new user <code class="docutils literal notranslate"><span class="pre">client.ringo</span></code> has been added only to the
+keyring. The new user has not been added to the Ceph Storage Cluster.</p>
+<p>To add the new user <code class="docutils literal notranslate"><span class="pre">client.ringo</span></code> to the Ceph Storage Cluster, run the following command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">sudo<span class="w"> </span>ceph<span class="w"> </span>auth<span class="w"> </span>add<span class="w"> </span>client.ringo<span class="w"> </span>-i<span class="w"> </span>/etc/ceph/ceph.keyring</span>
+</pre></div></div></section>
+<section id="modifying-a-user">
+<h3>Modifying a User<a class="headerlink" href="#modifying-a-user" title="Permalink to this heading">¶</a></h3>
+<p>To modify the capabilities of a user record in a keyring, specify the keyring
+and the user, followed by the capabilities. For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">sudo<span class="w"> </span>ceph-authtool<span class="w"> </span>/etc/ceph/ceph.keyring<span class="w"> </span>-n<span class="w"> </span>client.ringo<span class="w"> </span>--cap<span class="w"> </span>osd<span class="w"> </span><span class="s1">&#39;allow rwx&#39;</span><span class="w"> </span>--cap<span class="w"> </span>mon<span class="w"> </span><span class="s1">&#39;allow rwx&#39;</span></span>
+</pre></div></div><p>To update the user in the Ceph Storage Cluster, you must update the user
+in the keyring to the user entry in the Ceph Storage Cluster. To do so, run the following command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">sudo<span class="w"> </span>ceph<span class="w"> </span>auth<span class="w"> </span>import<span class="w"> </span>-i<span class="w"> </span>/etc/ceph/ceph.keyring</span>
+</pre></div></div><p>For details on updating a Ceph Storage Cluster user from a
+keyring, see <a class="reference internal" href="#importing-a-user">Importing a User</a></p>
+<p>You may also <a class="reference internal" href="#modify-user-capabilities"><span class="std std-ref">Modify user capabilities</span></a> directly in the cluster, store the
+results to a keyring file, and then import the keyring into your main
+<code class="docutils literal notranslate"><span class="pre">ceph.keyring</span></code> file.</p>
+</section>
+</section>
+<section id="command-line-usage">
+<h2>Command Line Usage<a class="headerlink" href="#command-line-usage" title="Permalink to this heading">¶</a></h2>
+<p>Ceph supports the following usage for user name and secret:</p>
+<p><code class="docutils literal notranslate"><span class="pre">--id</span></code> | <code class="docutils literal notranslate"><span class="pre">--user</span></code></p>
+<dl class="field-list">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Ceph identifies users with a type and an ID: the form of this user identification is <code class="docutils literal notranslate"><span class="pre">TYPE.ID</span></code>, and examples of the type and ID are
+<code class="docutils literal notranslate"><span class="pre">client.admin</span></code> and <code class="docutils literal notranslate"><span class="pre">client.user1</span></code>. The <code class="docutils literal notranslate"><span class="pre">id</span></code>, <code class="docutils literal notranslate"><span class="pre">name</span></code> and
+<code class="docutils literal notranslate"><span class="pre">-n</span></code> options allow you to specify the ID portion of the user
+name (for example, <code class="docutils literal notranslate"><span class="pre">admin</span></code>, <code class="docutils literal notranslate"><span class="pre">user1</span></code>, <code class="docutils literal notranslate"><span class="pre">foo</span></code>). You can specify
+the user with the <code class="docutils literal notranslate"><span class="pre">--id</span></code> and omit the type. For example,
+to specify user <code class="docutils literal notranslate"><span class="pre">client.foo</span></code>, run the following commands:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>--id<span class="w"> </span>foo<span class="w"> </span>--keyring<span class="w"> </span>/path/to/keyring<span class="w"> </span>health</span>
+<span class="prompt1">ceph<span class="w"> </span>--user<span class="w"> </span>foo<span class="w"> </span>--keyring<span class="w"> </span>/path/to/keyring<span class="w"> </span>health</span>
+</pre></div></div></dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">--name</span></code> | <code class="docutils literal notranslate"><span class="pre">-n</span></code></p>
+<dl class="field-list">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Ceph identifies users with a type and an ID: the form of this user identification is <code class="docutils literal notranslate"><span class="pre">TYPE.ID</span></code>, and examples of the type and ID are
+<code class="docutils literal notranslate"><span class="pre">client.admin</span></code> and <code class="docutils literal notranslate"><span class="pre">client.user1</span></code>. The <code class="docutils literal notranslate"><span class="pre">--name</span></code> and <code class="docutils literal notranslate"><span class="pre">-n</span></code>
+options allow you to specify the fully qualified user name.
+You are required to specify the user type (typically <code class="docutils literal notranslate"><span class="pre">client</span></code>) with the
+user ID. For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>--name<span class="w"> </span>client.foo<span class="w"> </span>--keyring<span class="w"> </span>/path/to/keyring<span class="w"> </span>health</span>
+<span class="prompt1">ceph<span class="w"> </span>-n<span class="w"> </span>client.foo<span class="w"> </span>--keyring<span class="w"> </span>/path/to/keyring<span class="w"> </span>health</span>
+</pre></div></div></dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">--keyring</span></code></p>
+<dl class="field-list">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The path to the keyring that contains one or more user names and
+secrets. The <code class="docutils literal notranslate"><span class="pre">--secret</span></code> option provides the same functionality,
+but it does not work with Ceph RADOS Gateway, which uses
+<code class="docutils literal notranslate"><span class="pre">--secret</span></code> for another purpose. You may retrieve a keyring with
+<code class="docutils literal notranslate"><span class="pre">ceph</span> <span class="pre">auth</span> <span class="pre">get-or-create</span></code> and store it locally. This is a
+preferred approach, because you can switch user names without
+switching the keyring path. For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">sudo<span class="w"> </span>rbd<span class="w"> </span>map<span class="w"> </span>--id<span class="w"> </span>foo<span class="w"> </span>--keyring<span class="w"> </span>/path/to/keyring<span class="w"> </span>mypool/myimage</span>
+</pre></div></div></dd>
+</dl>
+</section>
+<section id="limitations">
+<h2>Limitations<a class="headerlink" href="#limitations" title="Permalink to this heading">¶</a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">cephx</span></code> protocol authenticates Ceph clients and servers to each other. It
+is not intended to handle authentication of human users or application programs
+that are run on their behalf. If your access control
+needs require that kind of authentication, you will need to have some other mechanism, which is likely to be specific to the
+front end that is used to access the Ceph object store. This other mechanism would ensure that only acceptable users and programs are able to run on the
+machine that Ceph permits to access its object store.</p>
+<p>The keys used to authenticate Ceph clients and servers are typically stored in
+a plain text file on a trusted host. Appropriate permissions must be set on the plain text file.</p>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>Storing keys in plaintext files has security shortcomings, but
+they are difficult to avoid, given the basic authentication methods Ceph
+uses in the background. Anyone setting up Ceph systems should be aware of
+these shortcomings.</p>
+</div>
+<p>In particular, user machines, especially portable machines, should not
+be configured to interact directly with Ceph, since that mode of use would
+require the storage of a plaintext authentication key on an insecure machine.
+Anyone who stole that machine or obtained access to it could
+obtain a key that allows them to authenticate their own machines to Ceph.</p>
+<p>Instead of permitting potentially insecure machines to access a Ceph object
+store directly, you should require users to sign in to a trusted machine in
+your environment, using a method that provides sufficient security for your
+purposes. That trusted machine will store the plaintext Ceph keys for the
+human users. A future version of Ceph might address these particular
+authentication issues more fully.</p>
+<p>At present, none of the Ceph authentication protocols provide secrecy for
+messages in transit. As a result, an eavesdropper on the wire can hear and understand
+all data sent between clients and servers in Ceph, even if the eavesdropper cannot create or
+alter the data. Similarly, Ceph does not include options to encrypt user data in the
+object store. Users can, of course, hand-encrypt and store their own data in the Ceph
+object store, but Ceph itself provides no features to perform object
+encryption. Anyone storing sensitive data in Ceph should consider
+encrypting their data before providing it to the Ceph system.</p>
+</section>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../../">
+              <img class="logo" src="../../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../install/">Installing Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cephadm/">Cephadm</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../">Ceph Storage Cluster</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../../configuration/">Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../cephadm/">Deployment</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../">Operations</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../operating/">Operating a Cluster</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../health-checks/">Health checks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../monitoring/">Monitoring a Cluster</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../monitoring-osd-pg/">Monitoring OSDs and PGs</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">User Management</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#background">Background</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#user">User</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#authorization-capabilities">Authorization (Capabilities)</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#pool">Pool</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#application-tags">Application Tags</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#namespace">Namespace</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#managing-users">Managing Users</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#listing-users">Listing Users</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#getting-a-user">Getting a User</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#adding-a-user">Adding a User</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#modifying-user-capabilities">Modifying User Capabilities</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#deleting-a-user">Deleting a User</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#printing-a-user-s-key">Printing a User’s Key</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#importing-a-user">Importing a User</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#keyring-management">Keyring Management</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#creating-a-keyring">Creating a Keyring</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#adding-a-user-to-a-keyring">Adding a User to a Keyring</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#creating-a-user">Creating a User</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#modifying-a-user">Modifying a User</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#command-line-usage">Command Line Usage</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#limitations">Limitations</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../pg-repair/">Repairing PG Inconsistencies</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../data-placement/">Data Placement Overview</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../pools/">Pools</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../erasure-code/">Erasure code</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../cache-tiering/">Cache Tiering</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../placement-groups/">Placement Groups</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../balancer/">Balancer</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../upmap/">Using pg-upmap</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../crush-map/">CRUSH Maps</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../crush-map-edits/">Manually editing a CRUSH Map</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../stretch-mode/">Stretch Clusters</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../change-mon-elections/">Configure Monitor Election Strategies</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../add-or-rm-osds/">Adding/Removing OSDs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../add-or-rm-mons/">Adding/Removing Monitors</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../devices/">Device Management</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../bluestore-migration/">BlueStore Migration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../control/">Command Reference</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../troubleshooting/community/">The Ceph Community</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../troubleshooting/troubleshooting-mon/">Troubleshooting Monitors</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../troubleshooting/troubleshooting-osd/">Troubleshooting OSDs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../troubleshooting/troubleshooting-pg/">Troubleshooting PGs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../troubleshooting/log-and-debug/">Logging and Debugging</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../troubleshooting/cpu-profiling/">CPU Profiling</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../troubleshooting/memory-profiling/">Memory Profiling</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../man/">Man Pages</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../troubleshooting/">Troubleshooting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/">APIs</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cephfs/">Ceph File System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../rbd/">Ceph Block Device</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../radosgw/">Ceph Object Gateway</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../mgr/">Ceph Manager Daemon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../mgr/dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dev/developer_guide/">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dev/internals/">Ceph Internals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../../../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../pg-repair/" title="Repairing PG Inconsistencies"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../monitoring-osd-pg/" title="Monitoring OSDs and PGs"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../" >Ceph Storage Cluster</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../" >Cluster Operations</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">User Management</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

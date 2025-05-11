@@ -1,0 +1,301 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Zabbix Module &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css" />
+    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../genindex/" />
+    <link rel="search" title="Search" href="../../search/" />
+    <link rel="next" title="Prometheus Module" href="../prometheus/" />
+    <link rel="prev" title="Restful Module" href="../restful/" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../prometheus/" title="Prometheus Module"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../restful/" title="Restful Module"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../" accesskey="U">Ceph Manager Daemon</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Zabbix Module</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="zabbix-module">
+<h1>Zabbix Module<a class="headerlink" href="#zabbix-module" title="Permalink to this heading">¶</a></h1>
+<p>The Zabbix module actively sends information to a Zabbix server like:</p>
+<ul class="simple">
+<li><p>Ceph status</p></li>
+<li><p>I/O operations</p></li>
+<li><p>I/O bandwidth</p></li>
+<li><p>OSD status</p></li>
+<li><p>Storage utilization</p></li>
+</ul>
+<section id="requirements">
+<h2>Requirements<a class="headerlink" href="#requirements" title="Permalink to this heading">¶</a></h2>
+<p>The module requires that the <em>zabbix_sender</em> executable is present on <em>all</em>
+machines running ceph-mgr. It can be installed on most distributions using
+the package manager.</p>
+<section id="dependencies">
+<h3>Dependencies<a class="headerlink" href="#dependencies" title="Permalink to this heading">¶</a></h3>
+<p>Installing zabbix_sender can be done under Ubuntu or CentOS using either apt
+or dnf.</p>
+<p>On Ubuntu Xenial:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">apt</span> <span class="n">install</span> <span class="n">zabbix</span><span class="o">-</span><span class="n">agent</span>
+</pre></div>
+</div>
+<p>On Fedora:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">dnf</span> <span class="n">install</span> <span class="n">zabbix</span><span class="o">-</span><span class="n">sender</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="enabling">
+<h2>Enabling<a class="headerlink" href="#enabling" title="Permalink to this heading">¶</a></h2>
+<p>You can enable the <em>zabbix</em> module with:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span> <span class="n">mgr</span> <span class="n">module</span> <span class="n">enable</span> <span class="n">zabbix</span>
+</pre></div>
+</div>
+</section>
+<section id="configuration">
+<h2>Configuration<a class="headerlink" href="#configuration" title="Permalink to this heading">¶</a></h2>
+<p>Two configuration keys are vital for the module to work:</p>
+<ul class="simple">
+<li><p>zabbix_host</p></li>
+<li><p>identifier (optional)</p></li>
+</ul>
+<p>The parameter <em>zabbix_host</em> controls the hostname of the Zabbix server to which
+<em>zabbix_sender</em> will send the items. This can be a IP-Address if required by
+your installation.</p>
+<p>The <em>identifier</em> parameter controls the identifier/hostname to use as source
+when sending items to Zabbix. This should match the name of the <em>Host</em> in
+your Zabbix server.</p>
+<p>When the <em>identifier</em> parameter is not configured the ceph-&lt;fsid&gt; of the cluster
+will be used when sending data to Zabbix.</p>
+<p>This would for example be <em>ceph-c4d32a99-9e80-490f-bd3a-1d22d8a7d354</em></p>
+<p>Additional configuration keys which can be configured and their default values:</p>
+<ul class="simple">
+<li><p>zabbix_port: 10051</p></li>
+<li><p>zabbix_sender: /usr/bin/zabbix_sender</p></li>
+<li><p>interval: 60</p></li>
+<li><p>discovery_interval: 100</p></li>
+</ul>
+<section id="configuration-keys">
+<h3>Configuration keys<a class="headerlink" href="#configuration-keys" title="Permalink to this heading">¶</a></h3>
+<p>Configuration keys can be set on any machine with the proper cephx credentials,
+these are usually Monitors where the <em>client.admin</em> key is present.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span> <span class="n">zabbix</span> <span class="n">config</span><span class="o">-</span><span class="nb">set</span> <span class="o">&lt;</span><span class="n">key</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">value</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<p>For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span> <span class="n">zabbix</span> <span class="n">config</span><span class="o">-</span><span class="nb">set</span> <span class="n">zabbix_host</span> <span class="n">zabbix</span><span class="o">.</span><span class="n">localdomain</span>
+<span class="n">ceph</span> <span class="n">zabbix</span> <span class="n">config</span><span class="o">-</span><span class="nb">set</span> <span class="n">identifier</span> <span class="n">ceph</span><span class="o">.</span><span class="n">eu</span><span class="o">-</span><span class="n">ams02</span><span class="o">.</span><span class="n">local</span>
+</pre></div>
+</div>
+<p>The current configuration of the module can also be shown:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span> <span class="n">zabbix</span> <span class="n">config</span><span class="o">-</span><span class="n">show</span>
+</pre></div>
+</div>
+</section>
+<section id="template">
+<h3>Template<a class="headerlink" href="#template" title="Permalink to this heading">¶</a></h3>
+<p>A <a class="reference external" href="https://raw.githubusercontent.com/ceph/ceph/master/src/pybind/mgr/zabbix/zabbix_template.xml">template</a>.
+(XML) to be used on the Zabbix server can be found in the source directory of the module.</p>
+<p>This template contains all items and a few triggers. You can customize the triggers afterwards to fit your needs.</p>
+</section>
+<section id="multiple-zabbix-servers">
+<h3>Multiple Zabbix servers<a class="headerlink" href="#multiple-zabbix-servers" title="Permalink to this heading">¶</a></h3>
+<p>It is possible to instruct zabbix module to send data to multiple Zabbix servers.</p>
+<p>Parameter <em>zabbix_host</em> can be set with multiple hostnames separated by commas.
+Hosnames (or IP adderesses) can be followed by colon and port number. If a port
+number is not present module will use the port number defined in <em>zabbix_port</em>.</p>
+<p>For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span> <span class="n">zabbix</span> <span class="n">config</span><span class="o">-</span><span class="nb">set</span> <span class="n">zabbix_host</span> <span class="s2">&quot;zabbix1,zabbix2:2222,zabbix3:3333&quot;</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="manually-sending-data">
+<h2>Manually sending data<a class="headerlink" href="#manually-sending-data" title="Permalink to this heading">¶</a></h2>
+<p>If needed the module can be asked to send data immediately instead of waiting for
+the interval.</p>
+<p>This can be done with this command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span> <span class="n">zabbix</span> <span class="n">send</span>
+</pre></div>
+</div>
+<p>The module will now send its latest data to the Zabbix server.</p>
+<p>Items discovery is accomplished also via zabbix_sender, and runs every <cite>discovery_interval * interval</cite> seconds. If you wish to launch discovery
+manually, this can be done with this command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span> <span class="n">zabbix</span> <span class="n">discovery</span>
+</pre></div>
+</div>
+</section>
+<section id="debugging">
+<h2>Debugging<a class="headerlink" href="#debugging" title="Permalink to this heading">¶</a></h2>
+<p>Should you want to debug the Zabbix module increase the logging level for
+ceph-mgr and check the logs.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[</span><span class="n">mgr</span><span class="p">]</span>
+    <span class="n">debug</span> <span class="n">mgr</span> <span class="o">=</span> <span class="mi">20</span>
+</pre></div>
+</div>
+<p>With logging set to debug for the manager the module will print various logging
+lines prefixed with <em>mgr[zabbix]</em> for easy filtering.</p>
+</section>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../">
+              <img class="logo" src="../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../install/">Installing Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cephadm/">Cephadm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rados/">Ceph Storage Cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cephfs/">Ceph File System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rbd/">Ceph Block Device</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../radosgw/">Ceph Object Gateway</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../">Ceph Manager Daemon</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../administrator/">Installation and Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../modules/">Writing modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../orchestrator_modules/">Writing orchestrator plugins</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../dashboard/">Dashboard module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../ceph_api/">Ceph RESTful API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../alerts/">Alerts module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../diskprediction/">DiskPrediction module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../localpool/">Local pool module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../restful/">RESTful module</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Zabbix module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#requirements">Requirements</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#dependencies">Dependencies</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#enabling">Enabling</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#configuration">Configuration</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#configuration-keys">Configuration keys</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#template">Template</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#multiple-zabbix-servers">Multiple Zabbix servers</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#manually-sending-data">Manually sending data</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#debugging">Debugging</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../prometheus/">Prometheus module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../influx/">Influx module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../hello/">Hello module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../telegraf/">Telegraf module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../telemetry/">Telemetry module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../iostat/">Iostat module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../crash/">Crash module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../insights/">Insights module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../orchestrator/">Orchestrator module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rook/">Rook module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../mds_autoscaler/">MDS Autoscaler module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../nfs/">NFS module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cli_api/">CLI API Commands module</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dev/developer_guide/">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dev/internals/">Ceph Internals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../prometheus/" title="Prometheus Module"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../restful/" title="Restful Module"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../" >Ceph Manager Daemon</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Zabbix Module</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

@@ -1,0 +1,414 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Network Encoding &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css" />
+    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../genindex/" />
+    <link rel="search" title="Search" href="../../search/" />
+    <link rel="next" title="Network Protocol" href="../network-protocol/" />
+    <link rel="prev" title="msgr2 protocol (msgr2.0 and msgr2.1)" href="../msgr2/" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../network-protocol/" title="Network Protocol"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../msgr2/" title="msgr2 protocol (msgr2.0 and msgr2.1)"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../internals/" accesskey="U">Ceph Internals</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Network Encoding</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="network-encoding">
+<h1>Network Encoding<a class="headerlink" href="#network-encoding" title="Permalink to this heading">¶</a></h1>
+<p>This describes the encoding used to serialize data.  It doesn’t cover specific
+objects/messages but focuses on the base types.</p>
+<p>The types are not self documenting in any way.  They can not be decoded unless
+you know what they are.</p>
+<section id="conventions">
+<h2>Conventions<a class="headerlink" href="#conventions" title="Permalink to this heading">¶</a></h2>
+<section id="integers">
+<h3>Integers<a class="headerlink" href="#integers" title="Permalink to this heading">¶</a></h3>
+<p>The integer types used will be named <code class="docutils literal notranslate"><span class="pre">{signed}{size}{endian}</span></code>.  For example
+<code class="docutils literal notranslate"><span class="pre">u16le</span></code> is an unsigned 16 bit integer encoded in little endian byte order
+while <code class="docutils literal notranslate"><span class="pre">s64be</span></code> is a signed 64 bit integer in big endian.  Additionally <code class="docutils literal notranslate"><span class="pre">u8</span></code>
+and <code class="docutils literal notranslate"><span class="pre">s8</span></code> will represent signed and unsigned bytes respectively.  Signed
+integers use two’s complement encoding.</p>
+</section>
+<section id="complex-types">
+<h3>Complex Types<a class="headerlink" href="#complex-types" title="Permalink to this heading">¶</a></h3>
+<p>This document will use a c-like syntax for describing structures.  The
+structure represents the data that will go over the wire.  There will be no
+padding between the elements and the elements will be sent in the order they
+appear.  For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">struct</span> <span class="n">foo</span> <span class="p">{</span>
+        <span class="n">u8</span>    <span class="n">tag</span><span class="p">;</span>
+        <span class="n">u32le</span> <span class="n">data</span><span class="p">;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>When encoding the values <code class="docutils literal notranslate"><span class="pre">0x05</span></code> and <code class="docutils literal notranslate"><span class="pre">0x12345678</span></code> respectively will appear on
+the wire as <code class="docutils literal notranslate"><span class="pre">05</span> <span class="pre">78</span> <span class="pre">56</span> <span class="pre">34</span> <span class="pre">12</span></code>.</p>
+</section>
+<section id="variable-arrays">
+<h3>Variable Arrays<a class="headerlink" href="#variable-arrays" title="Permalink to this heading">¶</a></h3>
+<p>Unlike c, length arrays can be used anywhere in structures and will be inline in
+the protocol.  Furthermore the length may be described using an earlier item in
+the structure.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">struct</span> <span class="n">blob</span> <span class="p">{</span>
+        <span class="n">u32le</span> <span class="n">size</span><span class="p">;</span>
+        <span class="n">u8</span>    <span class="n">data</span><span class="p">[</span><span class="n">size</span><span class="p">];</span>
+        <span class="n">u32le</span> <span class="n">checksum</span><span class="p">;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>This structure is encoded as a 32 bit size, followed by <code class="docutils literal notranslate"><span class="pre">size</span></code> data bytes,
+then a 32 bit checksum.</p>
+</section>
+<section id="primitive-aliases">
+<h3>Primitive Aliases<a class="headerlink" href="#primitive-aliases" title="Permalink to this heading">¶</a></h3>
+<p>These types are just aliases for primitive types.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">//</span> <span class="n">From</span> <span class="o">/</span><span class="n">src</span><span class="o">/</span><span class="n">include</span><span class="o">/</span><span class="n">types</span><span class="o">.</span><span class="n">h</span>
+
+<span class="n">typedef</span> <span class="n">u32le</span> <span class="n">epoch_t</span><span class="p">;</span>
+<span class="n">typedef</span> <span class="n">u32le</span> <span class="n">ceph_seq_t</span><span class="p">;</span>
+<span class="n">typedef</span> <span class="n">u64le</span> <span class="n">ceph_tid_t</span><span class="p">;</span>
+<span class="n">typedef</span> <span class="n">u64le</span> <span class="n">version_t</span><span class="p">;</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="structures">
+<h2>Structures<a class="headerlink" href="#structures" title="Permalink to this heading">¶</a></h2>
+<p>These are the way structures are encoded.  Note that these structures don’t
+actually exist in the source but are the way that different types are encoded.</p>
+<section id="optional">
+<h3>Optional<a class="headerlink" href="#optional" title="Permalink to this heading">¶</a></h3>
+<p>Optionals are represented as a presence byte, followed by the item if it exists.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>struct ceph_optional&lt;T&gt; {
+        u8 present;
+        T  element[present? 1 : 0]; // Only if present is non-zero.
+}
+</pre></div>
+</div>
+<p>Optionals are used to encode <code class="docutils literal notranslate"><span class="pre">boost::optional</span></code> and, since introducing
+C++17 to Ceph, <code class="docutils literal notranslate"><span class="pre">std::optional</span></code>.</p>
+</section>
+<section id="pair">
+<h3>Pair<a class="headerlink" href="#pair" title="Permalink to this heading">¶</a></h3>
+<p>Pairs are simply the first item followed by the second.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">struct</span> <span class="n">ceph_pair</span><span class="o">&lt;</span><span class="n">A</span><span class="p">,</span><span class="n">B</span><span class="o">&gt;</span> <span class="p">{</span>
+        <span class="n">A</span> <span class="n">a</span><span class="p">;</span>
+        <span class="n">B</span> <span class="n">b</span><span class="p">;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>Pairs are used to encode <code class="docutils literal notranslate"><span class="pre">std::pair</span></code>.</p>
+</section>
+<section id="triple">
+<h3>Triple<a class="headerlink" href="#triple" title="Permalink to this heading">¶</a></h3>
+<p>Triples are simply the tree elements one after another.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">struct</span> <span class="n">ceph_triple</span><span class="o">&lt;</span><span class="n">A</span><span class="p">,</span><span class="n">B</span><span class="p">,</span><span class="n">C</span><span class="o">&gt;</span> <span class="p">{</span>
+        <span class="n">A</span> <span class="n">a</span><span class="p">;</span>
+        <span class="n">B</span> <span class="n">b</span><span class="p">;</span>
+        <span class="n">C</span> <span class="n">c</span><span class="p">;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>Triples are used to encode <code class="docutils literal notranslate"><span class="pre">ceph::triple</span></code>.</p>
+</section>
+<section id="list">
+<h3>List<a class="headerlink" href="#list" title="Permalink to this heading">¶</a></h3>
+<p>Lists are represented as an element count followed by that many elements.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">struct</span> <span class="n">ceph_list</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="p">{</span>
+        <span class="n">u32le</span> <span class="n">length</span><span class="p">;</span>
+        <span class="n">T</span>     <span class="n">elements</span><span class="p">[</span><span class="n">length</span><span class="p">];</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The size of the elements in the list are not necessarily uniform.</p>
+</div>
+<p>Lists are used to encode <code class="docutils literal notranslate"><span class="pre">std::list</span></code>, <code class="docutils literal notranslate"><span class="pre">std::vector</span></code>, <code class="docutils literal notranslate"><span class="pre">std::deque</span></code>,
+<code class="docutils literal notranslate"><span class="pre">std::set</span></code> and <code class="docutils literal notranslate"><span class="pre">ceph::unordered_set</span></code>.</p>
+</section>
+<section id="blob">
+<h3>Blob<a class="headerlink" href="#blob" title="Permalink to this heading">¶</a></h3>
+<p>A Blob is simply a list of bytes.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">struct</span> <span class="n">ceph_string</span> <span class="p">{</span>
+        <span class="n">ceph_list</span><span class="o">&lt;</span><span class="n">u8</span><span class="o">&gt;</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="o">//</span> <span class="n">AKA</span>
+
+<span class="n">struct</span> <span class="n">ceph_string</span> <span class="p">{</span>
+        <span class="n">u32le</span> <span class="n">size</span><span class="p">;</span>
+        <span class="n">u8</span>    <span class="n">data</span><span class="p">[</span><span class="n">size</span><span class="p">];</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>Blobs are used to encode <code class="docutils literal notranslate"><span class="pre">std::string</span></code>, <code class="docutils literal notranslate"><span class="pre">const</span> <span class="pre">char</span> <span class="pre">*</span></code> and <code class="docutils literal notranslate"><span class="pre">bufferlist</span></code>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The content of a Blob is arbitrary binary data.</p>
+</div>
+</section>
+<section id="map">
+<h3>Map<a class="headerlink" href="#map" title="Permalink to this heading">¶</a></h3>
+<p>Maps are a list of pairs.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">struct</span> <span class="n">ceph_map</span><span class="o">&lt;</span><span class="n">K</span><span class="p">,</span><span class="n">V</span><span class="o">&gt;</span> <span class="p">{</span>
+        <span class="n">ceph_list</span><span class="o">&lt;</span><span class="n">ceph_pair</span><span class="o">&lt;</span><span class="n">K</span><span class="p">,</span><span class="n">V</span><span class="o">&gt;&gt;</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="o">//</span> <span class="n">AKA</span>
+
+<span class="n">struct</span> <span class="n">ceph_map</span><span class="o">&lt;</span><span class="n">K</span><span class="p">,</span><span class="n">V</span><span class="o">&gt;</span> <span class="p">{</span>
+        <span class="n">u32le</span> <span class="n">length</span><span class="p">;</span>
+        <span class="n">ceph_pair</span><span class="o">&lt;</span><span class="n">K</span><span class="p">,</span><span class="n">V</span><span class="o">&gt;</span> <span class="n">entries</span><span class="p">[</span><span class="n">length</span><span class="p">];</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>Maps are used to encode <code class="docutils literal notranslate"><span class="pre">std::map</span></code>, <code class="docutils literal notranslate"><span class="pre">std::multimap</span></code> and
+<code class="docutils literal notranslate"><span class="pre">ceph::unordered_map</span></code>.</p>
+</section>
+</section>
+<section id="id1">
+<h2>Complex Types<a class="headerlink" href="#id1" title="Permalink to this heading">¶</a></h2>
+<p>These aren’t hard to find in the source but the common ones are listed here for
+convenience.</p>
+<section id="utime-t">
+<h3>utime_t<a class="headerlink" href="#utime-t" title="Permalink to this heading">¶</a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">//</span> <span class="n">From</span> <span class="o">/</span><span class="n">src</span><span class="o">/</span><span class="n">include</span><span class="o">/</span><span class="n">utime</span><span class="o">.</span><span class="n">h</span>
+<span class="n">struct</span> <span class="n">utime_t</span> <span class="p">{</span>
+        <span class="n">u32le</span> <span class="n">tv_sec</span><span class="p">;</span>  <span class="o">//</span> <span class="n">Seconds</span> <span class="n">since</span> <span class="n">epoch</span><span class="o">.</span>
+        <span class="n">u32le</span> <span class="n">tv_nsec</span><span class="p">;</span> <span class="o">//</span> <span class="n">Nanoseconds</span> <span class="n">since</span> <span class="n">the</span> <span class="n">last</span> <span class="n">second</span><span class="o">.</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+<section id="ceph-entity-name">
+<h3>ceph_entity_name<a class="headerlink" href="#ceph-entity-name" title="Permalink to this heading">¶</a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">//</span> <span class="n">From</span> <span class="o">/</span><span class="n">src</span><span class="o">/</span><span class="n">include</span><span class="o">/</span><span class="n">msgr</span><span class="o">.</span><span class="n">h</span>
+<span class="n">struct</span> <span class="n">ceph_entity_name</span> <span class="p">{</span>
+        <span class="n">u8</span>    <span class="nb">type</span><span class="p">;</span> <span class="o">//</span> <span class="n">CEPH_ENTITY_TYPE_</span><span class="o">*</span>
+        <span class="n">u64le</span> <span class="n">num</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="o">//</span> <span class="n">CEPH_ENTITY_TYPE_</span><span class="o">*</span> <span class="n">defined</span> <span class="ow">in</span> <span class="o">/</span><span class="n">src</span><span class="o">/</span><span class="n">include</span><span class="o">/</span><span class="n">msgr</span><span class="o">.</span><span class="n">h</span>
+</pre></div>
+</div>
+</section>
+</section>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../">
+              <img class="logo" src="../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../install/">Installing Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cephadm/">Cephadm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rados/">Ceph Storage Cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cephfs/">Ceph File System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rbd/">Ceph Block Device</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../radosgw/">Ceph Object Gateway</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/">Ceph Manager Daemon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../developer_guide/">Developer Guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../internals/">Ceph Internals</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../blkin/">Tracing Ceph With Blkin</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../bluestore/">BlueStore Internals</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cache-pool/">Cache pool</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../ceph_krb_auth/">A Detailed Documentation on How to Set up Ceph Kerberos Authentication</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cephfs-mirroring/">CephFS Mirroring</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cephfs-reclaim/">CephFS Reclaim Interface</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cephfs-snapshots/">CephFS Snapshots</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cephx/">Cephx</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cephx_protocol/">A Detailed Description of the Cephx Authentication Protocol</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../config/">Configuration Management System</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../config-key/">config-key layout</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../context/">CephContext</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../continuous-integration/">Continuous Integration Architecture</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../corpus/">Corpus structure</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpu-profiler/">Installing Oprofile</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cxx/">C++17 and libstdc++ ABI</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../delayed-delete/">CephFS delayed deletion</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../dev_cluster_deployement/">Deploying a development cluster</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../dev_cluster_deployement/#deploying-multiple-development-clusters-on-the-same-machine">Deploying multiple development clusters on the same machine</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../development-workflow/">Development workflows</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../documenting/">Documenting Ceph</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../encoding/">Serialization (encode/decode)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../erasure-coded-pool/">Erasure Coded pool</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../file-striping/">File striping</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../freebsd/">FreeBSD Implementation details</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../generatedocs/">Building Ceph Documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../iana/">IANA Numbers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../kubernetes/">Hacking on Ceph in Kubernetes with Rook</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../libs/">Library architecture</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../logging/">Use of the cluster log</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../logs/">Debug logs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../macos/">build on MacOS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../messenger/">Messenger notes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../mon-bootstrap/">Monitor bootstrap</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../mon-elections/">Monitor Elections</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../mon-on-disk-formats/">ON-DISK FORMAT</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../mon-osdmap-prune/">FULL OSDMAP VERSION PRUNING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../msgr2/">msgr2 protocol (msgr2.0 and msgr2.1)</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Network Encoding</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#conventions">Conventions</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#integers">Integers</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#complex-types">Complex Types</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#variable-arrays">Variable Arrays</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#primitive-aliases">Primitive Aliases</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#structures">Structures</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#optional">Optional</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pair">Pair</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#triple">Triple</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#list">List</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#blob">Blob</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#map">Map</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#id1">Complex Types</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#utime-t">utime_t</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#ceph-entity-name">ceph_entity_name</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../network-protocol/">Network Protocol</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../object-store/">Object Store Architecture Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../osd-class-path/">OSD class path issues</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../peering/">Peering</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../perf/">Using perf</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../perf_counters/">Perf counters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../perf_histograms/">Perf histograms</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../placement-group/">PG (Placement Group) notes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../quick_guide/">Developer Guide (Quick)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rados-client-protocol/">RADOS client protocol</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rbd-diff/">RBD Incremental Backup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rbd-export/">RBD Export &amp; Import</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rbd-layering/">RBD Layering</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../release-checklists/">Release checklists</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../release-process/">Ceph Release Process</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../seastore/">SeaStore</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../sepia/">Sepia community test lab</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../session_authentication/">Session Authentication for the Cephx Protocol</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../testing/">Testing notes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../versions/">Public OSD Version</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../vstart-ganesha/">NFS CephFS-RGW Developer Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../wireshark/">Wireshark Dissector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../zoned-storage/">Zoned Storage Support</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../osd_internals/">OSD developer documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../mds_internals/">MDS developer documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../radosgw/">RADOS Gateway developer documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../ceph-volume/">ceph-volume developer documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../crimson/">Crimson developer documentation</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../network-protocol/" title="Network Protocol"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../msgr2/" title="msgr2 protocol (msgr2.0 and msgr2.1)"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../internals/" >Ceph Internals</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Network Encoding</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

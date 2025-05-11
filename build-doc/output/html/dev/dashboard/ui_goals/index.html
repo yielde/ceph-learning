@@ -1,0 +1,250 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Ceph Dashboard Design Goals &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/css/custom.css" />
+    <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/jquery.js"></script>
+    <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../../genindex/" />
+    <link rel="search" title="Search" href="../../../search/" />
+    <link rel="next" title="Ceph Internals" href="../../internals/" />
+    <link rel="prev" title="Ceph Dashboard Developer Documentation" href="../../developer_guide/dash-devel/" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../../internals/" title="Ceph Internals"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../../developer_guide/dash-devel/" title="Ceph Dashboard Developer Documentation"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../developer_guide/" >Contributing to Ceph: A Guide for Developers</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../../developer_guide/dash-devel/" accesskey="U">Ceph Dashboard Developer Documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Ceph Dashboard Design Goals</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="ceph-dashboard-design-goals">
+<h1>Ceph Dashboard Design Goals<a class="headerlink" href="#ceph-dashboard-design-goals" title="Permalink to this heading">¶</a></h1>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This document is intended to provide a focal point for discussing the overall design
+principles for mgr/dashboard</p>
+</div>
+<section id="introduction">
+<h2>Introduction<a class="headerlink" href="#introduction" title="Permalink to this heading">¶</a></h2>
+<p>Most distributed storage architectures are inherently complex and can present a management challenge
+to Operations teams who are typically stretched across multiple product and platform disciplines. In
+general terms, the complexity of any solution can have a direct bearing on the operational costs
+incurred to manage it. The answer is simple…make it simple :)</p>
+<p>This document is intended to highlight Ceph Dashboard design goals which may help to</p>
+<ul class="simple">
+<li><p>reduce complexity</p></li>
+<li><p>increase productivity</p></li>
+<li><p>improve time-to-value</p></li>
+<li><p>increase observability</p></li>
+</ul>
+</section>
+<section id="understanding-the-persona-of-the-target-user">
+<h2>Understanding the Persona of the Target User<a class="headerlink" href="#understanding-the-persona-of-the-target-user" title="Permalink to this heading">¶</a></h2>
+<p>Ceph has historically been administered from the CLI. The CLI has always and will always offer the
+richest, most flexible way to install and manage a Ceph cluster. Administrators who require and
+demand this level of control are unlikely to adopt a UI for anything more than a technical curiosity.</p>
+<p>The relevance of the UI is therefore more critical for a new SysAdmin, where it can help technology
+adoption and reduce the operational friction that is normally experienced when implementing a new
+solution.</p>
+<p>Understanding the target user persona is therefore a fundamental first step in design. Attempting to
+design a UI that meets the requirements of a ‘seasoned’ Ceph Administrator or Developer, and a
+relatively new SysAdmin is unlikely to satisfy either user group.</p>
+</section>
+<section id="design-principles">
+<h2>Design Principles<a class="headerlink" href="#design-principles" title="Permalink to this heading">¶</a></h2>
+<section id="key-principles">
+<h3>Key Principles<a class="headerlink" href="#key-principles" title="Permalink to this heading">¶</a></h3>
+<ol class="arabic simple">
+<li><p><strong>Clarity and consistency</strong>. The UI should ensure the data shown is unambiguous and consistent across
+different views</p></li>
+<li><p><strong>Data timeliness</strong>. Data displayed in the UI must be timely. State information <strong>must</strong> be reasonably
+recent for it to be relevant and acted upon with confidence. In addition, the age of the data should
+be shown as age (e.g. 20s ago) rather than UTC timestamps to make it more immediately consumable by
+the Administrator.</p></li>
+<li><p><strong>Automate through workflows</strong>. If the admin has to follow a ‘recipe’ to perform a task, the goal of
+the dashboard UI should be to implement the flow.</p></li>
+<li><p><strong>Provide a natural next step</strong>. The UI <strong>is</strong> the <em>expert system</em>, so instead of expecting the user
+to know where they go next, the UI should lead them. This means linking components together to
+establish a flow and deeper integration between the alertmanager implementation and the dashboard
+elements enabling an Admin to efficiently step from alert to affected component.</p></li>
+<li><p><strong>Platform visibility</strong>. The platform (OS and hardware configuration) is a fundamental component of the
+solution, so providing platform level insights can help deliver a more holistic view of the Ceph cluster.</p></li>
+<li><p><strong>Jargon Busting</strong>. Jargon is an unavoidable component of most systems. However, a good system will
+include inline help to support new and infrequent users of the UI.</p></li>
+</ol>
+</section>
+<section id="common-pitfalls">
+<h3>Common Pitfalls<a class="headerlink" href="#common-pitfalls" title="Permalink to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>Don’t re-implement CLI commands in the UI. The sysadmin will likely use the CLI primitives in scripts
+to automate tasks, so by simply adding a CLI feature we miss the workflow and add complexity, which
+potentially ‘bloats’ the UI.</p></li>
+<li><p>Don’t think like a developer…try and adopt the mindset of an Administrator, who only works with the
+Ceph cluster part-time - this is the reality for today’s Operations teams.</p></li>
+</ul>
+</section>
+</section>
+<section id="focus-on-user-experience">
+<h2>Focus On User Experience<a class="headerlink" href="#focus-on-user-experience" title="Permalink to this heading">¶</a></h2>
+<p>Ultimately, the goal must be to move away from pushing complexity onto the GUI user through multi-step
+workflows like iSCSI configuration or setting specific cluster flags in defined sequences. Simplicity
+should be the goal for the UI…let’s leave the complexity to the CLI.</p>
+</section>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../../">
+              <img class="logo" src="../../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../install/">Installing Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cephadm/">Cephadm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../rados/">Ceph Storage Cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cephfs/">Ceph File System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../rbd/">Ceph Block Device</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../radosgw/">Ceph Object Gateway</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../mgr/">Ceph Manager Daemon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../mgr/dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../architecture/">Architecture</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../developer_guide/">Developer Guide</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../../developer_guide/intro/">Introduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../developer_guide/essentials/">Essentials</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../developer_guide/merging/">What is Merged and When</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../developer_guide/issue-tracker/">Issue tracker</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../developer_guide/basic-workflow/">Basic workflow</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../developer_guide/tests-unit-tests/">Tests: Unit Tests</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../developer_guide/tests-integration-tests/">Tests: Integration Tests</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../developer_guide/running-tests-locally/">Running Tests Locally</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../developer_guide/running-tests-using-teuth/">Running Integration Tests using Teuthology</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../developer_guide/running-tests-in-cloud/">Running Tests in the Cloud</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../../developer_guide/dash-devel/">Ceph Dashboard Developer Documentation (formerly HACKING.rst)</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="../../developer_guide/dash-devel/#feature-design">Feature Design</a><ul class="current">
+<li class="toctree-l4 current"><a class="current reference internal" href="#"> UI Design Goals</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#introduction">Introduction</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#understanding-the-persona-of-the-target-user">Understanding the Persona of the Target User</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#design-principles">Design Principles</a><ul>
+<li class="toctree-l6"><a class="reference internal" href="#key-principles">Key Principles</a></li>
+<li class="toctree-l6"><a class="reference internal" href="#common-pitfalls">Common Pitfalls</a></li>
+</ul>
+</li>
+<li class="toctree-l5"><a class="reference internal" href="#focus-on-user-experience">Focus On User Experience</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../developer_guide/dash-devel/#preliminary-steps">Preliminary Steps</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../developer_guide/dash-devel/#frontend-development">Frontend Development</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../developer_guide/dash-devel/#i18n">I18N</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../developer_guide/dash-devel/#backend-development">Backend Development</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../cephadm/">cephadm Developer Documentation</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../internals/">Ceph Internals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../../../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../../internals/" title="Ceph Internals"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../../developer_guide/dash-devel/" title="Ceph Dashboard Developer Documentation"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../developer_guide/" >Contributing to Ceph: A Guide for Developers</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../../developer_guide/dash-devel/" >Ceph Dashboard Developer Documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Ceph Dashboard Design Goals</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

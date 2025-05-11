@@ -1,0 +1,448 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Pool Placement and Storage Classes &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css" />
+    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../genindex/" />
+    <link rel="search" title="Search" href="../../search/" />
+    <link rel="next" title="Multi-Site" href="../multisite/" />
+    <link rel="prev" title="HTTP Frontends" href="../frontends/" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../multisite/" title="Multi-Site"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../frontends/" title="HTTP Frontends"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../" accesskey="U">Ceph Object Gateway</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Pool Placement and Storage Classes</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="pool-placement-and-storage-classes">
+<h1><a class="toc-backref" href="#id4">Pool Placement and Storage Classes</a><a class="headerlink" href="#pool-placement-and-storage-classes" title="Permalink to this heading">¶</a></h1>
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="#pool-placement-and-storage-classes" id="id4">Pool Placement and Storage Classes</a></p>
+<ul>
+<li><p><a class="reference internal" href="#placement-targets" id="id5">Placement Targets</a></p></li>
+<li><p><a class="reference internal" href="#storage-classes" id="id6">Storage Classes</a></p></li>
+<li><p><a class="reference internal" href="#zonegroup-zone-configuration" id="id7">Zonegroup/Zone Configuration</a></p>
+<ul>
+<li><p><a class="reference internal" href="#adding-a-placement-target" id="id8">Adding a Placement Target</a></p></li>
+<li><p><a class="reference internal" href="#adding-a-storage-class" id="id9">Adding a Storage Class</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#customizing-placement" id="id10">Customizing Placement</a></p>
+<ul>
+<li><p><a class="reference internal" href="#default-placement" id="id11">Default Placement</a></p></li>
+<li><p><a class="reference internal" href="#user-placement" id="id12">User Placement</a></p></li>
+<li><p><a class="reference internal" href="#s3-bucket-placement" id="id13">S3 Bucket Placement</a></p></li>
+<li><p><a class="reference internal" href="#swift-bucket-placement" id="id14">Swift Bucket Placement</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#using-storage-classes" id="id15">Using Storage Classes</a></p></li>
+</ul>
+</li>
+</ul>
+</div>
+<section id="placement-targets">
+<h2><a class="toc-backref" href="#id5">Placement Targets</a><a class="headerlink" href="#placement-targets" title="Permalink to this heading">¶</a></h2>
+<div class="versionadded">
+<p><span class="versionmodified added">New in version Jewel.</span></p>
+</div>
+<p>Placement targets control which <a class="reference external" href="../pools">Pools</a> are associated with a particular
+bucket. A bucket’s placement target is selected on creation, and cannot be
+modified. The <code class="docutils literal notranslate"><span class="pre">radosgw-admin</span> <span class="pre">bucket</span> <span class="pre">stats</span></code> command will display its
+<code class="docutils literal notranslate"><span class="pre">placement_rule</span></code>.</p>
+<p>The zonegroup configuration contains a list of placement targets with an
+initial target named <code class="docutils literal notranslate"><span class="pre">default-placement</span></code>. The zone configuration then maps
+each zonegroup placement target name onto its local storage. This zone
+placement information includes the <code class="docutils literal notranslate"><span class="pre">index_pool</span></code> name for the bucket index,
+the <code class="docutils literal notranslate"><span class="pre">data_extra_pool</span></code> name for metadata about incomplete multipart uploads,
+and a <code class="docutils literal notranslate"><span class="pre">data_pool</span></code> name for each storage class.</p>
+</section>
+<section id="storage-classes">
+<span id="id1"></span><h2><a class="toc-backref" href="#id6">Storage Classes</a><a class="headerlink" href="#storage-classes" title="Permalink to this heading">¶</a></h2>
+<div class="versionadded">
+<p><span class="versionmodified added">New in version Nautilus.</span></p>
+</div>
+<p>Storage classes are used to customize the placement of object data. S3 Bucket
+Lifecycle rules can automate the transition of objects between storage classes.</p>
+<p>Storage classes are defined in terms of placement targets. Each zonegroup
+placement target lists its available storage classes with an initial class
+named <code class="docutils literal notranslate"><span class="pre">STANDARD</span></code>. The zone configuration is responsible for providing a
+<code class="docutils literal notranslate"><span class="pre">data_pool</span></code> pool name for each of the zonegroup’s storage classes.</p>
+</section>
+<section id="zonegroup-zone-configuration">
+<h2><a class="toc-backref" href="#id7">Zonegroup/Zone Configuration</a><a class="headerlink" href="#zonegroup-zone-configuration" title="Permalink to this heading">¶</a></h2>
+<p>Placement configuration is performed with <code class="docutils literal notranslate"><span class="pre">radosgw-admin</span></code> commands on
+the zonegroups and zones.</p>
+<p>The zonegroup placement configuration can be queried with:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ radosgw-admin zonegroup get
+{
+    &quot;id&quot;: &quot;ab01123f-e0df-4f29-9d71-b44888d67cd5&quot;,
+    &quot;name&quot;: &quot;default&quot;,
+    &quot;api_name&quot;: &quot;default&quot;,
+    ...
+    &quot;placement_targets&quot;: [
+        {
+            &quot;name&quot;: &quot;default-placement&quot;,
+            &quot;tags&quot;: [],
+            &quot;storage_classes&quot;: [
+                &quot;STANDARD&quot;
+            ]
+        }
+    ],
+    &quot;default_placement&quot;: &quot;default-placement&quot;,
+    ...
+}
+</pre></div>
+</div>
+<p>The zone placement configuration can be queried with:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ radosgw-admin zone get
+{
+    &quot;id&quot;: &quot;557cdcee-3aae-4e9e-85c7-2f86f5eddb1f&quot;,
+    &quot;name&quot;: &quot;default&quot;,
+    &quot;domain_root&quot;: &quot;default.rgw.meta:root&quot;,
+    ...
+    &quot;placement_pools&quot;: [
+        {
+            &quot;key&quot;: &quot;default-placement&quot;,
+            &quot;val&quot;: {
+                &quot;index_pool&quot;: &quot;default.rgw.buckets.index&quot;,
+                &quot;storage_classes&quot;: {
+                    &quot;STANDARD&quot;: {
+                        &quot;data_pool&quot;: &quot;default.rgw.buckets.data&quot;
+                    }
+                },
+                &quot;data_extra_pool&quot;: &quot;default.rgw.buckets.non-ec&quot;,
+                &quot;index_type&quot;: 0
+            }
+        }
+    ],
+    ...
+}
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If you have not done any previous <a class="reference external" href="../multisite">Multisite Configuration</a>,
+a <code class="docutils literal notranslate"><span class="pre">default</span></code> zone and zonegroup are created for you, and changes
+to the zone/zonegroup will not take effect until the Ceph Object
+Gateways are restarted. If you have created a realm for multisite,
+the zone/zonegroup changes will take effect once the changes are
+committed with <code class="docutils literal notranslate"><span class="pre">radosgw-admin</span> <span class="pre">period</span> <span class="pre">update</span> <span class="pre">--commit</span></code>.</p>
+</div>
+<section id="adding-a-placement-target">
+<h3><a class="toc-backref" href="#id8">Adding a Placement Target</a><a class="headerlink" href="#adding-a-placement-target" title="Permalink to this heading">¶</a></h3>
+<p>To create a new placement target named <code class="docutils literal notranslate"><span class="pre">temporary</span></code>, start by adding it to
+the zonegroup:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ radosgw-admin zonegroup placement add \
+      --rgw-zonegroup default \
+      --placement-id temporary
+</pre></div>
+</div>
+<p>Then provide the zone placement info for that target:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ radosgw-admin zone placement add \
+      --rgw-zone default \
+      --placement-id temporary \
+      --data-pool default.rgw.temporary.data \
+      --index-pool default.rgw.temporary.index \
+      --data-extra-pool default.rgw.temporary.non-ec
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>With default placement target settings, RGW stores an object’s first data chunk in the RADOS “head” object along
+with xattr metadata. The <cite>–placement-inline-data=false</cite> flag may be passed with the <cite>zone placement add</cite> or
+<cite>zone placement modify</cite> commands to change this behavior for new objects stored on the target.
+When data is stored inline (default), it may provide an advantage for read/write workloads since the first chunk of
+an object’s data can be retrieved/stored in a single librados call along with object metadata. On the other hand, a
+target that does not store data inline can provide a performance benefit for RGW client delete requests when
+the BlueStore DB is located on faster storage than bucket data since it eliminates the need to access
+slower devices synchronously while processing the client request. In that case, data associated with the deleted
+objects is removed asynchronously in the background by garbage collection.</p>
+</div>
+</section>
+<section id="adding-a-storage-class">
+<span id="id2"></span><h3><a class="toc-backref" href="#id9">Adding a Storage Class</a><a class="headerlink" href="#adding-a-storage-class" title="Permalink to this heading">¶</a></h3>
+<p>To add a new storage class named <code class="docutils literal notranslate"><span class="pre">GLACIER</span></code> to the <code class="docutils literal notranslate"><span class="pre">default-placement</span></code> target,
+start by adding it to the zonegroup:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ radosgw-admin zonegroup placement add \
+      --rgw-zonegroup default \
+      --placement-id default-placement \
+      --storage-class GLACIER
+</pre></div>
+</div>
+<p>Then provide the zone placement info for that storage class:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ radosgw-admin zone placement add \
+      --rgw-zone default \
+      --placement-id default-placement \
+      --storage-class GLACIER \
+      --data-pool default.rgw.glacier.data \
+      --compression lz4
+</pre></div>
+</div>
+</section>
+</section>
+<section id="customizing-placement">
+<h2><a class="toc-backref" href="#id10">Customizing Placement</a><a class="headerlink" href="#customizing-placement" title="Permalink to this heading">¶</a></h2>
+<section id="default-placement">
+<h3><a class="toc-backref" href="#id11">Default Placement</a><a class="headerlink" href="#default-placement" title="Permalink to this heading">¶</a></h3>
+<p>By default, new buckets will use the zonegroup’s <code class="docutils literal notranslate"><span class="pre">default_placement</span></code> target.
+This zonegroup setting can be changed with:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ radosgw-admin zonegroup placement default \
+      --rgw-zonegroup default \
+      --placement-id new-placement
+</pre></div>
+</div>
+</section>
+<section id="user-placement">
+<h3><a class="toc-backref" href="#id12">User Placement</a><a class="headerlink" href="#user-placement" title="Permalink to this heading">¶</a></h3>
+<p>A Ceph Object Gateway user can override the zonegroup’s default placement
+target by setting a non-empty <code class="docutils literal notranslate"><span class="pre">default_placement</span></code> field in the user info.
+Similarly, the <code class="docutils literal notranslate"><span class="pre">default_storage_class</span></code> can override the <code class="docutils literal notranslate"><span class="pre">STANDARD</span></code>
+storage class applied to objects by default.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ radosgw-admin user info --uid testid
+{
+    ...
+    &quot;default_placement&quot;: &quot;&quot;,
+    &quot;default_storage_class&quot;: &quot;&quot;,
+    &quot;placement_tags&quot;: [],
+    ...
+}
+</pre></div>
+</div>
+<p>If a zonegroup’s placement target contains any <code class="docutils literal notranslate"><span class="pre">tags</span></code>, users will be unable
+to create buckets with that placement target unless their user info contains
+at least one matching tag in its <code class="docutils literal notranslate"><span class="pre">placement_tags</span></code> field. This can be useful
+to restrict access to certain types of storage.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">radosgw-admin</span></code> command can modify these fields directly with:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ radosgw-admin user modify \
+      --uid &lt;user-id&gt; \
+      --placement-id &lt;default-placement-id&gt; \
+      --storage-class &lt;default-storage-class&gt; \
+      --tags &lt;tag1,tag2&gt;
+</pre></div>
+</div>
+</section>
+<section id="s3-bucket-placement">
+<span id="id3"></span><h3><a class="toc-backref" href="#id13">S3 Bucket Placement</a><a class="headerlink" href="#s3-bucket-placement" title="Permalink to this heading">¶</a></h3>
+<p>When creating a bucket with the S3 protocol, a placement target can be
+provided as part of the LocationConstraint to override the default placement
+targets from the user and zonegroup.</p>
+<p>Normally, the LocationConstraint must match the zonegroup’s <code class="docutils literal notranslate"><span class="pre">api_name</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">&lt;</span><span class="n">LocationConstraint</span><span class="o">&gt;</span><span class="n">default</span><span class="o">&lt;/</span><span class="n">LocationConstraint</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<p>A custom placement target can be added to the <code class="docutils literal notranslate"><span class="pre">api_name</span></code> following a colon:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">&lt;</span><span class="n">LocationConstraint</span><span class="o">&gt;</span><span class="n">default</span><span class="p">:</span><span class="n">new</span><span class="o">-</span><span class="n">placement</span><span class="o">&lt;/</span><span class="n">LocationConstraint</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+</section>
+<section id="swift-bucket-placement">
+<h3><a class="toc-backref" href="#id14">Swift Bucket Placement</a><a class="headerlink" href="#swift-bucket-placement" title="Permalink to this heading">¶</a></h3>
+<p>When creating a bucket with the Swift protocol, a placement target can be
+provided in the HTTP header <code class="docutils literal notranslate"><span class="pre">X-Storage-Policy</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">X</span><span class="o">-</span><span class="n">Storage</span><span class="o">-</span><span class="n">Policy</span><span class="p">:</span> <span class="n">new</span><span class="o">-</span><span class="n">placement</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="using-storage-classes">
+<h2><a class="toc-backref" href="#id15">Using Storage Classes</a><a class="headerlink" href="#using-storage-classes" title="Permalink to this heading">¶</a></h2>
+<p>All placement targets have a <code class="docutils literal notranslate"><span class="pre">STANDARD</span></code> storage class which is applied to
+new objects by default. The user can override this default with its
+<code class="docutils literal notranslate"><span class="pre">default_storage_class</span></code>.</p>
+<p>To create an object in a non-default storage class, provide that storage class
+name in an HTTP header with the request. The S3 protocol uses the
+<code class="docutils literal notranslate"><span class="pre">X-Amz-Storage-Class</span></code> header, while the Swift protocol uses the
+<code class="docutils literal notranslate"><span class="pre">X-Object-Storage-Class</span></code> header.</p>
+<p>When using AWS S3 SDKs such as python boto3, it is important that the non-default
+storage class will be called as one on of the AWS S3 allowed storage classes, or else the SDK
+will drop the request and raise an exception.</p>
+<p>S3 Object Lifecycle Management can then be used to move object data between
+storage classes using <code class="docutils literal notranslate"><span class="pre">Transition</span></code> actions.</p>
+</section>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../">
+              <img class="logo" src="../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../install/">Installing Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cephadm/">Cephadm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rados/">Ceph Storage Cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cephfs/">Ceph File System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rbd/">Ceph Block Device</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../">Ceph Object Gateway</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../frontends/">HTTP Frontends</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Pool Placement and Storage Classes</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#placement-targets">Placement Targets</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#storage-classes">Storage Classes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#zonegroup-zone-configuration">Zonegroup/Zone Configuration</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#adding-a-placement-target">Adding a Placement Target</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#adding-a-storage-class">Adding a Storage Class</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#customizing-placement">Customizing Placement</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#default-placement">Default Placement</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#user-placement">User Placement</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#s3-bucket-placement">S3 Bucket Placement</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#swift-bucket-placement">Swift Bucket Placement</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#using-storage-classes">Using Storage Classes</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../multisite/">Multisite Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../multisite-sync-policy/">Multisite Sync Policy Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pools/">Configuring Pools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../config-ref/">Config Reference</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../admin/">Admin Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../s3/">S3 API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rgw-cache/">Data caching and CDN</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../swift/">Swift API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../adminops/">Admin Ops API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/">Python binding</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../nfs/">Export over NFS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../keystone/">OpenStack Keystone Integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../barbican/">OpenStack Barbican Integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../vault/">HashiCorp Vault Integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../kmip/">KMIP Integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../opa/">Open Policy Agent Integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../multitenancy/">Multi-tenancy</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../compression/">Compression</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../ldap-auth/">LDAP Authentication</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../encryption/">Server-Side Encryption</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../bucketpolicy/">Bucket Policy</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../dynamicresharding/">Dynamic bucket index resharding</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../mfa/">Multi factor authentication</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../sync-modules/">Sync Modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../notifications/">Bucket Notifications</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../layout/">Data Layout in RADOS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../STS/">STS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../STSLite/">STS Lite</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../keycloak/">Keycloak</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../session-tags/">Session Tags</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../role/">Role</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../orphans/">Orphan List and Associated Tooling</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../oidc/">OpenID Connect Provider</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../troubleshooting/">Troubleshooting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../man/8/radosgw/">Manpage radosgw</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../man/8/radosgw-admin/">Manpage radosgw-admin</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../qat-accel/">QAT Acceleration for Encryption and Compression</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../s3select/">S3-select</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../lua-scripting/">Lua Scripting</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/">Ceph Manager Daemon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dev/developer_guide/">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dev/internals/">Ceph Internals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../multisite/" title="Multi-Site"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../frontends/" title="HTTP Frontends"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../" >Ceph Object Gateway</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Pool Placement and Storage Classes</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

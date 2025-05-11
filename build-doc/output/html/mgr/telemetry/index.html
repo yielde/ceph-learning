@@ -1,0 +1,349 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Telemetry Module &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css" />
+    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../genindex/" />
+    <link rel="search" title="Search" href="../../search/" />
+    <link rel="next" title="iostat" href="../iostat/" />
+    <link rel="prev" title="Telegraf Module" href="../telegraf/" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../iostat/" title="iostat"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../telegraf/" title="Telegraf Module"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../" accesskey="U">Ceph Manager Daemon</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Telemetry Module</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="telemetry-module">
+<span id="telemetry"></span><h1>Telemetry Module<a class="headerlink" href="#telemetry-module" title="Permalink to this heading">¶</a></h1>
+<p>The telemetry module sends anonymous data about the cluster back to the Ceph
+developers to help understand how Ceph is used and what problems users may
+be experiencing.</p>
+<p>This data is visualized on <a class="reference external" href="https://telemetry-public.ceph.com/">public dashboards</a>
+that allow the community to quickly see summary statistics on how many clusters
+are reporting, their total capacity and OSD count, and version distribution
+trends.</p>
+<section id="channels">
+<h2>Channels<a class="headerlink" href="#channels" title="Permalink to this heading">¶</a></h2>
+<p>The telemetry report is broken down into several “channels”, each with
+a different type of information.  Assuming telemetry has been enabled,
+individual channels can be turned on and off.  (If telemetry is off,
+the per-channel setting has no effect.)</p>
+<ul>
+<li><p><strong>basic</strong> (default: on): Basic information about the cluster</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>capacity of the cluster</p></li>
+<li><p>number of monitors, managers, OSDs, MDSs, object gateways, or other daemons</p></li>
+<li><p>software version currently being used</p></li>
+<li><p>number and types of RADOS pools and CephFS file systems</p></li>
+<li><p>names of configuration options that have been changed from their
+default (but <em>not</em> their values)</p></li>
+</ul>
+</div></blockquote>
+</li>
+<li><p><strong>crash</strong> (default: on): Information about daemon crashes, including</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>type of daemon</p></li>
+<li><p>version of the daemon</p></li>
+<li><p>operating system (OS distribution, kernel version)</p></li>
+<li><p>stack trace identifying where in the Ceph code the crash occurred</p></li>
+</ul>
+</div></blockquote>
+</li>
+<li><p><strong>device</strong> (default: on): Information about device metrics, including</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>anonymized SMART metrics</p></li>
+</ul>
+</div></blockquote>
+</li>
+<li><p><strong>ident</strong> (default: off): User-provided identifying information about
+the cluster</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>cluster description</p></li>
+<li><p>contact email address</p></li>
+</ul>
+</div></blockquote>
+</li>
+</ul>
+<p>The data being reported does <em>not</em> contain any sensitive
+data like pool names, object names, object contents, hostnames, or device
+serial numbers.</p>
+<p>It contains counters and statistics on how the cluster has been
+deployed, the version of Ceph, the distribution of the hosts and other
+parameters which help the project to gain a better understanding of
+the way Ceph is used.</p>
+<p>Data is sent secured to <em>https://telemetry.ceph.com</em>.</p>
+</section>
+<section id="sample-report">
+<h2>Sample report<a class="headerlink" href="#sample-report" title="Permalink to this heading">¶</a></h2>
+<p>You can look at what data is reported at any time with the command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span> <span class="n">telemetry</span> <span class="n">show</span>
+</pre></div>
+</div>
+<p>To protect your privacy, device reports are generated separately, and data such
+as hostname and device serial number is anonymized. The device telemetry is
+sent to a different endpoint and does not associate the device data with a
+particular cluster. To see a preview of the device report use the command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span> <span class="n">telemetry</span> <span class="n">show</span><span class="o">-</span><span class="n">device</span>
+</pre></div>
+</div>
+<p>Please note: In order to generate the device report we use Smartmontools
+version 7.0 and up, which supports JSON output.
+If you have any concerns about privacy with regard to the information included in
+this report, please contact the Ceph developers.</p>
+</section>
+<section id="id1">
+<h2>Channels<a class="headerlink" href="#id1" title="Permalink to this heading">¶</a></h2>
+<p>Individual channels can be enabled or disabled with:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span> <span class="n">config</span> <span class="nb">set</span> <span class="n">mgr</span> <span class="n">mgr</span><span class="o">/</span><span class="n">telemetry</span><span class="o">/</span><span class="n">channel_ident</span> <span class="n">false</span>
+<span class="n">ceph</span> <span class="n">config</span> <span class="nb">set</span> <span class="n">mgr</span> <span class="n">mgr</span><span class="o">/</span><span class="n">telemetry</span><span class="o">/</span><span class="n">channel_basic</span> <span class="n">false</span>
+<span class="n">ceph</span> <span class="n">config</span> <span class="nb">set</span> <span class="n">mgr</span> <span class="n">mgr</span><span class="o">/</span><span class="n">telemetry</span><span class="o">/</span><span class="n">channel_crash</span> <span class="n">false</span>
+<span class="n">ceph</span> <span class="n">config</span> <span class="nb">set</span> <span class="n">mgr</span> <span class="n">mgr</span><span class="o">/</span><span class="n">telemetry</span><span class="o">/</span><span class="n">channel_device</span> <span class="n">false</span>
+<span class="n">ceph</span> <span class="n">telemetry</span> <span class="n">show</span>
+<span class="n">ceph</span> <span class="n">telemetry</span> <span class="n">show</span><span class="o">-</span><span class="n">device</span>
+</pre></div>
+</div>
+</section>
+<section id="enabling-telemetry">
+<h2>Enabling Telemetry<a class="headerlink" href="#enabling-telemetry" title="Permalink to this heading">¶</a></h2>
+<p>To allow the <em>telemetry</em> module to start sharing data:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span> <span class="n">telemetry</span> <span class="n">on</span>
+</pre></div>
+</div>
+<p>Please note: Telemetry data is licensed under the Community Data License
+Agreement - Sharing - Version 1.0 (<a class="reference external" href="https://cdla.io/sharing-1-0/">https://cdla.io/sharing-1-0/</a>). Hence,
+telemetry module can be enabled only after you add ‘–license sharing-1-0’ to
+the ‘ceph telemetry on’ command.</p>
+<p>Telemetry can be disabled at any time with:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span> <span class="n">telemetry</span> <span class="n">off</span>
+</pre></div>
+</div>
+</section>
+<section id="interval">
+<h2>Interval<a class="headerlink" href="#interval" title="Permalink to this heading">¶</a></h2>
+<p>The module compiles and sends a new report every 24 hours by default.
+You can adjust this interval with:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span> <span class="n">config</span> <span class="nb">set</span> <span class="n">mgr</span> <span class="n">mgr</span><span class="o">/</span><span class="n">telemetry</span><span class="o">/</span><span class="n">interval</span> <span class="mi">72</span>    <span class="c1"># report every three days</span>
+</pre></div>
+</div>
+</section>
+<section id="status">
+<h2>Status<a class="headerlink" href="#status" title="Permalink to this heading">¶</a></h2>
+<p>The see the current configuration:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span> <span class="n">telemetry</span> <span class="n">status</span>
+</pre></div>
+</div>
+</section>
+<section id="manually-sending-telemetry">
+<h2>Manually sending telemetry<a class="headerlink" href="#manually-sending-telemetry" title="Permalink to this heading">¶</a></h2>
+<p>To ad hoc send telemetry data:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span> <span class="n">telemetry</span> <span class="n">send</span>
+</pre></div>
+</div>
+<p>In case telemetry is not enabled (with ‘ceph telemetry on’), you need to add
+‘–license sharing-1-0’ to ‘ceph telemetry send’ command.</p>
+</section>
+<section id="sending-telemetry-through-a-proxy">
+<h2>Sending telemetry through a proxy<a class="headerlink" href="#sending-telemetry-through-a-proxy" title="Permalink to this heading">¶</a></h2>
+<p>If the cluster cannot directly connect to the configured telemetry
+endpoint (default <em>telemetry.ceph.com</em>), you can configure a HTTP/HTTPS
+proxy server with:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span> <span class="n">config</span> <span class="nb">set</span> <span class="n">mgr</span> <span class="n">mgr</span><span class="o">/</span><span class="n">telemetry</span><span class="o">/</span><span class="n">proxy</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="mf">10.0.0.1</span><span class="p">:</span><span class="mi">8080</span>
+</pre></div>
+</div>
+<p>You can also include a <em>user:pass</em> if needed:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span> <span class="n">config</span> <span class="nb">set</span> <span class="n">mgr</span> <span class="n">mgr</span><span class="o">/</span><span class="n">telemetry</span><span class="o">/</span><span class="n">proxy</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">ceph</span><span class="p">:</span><span class="n">telemetry</span><span class="o">@</span><span class="mf">10.0.0.1</span><span class="p">:</span><span class="mi">8080</span>
+</pre></div>
+</div>
+</section>
+<section id="contact-and-description">
+<h2>Contact and Description<a class="headerlink" href="#contact-and-description" title="Permalink to this heading">¶</a></h2>
+<p>A contact and description can be added to the report.  This is
+completely optional, and disabled by default.:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span> <span class="n">config</span> <span class="nb">set</span> <span class="n">mgr</span> <span class="n">mgr</span><span class="o">/</span><span class="n">telemetry</span><span class="o">/</span><span class="n">contact</span> <span class="s1">&#39;John Doe &lt;john.doe@example.com&gt;&#39;</span>
+<span class="n">ceph</span> <span class="n">config</span> <span class="nb">set</span> <span class="n">mgr</span> <span class="n">mgr</span><span class="o">/</span><span class="n">telemetry</span><span class="o">/</span><span class="n">description</span> <span class="s1">&#39;My first Ceph cluster&#39;</span>
+<span class="n">ceph</span> <span class="n">config</span> <span class="nb">set</span> <span class="n">mgr</span> <span class="n">mgr</span><span class="o">/</span><span class="n">telemetry</span><span class="o">/</span><span class="n">channel_ident</span> <span class="n">true</span>
+</pre></div>
+</div>
+</section>
+<section id="leaderboard">
+<h2>Leaderboard<a class="headerlink" href="#leaderboard" title="Permalink to this heading">¶</a></h2>
+<p>To participate in a leaderboard in the <a class="reference external" href="https://telemetry-public.ceph.com/">public dashboards</a>, run the following command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><style type="text/css">
+span.prompt1:before {
+  content: "$ ";
+}
+</style><span class="prompt1">ceph<span class="w"> </span>config<span class="w"> </span><span class="nb">set</span><span class="w"> </span>mgr<span class="w"> </span>mgr/telemetry/leaderboard<span class="w"> </span><span class="nb">true</span></span>
+</pre></div></div><p>The leaderboard displays basic information about the cluster. This includes the
+total storage capacity and the number of OSDs. To add a description of the
+cluster, run a command of the following form:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>config<span class="w"> </span><span class="nb">set</span><span class="w"> </span>mgr<span class="w"> </span>mgr/telemetry/leaderboard_description<span class="w"> </span><span class="s1">&#39;Ceph cluster for Computational Biology at the University of XYZ&#39;</span></span>
+</pre></div></div><p>If the <code class="docutils literal notranslate"><span class="pre">ident</span></code> channel is enabled, its details will not be displayed in the
+leaderboard.</p>
+</section>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../">
+              <img class="logo" src="../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../install/">Installing Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cephadm/">Cephadm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rados/">Ceph Storage Cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cephfs/">Ceph File System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rbd/">Ceph Block Device</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../radosgw/">Ceph Object Gateway</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../">Ceph Manager Daemon</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../administrator/">Installation and Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../modules/">Writing modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../orchestrator_modules/">Writing orchestrator plugins</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../dashboard/">Dashboard module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../ceph_api/">Ceph RESTful API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../alerts/">Alerts module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../diskprediction/">DiskPrediction module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../localpool/">Local pool module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../restful/">RESTful module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../zabbix/">Zabbix module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../prometheus/">Prometheus module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../influx/">Influx module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../hello/">Hello module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../telegraf/">Telegraf module</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Telemetry module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#channels">Channels</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#sample-report">Sample report</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id1">Channels</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#enabling-telemetry">Enabling Telemetry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#interval">Interval</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#status">Status</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#manually-sending-telemetry">Manually sending telemetry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#sending-telemetry-through-a-proxy">Sending telemetry through a proxy</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#contact-and-description">Contact and Description</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#leaderboard">Leaderboard</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../iostat/">Iostat module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../crash/">Crash module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../insights/">Insights module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../orchestrator/">Orchestrator module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rook/">Rook module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../mds_autoscaler/">MDS Autoscaler module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../nfs/">NFS module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cli_api/">CLI API Commands module</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dev/developer_guide/">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dev/internals/">Ceph Internals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../iostat/" title="iostat"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../telegraf/" title="Telegraf Module"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../" >Ceph Manager Daemon</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Telemetry Module</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

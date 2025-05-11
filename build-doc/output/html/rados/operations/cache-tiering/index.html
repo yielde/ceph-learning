@@ -1,0 +1,570 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Cache Tiering &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/css/custom.css" />
+    <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/jquery.js"></script>
+    <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../../genindex/" />
+    <link rel="search" title="Search" href="../../../search/" />
+    <link rel="next" title="Placement Groups" href="../placement-groups/" />
+    <link rel="prev" title="CLAY code plugin" href="../erasure-code-clay/" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../placement-groups/" title="Placement Groups"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../erasure-code-clay/" title="CLAY code plugin"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../" >Ceph Storage Cluster</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../" accesskey="U">Cluster Operations</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Cache Tiering</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="cache-tiering">
+<h1>Cache Tiering<a class="headerlink" href="#cache-tiering" title="Permalink to this heading">¶</a></h1>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Cache tiering has been deprecated in the Reef release as it
+has lacked a maintainer for a very long time. This does not mean
+it will be certainly removed, but we may choose to remove it
+without much further notice.</p>
+</div>
+<p>A cache tier provides Ceph Clients with better I/O performance for a subset of
+the data stored in a backing storage tier. Cache tiering involves creating a
+pool of relatively fast/expensive storage devices (e.g., solid state drives)
+configured to act as a cache tier, and a backing pool of either erasure-coded
+or relatively slower/cheaper devices configured to act as an economical storage
+tier. The Ceph objecter handles where to place the objects and the tiering
+agent determines when to flush objects from the cache to the backing storage
+tier. So the cache tier and the backing storage tier are completely transparent
+to Ceph clients.</p>
+<p class="ditaa">
+<img src="../../../_images/ditaa-644de96be5ceeacfe47c2ad4fd6748a1bc13f928.png"/>
+</p>
+<p>The cache tiering agent handles the migration of data between the cache tier
+and the backing storage tier automatically. However, admins have the ability to
+configure how this migration takes place by setting the <code class="docutils literal notranslate"><span class="pre">cache-mode</span></code>. There are
+two main scenarios:</p>
+<ul>
+<li><p><strong>writeback</strong> mode: If the base tier and the cache tier are configured in
+<code class="docutils literal notranslate"><span class="pre">writeback</span></code> mode, Ceph clients receive an ACK from the base tier every time
+they write data to it. Then the cache tiering agent determines whether
+<code class="docutils literal notranslate"><span class="pre">osd_tier_default_cache_min_write_recency_for_promote</span></code> has been set. If it
+has been set and the data has been written more than a specified number of
+times per interval, the data is promoted to the cache tier.</p>
+<p>When Ceph clients need access to data stored in the base tier, the cache
+tiering agent reads the data from the base tier and returns it to the client.
+While data is being read from the base tier, the cache tiering agent consults
+the value of <code class="docutils literal notranslate"><span class="pre">osd_tier_default_cache_min_read_recency_for_promote</span></code> and
+decides whether to promote that data from the base tier to the cache tier.
+When data has been promoted from the base tier to the cache tier, the Ceph
+client is able to perform I/O operations on it using the cache tier. This is
+well-suited for mutable data (for example, photo/video editing, transactional
+data).</p>
+</li>
+<li><p><strong>readproxy</strong> mode: This mode will use any objects that already
+exist in the cache tier, but if an object is not present in the
+cache the request will be proxied to the base tier.  This is useful
+for transitioning from <code class="docutils literal notranslate"><span class="pre">writeback</span></code> mode to a disabled cache as it
+allows the workload to function properly while the cache is drained,
+without adding any new objects to the cache.</p></li>
+</ul>
+<p>Other cache modes are:</p>
+<ul class="simple">
+<li><p><strong>readonly</strong> promotes objects to the cache on read operations only; write
+operations are forwarded to the base tier. This mode is intended for
+read-only workloads that do not require consistency to be enforced by the
+storage system. (<strong>Warning</strong>: when objects are updated in the base tier,
+Ceph makes <strong>no</strong> attempt to sync these updates to the corresponding objects
+in the cache. Since this mode is considered experimental, a
+<code class="docutils literal notranslate"><span class="pre">--yes-i-really-mean-it</span></code> option must be passed in order to enable it.)</p></li>
+<li><p><strong>none</strong> is used to completely disable caching.</p></li>
+</ul>
+<section id="a-word-of-caution">
+<h2>A word of caution<a class="headerlink" href="#a-word-of-caution" title="Permalink to this heading">¶</a></h2>
+<p>Cache tiering will <em>degrade</em> performance for most workloads.  Users should use
+extreme caution before using this feature.</p>
+<ul class="simple">
+<li><p><em>Workload dependent</em>: Whether a cache will improve performance is
+highly dependent on the workload.  Because there is a cost
+associated with moving objects into or out of the cache, it can only
+be effective when there is a <em>large skew</em> in the access pattern in
+the data set, such that most of the requests touch a small number of
+objects.  The cache pool should be large enough to capture the
+working set for your workload to avoid thrashing.</p></li>
+<li><p><em>Difficult to benchmark</em>: Most benchmarks that users run to measure
+performance will show terrible performance with cache tiering, in
+part because very few of them skew requests toward a small set of
+objects, it can take a long time for the cache to “warm up,” and
+because the warm-up cost can be high.</p></li>
+<li><p><em>Usually slower</em>: For workloads that are not cache tiering-friendly,
+performance is often slower than a normal RADOS pool without cache
+tiering enabled.</p></li>
+<li><p><em>librados object enumeration</em>: The librados-level object enumeration
+API is not meant to be coherent in the presence of the case.  If
+your application is using librados directly and relies on object
+enumeration, cache tiering will probably not work as expected.
+(This is not a problem for RGW, RBD, or CephFS.)</p></li>
+<li><p><em>Complexity</em>: Enabling cache tiering means that a lot of additional
+machinery and complexity within the RADOS cluster is being used.
+This increases the probability that you will encounter a bug in the system
+that other users have not yet encountered and will put your deployment at a
+higher level of risk.</p></li>
+</ul>
+<section id="known-good-workloads">
+<h3>Known Good Workloads<a class="headerlink" href="#known-good-workloads" title="Permalink to this heading">¶</a></h3>
+<ul class="simple">
+<li><p><em>RGW time-skewed</em>: If the RGW workload is such that almost all read
+operations are directed at recently written objects, a simple cache
+tiering configuration that destages recently written objects from
+the cache to the base tier after a configurable period can work
+well.</p></li>
+</ul>
+</section>
+<section id="known-bad-workloads">
+<h3>Known Bad Workloads<a class="headerlink" href="#known-bad-workloads" title="Permalink to this heading">¶</a></h3>
+<p>The following configurations are <em>known to work poorly</em> with cache
+tiering.</p>
+<ul class="simple">
+<li><p><em>RBD with replicated cache and erasure-coded base</em>: This is a common
+request, but usually does not perform well.  Even reasonably skewed
+workloads still send some small writes to cold objects, and because
+small writes are not yet supported by the erasure-coded pool, entire
+(usually 4 MB) objects must be migrated into the cache in order to
+satisfy a small (often 4 KB) write.  Only a handful of users have
+successfully deployed this configuration, and it only works for them
+because their data is extremely cold (backups) and they are not in
+any way sensitive to performance.</p></li>
+<li><p><em>RBD with replicated cache and base</em>: RBD with a replicated base
+tier does better than when the base is erasure coded, but it is
+still highly dependent on the amount of skew in the workload, and
+very difficult to validate.  The user will need to have a good
+understanding of their workload and will need to tune the cache
+tiering parameters carefully.</p></li>
+</ul>
+</section>
+</section>
+<section id="setting-up-pools">
+<h2>Setting Up Pools<a class="headerlink" href="#setting-up-pools" title="Permalink to this heading">¶</a></h2>
+<p>To set up cache tiering, you must have two pools. One will act as the
+backing storage and the other will act as the cache.</p>
+<section id="setting-up-a-backing-storage-pool">
+<h3>Setting Up a Backing Storage Pool<a class="headerlink" href="#setting-up-a-backing-storage-pool" title="Permalink to this heading">¶</a></h3>
+<p>Setting up a backing storage pool typically involves one of two scenarios:</p>
+<ul class="simple">
+<li><p><strong>Standard Storage</strong>: In this scenario, the pool stores multiple copies
+of an object in the Ceph Storage Cluster.</p></li>
+<li><p><strong>Erasure Coding:</strong> In this scenario, the pool uses erasure coding to
+store data much more efficiently with a small performance tradeoff.</p></li>
+</ul>
+<p>In the standard storage scenario, you can setup a CRUSH rule to establish
+the failure domain (e.g., osd, host, chassis, rack, row, etc.). Ceph OSD
+Daemons perform optimally when all storage drives in the rule are of the
+same size, speed (both RPMs and throughput) and type. See <a class="reference external" href="../crush-map">CRUSH Maps</a>
+for details on creating a rule. Once you have created a rule, create
+a backing storage pool.</p>
+<p>In the erasure coding scenario, the pool creation arguments will generate the
+appropriate rule automatically. See <a class="reference external" href="../pools#create-a-pool">Create a Pool</a> for details.</p>
+<p>In subsequent examples, we will refer to the backing storage pool
+as <code class="docutils literal notranslate"><span class="pre">cold-storage</span></code>.</p>
+</section>
+<section id="setting-up-a-cache-pool">
+<h3>Setting Up a Cache Pool<a class="headerlink" href="#setting-up-a-cache-pool" title="Permalink to this heading">¶</a></h3>
+<p>Setting up a cache pool follows the same procedure as the standard storage
+scenario, but with this difference: the drives for the cache tier are typically
+high performance drives that reside in their own servers and have their own
+CRUSH rule.  When setting up such a rule, it should take account of the hosts
+that have the high performance drives while omitting the hosts that don’t. See
+<a class="reference internal" href="../crush-map-edits/#crush-map-device-class"><span class="std std-ref">CRUSH Device Class</span></a> for details.</p>
+<p>In subsequent examples, we will refer to the cache pool as <code class="docutils literal notranslate"><span class="pre">hot-storage</span></code> and
+the backing pool as <code class="docutils literal notranslate"><span class="pre">cold-storage</span></code>.</p>
+<p>For cache tier configuration and default values, see
+<a class="reference external" href="../pools#set-pool-values">Pools - Set Pool Values</a>.</p>
+</section>
+</section>
+<section id="creating-a-cache-tier">
+<h2>Creating a Cache Tier<a class="headerlink" href="#creating-a-cache-tier" title="Permalink to this heading">¶</a></h2>
+<p>Setting up a cache tier involves associating a backing storage pool with
+a cache pool:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><style type="text/css">
+span.prompt1:before {
+  content: "$ ";
+}
+</style><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>tier<span class="w"> </span>add<span class="w"> </span><span class="o">{</span>storagepool<span class="o">}</span><span class="w"> </span><span class="o">{</span>cachepool<span class="o">}</span></span>
+</pre></div></div><p>For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>tier<span class="w"> </span>add<span class="w"> </span>cold-storage<span class="w"> </span>hot-storage</span>
+</pre></div></div><p>To set the cache mode, execute the following:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>tier<span class="w"> </span>cache-mode<span class="w"> </span><span class="o">{</span>cachepool<span class="o">}</span><span class="w"> </span><span class="o">{</span>cache-mode<span class="o">}</span></span>
+</pre></div></div><p>For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>tier<span class="w"> </span>cache-mode<span class="w"> </span>hot-storage<span class="w"> </span>writeback</span>
+</pre></div></div><p>The cache tiers overlay the backing storage tier, so they require one
+additional step: you must direct all client traffic from the storage pool to
+the cache pool. To direct client traffic directly to the cache pool, execute
+the following:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>tier<span class="w"> </span>set-overlay<span class="w"> </span><span class="o">{</span>storagepool<span class="o">}</span><span class="w"> </span><span class="o">{</span>cachepool<span class="o">}</span></span>
+</pre></div></div><p>For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>tier<span class="w"> </span>set-overlay<span class="w"> </span>cold-storage<span class="w"> </span>hot-storage</span>
+</pre></div></div></section>
+<section id="configuring-a-cache-tier">
+<h2>Configuring a Cache Tier<a class="headerlink" href="#configuring-a-cache-tier" title="Permalink to this heading">¶</a></h2>
+<p>Cache tiers have several configuration options. You may set
+cache tier configuration options with the following usage:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>pool<span class="w"> </span><span class="nb">set</span><span class="w"> </span><span class="o">{</span>cachepool<span class="o">}</span><span class="w"> </span><span class="o">{</span>key<span class="o">}</span><span class="w"> </span><span class="o">{</span>value<span class="o">}</span></span>
+</pre></div></div><p>See <a class="reference external" href="../pools#set-pool-values">Pools - Set Pool Values</a> for details.</p>
+<section id="target-size-and-type">
+<h3>Target Size and Type<a class="headerlink" href="#target-size-and-type" title="Permalink to this heading">¶</a></h3>
+<p>Ceph’s production cache tiers use a <a class="reference external" href="https://en.wikipedia.org/wiki/Bloom_filter">Bloom Filter</a> for the <code class="docutils literal notranslate"><span class="pre">hit_set_type</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>pool<span class="w"> </span><span class="nb">set</span><span class="w"> </span><span class="o">{</span>cachepool<span class="o">}</span><span class="w"> </span>hit_set_type<span class="w"> </span>bloom</span>
+</pre></div></div><p>For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>pool<span class="w"> </span><span class="nb">set</span><span class="w"> </span>hot-storage<span class="w"> </span>hit_set_type<span class="w"> </span>bloom</span>
+</pre></div></div><p>The <code class="docutils literal notranslate"><span class="pre">hit_set_count</span></code> and <code class="docutils literal notranslate"><span class="pre">hit_set_period</span></code> define how many such HitSets to
+store, and how much time each HitSet should cover:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>pool<span class="w"> </span><span class="nb">set</span><span class="w"> </span><span class="o">{</span>cachepool<span class="o">}</span><span class="w"> </span>hit_set_count<span class="w"> </span><span class="m">12</span></span>
+<span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>pool<span class="w"> </span><span class="nb">set</span><span class="w"> </span><span class="o">{</span>cachepool<span class="o">}</span><span class="w"> </span>hit_set_period<span class="w"> </span><span class="m">14400</span></span>
+<span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>pool<span class="w"> </span><span class="nb">set</span><span class="w"> </span><span class="o">{</span>cachepool<span class="o">}</span><span class="w"> </span>target_max_bytes<span class="w"> </span><span class="m">1000000000000</span></span>
+</pre></div></div><div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>A larger <code class="docutils literal notranslate"><span class="pre">hit_set_count</span></code> results in more RAM consumed by
+the <code class="docutils literal notranslate"><span class="pre">ceph-osd</span></code> process.</p>
+</div>
+<p>Binning accesses over time allows Ceph to determine whether a Ceph client
+accessed an object at least once, or more than once over a time period
+(“age” vs “temperature”).</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">min_read_recency_for_promote</span></code> defines how many HitSets to check for the
+existence of an object when handling a read operation. The checking result is
+used to decide whether to promote the object asynchronously. Its value should be
+between 0 and <code class="docutils literal notranslate"><span class="pre">hit_set_count</span></code>. If it’s set to 0, the object is always promoted.
+If it’s set to 1, the current HitSet is checked. And if this object is in the
+current HitSet, it’s promoted. Otherwise not. For the other values, the exact
+number of archive HitSets are checked. The object is promoted if the object is
+found in any of the most recent <code class="docutils literal notranslate"><span class="pre">min_read_recency_for_promote</span></code> HitSets.</p>
+<p>A similar parameter can be set for the write operation, which is
+<code class="docutils literal notranslate"><span class="pre">min_write_recency_for_promote</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>pool<span class="w"> </span><span class="nb">set</span><span class="w"> </span><span class="o">{</span>cachepool<span class="o">}</span><span class="w"> </span>min_read_recency_for_promote<span class="w"> </span><span class="m">2</span></span>
+<span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>pool<span class="w"> </span><span class="nb">set</span><span class="w"> </span><span class="o">{</span>cachepool<span class="o">}</span><span class="w"> </span>min_write_recency_for_promote<span class="w"> </span><span class="m">2</span></span>
+</pre></div></div><div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The longer the period and the higher the
+<code class="docutils literal notranslate"><span class="pre">min_read_recency_for_promote</span></code> and
+<code class="docutils literal notranslate"><span class="pre">min_write_recency_for_promote``values,</span> <span class="pre">the</span> <span class="pre">more</span> <span class="pre">RAM</span> <span class="pre">the</span> <span class="pre">``ceph-osd</span></code>
+daemon consumes. In particular, when the agent is active to flush
+or evict cache objects, all <code class="docutils literal notranslate"><span class="pre">hit_set_count</span></code> HitSets are loaded
+into RAM.</p>
+</div>
+</section>
+<section id="cache-sizing">
+<h3>Cache Sizing<a class="headerlink" href="#cache-sizing" title="Permalink to this heading">¶</a></h3>
+<p>The cache tiering agent performs two main functions:</p>
+<ul class="simple">
+<li><p><strong>Flushing:</strong> The agent identifies modified (or dirty) objects and forwards
+them to the storage pool for long-term storage.</p></li>
+<li><p><strong>Evicting:</strong> The agent identifies objects that haven’t been modified
+(or clean) and evicts the least recently used among them from the cache.</p></li>
+</ul>
+<section id="absolute-sizing">
+<h4>Absolute Sizing<a class="headerlink" href="#absolute-sizing" title="Permalink to this heading">¶</a></h4>
+<p>The cache tiering agent can flush or evict objects based upon the total number
+of bytes or the total number of objects. To specify a maximum number of bytes,
+execute the following:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>pool<span class="w"> </span><span class="nb">set</span><span class="w"> </span><span class="o">{</span>cachepool<span class="o">}</span><span class="w"> </span>target_max_bytes<span class="w"> </span><span class="o">{</span><span class="c1">#bytes}</span></span>
+</pre></div></div><p>For example, to flush or evict at 1 TB, execute the following:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>pool<span class="w"> </span><span class="nb">set</span><span class="w"> </span>hot-storage<span class="w"> </span>target_max_bytes<span class="w"> </span><span class="m">1099511627776</span></span>
+</pre></div></div><p>To specify the maximum number of objects, execute the following:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>pool<span class="w"> </span><span class="nb">set</span><span class="w"> </span><span class="o">{</span>cachepool<span class="o">}</span><span class="w"> </span>target_max_objects<span class="w"> </span><span class="o">{</span><span class="c1">#objects}</span></span>
+</pre></div></div><p>For example, to flush or evict at 1M objects, execute the following:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>pool<span class="w"> </span><span class="nb">set</span><span class="w"> </span>hot-storage<span class="w"> </span>target_max_objects<span class="w"> </span><span class="m">1000000</span></span>
+</pre></div></div><div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Ceph is not able to determine the size of a cache pool automatically, so
+the configuration on the absolute size is required here, otherwise the
+flush/evict will not work. If you specify both limits, the cache tiering
+agent will begin flushing or evicting when either threshold is triggered.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>All client requests will be blocked only when  <code class="docutils literal notranslate"><span class="pre">target_max_bytes</span></code> or
+<code class="docutils literal notranslate"><span class="pre">target_max_objects</span></code> reached</p>
+</div>
+</section>
+<section id="relative-sizing">
+<h4>Relative Sizing<a class="headerlink" href="#relative-sizing" title="Permalink to this heading">¶</a></h4>
+<p>The cache tiering agent can flush or evict objects relative to the size of the
+cache pool(specified by <code class="docutils literal notranslate"><span class="pre">target_max_bytes</span></code> / <code class="docutils literal notranslate"><span class="pre">target_max_objects</span></code> in
+<a class="reference external" href="#absolute-sizing">Absolute sizing</a>).  When the cache pool consists of a certain percentage of
+modified (or dirty) objects, the cache tiering agent will flush them to the
+storage pool. To set the <code class="docutils literal notranslate"><span class="pre">cache_target_dirty_ratio</span></code>, execute the following:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>pool<span class="w"> </span><span class="nb">set</span><span class="w"> </span><span class="o">{</span>cachepool<span class="o">}</span><span class="w"> </span>cache_target_dirty_ratio<span class="w"> </span><span class="o">{</span><span class="m">0</span>.0..1.0<span class="o">}</span></span>
+</pre></div></div><p>For example, setting the value to <code class="docutils literal notranslate"><span class="pre">0.4</span></code> will begin flushing modified
+(dirty) objects when they reach 40% of the cache pool’s capacity:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>pool<span class="w"> </span><span class="nb">set</span><span class="w"> </span>hot-storage<span class="w"> </span>cache_target_dirty_ratio<span class="w"> </span><span class="m">0</span>.4</span>
+</pre></div></div><p>When the dirty objects reaches a certain percentage of its capacity, flush dirty
+objects with a higher speed. To set the <code class="docutils literal notranslate"><span class="pre">cache_target_dirty_high_ratio</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>pool<span class="w"> </span><span class="nb">set</span><span class="w"> </span><span class="o">{</span>cachepool<span class="o">}</span><span class="w"> </span>cache_target_dirty_high_ratio<span class="w"> </span><span class="o">{</span><span class="m">0</span>.0..1.0<span class="o">}</span></span>
+</pre></div></div><p>For example, setting the value to <code class="docutils literal notranslate"><span class="pre">0.6</span></code> will begin aggressively flush dirty
+objects when they reach 60% of the cache pool’s capacity. obviously, we’d
+better set the value between dirty_ratio and full_ratio:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>pool<span class="w"> </span><span class="nb">set</span><span class="w"> </span>hot-storage<span class="w"> </span>cache_target_dirty_high_ratio<span class="w"> </span><span class="m">0</span>.6</span>
+</pre></div></div><p>When the cache pool reaches a certain percentage of its capacity, the cache
+tiering agent will evict objects to maintain free capacity. To set the
+<code class="docutils literal notranslate"><span class="pre">cache_target_full_ratio</span></code>, execute the following:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>pool<span class="w"> </span><span class="nb">set</span><span class="w"> </span><span class="o">{</span>cachepool<span class="o">}</span><span class="w"> </span>cache_target_full_ratio<span class="w"> </span><span class="o">{</span><span class="m">0</span>.0..1.0<span class="o">}</span></span>
+</pre></div></div><p>For example, setting the value to <code class="docutils literal notranslate"><span class="pre">0.8</span></code> will begin flushing unmodified
+(clean) objects when they reach 80% of the cache pool’s capacity:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>pool<span class="w"> </span><span class="nb">set</span><span class="w"> </span>hot-storage<span class="w"> </span>cache_target_full_ratio<span class="w"> </span><span class="m">0</span>.8</span>
+</pre></div></div></section>
+</section>
+<section id="cache-age">
+<h3>Cache Age<a class="headerlink" href="#cache-age" title="Permalink to this heading">¶</a></h3>
+<p>You can specify the minimum age of an object before the cache tiering agent
+flushes a recently modified (or dirty) object to the backing storage pool:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>pool<span class="w"> </span><span class="nb">set</span><span class="w"> </span><span class="o">{</span>cachepool<span class="o">}</span><span class="w"> </span>cache_min_flush_age<span class="w"> </span><span class="o">{</span><span class="c1">#seconds}</span></span>
+</pre></div></div><p>For example, to flush modified (or dirty) objects after 10 minutes, execute the
+following:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>pool<span class="w"> </span><span class="nb">set</span><span class="w"> </span>hot-storage<span class="w"> </span>cache_min_flush_age<span class="w"> </span><span class="m">600</span></span>
+</pre></div></div><p>You can specify the minimum age of an object before it will be evicted from the
+cache tier:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>pool<span class="w"> </span><span class="o">{</span>cache-tier<span class="o">}</span><span class="w"> </span>cache_min_evict_age<span class="w"> </span><span class="o">{</span><span class="c1">#seconds}</span></span>
+</pre></div></div><p>For example, to evict objects after 30 minutes, execute the following:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>pool<span class="w"> </span><span class="nb">set</span><span class="w"> </span>hot-storage<span class="w"> </span>cache_min_evict_age<span class="w"> </span><span class="m">1800</span></span>
+</pre></div></div></section>
+</section>
+<section id="removing-a-cache-tier">
+<h2>Removing a Cache Tier<a class="headerlink" href="#removing-a-cache-tier" title="Permalink to this heading">¶</a></h2>
+<p>Removing a cache tier differs depending on whether it is a writeback
+cache or a read-only cache.</p>
+<section id="removing-a-read-only-cache">
+<h3>Removing a Read-Only Cache<a class="headerlink" href="#removing-a-read-only-cache" title="Permalink to this heading">¶</a></h3>
+<p>Since a read-only cache does not have modified data, you can disable
+and remove it without losing any recent changes to objects in the cache.</p>
+<ol class="arabic">
+<li><p>Change the cache-mode to <code class="docutils literal notranslate"><span class="pre">none</span></code> to disable it.:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>tier<span class="w"> </span>cache-mode<span class="w"> </span><span class="o">{</span>cachepool<span class="o">}</span><span class="w"> </span>none</span>
+</pre></div></div><p>For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>tier<span class="w"> </span>cache-mode<span class="w"> </span>hot-storage<span class="w"> </span>none</span>
+</pre></div></div></li>
+<li><p>Remove the cache pool from the backing pool.:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>tier<span class="w"> </span>remove<span class="w"> </span><span class="o">{</span>storagepool<span class="o">}</span><span class="w"> </span><span class="o">{</span>cachepool<span class="o">}</span></span>
+</pre></div></div><p>For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>tier<span class="w"> </span>remove<span class="w"> </span>cold-storage<span class="w"> </span>hot-storage</span>
+</pre></div></div></li>
+</ol>
+</section>
+<section id="removing-a-writeback-cache">
+<h3>Removing a Writeback Cache<a class="headerlink" href="#removing-a-writeback-cache" title="Permalink to this heading">¶</a></h3>
+<p>Since a writeback cache may have modified data, you must take steps to ensure
+that you do not lose any recent changes to objects in the cache before you
+disable and remove it.</p>
+<ol class="arabic">
+<li><p>Change the cache mode to <code class="docutils literal notranslate"><span class="pre">proxy</span></code> so that new and modified objects will
+flush to the backing storage pool.:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>tier<span class="w"> </span>cache-mode<span class="w"> </span><span class="o">{</span>cachepool<span class="o">}</span><span class="w"> </span>proxy</span>
+</pre></div></div><p>For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>tier<span class="w"> </span>cache-mode<span class="w"> </span>hot-storage<span class="w"> </span>proxy</span>
+</pre></div></div></li>
+<li><p>Ensure that the cache pool has been flushed. This may take a few minutes:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">rados<span class="w"> </span>-p<span class="w"> </span><span class="o">{</span>cachepool<span class="o">}</span><span class="w"> </span>ls</span>
+</pre></div></div><p>If the cache pool still has objects, you can flush them manually.
+For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">rados<span class="w"> </span>-p<span class="w"> </span><span class="o">{</span>cachepool<span class="o">}</span><span class="w"> </span>cache-flush-evict-all</span>
+</pre></div></div></li>
+<li><p>Remove the overlay so that clients will not direct traffic to the cache.:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>tier<span class="w"> </span>remove-overlay<span class="w"> </span><span class="o">{</span>storagetier<span class="o">}</span></span>
+</pre></div></div><p>For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>tier<span class="w"> </span>remove-overlay<span class="w"> </span>cold-storage</span>
+</pre></div></div></li>
+<li><p>Finally, remove the cache tier pool from the backing storage pool.:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>tier<span class="w"> </span>remove<span class="w"> </span><span class="o">{</span>storagepool<span class="o">}</span><span class="w"> </span><span class="o">{</span>cachepool<span class="o">}</span></span>
+</pre></div></div><p>For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>tier<span class="w"> </span>remove<span class="w"> </span>cold-storage<span class="w"> </span>hot-storage</span>
+</pre></div></div></li>
+</ol>
+</section>
+</section>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../../">
+              <img class="logo" src="../../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../install/">Installing Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cephadm/">Cephadm</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../">Ceph Storage Cluster</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../../configuration/">Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../cephadm/">Deployment</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../">Operations</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../operating/">Operating a Cluster</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../health-checks/">Health checks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../monitoring/">Monitoring a Cluster</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../monitoring-osd-pg/">Monitoring OSDs and PGs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../user-management/">User Management</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../pg-repair/">Repairing PG Inconsistencies</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../data-placement/">Data Placement Overview</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../pools/">Pools</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../erasure-code/">Erasure code</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Cache Tiering</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#a-word-of-caution">A word of caution</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#known-good-workloads">Known Good Workloads</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#known-bad-workloads">Known Bad Workloads</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#setting-up-pools">Setting Up Pools</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#setting-up-a-backing-storage-pool">Setting Up a Backing Storage Pool</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#setting-up-a-cache-pool">Setting Up a Cache Pool</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#creating-a-cache-tier">Creating a Cache Tier</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#configuring-a-cache-tier">Configuring a Cache Tier</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#target-size-and-type">Target Size and Type</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#cache-sizing">Cache Sizing</a><ul>
+<li class="toctree-l6"><a class="reference internal" href="#absolute-sizing">Absolute Sizing</a></li>
+<li class="toctree-l6"><a class="reference internal" href="#relative-sizing">Relative Sizing</a></li>
+</ul>
+</li>
+<li class="toctree-l5"><a class="reference internal" href="#cache-age">Cache Age</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#removing-a-cache-tier">Removing a Cache Tier</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#removing-a-read-only-cache">Removing a Read-Only Cache</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#removing-a-writeback-cache">Removing a Writeback Cache</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../placement-groups/">Placement Groups</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../balancer/">Balancer</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../upmap/">Using pg-upmap</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../crush-map/">CRUSH Maps</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../crush-map-edits/">Manually editing a CRUSH Map</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../stretch-mode/">Stretch Clusters</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../change-mon-elections/">Configure Monitor Election Strategies</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../add-or-rm-osds/">Adding/Removing OSDs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../add-or-rm-mons/">Adding/Removing Monitors</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../devices/">Device Management</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../bluestore-migration/">BlueStore Migration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../control/">Command Reference</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../troubleshooting/community/">The Ceph Community</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../troubleshooting/troubleshooting-mon/">Troubleshooting Monitors</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../troubleshooting/troubleshooting-osd/">Troubleshooting OSDs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../troubleshooting/troubleshooting-pg/">Troubleshooting PGs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../troubleshooting/log-and-debug/">Logging and Debugging</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../troubleshooting/cpu-profiling/">CPU Profiling</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../troubleshooting/memory-profiling/">Memory Profiling</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../man/">Man Pages</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../troubleshooting/">Troubleshooting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/">APIs</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cephfs/">Ceph File System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../rbd/">Ceph Block Device</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../radosgw/">Ceph Object Gateway</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../mgr/">Ceph Manager Daemon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../mgr/dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dev/developer_guide/">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dev/internals/">Ceph Internals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../../../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../placement-groups/" title="Placement Groups"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../erasure-code-clay/" title="CLAY code plugin"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../" >Ceph Storage Cluster</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../" >Cluster Operations</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Cache Tiering</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

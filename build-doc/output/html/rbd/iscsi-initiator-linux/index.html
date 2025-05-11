@@ -1,0 +1,268 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>iSCSI Initiator for Linux &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css" />
+    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../genindex/" />
+    <link rel="search" title="Search" href="../../search/" />
+    <link rel="next" title="iSCSI Initiator for Microsoft Windows" href="../iscsi-initiator-win/" />
+    <link rel="prev" title="Configuring the iSCSI Initiators" href="../iscsi-initiators/" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../iscsi-initiator-win/" title="iSCSI Initiator for Microsoft Windows"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../iscsi-initiators/" title="Configuring the iSCSI Initiators"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../" >Ceph Block Device</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../rbd-integrations/" >Ceph Block Device 3rd Party Integration</a> &#187;</li>
+          <li class="nav-item nav-item-3"><a href="../iscsi-overview/" >Ceph iSCSI Gateway</a> &#187;</li>
+          <li class="nav-item nav-item-4"><a href="../iscsi-initiators/" accesskey="U">Configuring the iSCSI Initiators</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">iSCSI Initiator for Linux</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="iscsi-initiator-for-linux">
+<h1>iSCSI Initiator for Linux<a class="headerlink" href="#iscsi-initiator-for-linux" title="Permalink to this heading">¶</a></h1>
+<p><strong>Prerequisite:</strong></p>
+<ul class="simple">
+<li><p>Package <code class="docutils literal notranslate"><span class="pre">iscsi-initiator-utils</span></code></p></li>
+<li><p>Package <code class="docutils literal notranslate"><span class="pre">device-mapper-multipath</span></code></p></li>
+</ul>
+<p><strong>Installing:</strong></p>
+<p>Install the iSCSI initiator and multipath tools:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><style type="text/css">
+span.prompt1:before {
+  content: "# ";
+}
+</style><span class="prompt1">yum<span class="w"> </span>install<span class="w"> </span>iscsi-initiator-utils</span>
+<span class="prompt1">yum<span class="w"> </span>install<span class="w"> </span>device-mapper-multipath</span>
+</pre></div></div><p><strong>Configuring:</strong></p>
+<ol class="arabic">
+<li><p>Create the default <code class="docutils literal notranslate"><span class="pre">/etc/multipath.conf</span></code> file and enable the
+<code class="docutils literal notranslate"><span class="pre">multipathd</span></code> service:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">mpathconf<span class="w"> </span>--enable<span class="w"> </span>--with_multipathd<span class="w"> </span>y</span>
+</pre></div></div></li>
+<li><p>Add the following to the <code class="docutils literal notranslate"><span class="pre">/etc/multipath.conf</span></code> file:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">devices</span> <span class="p">{</span>
+        <span class="n">device</span> <span class="p">{</span>
+                <span class="n">vendor</span>                 <span class="s2">&quot;LIO-ORG&quot;</span>
+                <span class="n">hardware_handler</span>       <span class="s2">&quot;1 alua&quot;</span>
+                <span class="n">path_grouping_policy</span>   <span class="s2">&quot;failover&quot;</span>
+                <span class="n">path_selector</span>          <span class="s2">&quot;queue-length 0&quot;</span>
+                <span class="n">failback</span>               <span class="mi">60</span>
+                <span class="n">path_checker</span>           <span class="n">tur</span>
+                <span class="n">prio</span>                   <span class="n">alua</span>
+                <span class="n">prio_args</span>              <span class="n">exclusive_pref_bit</span>
+                <span class="n">fast_io_fail_tmo</span>       <span class="mi">25</span>
+                <span class="n">no_path_retry</span>          <span class="n">queue</span>
+        <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</li>
+<li><p>Restart the <code class="docutils literal notranslate"><span class="pre">multipathd</span></code> service:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">systemctl<span class="w"> </span>reload<span class="w"> </span>multipathd</span>
+</pre></div></div></li>
+</ol>
+<p><strong>iSCSI Discovery and Setup:</strong></p>
+<ol class="arabic">
+<li><p>Enable CHAP authentication and provide the initiator CHAP username
+and password by uncommenting and setting the following options in
+the <code class="docutils literal notranslate"><span class="pre">/etc/iscsi/iscsid.conf</span></code> file:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">node</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">auth</span><span class="o">.</span><span class="n">authmethod</span> <span class="o">=</span> <span class="n">CHAP</span>
+<span class="n">node</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">auth</span><span class="o">.</span><span class="n">username</span> <span class="o">=</span> <span class="n">myusername</span>
+<span class="n">node</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">auth</span><span class="o">.</span><span class="n">password</span> <span class="o">=</span> <span class="n">mypassword</span>
+</pre></div>
+</div>
+<p>If you intend to use mutual (bidirectional) authentication, provide the
+target CHAP username and password:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">node</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">auth</span><span class="o">.</span><span class="n">username_in</span> <span class="o">=</span> <span class="n">mytgtusername</span>
+<span class="n">node</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">auth</span><span class="o">.</span><span class="n">password_in</span> <span class="o">=</span> <span class="n">mytgtpassword</span>
+</pre></div>
+</div>
+</li>
+<li><p>Discover the target portals:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">iscsiadm<span class="w"> </span>-m<span class="w"> </span>discovery<span class="w"> </span>-t<span class="w"> </span>st<span class="w"> </span>-p<span class="w"> </span><span class="m">192</span>.168.56.101</span>
+</pre></div></div><div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="mf">192.168.56.101</span><span class="p">:</span><span class="mi">3260</span><span class="p">,</span><span class="mi">1</span> <span class="n">iqn</span><span class="mf">.2003</span><span class="o">-</span><span class="mf">01.</span><span class="n">org</span><span class="o">.</span><span class="n">linux</span><span class="o">-</span><span class="n">iscsi</span><span class="o">.</span><span class="n">rheln1</span>
+<span class="mf">192.168.56.102</span><span class="p">:</span><span class="mi">3260</span><span class="p">,</span><span class="mi">2</span> <span class="n">iqn</span><span class="mf">.2003</span><span class="o">-</span><span class="mf">01.</span><span class="n">org</span><span class="o">.</span><span class="n">linux</span><span class="o">-</span><span class="n">iscsi</span><span class="o">.</span><span class="n">rheln1</span>
+</pre></div>
+</div>
+</li>
+<li><p>Log in to the target:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">iscsiadm<span class="w"> </span>-m<span class="w"> </span>node<span class="w"> </span>-T<span class="w"> </span>iqn.2003-01.org.linux-iscsi.rheln1<span class="w"> </span>-l</span>
+</pre></div></div></li>
+</ol>
+<p><strong>Multipath IO Setup:</strong></p>
+<ol class="arabic">
+<li><p>The multipath daemon (<code class="docutils literal notranslate"><span class="pre">multipathd</span></code>) uses the <code class="docutils literal notranslate"><span class="pre">multipath.conf</span></code> settings
+to set up devices automatically. Running the <code class="docutils literal notranslate"><span class="pre">multipath</span></code> command shows
+that the devices have been set up in a failover configuration. Notice that
+each path has been placed into its own priority group:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">multipath<span class="w"> </span>-ll</span>
+</pre></div></div><div class="highlight-default notranslate"><div class="highlight"><pre><span></span>mpathbt (360014059ca317516a69465c883a29603) dm-1 LIO-ORG ,IBLOCK
+size=1.0G features=&#39;0&#39; hwhandler=&#39;1 alua&#39; wp=rw
+|-+- policy=&#39;queue-length 0&#39; prio=50 status=active
+| `- 28:0:0:1 sde  8:64  active ready running
+`-+- policy=&#39;queue-length 0&#39; prio=10 status=enabled
+  `- 29:0:0:1 sdc  8:32  active ready running
+</pre></div>
+</div>
+<p>You should now be able to use the RBD image in the same way that you would
+use a normal multipath iSCSI disk.</p>
+</li>
+<li><p>Log out of the target:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">iscsiadm<span class="w"> </span>-m<span class="w"> </span>node<span class="w"> </span>-T<span class="w"> </span>iqn.2003-01.org.linux-iscsi.rheln1<span class="w"> </span>-u</span>
+</pre></div></div></li>
+</ol>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../">
+              <img class="logo" src="../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../install/">Installing Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cephadm/">Cephadm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rados/">Ceph Storage Cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cephfs/">Ceph File System</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../">Ceph Block Device</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../rados-rbd-cmds/">Basic Commands</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rbd-operations/">Operations</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../rbd-integrations/">Integrations</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../rbd-ko/">Kernel Modules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../qemu-rbd/">QEMU</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../libvirt/">libvirt</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rbd-kubernetes/">Kubernetes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rbd-openstack/">OpenStack</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rbd-cloudstack/">CloudStack</a></li>
+<li class="toctree-l3 current"><a class="reference internal" href="../iscsi-overview/">LIO iSCSI Gateway</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="../iscsi-requirements/">Requirements</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../iscsi-targets/">Configuring the iSCSI Target</a></li>
+<li class="toctree-l4 current"><a class="reference internal" href="../iscsi-initiators/">Configuring the iSCSI Initiators</a><ul class="current">
+<li class="toctree-l5 current"><a class="current reference internal" href="#">Linux</a></li>
+<li class="toctree-l5"><a class="reference internal" href="../iscsi-initiator-win/">Microsoft Windows</a></li>
+<li class="toctree-l5"><a class="reference internal" href="../iscsi-initiator-esx/">VMware ESX</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="../iscsi-monitoring/">Monitoring the iSCSI Gateways</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../rbd-windows/">Windows</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../man/">Manpages</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/">APIs</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../radosgw/">Ceph Object Gateway</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/">Ceph Manager Daemon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dev/developer_guide/">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dev/internals/">Ceph Internals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../iscsi-initiator-win/" title="iSCSI Initiator for Microsoft Windows"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../iscsi-initiators/" title="Configuring the iSCSI Initiators"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../" >Ceph Block Device</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../rbd-integrations/" >Ceph Block Device 3rd Party Integration</a> &#187;</li>
+          <li class="nav-item nav-item-3"><a href="../iscsi-overview/" >Ceph iSCSI Gateway</a> &#187;</li>
+          <li class="nav-item nav-item-4"><a href="../iscsi-initiators/" >Configuring the iSCSI Initiators</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">iSCSI Initiator for Linux</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

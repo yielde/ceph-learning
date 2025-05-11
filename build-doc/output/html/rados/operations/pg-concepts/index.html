@@ -1,0 +1,291 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Placement Group Concepts &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/css/custom.css" />
+    <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/jquery.js"></script>
+    <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../../genindex/" />
+    <link rel="search" title="Search" href="../../../search/" />
+    <link rel="next" title="Balancer" href="../balancer/" />
+    <link rel="prev" title="Placement Group States" href="../pg-states/" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../balancer/" title="Balancer"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../pg-states/" title="Placement Group States"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../" >Ceph Storage Cluster</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../" >Cluster Operations</a> &#187;</li>
+          <li class="nav-item nav-item-3"><a href="../placement-groups/" accesskey="U">Placement Groups</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Placement Group Concepts</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="placement-group-concepts">
+<span id="rados-operations-pg-concepts"></span><h1>Placement Group Concepts<a class="headerlink" href="#placement-group-concepts" title="Permalink to this heading">¶</a></h1>
+<p>When you execute commands like <code class="docutils literal notranslate"><span class="pre">ceph</span> <span class="pre">-w</span></code>, <code class="docutils literal notranslate"><span class="pre">ceph</span> <span class="pre">osd</span> <span class="pre">dump</span></code>, and other
+commands related to placement groups, Ceph may return values using some
+of the following terms:</p>
+<dl class="simple">
+<dt><em>Peering</em></dt><dd><p>The process of bringing all of the OSDs that store
+a Placement Group (PG) into agreement about the state
+of all of the objects (and their metadata) in that PG.
+Note that agreeing on the state does not mean that
+they all have the latest contents.</p>
+</dd>
+<dt><em>Acting Set</em></dt><dd><p>The ordered list of OSDs who are (or were as of some epoch)
+responsible for a particular placement group.</p>
+</dd>
+<dt><em>Up Set</em></dt><dd><p>The ordered list of OSDs responsible for a particular placement
+group for a particular epoch according to CRUSH. Normally this
+is the same as the <em>Acting Set</em>, except when the <em>Acting Set</em> has
+been explicitly overridden via <code class="docutils literal notranslate"><span class="pre">pg_temp</span></code> in the OSD Map.</p>
+</dd>
+<dt><em>Current Interval</em> or <em>Past Interval</em></dt><dd><p>A sequence of OSD map epochs during which the <em>Acting Set</em> and <em>Up
+Set</em> for particular placement group do not change.</p>
+</dd>
+<dt><em>Primary</em></dt><dd><p>The member (and by convention first) of the <em>Acting Set</em>,
+that is responsible for coordination peering, and is
+the only OSD that will accept client-initiated
+writes to objects in a placement group.</p>
+</dd>
+<dt><em>Replica</em></dt><dd><p>A non-primary OSD in the <em>Acting Set</em> for a placement group
+(and who has been recognized as such and <em>activated</em> by the primary).</p>
+</dd>
+<dt><em>Stray</em></dt><dd><p>An OSD that is not a member of the current <em>Acting Set</em>, but
+has not yet been told that it can delete its copies of a
+particular placement group.</p>
+</dd>
+<dt><em>Recovery</em></dt><dd><p>Ensuring that copies of all of the objects in a placement group
+are on all of the OSDs in the <em>Acting Set</em>.  Once <em>Peering</em> has
+been performed, the <em>Primary</em> can start accepting write operations,
+and <em>Recovery</em> can proceed in the background.</p>
+</dd>
+<dt><em>PG Info</em></dt><dd><p>Basic metadata about the placement group’s creation epoch, the version
+for the most recent write to the placement group, <em>last epoch started</em>,
+<em>last epoch clean</em>, and the beginning of the <em>current interval</em>.  Any
+inter-OSD communication about placement groups includes the <em>PG Info</em>,
+such that any OSD that knows a placement group exists (or once existed)
+also has a lower bound on <em>last epoch clean</em> or <em>last epoch started</em>.</p>
+</dd>
+<dt><em>PG Log</em></dt><dd><p>A list of recent updates made to objects in a placement group.
+Note that these logs can be truncated after all OSDs
+in the <em>Acting Set</em> have acknowledged up to a certain
+point.</p>
+</dd>
+<dt><em>Missing Set</em></dt><dd><p>Each OSD notes update log entries and if they imply updates to
+the contents of an object, adds that object to a list of needed
+updates.  This list is called the <em>Missing Set</em> for that <code class="docutils literal notranslate"><span class="pre">&lt;OSD,PG&gt;</span></code>.</p>
+</dd>
+<dt><em>Authoritative History</em></dt><dd><p>A complete, and fully ordered set of operations that, if
+performed, would bring an OSD’s copy of a placement group
+up to date.</p>
+</dd>
+<dt><em>Epoch</em></dt><dd><p>A (monotonically increasing) OSD map version number</p>
+</dd>
+<dt><em>Last Epoch Start</em></dt><dd><p>The last epoch at which all nodes in the <em>Acting Set</em>
+for a particular placement group agreed on an
+<em>Authoritative History</em>.  At this point, <em>Peering</em> is
+deemed to have been successful.</p>
+</dd>
+<dt><em>up_thru</em></dt><dd><p>Before a <em>Primary</em> can successfully complete the <em>Peering</em> process,
+it must inform a monitor that is alive through the current
+OSD map <em>Epoch</em> by having the monitor set its <em>up_thru</em> in the osd
+map.  This helps <em>Peering</em> ignore previous <em>Acting Sets</em> for which
+<em>Peering</em> never completed after certain sequences of failures, such as
+the second interval below:</p>
+<ul class="simple">
+<li><p><em>acting set</em> = [A,B]</p></li>
+<li><p><em>acting set</em> = [A]</p></li>
+<li><p><em>acting set</em> = [] very shortly after (e.g., simultaneous failure, but staggered detection)</p></li>
+<li><p><em>acting set</em> = [B] (B restarts, A does not)</p></li>
+</ul>
+</dd>
+<dt><em>Last Epoch Clean</em></dt><dd><p>The last <em>Epoch</em> at which all nodes in the <em>Acting set</em>
+for a particular placement group were completely
+up to date (both placement group logs and object contents).
+At this point, <em>recovery</em> is deemed to have been
+completed.</p>
+</dd>
+</dl>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../../">
+              <img class="logo" src="../../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../install/">Installing Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cephadm/">Cephadm</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../">Ceph Storage Cluster</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../../configuration/">Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../cephadm/">Deployment</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../">Operations</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../operating/">Operating a Cluster</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../health-checks/">Health checks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../monitoring/">Monitoring a Cluster</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../monitoring-osd-pg/">Monitoring OSDs and PGs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../user-management/">User Management</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../pg-repair/">Repairing PG Inconsistencies</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../data-placement/">Data Placement Overview</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../pools/">Pools</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../erasure-code/">Erasure code</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../cache-tiering/">Cache Tiering</a></li>
+<li class="toctree-l3 current"><a class="reference internal" href="../placement-groups/">Placement Groups</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="../placement-groups/#autoscaling-placement-groups">Autoscaling placement groups</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../placement-groups/#a-preselection-of-pg-num">A preselection of pg_num</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../placement-groups/#how-are-placement-groups-used">How are Placement Groups used ?</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../placement-groups/#placement-groups-tradeoffs">Placement Groups Tradeoffs</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../placement-groups/#choosing-the-number-of-placement-groups">Choosing the number of Placement Groups</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../placement-groups/#set-the-number-of-placement-groups">Set the Number of Placement Groups</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../placement-groups/#get-the-number-of-placement-groups">Get the Number of Placement Groups</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../placement-groups/#get-a-cluster-s-pg-statistics">Get a Cluster’s PG Statistics</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../placement-groups/#get-statistics-for-stuck-pgs">Get Statistics for Stuck PGs</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../placement-groups/#get-a-pg-map">Get a PG Map</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../placement-groups/#get-a-pgs-statistics">Get a PGs Statistics</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../placement-groups/#scrub-a-placement-group">Scrub a Placement Group</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../placement-groups/#prioritize-backfill-recovery-of-a-placement-group-s">Prioritize backfill/recovery of a Placement Group(s)</a></li>
+<li class="toctree-l4 current"><a class="reference internal" href="../placement-groups/#revert-lost">Revert Lost</a><ul class="current">
+<li class="toctree-l5"><a class="reference internal" href="../pg-states/">Placement Group States</a></li>
+<li class="toctree-l5 current"><a class="current reference internal" href="#">Placement Group Concepts</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../balancer/">Balancer</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../upmap/">Using pg-upmap</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../crush-map/">CRUSH Maps</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../crush-map-edits/">Manually editing a CRUSH Map</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../stretch-mode/">Stretch Clusters</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../change-mon-elections/">Configure Monitor Election Strategies</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../add-or-rm-osds/">Adding/Removing OSDs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../add-or-rm-mons/">Adding/Removing Monitors</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../devices/">Device Management</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../bluestore-migration/">BlueStore Migration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../control/">Command Reference</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../troubleshooting/community/">The Ceph Community</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../troubleshooting/troubleshooting-mon/">Troubleshooting Monitors</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../troubleshooting/troubleshooting-osd/">Troubleshooting OSDs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../troubleshooting/troubleshooting-pg/">Troubleshooting PGs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../troubleshooting/log-and-debug/">Logging and Debugging</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../troubleshooting/cpu-profiling/">CPU Profiling</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../troubleshooting/memory-profiling/">Memory Profiling</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../man/">Man Pages</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../troubleshooting/">Troubleshooting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/">APIs</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cephfs/">Ceph File System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../rbd/">Ceph Block Device</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../radosgw/">Ceph Object Gateway</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../mgr/">Ceph Manager Daemon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../mgr/dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dev/developer_guide/">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dev/internals/">Ceph Internals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../../../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../balancer/" title="Balancer"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../pg-states/" title="Placement Group States"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../" >Ceph Storage Cluster</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../" >Cluster Operations</a> &#187;</li>
+          <li class="nav-item nav-item-3"><a href="../placement-groups/" >Placement Groups</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Placement Group Concepts</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

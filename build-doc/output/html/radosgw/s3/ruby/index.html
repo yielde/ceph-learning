@@ -1,0 +1,523 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Ruby AWS::SDK Examples (aws-sdk gem ~&gt;2) &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/css/custom.css" />
+    <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/jquery.js"></script>
+    <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../../genindex/" />
+    <link rel="search" title="Search" href="../../../search/" />
+    <link rel="next" title="RGW Data caching and CDN" href="../../rgw-cache/" />
+    <link rel="prev" title="Python S3 Examples" href="../python/" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../../rgw-cache/" title="RGW Data caching and CDN"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../python/" title="Python S3 Examples"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../" >Ceph Object Gateway</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../" accesskey="U">Ceph Object Gateway S3 API</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Ruby AWS::SDK Examples (aws-sdk gem ~&gt;2)</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="ruby-aws-sdk-examples-aws-sdk-gem-2">
+<span id="ruby"></span><h1>Ruby <a class="reference external" href="http://docs.aws.amazon.com/sdkforruby/api/Aws/S3/Client.html">AWS::SDK</a> Examples (aws-sdk gem ~&gt;2)<a class="headerlink" href="#ruby-aws-sdk-examples-aws-sdk-gem-2" title="Permalink to this heading">¶</a></h1>
+<section id="settings">
+<h2>Settings<a class="headerlink" href="#settings" title="Permalink to this heading">¶</a></h2>
+<p>You can setup the connection on global way:</p>
+<div class="highlight-ruby notranslate"><div class="highlight"><pre><span></span><span class="no">Aws</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+<span class="w">        </span><span class="ss">endpoint</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;https://objects.dreamhost.com.&#39;</span><span class="p">,</span>
+<span class="w">        </span><span class="ss">access_key_id</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;my-access-key&#39;</span><span class="p">,</span>
+<span class="w">        </span><span class="ss">secret_access_key</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;my-secret-key&#39;</span><span class="p">,</span>
+<span class="w">        </span><span class="ss">force_path_style</span><span class="p">:</span><span class="w"> </span><span class="kp">true</span><span class="p">,</span>
+<span class="w">        </span><span class="ss">region</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;us-east-1&#39;</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>and instantiate a client object:</p>
+<div class="highlight-ruby notranslate"><div class="highlight"><pre><span></span><span class="n">s3_client</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="no">Aws</span><span class="o">::</span><span class="no">S3</span><span class="o">::</span><span class="no">Client</span><span class="o">.</span><span class="n">new</span>
+</pre></div>
+</div>
+</section>
+<section id="listing-owned-buckets">
+<h2>Listing Owned Buckets<a class="headerlink" href="#listing-owned-buckets" title="Permalink to this heading">¶</a></h2>
+<p>This gets a list of buckets that you own.
+This also prints out the bucket name and creation date of each bucket.</p>
+<div class="highlight-ruby notranslate"><div class="highlight"><pre><span></span><span class="n">s3_client</span><span class="o">.</span><span class="n">list_buckets</span><span class="o">.</span><span class="n">buckets</span><span class="o">.</span><span class="n">each</span><span class="w"> </span><span class="k">do</span><span class="w"> </span><span class="o">|</span><span class="n">bucket</span><span class="o">|</span>
+<span class="w">        </span><span class="nb">puts</span><span class="w"> </span><span class="s2">&quot;</span><span class="si">#{</span><span class="n">bucket</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="se">\t</span><span class="si">#{</span><span class="n">bucket</span><span class="o">.</span><span class="n">creation_date</span><span class="si">}</span><span class="s2">&quot;</span>
+<span class="k">end</span>
+</pre></div>
+</div>
+<p>The output will look something like this:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">mahbuckat1</span>   <span class="mi">2011</span><span class="o">-</span><span class="mi">04</span><span class="o">-</span><span class="mi">21</span><span class="n">T18</span><span class="p">:</span><span class="mi">05</span><span class="p">:</span><span class="mf">39.000</span><span class="n">Z</span>
+<span class="n">mahbuckat2</span>   <span class="mi">2011</span><span class="o">-</span><span class="mi">04</span><span class="o">-</span><span class="mi">21</span><span class="n">T18</span><span class="p">:</span><span class="mi">05</span><span class="p">:</span><span class="mf">48.000</span><span class="n">Z</span>
+<span class="n">mahbuckat3</span>   <span class="mi">2011</span><span class="o">-</span><span class="mi">04</span><span class="o">-</span><span class="mi">21</span><span class="n">T18</span><span class="p">:</span><span class="mi">07</span><span class="p">:</span><span class="mf">18.000</span><span class="n">Z</span>
+</pre></div>
+</div>
+</section>
+<section id="creating-a-bucket">
+<h2>Creating a Bucket<a class="headerlink" href="#creating-a-bucket" title="Permalink to this heading">¶</a></h2>
+<p>This creates a new bucket called <code class="docutils literal notranslate"><span class="pre">my-new-bucket</span></code></p>
+<div class="highlight-ruby notranslate"><div class="highlight"><pre><span></span><span class="n">s3_client</span><span class="o">.</span><span class="n">create_bucket</span><span class="p">(</span><span class="ss">bucket</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;my-new-bucket&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>If you want a private bucket:</p>
+<p><cite>acl</cite> option accepts: # private, public-read, public-read-write, authenticated-read</p>
+<div class="highlight-ruby notranslate"><div class="highlight"><pre><span></span><span class="n">s3_client</span><span class="o">.</span><span class="n">create_bucket</span><span class="p">(</span><span class="ss">bucket</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;my-new-bucket&#39;</span><span class="p">,</span><span class="w"> </span><span class="ss">acl</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;private&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="listing-a-bucket-s-content">
+<h2>Listing a Bucket’s Content<a class="headerlink" href="#listing-a-bucket-s-content" title="Permalink to this heading">¶</a></h2>
+<p>This gets a list of hashes with the contents of each object
+This also prints out each object’s name, the file size, and last
+modified date.</p>
+<div class="highlight-ruby notranslate"><div class="highlight"><pre><span></span><span class="n">s3_client</span><span class="o">.</span><span class="n">get_objects</span><span class="p">(</span><span class="ss">bucket</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;my-new-bucket&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">contents</span><span class="o">.</span><span class="n">each</span><span class="w"> </span><span class="k">do</span><span class="w"> </span><span class="o">|</span><span class="n">object</span><span class="o">|</span>
+<span class="w">        </span><span class="nb">puts</span><span class="w"> </span><span class="s2">&quot;</span><span class="si">#{</span><span class="n">object</span><span class="o">.</span><span class="n">key</span><span class="si">}</span><span class="se">\t</span><span class="si">#{</span><span class="n">object</span><span class="o">.</span><span class="n">size</span><span class="si">}</span><span class="se">\t</span><span class="si">#{</span><span class="n">object</span><span class="o">.</span><span class="n">last</span><span class="o">-</span><span class="n">modified</span><span class="si">}</span><span class="s2">&quot;</span>
+<span class="k">end</span>
+</pre></div>
+</div>
+<p>The output will look something like this if the bucket has some files:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">myphoto1</span><span class="o">.</span><span class="n">jpg</span> <span class="mi">251262</span>  <span class="mi">2011</span><span class="o">-</span><span class="mi">08</span><span class="o">-</span><span class="mi">08</span><span class="n">T21</span><span class="p">:</span><span class="mi">35</span><span class="p">:</span><span class="mf">48.000</span><span class="n">Z</span>
+<span class="n">myphoto2</span><span class="o">.</span><span class="n">jpg</span> <span class="mi">262518</span>  <span class="mi">2011</span><span class="o">-</span><span class="mi">08</span><span class="o">-</span><span class="mi">08</span><span class="n">T21</span><span class="p">:</span><span class="mi">38</span><span class="p">:</span><span class="mf">01.000</span><span class="n">Z</span>
+</pre></div>
+</div>
+</section>
+<section id="deleting-a-bucket">
+<h2>Deleting a Bucket<a class="headerlink" href="#deleting-a-bucket" title="Permalink to this heading">¶</a></h2>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The Bucket must be empty! Otherwise it won’t work!</p>
+</div>
+<div class="highlight-ruby notranslate"><div class="highlight"><pre><span></span><span class="n">s3_client</span><span class="o">.</span><span class="n">delete_bucket</span><span class="p">(</span><span class="ss">bucket</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;my-new-bucket&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="forced-delete-for-non-empty-buckets">
+<h2>Forced Delete for Non-empty Buckets<a class="headerlink" href="#forced-delete-for-non-empty-buckets" title="Permalink to this heading">¶</a></h2>
+<p>First, you need to clear the bucket:</p>
+<div class="highlight-ruby notranslate"><div class="highlight"><pre><span></span><span class="no">Aws</span><span class="o">::</span><span class="no">S3</span><span class="o">::</span><span class="no">Bucket</span><span class="o">.</span><span class="n">new</span><span class="p">(</span><span class="s1">&#39;my-new-bucket&#39;</span><span class="p">,</span><span class="w"> </span><span class="ss">client</span><span class="p">:</span><span class="w"> </span><span class="n">s3_client</span><span class="p">)</span><span class="o">.</span><span class="n">clear!</span>
+</pre></div>
+</div>
+<p>after, you can destroy the bucket</p>
+<div class="highlight-ruby notranslate"><div class="highlight"><pre><span></span><span class="n">s3_client</span><span class="o">.</span><span class="n">delete_bucket</span><span class="p">(</span><span class="ss">bucket</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;my-new-bucket&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="creating-an-object">
+<h2>Creating an Object<a class="headerlink" href="#creating-an-object" title="Permalink to this heading">¶</a></h2>
+<p>This creates a file <code class="docutils literal notranslate"><span class="pre">hello.txt</span></code> with the string <code class="docutils literal notranslate"><span class="pre">&quot;Hello</span> <span class="pre">World!&quot;</span></code></p>
+<div class="highlight-ruby notranslate"><div class="highlight"><pre><span></span><span class="n">s3_client</span><span class="o">.</span><span class="n">put_object</span><span class="p">(</span>
+<span class="w">        </span><span class="ss">key</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;hello.txt&#39;</span><span class="p">,</span>
+<span class="w">        </span><span class="ss">body</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;Hello World!&#39;</span><span class="p">,</span>
+<span class="w">        </span><span class="ss">bucket</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;my-new-bucket&#39;</span><span class="p">,</span>
+<span class="w">        </span><span class="ss">content_type</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;text/plain&#39;</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="change-an-object-s-acl">
+<h2>Change an Object’s ACL<a class="headerlink" href="#change-an-object-s-acl" title="Permalink to this heading">¶</a></h2>
+<p>This makes the object <code class="docutils literal notranslate"><span class="pre">hello.txt</span></code> to be publicly readable, and <code class="docutils literal notranslate"><span class="pre">secret_plans.txt</span></code>
+to be private.</p>
+<div class="highlight-ruby notranslate"><div class="highlight"><pre><span></span><span class="n">s3_client</span><span class="o">.</span><span class="n">put_object_acl</span><span class="p">(</span><span class="ss">bucket</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;my-new-bucket&#39;</span><span class="p">,</span><span class="w"> </span><span class="ss">key</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;hello.txt&#39;</span><span class="p">,</span><span class="w"> </span><span class="ss">acl</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;public-read&#39;</span><span class="p">)</span>
+
+<span class="n">s3_client</span><span class="o">.</span><span class="n">put_object_acl</span><span class="p">(</span><span class="ss">bucket</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;my-new-bucket&#39;</span><span class="p">,</span><span class="w"> </span><span class="ss">key</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;private.txt&#39;</span><span class="p">,</span><span class="w"> </span><span class="ss">acl</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;private&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="download-an-object-to-a-file">
+<h2>Download an Object (to a file)<a class="headerlink" href="#download-an-object-to-a-file" title="Permalink to this heading">¶</a></h2>
+<p>This downloads the object <code class="docutils literal notranslate"><span class="pre">poetry.pdf</span></code> and saves it in
+<code class="docutils literal notranslate"><span class="pre">/home/larry/documents/</span></code></p>
+<div class="highlight-ruby notranslate"><div class="highlight"><pre><span></span><span class="n">s3_client</span><span class="o">.</span><span class="n">get_object</span><span class="p">(</span><span class="ss">bucket</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;my-new-bucket&#39;</span><span class="p">,</span><span class="w"> </span><span class="ss">key</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;poetry.pdf&#39;</span><span class="p">,</span><span class="w"> </span><span class="ss">response_target</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;/home/larry/documents/poetry.pdf&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="delete-an-object">
+<h2>Delete an Object<a class="headerlink" href="#delete-an-object" title="Permalink to this heading">¶</a></h2>
+<p>This deletes the object <code class="docutils literal notranslate"><span class="pre">goodbye.txt</span></code></p>
+<div class="highlight-ruby notranslate"><div class="highlight"><pre><span></span><span class="n">s3_client</span><span class="o">.</span><span class="n">delete_object</span><span class="p">(</span><span class="ss">key</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;goodbye.txt&#39;</span><span class="p">,</span><span class="w"> </span><span class="ss">bucket</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;my-new-bucket&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="generate-object-download-urls-signed-and-unsigned">
+<h2>Generate Object Download URLs (signed and unsigned)<a class="headerlink" href="#generate-object-download-urls-signed-and-unsigned" title="Permalink to this heading">¶</a></h2>
+<p>This generates an unsigned download URL for <code class="docutils literal notranslate"><span class="pre">hello.txt</span></code>. This works
+because we made <code class="docutils literal notranslate"><span class="pre">hello.txt</span></code> public by setting the ACL above.
+This then generates a signed download URL for <code class="docutils literal notranslate"><span class="pre">secret_plans.txt</span></code> that
+will work for 1 hour. Signed download URLs will work for the time
+period even if the object is private (when the time period is up, the
+URL will stop working).</p>
+<div class="highlight-ruby notranslate"><div class="highlight"><pre><span></span><span class="nb">puts</span><span class="w"> </span><span class="no">Aws</span><span class="o">::</span><span class="no">S3</span><span class="o">::</span><span class="no">Object</span><span class="o">.</span><span class="n">new</span><span class="p">(</span>
+<span class="w">        </span><span class="ss">key</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;hello.txt&#39;</span><span class="p">,</span>
+<span class="w">        </span><span class="ss">bucket_name</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;my-new-bucket&#39;</span><span class="p">,</span>
+<span class="w">        </span><span class="ss">client</span><span class="p">:</span><span class="w"> </span><span class="n">s3_client</span>
+<span class="p">)</span><span class="o">.</span><span class="n">public_url</span>
+
+<span class="nb">puts</span><span class="w"> </span><span class="no">Aws</span><span class="o">::</span><span class="no">S3</span><span class="o">::</span><span class="no">Object</span><span class="o">.</span><span class="n">new</span><span class="p">(</span>
+<span class="w">        </span><span class="ss">key</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;secret_plans.txt&#39;</span><span class="p">,</span>
+<span class="w">        </span><span class="ss">bucket_name</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;hermes_ceph_gem&#39;</span><span class="p">,</span>
+<span class="w">        </span><span class="ss">client</span><span class="p">:</span><span class="w"> </span><span class="n">s3_client</span>
+<span class="p">)</span><span class="o">.</span><span class="n">presigned_url</span><span class="p">(</span><span class="ss">:get</span><span class="p">,</span><span class="w"> </span><span class="ss">expires_in</span><span class="p">:</span><span class="w"> </span><span class="mi">60</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">60</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The output of this will look something like:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>http://objects.dreamhost.com/my-bucket-name/hello.txt
+http://objects.dreamhost.com/my-bucket-name/secret_plans.txt?Signature=XXXXXXXXXXXXXXXXXXXXXXXXXXX&amp;Expires=1316027075&amp;AWSAccessKeyId=XXXXXXXXXXXXXXXXXXX
+</pre></div>
+</div>
+</section>
+</section>
+<section id="ruby-aws-s3-examples-aws-s3-gem">
+<h1>Ruby <a class="reference external" href="http://amazon.rubyforge.org/">AWS::S3</a> Examples (aws-s3 gem)<a class="headerlink" href="#ruby-aws-s3-examples-aws-s3-gem" title="Permalink to this heading">¶</a></h1>
+<section id="creating-a-connection">
+<h2>Creating a Connection<a class="headerlink" href="#creating-a-connection" title="Permalink to this heading">¶</a></h2>
+<p>This creates a connection so that you can interact with the server.</p>
+<div class="highlight-ruby notranslate"><div class="highlight"><pre><span></span><span class="no">AWS</span><span class="o">::</span><span class="no">S3</span><span class="o">::</span><span class="no">Base</span><span class="o">.</span><span class="n">establish_connection!</span><span class="p">(</span>
+<span class="w">        </span><span class="ss">:server</span><span class="w">            </span><span class="o">=&gt;</span><span class="w"> </span><span class="s1">&#39;objects.dreamhost.com&#39;</span><span class="p">,</span>
+<span class="w">        </span><span class="ss">:use_ssl</span><span class="w">           </span><span class="o">=&gt;</span><span class="w"> </span><span class="kp">true</span><span class="p">,</span>
+<span class="w">        </span><span class="ss">:access_key_id</span><span class="w">     </span><span class="o">=&gt;</span><span class="w"> </span><span class="s1">&#39;my-access-key&#39;</span><span class="p">,</span>
+<span class="w">        </span><span class="ss">:secret_access_key</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="s1">&#39;my-secret-key&#39;</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="id1">
+<h2>Listing Owned Buckets<a class="headerlink" href="#id1" title="Permalink to this heading">¶</a></h2>
+<p>This gets a list of <a class="reference external" href="http://amazon.rubyforge.org/doc/">AWS::S3::Bucket</a> objects that you own.
+This also prints out the bucket name and creation date of each bucket.</p>
+<div class="highlight-ruby notranslate"><div class="highlight"><pre><span></span><span class="no">AWS</span><span class="o">::</span><span class="no">S3</span><span class="o">::</span><span class="no">Service</span><span class="o">.</span><span class="n">buckets</span><span class="o">.</span><span class="n">each</span><span class="w"> </span><span class="k">do</span><span class="w"> </span><span class="o">|</span><span class="n">bucket</span><span class="o">|</span>
+<span class="w">        </span><span class="nb">puts</span><span class="w"> </span><span class="s2">&quot;</span><span class="si">#{</span><span class="n">bucket</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="se">\t</span><span class="si">#{</span><span class="n">bucket</span><span class="o">.</span><span class="n">creation_date</span><span class="si">}</span><span class="s2">&quot;</span>
+<span class="k">end</span>
+</pre></div>
+</div>
+<p>The output will look something like this:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">mahbuckat1</span>   <span class="mi">2011</span><span class="o">-</span><span class="mi">04</span><span class="o">-</span><span class="mi">21</span><span class="n">T18</span><span class="p">:</span><span class="mi">05</span><span class="p">:</span><span class="mf">39.000</span><span class="n">Z</span>
+<span class="n">mahbuckat2</span>   <span class="mi">2011</span><span class="o">-</span><span class="mi">04</span><span class="o">-</span><span class="mi">21</span><span class="n">T18</span><span class="p">:</span><span class="mi">05</span><span class="p">:</span><span class="mf">48.000</span><span class="n">Z</span>
+<span class="n">mahbuckat3</span>   <span class="mi">2011</span><span class="o">-</span><span class="mi">04</span><span class="o">-</span><span class="mi">21</span><span class="n">T18</span><span class="p">:</span><span class="mi">07</span><span class="p">:</span><span class="mf">18.000</span><span class="n">Z</span>
+</pre></div>
+</div>
+</section>
+<section id="id2">
+<h2>Creating a Bucket<a class="headerlink" href="#id2" title="Permalink to this heading">¶</a></h2>
+<p>This creates a new bucket called <code class="docutils literal notranslate"><span class="pre">my-new-bucket</span></code></p>
+<div class="highlight-ruby notranslate"><div class="highlight"><pre><span></span><span class="no">AWS</span><span class="o">::</span><span class="no">S3</span><span class="o">::</span><span class="no">Bucket</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="s1">&#39;my-new-bucket&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="id3">
+<h2>Listing a Bucket’s Content<a class="headerlink" href="#id3" title="Permalink to this heading">¶</a></h2>
+<p>This gets a list of hashes with the contents of each object
+This also prints out each object’s name, the file size, and last
+modified date.</p>
+<div class="highlight-ruby notranslate"><div class="highlight"><pre><span></span><span class="n">new_bucket</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="no">AWS</span><span class="o">::</span><span class="no">S3</span><span class="o">::</span><span class="no">Bucket</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s1">&#39;my-new-bucket&#39;</span><span class="p">)</span>
+<span class="n">new_bucket</span><span class="o">.</span><span class="n">each</span><span class="w"> </span><span class="k">do</span><span class="w"> </span><span class="o">|</span><span class="n">object</span><span class="o">|</span>
+<span class="w">        </span><span class="nb">puts</span><span class="w"> </span><span class="s2">&quot;</span><span class="si">#{</span><span class="n">object</span><span class="o">.</span><span class="n">key</span><span class="si">}</span><span class="se">\t</span><span class="si">#{</span><span class="n">object</span><span class="o">.</span><span class="n">about</span><span class="o">[</span><span class="s1">&#39;content-length&#39;</span><span class="o">]</span><span class="si">}</span><span class="se">\t</span><span class="si">#{</span><span class="n">object</span><span class="o">.</span><span class="n">about</span><span class="o">[</span><span class="s1">&#39;last-modified&#39;</span><span class="o">]</span><span class="si">}</span><span class="s2">&quot;</span>
+<span class="k">end</span>
+</pre></div>
+</div>
+<p>The output will look something like this if the bucket has some files:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">myphoto1</span><span class="o">.</span><span class="n">jpg</span> <span class="mi">251262</span>  <span class="mi">2011</span><span class="o">-</span><span class="mi">08</span><span class="o">-</span><span class="mi">08</span><span class="n">T21</span><span class="p">:</span><span class="mi">35</span><span class="p">:</span><span class="mf">48.000</span><span class="n">Z</span>
+<span class="n">myphoto2</span><span class="o">.</span><span class="n">jpg</span> <span class="mi">262518</span>  <span class="mi">2011</span><span class="o">-</span><span class="mi">08</span><span class="o">-</span><span class="mi">08</span><span class="n">T21</span><span class="p">:</span><span class="mi">38</span><span class="p">:</span><span class="mf">01.000</span><span class="n">Z</span>
+</pre></div>
+</div>
+</section>
+<section id="id4">
+<h2>Deleting a Bucket<a class="headerlink" href="#id4" title="Permalink to this heading">¶</a></h2>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The Bucket must be empty! Otherwise it won’t work!</p>
+</div>
+<div class="highlight-ruby notranslate"><div class="highlight"><pre><span></span><span class="no">AWS</span><span class="o">::</span><span class="no">S3</span><span class="o">::</span><span class="no">Bucket</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="s1">&#39;my-new-bucket&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="id5">
+<h2>Forced Delete for Non-empty Buckets<a class="headerlink" href="#id5" title="Permalink to this heading">¶</a></h2>
+<div class="highlight-ruby notranslate"><div class="highlight"><pre><span></span><span class="no">AWS</span><span class="o">::</span><span class="no">S3</span><span class="o">::</span><span class="no">Bucket</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="s1">&#39;my-new-bucket&#39;</span><span class="p">,</span><span class="w"> </span><span class="ss">:force</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="kp">true</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="id6">
+<h2>Creating an Object<a class="headerlink" href="#id6" title="Permalink to this heading">¶</a></h2>
+<p>This creates a file <code class="docutils literal notranslate"><span class="pre">hello.txt</span></code> with the string <code class="docutils literal notranslate"><span class="pre">&quot;Hello</span> <span class="pre">World!&quot;</span></code></p>
+<div class="highlight-ruby notranslate"><div class="highlight"><pre><span></span><span class="no">AWS</span><span class="o">::</span><span class="no">S3</span><span class="o">::</span><span class="no">S3Object</span><span class="o">.</span><span class="n">store</span><span class="p">(</span>
+<span class="w">        </span><span class="s1">&#39;hello.txt&#39;</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;Hello World!&#39;</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;my-new-bucket&#39;</span><span class="p">,</span>
+<span class="w">        </span><span class="ss">:content_type</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="s1">&#39;text/plain&#39;</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="id7">
+<h2>Change an Object’s ACL<a class="headerlink" href="#id7" title="Permalink to this heading">¶</a></h2>
+<p>This makes the object <code class="docutils literal notranslate"><span class="pre">hello.txt</span></code> to be publicly readable, and <code class="docutils literal notranslate"><span class="pre">secret_plans.txt</span></code>
+to be private.</p>
+<div class="highlight-ruby notranslate"><div class="highlight"><pre><span></span><span class="n">policy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="no">AWS</span><span class="o">::</span><span class="no">S3</span><span class="o">::</span><span class="no">S3Object</span><span class="o">.</span><span class="n">acl</span><span class="p">(</span><span class="s1">&#39;hello.txt&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;my-new-bucket&#39;</span><span class="p">)</span>
+<span class="n">policy</span><span class="o">.</span><span class="n">grants</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">[</span><span class="w"> </span><span class="no">AWS</span><span class="o">::</span><span class="no">S3</span><span class="o">::</span><span class="no">ACL</span><span class="o">::</span><span class="no">Grant</span><span class="o">.</span><span class="n">grant</span><span class="p">(</span><span class="ss">:public_read</span><span class="p">)</span><span class="w"> </span><span class="o">]</span>
+<span class="no">AWS</span><span class="o">::</span><span class="no">S3</span><span class="o">::</span><span class="no">S3Object</span><span class="o">.</span><span class="n">acl</span><span class="p">(</span><span class="s1">&#39;hello.txt&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;my-new-bucket&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">policy</span><span class="p">)</span>
+
+<span class="n">policy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="no">AWS</span><span class="o">::</span><span class="no">S3</span><span class="o">::</span><span class="no">S3Object</span><span class="o">.</span><span class="n">acl</span><span class="p">(</span><span class="s1">&#39;secret_plans.txt&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;my-new-bucket&#39;</span><span class="p">)</span>
+<span class="n">policy</span><span class="o">.</span><span class="n">grants</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">[]</span>
+<span class="no">AWS</span><span class="o">::</span><span class="no">S3</span><span class="o">::</span><span class="no">S3Object</span><span class="o">.</span><span class="n">acl</span><span class="p">(</span><span class="s1">&#39;secret_plans.txt&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;my-new-bucket&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">policy</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="id8">
+<h2>Download an Object (to a file)<a class="headerlink" href="#id8" title="Permalink to this heading">¶</a></h2>
+<p>This downloads the object <code class="docutils literal notranslate"><span class="pre">poetry.pdf</span></code> and saves it in
+<code class="docutils literal notranslate"><span class="pre">/home/larry/documents/</span></code></p>
+<div class="highlight-ruby notranslate"><div class="highlight"><pre><span></span><span class="nb">open</span><span class="p">(</span><span class="s1">&#39;/home/larry/documents/poetry.pdf&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;w&#39;</span><span class="p">)</span><span class="w"> </span><span class="k">do</span><span class="w"> </span><span class="o">|</span><span class="n">file</span><span class="o">|</span>
+<span class="w">        </span><span class="no">AWS</span><span class="o">::</span><span class="no">S3</span><span class="o">::</span><span class="no">S3Object</span><span class="o">.</span><span class="n">stream</span><span class="p">(</span><span class="s1">&#39;poetry.pdf&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;my-new-bucket&#39;</span><span class="p">)</span><span class="w"> </span><span class="k">do</span><span class="w"> </span><span class="o">|</span><span class="n">chunk</span><span class="o">|</span>
+<span class="w">                </span><span class="n">file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">chunk</span><span class="p">)</span>
+<span class="w">        </span><span class="k">end</span>
+<span class="k">end</span>
+</pre></div>
+</div>
+</section>
+<section id="id9">
+<h2>Delete an Object<a class="headerlink" href="#id9" title="Permalink to this heading">¶</a></h2>
+<p>This deletes the object <code class="docutils literal notranslate"><span class="pre">goodbye.txt</span></code></p>
+<div class="highlight-ruby notranslate"><div class="highlight"><pre><span></span><span class="no">AWS</span><span class="o">::</span><span class="no">S3</span><span class="o">::</span><span class="no">S3Object</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="s1">&#39;goodbye.txt&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;my-new-bucket&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="id10">
+<h2>Generate Object Download URLs (signed and unsigned)<a class="headerlink" href="#id10" title="Permalink to this heading">¶</a></h2>
+<p>This generates an unsigned download URL for <code class="docutils literal notranslate"><span class="pre">hello.txt</span></code>. This works
+because we made <code class="docutils literal notranslate"><span class="pre">hello.txt</span></code> public by setting the ACL above.
+This then generates a signed download URL for <code class="docutils literal notranslate"><span class="pre">secret_plans.txt</span></code> that
+will work for 1 hour. Signed download URLs will work for the time
+period even if the object is private (when the time period is up, the
+URL will stop working).</p>
+<div class="highlight-ruby notranslate"><div class="highlight"><pre><span></span><span class="nb">puts</span><span class="w"> </span><span class="no">AWS</span><span class="o">::</span><span class="no">S3</span><span class="o">::</span><span class="no">S3Object</span><span class="o">.</span><span class="n">url_for</span><span class="p">(</span>
+<span class="w">        </span><span class="s1">&#39;hello.txt&#39;</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;my-new-bucket&#39;</span><span class="p">,</span>
+<span class="w">        </span><span class="ss">:authenticated</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="kp">false</span>
+<span class="p">)</span>
+
+<span class="nb">puts</span><span class="w"> </span><span class="no">AWS</span><span class="o">::</span><span class="no">S3</span><span class="o">::</span><span class="no">S3Object</span><span class="o">.</span><span class="n">url_for</span><span class="p">(</span>
+<span class="w">        </span><span class="s1">&#39;secret_plans.txt&#39;</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;my-new-bucket&#39;</span><span class="p">,</span>
+<span class="w">        </span><span class="ss">:expires_in</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="mi">60</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">60</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>The output of this will look something like:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>http://objects.dreamhost.com/my-bucket-name/hello.txt
+http://objects.dreamhost.com/my-bucket-name/secret_plans.txt?Signature=XXXXXXXXXXXXXXXXXXXXXXXXXXX&amp;Expires=1316027075&amp;AWSAccessKeyId=XXXXXXXXXXXXXXXXXXX
+</pre></div>
+</div>
+</section>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../../">
+              <img class="logo" src="../../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../install/">Installing Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cephadm/">Cephadm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../rados/">Ceph Storage Cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cephfs/">Ceph File System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../rbd/">Ceph Block Device</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../">Ceph Object Gateway</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../../frontends/">HTTP Frontends</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../placement/">Pool Placement and Storage Classes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../multisite/">Multisite Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../multisite-sync-policy/">Multisite Sync Policy Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../pools/">Configuring Pools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../config-ref/">Config Reference</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../admin/">Admin Guide</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../">S3 API</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="../#api">API</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="../commons/">Common</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../authentication/">Authentication</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../serviceops/">Service Ops</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../bucketops/">Bucket Ops</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../objectops/">Object Ops</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../cpp/">C++</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../csharp/">C#</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../java/">Java</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../perl/">Perl</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../php/">PHP</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../python/">Python</a></li>
+<li class="toctree-l4 current"><a class="current reference internal" href="#">Ruby AWS::SDK Examples (aws-sdk gem ~&gt;2)</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#settings">Settings</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#listing-owned-buckets">Listing Owned Buckets</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#creating-a-bucket">Creating a Bucket</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#listing-a-bucket-s-content">Listing a Bucket’s Content</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#deleting-a-bucket">Deleting a Bucket</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#forced-delete-for-non-empty-buckets">Forced Delete for Non-empty Buckets</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#creating-an-object">Creating an Object</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#change-an-object-s-acl">Change an Object’s ACL</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#download-an-object-to-a-file">Download an Object (to a file)</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#delete-an-object">Delete an Object</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#generate-object-download-urls-signed-and-unsigned">Generate Object Download URLs (signed and unsigned)</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#ruby-aws-s3-examples-aws-s3-gem">Ruby AWS::S3 Examples (aws-s3 gem)</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#creating-a-connection">Creating a Connection</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#id1">Listing Owned Buckets</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#id2">Creating a Bucket</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#id3">Listing a Bucket’s Content</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#id4">Deleting a Bucket</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#id5">Forced Delete for Non-empty Buckets</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#id6">Creating an Object</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#id7">Change an Object’s ACL</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#id8">Download an Object (to a file)</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#id9">Delete an Object</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#id10">Generate Object Download URLs (signed and unsigned)</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../#features-support">Features Support</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../#unsupported-header-fields">Unsupported Header Fields</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../rgw-cache/">Data caching and CDN</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../swift/">Swift API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../adminops/">Admin Ops API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/">Python binding</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../nfs/">Export over NFS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../keystone/">OpenStack Keystone Integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../barbican/">OpenStack Barbican Integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../vault/">HashiCorp Vault Integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../kmip/">KMIP Integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../opa/">Open Policy Agent Integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../multitenancy/">Multi-tenancy</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../compression/">Compression</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../ldap-auth/">LDAP Authentication</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../encryption/">Server-Side Encryption</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../bucketpolicy/">Bucket Policy</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../dynamicresharding/">Dynamic bucket index resharding</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../mfa/">Multi factor authentication</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../sync-modules/">Sync Modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../notifications/">Bucket Notifications</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../layout/">Data Layout in RADOS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../STS/">STS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../STSLite/">STS Lite</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../keycloak/">Keycloak</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../session-tags/">Session Tags</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../role/">Role</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../orphans/">Orphan List and Associated Tooling</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../oidc/">OpenID Connect Provider</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../troubleshooting/">Troubleshooting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../man/8/radosgw/">Manpage radosgw</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../man/8/radosgw-admin/">Manpage radosgw-admin</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../qat-accel/">QAT Acceleration for Encryption and Compression</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../s3select/">S3-select</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../lua-scripting/">Lua Scripting</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../mgr/">Ceph Manager Daemon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../mgr/dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dev/developer_guide/">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dev/internals/">Ceph Internals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../../../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../../rgw-cache/" title="RGW Data caching and CDN"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../python/" title="Python S3 Examples"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../" >Ceph Object Gateway</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../" >Ceph Object Gateway S3 API</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Ruby AWS::SDK Examples (aws-sdk gem ~&gt;2)</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

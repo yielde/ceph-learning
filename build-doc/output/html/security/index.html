@@ -1,0 +1,179 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Security &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/css/custom.css" />
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../genindex/" />
+    <link rel="search" title="Search" href="../search/" />
+    <link rel="next" title="Past vulnerabilities" href="cves/" />
+    <link rel="prev" title="inventory" href="../ceph-volume/zfs/inventory/" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="cves/" title="Past vulnerabilities"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../ceph-volume/zfs/inventory/" title="inventory"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../">Ceph Documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Security</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="security">
+<h1>Security<a class="headerlink" href="#security" title="Permalink to this heading">¶</a></h1>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="cves/">Past Vulnerabilities / CVEs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="process/">Vulnerability Management Process</a></li>
+</ul>
+</div>
+<section id="reporting-a-vulnerability">
+<h2>Reporting a vulnerability<a class="headerlink" href="#reporting-a-vulnerability" title="Permalink to this heading">¶</a></h2>
+<p>To report a vulnerability, please send email to <a class="reference external" href="mailto:security&#37;&#52;&#48;ceph&#46;io">security<span>&#64;</span>ceph<span>&#46;</span>io</a>.</p>
+<ul class="simple">
+<li><p>Please do not file a public ceph tracker issue for a vulnerability.</p></li>
+<li><p>We urge reporters to provide as much information as is practicable
+(a reproducer, versions affected, fix if available, etc.), as this
+can speed up the process considerably.</p></li>
+<li><p>Please let us know to whom credit should be given and with what
+affiliations.</p></li>
+<li><p>If this issue is not yet disclosed publicly and you have any
+disclosure date in mind, please share the same along with the
+report.</p></li>
+</ul>
+<p>Although you are not required to, you may encrypt your message using
+the following GPG key:</p>
+<p><strong>6EEF26FFD4093B99: Ceph Security Team (security&#64;ceph.io)</strong></p>
+<div class="line-block">
+<div class="line"><strong>Download:</strong> <a class="reference external" href="https://pgp.mit.edu/pks/lookup?op=vindex&amp;search=0x6EEF26FFD4093B99">MIT PGP Public Key Server</a></div>
+<div class="line"><strong>Fingerprint:</strong> A527 D019 21F9 7178 C232 66C1 6EEF 26FF D409 3B99</div>
+</div>
+</section>
+<section id="supported-versions">
+<h2>Supported versions<a class="headerlink" href="#supported-versions" title="Permalink to this heading">¶</a></h2>
+<p>Security updates are applied only to the current <a class="reference external" href="https://docs.ceph.com/en/latest/releases/#active-releases">Active Releases</a>.</p>
+</section>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../">
+              <img class="logo" src="../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../install/">Installing Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../cephadm/">Cephadm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../rados/">Ceph Storage Cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../cephfs/">Ceph File System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../rbd/">Ceph Block Device</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../radosgw/">Ceph Object Gateway</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../mgr/">Ceph Manager Daemon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../mgr/dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../dev/developer_guide/">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../dev/internals/">Ceph Internals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Security</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="cves/">Past Vulnerabilities / CVEs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="process/">Vulnerability Management Process</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#reporting-a-vulnerability">Reporting a vulnerability</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#supported-versions">Supported versions</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="cves/" title="Past vulnerabilities"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../ceph-volume/zfs/inventory/" title="inventory"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../">Ceph Documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Security</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

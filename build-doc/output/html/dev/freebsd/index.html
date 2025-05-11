@@ -1,0 +1,264 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>FreeBSD Implementation details &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css" />
+    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../genindex/" />
+    <link rel="search" title="Search" href="../../search/" />
+    <link rel="next" title="Building Ceph Documentation" href="../generatedocs/" />
+    <link rel="prev" title="File striping" href="../file-striping/" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../generatedocs/" title="Building Ceph Documentation"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../file-striping/" title="File striping"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../internals/" accesskey="U">Ceph Internals</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">FreeBSD Implementation details</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="freebsd-implementation-details">
+<h1>FreeBSD Implementation details<a class="headerlink" href="#freebsd-implementation-details" title="Permalink to this heading">¶</a></h1>
+<section id="disk-layout">
+<h2>Disk layout<a class="headerlink" href="#disk-layout" title="Permalink to this heading">¶</a></h2>
+<p>Current implementation works on ZFS pools</p>
+<ul>
+<li><p>created in /var/lib/ceph</p></li>
+<li><p>One ZFS pool per OSD, like:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">gpart</span> <span class="n">create</span> <span class="o">-</span><span class="n">s</span> <span class="n">GPT</span> <span class="n">ada1</span>
+<span class="n">gpart</span> <span class="n">add</span> <span class="o">-</span><span class="n">t</span> <span class="n">freebsd</span><span class="o">-</span><span class="n">zfs</span> <span class="o">-</span><span class="n">l</span> <span class="n">osd1</span> <span class="n">ada1</span>
+<span class="n">zpool</span> <span class="n">create</span> <span class="o">-</span><span class="n">o</span> <span class="n">mountpoint</span><span class="o">=/</span><span class="n">var</span><span class="o">/</span><span class="n">lib</span><span class="o">/</span><span class="n">ceph</span><span class="o">/</span><span class="n">osd</span><span class="o">/</span><span class="n">osd</span><span class="mf">.1</span> <span class="n">osd</span>
+</pre></div>
+</div>
+</li>
+<li><p>Maybe add some cache and log (ZIL)? Assuming that ada2 is an SSD:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">gpart</span> <span class="n">create</span> <span class="o">-</span><span class="n">s</span> <span class="n">GPT</span> <span class="n">ada2</span>
+<span class="n">gpart</span> <span class="n">add</span> <span class="o">-</span><span class="n">t</span> <span class="n">freebsd</span><span class="o">-</span><span class="n">zfs</span> <span class="o">-</span><span class="n">l</span> <span class="n">osd1</span><span class="o">-</span><span class="n">log</span> <span class="o">-</span><span class="n">s</span> <span class="mi">1</span><span class="n">G</span> <span class="n">ada2</span>
+<span class="n">zpool</span> <span class="n">add</span> <span class="n">osd1</span> <span class="n">log</span> <span class="n">gpt</span><span class="o">/</span><span class="n">osd1</span><span class="o">-</span><span class="n">log</span>
+<span class="n">gpart</span> <span class="n">add</span> <span class="o">-</span><span class="n">t</span> <span class="n">freebsd</span><span class="o">-</span><span class="n">zfs</span> <span class="o">-</span><span class="n">l</span> <span class="n">osd1</span><span class="o">-</span><span class="n">cache</span> <span class="o">-</span><span class="n">s</span> <span class="mi">10</span><span class="n">G</span> <span class="n">ada2</span>
+<span class="n">zpool</span> <span class="n">add</span> <span class="n">osd1</span> <span class="n">log</span> <span class="n">gpt</span><span class="o">/</span><span class="n">osd1</span><span class="o">-</span><span class="n">cache</span>
+</pre></div>
+</div>
+</li>
+<li><p>Note: <em>UFS2 does not allow large xattribs</em></p></li>
+</ul>
+</section>
+<section id="configuration">
+<h2>Configuration<a class="headerlink" href="#configuration" title="Permalink to this heading">¶</a></h2>
+<p>As per FreeBSD default parts of extra software go into <code class="docutils literal notranslate"><span class="pre">/usr/local/</span></code>. Which
+means that for <code class="docutils literal notranslate"><span class="pre">/etc/ceph.conf</span></code> the default location is
+<code class="docutils literal notranslate"><span class="pre">/usr/local/etc/ceph/ceph.conf</span></code>. Smartest thing to do is to create a softlink
+from <code class="docutils literal notranslate"><span class="pre">/etc/ceph</span></code> to <code class="docutils literal notranslate"><span class="pre">/usr/local/etc/ceph</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ln</span> <span class="o">-</span><span class="n">s</span> <span class="o">/</span><span class="n">usr</span><span class="o">/</span><span class="n">local</span><span class="o">/</span><span class="n">etc</span><span class="o">/</span><span class="n">ceph</span> <span class="o">/</span><span class="n">etc</span><span class="o">/</span><span class="n">ceph</span>
+</pre></div>
+</div>
+<p>A sample file is provided in <code class="docutils literal notranslate"><span class="pre">/usr/local/share/doc/ceph/sample.ceph.conf</span></code></p>
+</section>
+<section id="mon-creation">
+<h2>MON creation<a class="headerlink" href="#mon-creation" title="Permalink to this heading">¶</a></h2>
+<p>Monitors are created by following the manual creation steps on:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">docs</span><span class="o">.</span><span class="n">ceph</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">en</span><span class="o">/</span><span class="n">latest</span><span class="o">/</span><span class="n">install</span><span class="o">/</span><span class="n">manual</span><span class="o">-</span><span class="n">freebsd</span><span class="o">-</span><span class="n">deployment</span><span class="o">/</span>
+</pre></div>
+</div>
+</section>
+<section id="osd-creation">
+<h2>OSD creation<a class="headerlink" href="#osd-creation" title="Permalink to this heading">¶</a></h2>
+<p>OSDs can be manually created only, see <a class="reference internal" href="../../install/manual-freebsd-deployment/#freebsd-adding-osds"><span class="std std-ref">Adding OSDs</span></a></p>
+</section>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../">
+              <img class="logo" src="../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../install/">Installing Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cephadm/">Cephadm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rados/">Ceph Storage Cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cephfs/">Ceph File System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rbd/">Ceph Block Device</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../radosgw/">Ceph Object Gateway</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/">Ceph Manager Daemon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../developer_guide/">Developer Guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../internals/">Ceph Internals</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../blkin/">Tracing Ceph With Blkin</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../bluestore/">BlueStore Internals</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cache-pool/">Cache pool</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../ceph_krb_auth/">A Detailed Documentation on How to Set up Ceph Kerberos Authentication</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cephfs-mirroring/">CephFS Mirroring</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cephfs-reclaim/">CephFS Reclaim Interface</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cephfs-snapshots/">CephFS Snapshots</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cephx/">Cephx</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cephx_protocol/">A Detailed Description of the Cephx Authentication Protocol</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../config/">Configuration Management System</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../config-key/">config-key layout</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../context/">CephContext</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../continuous-integration/">Continuous Integration Architecture</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../corpus/">Corpus structure</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpu-profiler/">Installing Oprofile</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cxx/">C++17 and libstdc++ ABI</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../delayed-delete/">CephFS delayed deletion</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../dev_cluster_deployement/">Deploying a development cluster</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../dev_cluster_deployement/#deploying-multiple-development-clusters-on-the-same-machine">Deploying multiple development clusters on the same machine</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../development-workflow/">Development workflows</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../documenting/">Documenting Ceph</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../encoding/">Serialization (encode/decode)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../erasure-coded-pool/">Erasure Coded pool</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../file-striping/">File striping</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">FreeBSD Implementation details</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#disk-layout">Disk layout</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#configuration">Configuration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#mon-creation">MON creation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#osd-creation">OSD creation</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../generatedocs/">Building Ceph Documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../iana/">IANA Numbers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../kubernetes/">Hacking on Ceph in Kubernetes with Rook</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../libs/">Library architecture</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../logging/">Use of the cluster log</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../logs/">Debug logs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../macos/">build on MacOS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../messenger/">Messenger notes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../mon-bootstrap/">Monitor bootstrap</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../mon-elections/">Monitor Elections</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../mon-on-disk-formats/">ON-DISK FORMAT</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../mon-osdmap-prune/">FULL OSDMAP VERSION PRUNING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../msgr2/">msgr2 protocol (msgr2.0 and msgr2.1)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../network-encoding/">Network Encoding</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../network-protocol/">Network Protocol</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../object-store/">Object Store Architecture Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../osd-class-path/">OSD class path issues</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../peering/">Peering</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../perf/">Using perf</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../perf_counters/">Perf counters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../perf_histograms/">Perf histograms</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../placement-group/">PG (Placement Group) notes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../quick_guide/">Developer Guide (Quick)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rados-client-protocol/">RADOS client protocol</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rbd-diff/">RBD Incremental Backup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rbd-export/">RBD Export &amp; Import</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rbd-layering/">RBD Layering</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../release-checklists/">Release checklists</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../release-process/">Ceph Release Process</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../seastore/">SeaStore</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../sepia/">Sepia community test lab</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../session_authentication/">Session Authentication for the Cephx Protocol</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../testing/">Testing notes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../versions/">Public OSD Version</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../vstart-ganesha/">NFS CephFS-RGW Developer Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../wireshark/">Wireshark Dissector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../zoned-storage/">Zoned Storage Support</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../osd_internals/">OSD developer documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../mds_internals/">MDS developer documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../radosgw/">RADOS Gateway developer documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../ceph-volume/">ceph-volume developer documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../crimson/">Crimson developer documentation</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../generatedocs/" title="Building Ceph Documentation"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../file-striping/" title="File striping"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../internals/" >Ceph Internals</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">FreeBSD Implementation details</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

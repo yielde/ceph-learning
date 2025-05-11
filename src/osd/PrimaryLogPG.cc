@@ -8652,7 +8652,7 @@ hobject_t PrimaryLogPG::get_temp_recovery_object(
   return hoid;
 }
 
-int PrimaryLogPG::prepare_transaction(OpContext *ctx)
+int PrimaryLogPG::prepare_transaction(OpContext *ctx) // TODO: 是否会影响balance
 {
   ceph_assert(!ctx->ops->empty());
 
@@ -12919,7 +12919,7 @@ bool PrimaryLogPG::start_recovery_ops(
     if (get_osdmap()->test_flag(CEPH_OSDMAP_NOBACKFILL)) {
       dout(10) << "deferring backfill due to NOBACKFILL" << dendl;
       deferred_backfill = true;
-    } else if (get_osdmap()->test_flag(CEPH_OSDMAP_NOREBALANCE) &&
+    } else if (get_osdmap()->test_flag(CEPH_OSDMAP_NOREBALANCE) && // PG状态为非degraded，NOREBALANCE才可以生效
 	       !is_degraded())  {
       dout(10) << "deferring backfill due to NOREBALANCE" << dendl;
       deferred_backfill = true;

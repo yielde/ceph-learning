@@ -1,0 +1,336 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>ceph-conf – ceph conf file tool &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/css/custom.css" />
+    <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/jquery.js"></script>
+    <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../../genindex/" />
+    <link rel="search" title="Search" href="../../../search/" />
+    <link rel="next" title="ceph-debugpack – ceph debug packer utility" href="../ceph-debugpack/" />
+    <link rel="prev" title="ceph-clsinfo – show class object information" href="../ceph-clsinfo/" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../ceph-debugpack/" title="ceph-debugpack – ceph debug packer utility"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../ceph-clsinfo/" title="ceph-clsinfo – show class object information"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../../rados/" >Ceph Storage Cluster</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../../../rados/man/" accesskey="U">Object Store Manpages</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">ceph-conf – ceph conf file tool</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="ceph-conf-ceph-conf-file-tool">
+<h1>ceph-conf – ceph conf file tool<a class="headerlink" href="#ceph-conf-ceph-conf-file-tool" title="Permalink to this heading">¶</a></h1>
+<section id="synopsis">
+<h2>Synopsis<a class="headerlink" href="#synopsis" title="Permalink to this heading">¶</a></h2>
+<div class="line-block">
+<div class="line"><strong>ceph-conf</strong> -c <em>conffile</em> –list-all-sections</div>
+<div class="line"><strong>ceph-conf</strong> -c <em>conffile</em> -L</div>
+<div class="line"><strong>ceph-conf</strong> -c <em>conffile</em> -l <em>prefix</em></div>
+<div class="line"><strong>ceph-conf</strong> <em>key</em> -s <em>section1</em> …</div>
+<div class="line"><strong>ceph-conf</strong> [-s <em>section</em> ] [-r] –lookup <em>key</em></div>
+<div class="line"><strong>ceph-conf</strong> [-s <em>section</em> ] <em>key</em></div>
+</div>
+</section>
+<section id="description">
+<h2>Description<a class="headerlink" href="#description" title="Permalink to this heading">¶</a></h2>
+<p><strong>ceph-conf</strong> is a utility for getting information from a ceph
+configuration file. As with most Ceph programs, you can specify which
+Ceph configuration file to use with the <code class="docutils literal notranslate"><span class="pre">-c</span></code> flag.</p>
+<p>Note that unlike other ceph tools, <strong>ceph-conf</strong> will <em>only</em> read from
+config files (or return compiled-in default values)–it will <em>not</em>
+fetch config values from the monitor cluster.  For this reason it is
+recommended that <strong>ceph-conf</strong> only be used in legacy environments
+that are strictly config-file based.  New deployments and tools should
+instead rely on either querying the monitor explicitly for
+configuration (e.g., <code class="docutils literal notranslate"><span class="pre">ceph</span> <span class="pre">config</span> <span class="pre">get</span> <span class="pre">&lt;daemon&gt;</span> <span class="pre">&lt;option&gt;</span></code>) or use
+daemons themselves to fetch effective config options (e.g.,
+<code class="docutils literal notranslate"><span class="pre">ceph-osd</span> <span class="pre">-i</span> <span class="pre">123</span> <span class="pre">--show-config-value</span> <span class="pre">osd_data</span></code>).  The latter option
+has the advantages of drawing from compiled-in defaults (which
+occasionally vary between daemons), config files, and the monitor’s
+config database, providing the exact value that that daemon would be
+using if it were started.</p>
+</section>
+<section id="actions">
+<h2>Actions<a class="headerlink" href="#actions" title="Permalink to this heading">¶</a></h2>
+<p><strong>ceph-conf</strong> performs one of the following actions:</p>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-ceph-conf-L">
+<span id="cmdoption-ceph-conf-l"></span><span id="cmdoption-ceph-conf-list-all-sections"></span><span class="sig-name descname"><span class="pre">-L</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--list-all-sections</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-ceph-conf-L" title="Permalink to this definition">¶</a></dt>
+<dd><p>list all sections in the configuration file.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-ceph-conf-0">
+<span id="cmdoption-ceph-conf-list-sections"></span><span class="sig-name descname"><span class="pre">-l</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--list-sections</span></span><span class="sig-prename descclassname"> <span class="pre">*prefix*</span></span><a class="headerlink" href="#cmdoption-ceph-conf-0" title="Permalink to this definition">¶</a></dt>
+<dd><p>list the sections with the given <em>prefix</em>. For example, <code class="docutils literal notranslate"><span class="pre">--list-sections</span> <span class="pre">mon</span></code>
+would list all sections beginning with <code class="docutils literal notranslate"><span class="pre">mon</span></code>.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-ceph-conf-lookup">
+<span class="sig-name descname"><span class="pre">--lookup</span></span><span class="sig-prename descclassname"> <span class="pre">*key*</span></span><a class="headerlink" href="#cmdoption-ceph-conf-lookup" title="Permalink to this definition">¶</a></dt>
+<dd><p>search and print the specified configuration setting. Note:  <code class="docutils literal notranslate"><span class="pre">--lookup</span></code> is
+the default action. If no other actions are given on the command line, we will
+default to doing a lookup.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-ceph-conf-h">
+<span id="cmdoption-ceph-conf-help"></span><span class="sig-name descname"><span class="pre">-h</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--help</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-ceph-conf-h" title="Permalink to this definition">¶</a></dt>
+<dd><p>print a summary of usage.</p>
+</dd></dl>
+
+</section>
+<section id="options">
+<h2>Options<a class="headerlink" href="#options" title="Permalink to this heading">¶</a></h2>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-ceph-conf-c">
+<span class="sig-name descname"><span class="pre">-c</span></span><span class="sig-prename descclassname"> <span class="pre">*conffile*</span></span><a class="headerlink" href="#cmdoption-ceph-conf-c" title="Permalink to this definition">¶</a></dt>
+<dd><p>the Ceph configuration file.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-ceph-conf-filter-key">
+<span class="sig-name descname"><span class="pre">--filter-key</span></span><span class="sig-prename descclassname"> <span class="pre">*key*</span></span><a class="headerlink" href="#cmdoption-ceph-conf-filter-key" title="Permalink to this definition">¶</a></dt>
+<dd><p>filter section list to only include sections with given <em>key</em> defined.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-ceph-conf-filter-key-value">
+<span class="sig-name descname"><span class="pre">--filter-key-value</span></span><span class="sig-prename descclassname"> <span class="pre">*key*</span> <span class="pre">``=``</span> <span class="pre">*value*</span></span><a class="headerlink" href="#cmdoption-ceph-conf-filter-key-value" title="Permalink to this definition">¶</a></dt>
+<dd><p>filter section list to only include sections with given <em>key</em>/<em>value</em> pair.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-ceph-conf-name">
+<span class="sig-name descname"><span class="pre">--name</span></span><span class="sig-prename descclassname"> <span class="pre">*type.id*</span></span><a class="headerlink" href="#cmdoption-ceph-conf-name" title="Permalink to this definition">¶</a></dt>
+<dd><p>the Ceph name in which the sections are searched (default ‘client.admin’).
+For example, if we specify <code class="docutils literal notranslate"><span class="pre">--name</span> <span class="pre">osd.0</span></code>, the following sections will be
+searched: [osd.0], [osd], [global]</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-ceph-conf-pid">
+<span class="sig-name descname"><span class="pre">--pid</span></span><span class="sig-prename descclassname"> <span class="pre">*pid*</span></span><a class="headerlink" href="#cmdoption-ceph-conf-pid" title="Permalink to this definition">¶</a></dt>
+<dd><p>override the <code class="docutils literal notranslate"><span class="pre">$pid</span></code> when expanding options. For example, if an option is
+configured like <code class="docutils literal notranslate"><span class="pre">/var/log/$name.$pid.log</span></code>, the <code class="docutils literal notranslate"><span class="pre">$pid</span></code> portion in its
+value will be substituded using the PID of <strong>ceph-conf</strong> instead of the
+PID of the process specfied using the <code class="docutils literal notranslate"><span class="pre">--name</span></code> option.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-ceph-conf-r">
+<span id="cmdoption-ceph-conf-resolve-search"></span><span class="sig-name descname"><span class="pre">-r</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--resolve-search</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-ceph-conf-r" title="Permalink to this definition">¶</a></dt>
+<dd><p>search for the first file that exists and can be opened in the resulted
+comma delimited search list.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-ceph-conf-s">
+<span id="cmdoption-ceph-conf-section"></span><span class="sig-name descname"><span class="pre">-s</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--section</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-ceph-conf-s" title="Permalink to this definition">¶</a></dt>
+<dd><p>additional sections to search.  These additional sections will be searched
+before the sections that would normally be searched. As always, the first
+matching entry we find will be returned.</p>
+</dd></dl>
+
+</section>
+<section id="examples">
+<h2>Examples<a class="headerlink" href="#examples" title="Permalink to this heading">¶</a></h2>
+<p>To find out what value osd 0 will use for the “osd data” option:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span><span class="o">-</span><span class="n">conf</span> <span class="o">-</span><span class="n">c</span> <span class="n">foo</span><span class="o">.</span><span class="n">conf</span>  <span class="o">--</span><span class="n">name</span> <span class="n">osd</span><span class="mf">.0</span> <span class="o">--</span><span class="n">lookup</span> <span class="s2">&quot;osd data&quot;</span>
+</pre></div>
+</div>
+<p>To find out what value will mds a use for the “log file” option:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span><span class="o">-</span><span class="n">conf</span> <span class="o">-</span><span class="n">c</span> <span class="n">foo</span><span class="o">.</span><span class="n">conf</span>  <span class="o">--</span><span class="n">name</span> <span class="n">mds</span><span class="o">.</span><span class="n">a</span> <span class="s2">&quot;log file&quot;</span>
+</pre></div>
+</div>
+<p>To list all sections that begin with “osd”:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span><span class="o">-</span><span class="n">conf</span> <span class="o">-</span><span class="n">c</span> <span class="n">foo</span><span class="o">.</span><span class="n">conf</span> <span class="o">-</span><span class="n">l</span> <span class="n">osd</span>
+</pre></div>
+</div>
+<p>To list all sections:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span><span class="o">-</span><span class="n">conf</span> <span class="o">-</span><span class="n">c</span> <span class="n">foo</span><span class="o">.</span><span class="n">conf</span> <span class="o">-</span><span class="n">L</span>
+</pre></div>
+</div>
+<p>To print the path of the “keyring” used by “client.0”:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span><span class="o">-</span><span class="n">conf</span> <span class="o">--</span><span class="n">name</span> <span class="n">client</span><span class="mf">.0</span> <span class="o">-</span><span class="n">r</span> <span class="o">-</span><span class="n">l</span> <span class="n">keyring</span>
+</pre></div>
+</div>
+</section>
+<section id="files">
+<h2>Files<a class="headerlink" href="#files" title="Permalink to this heading">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">/etc/ceph/$cluster.conf</span></code>, <code class="docutils literal notranslate"><span class="pre">~/.ceph/$cluster.conf</span></code>, <code class="docutils literal notranslate"><span class="pre">$cluster.conf</span></code></p>
+<p>the Ceph configuration files to use if not specified.</p>
+</section>
+<section id="availability">
+<h2>Availability<a class="headerlink" href="#availability" title="Permalink to this heading">¶</a></h2>
+<p><strong>ceph-conf</strong> is part of Ceph, a massively scalable, open-source, distributed storage system.  Please refer
+to the Ceph documentation at <a class="reference external" href="http://ceph.com/docs">http://ceph.com/docs</a> for more
+information.</p>
+</section>
+<section id="see-also">
+<h2>See also<a class="headerlink" href="#see-also" title="Permalink to this heading">¶</a></h2>
+<p><a class="reference internal" href="../ceph/"><span class="doc">ceph</span></a>(8),</p>
+</section>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../../">
+              <img class="logo" src="../../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../install/">Installing Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cephadm/">Cephadm</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../../rados/">Ceph Storage Cluster</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../../../rados/configuration/">Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../cephadm/">Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../rados/operations/">Operations</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../../../rados/man/">Man Pages</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../ceph-volume/">ceph-volume – Ceph OSD deployment and inspection tool</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../ceph-volume-systemd/">ceph-volume-systemd – systemd ceph-volume helper tool</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../ceph/">ceph – ceph administration tool</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../ceph-authtool/">ceph-authtool – ceph keyring manipulation tool</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../ceph-clsinfo/">ceph-clsinfo – show class object information</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">ceph-conf – ceph conf file tool</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#synopsis">Synopsis</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#description">Description</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#actions">Actions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#options">Options</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#examples">Examples</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#files">Files</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#availability">Availability</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#see-also">See also</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../ceph-debugpack/">ceph-debugpack – ceph debug packer utility</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../ceph-dencoder/">ceph-dencoder – ceph encoder/decoder utility</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../ceph-mon/">ceph-mon – ceph monitor daemon</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../ceph-osd/">ceph-osd – ceph object storage daemon</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../ceph-kvstore-tool/">ceph-kvstore-tool – ceph kvstore manipulation tool</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../ceph-run/">ceph-run – restart daemon on core dump</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../ceph-syn/">ceph-syn – ceph synthetic workload generator</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../crushtool/">crushtool – CRUSH map manipulation tool</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../librados-config/">librados-config – display information about librados</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../monmaptool/">monmaptool – ceph monitor cluster map manipulation tool</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../osdmaptool/">osdmaptool – ceph osd cluster map manipulation tool</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rados/">rados – rados object storage utility</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../ceph-post-file/">ceph-post-file – post files for ceph developers</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../rados/troubleshooting/">Troubleshooting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../rados/api/">APIs</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cephfs/">Ceph File System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../rbd/">Ceph Block Device</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../radosgw/">Ceph Object Gateway</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../mgr/">Ceph Manager Daemon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../mgr/dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dev/developer_guide/">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dev/internals/">Ceph Internals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../../../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../ceph-debugpack/" title="ceph-debugpack – ceph debug packer utility"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../ceph-clsinfo/" title="ceph-clsinfo – show class object information"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../../rados/" >Ceph Storage Cluster</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../../../rados/man/" >Object Store Manpages</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">ceph-conf – ceph conf file tool</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

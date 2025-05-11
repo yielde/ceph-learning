@@ -1,0 +1,320 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Ceph File System Scrub &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css" />
+    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../genindex/" />
+    <link rel="search" title="Search" href="../../search/" />
+    <link rel="next" title="Handling a full Ceph file system" href="../full/" />
+    <link rel="prev" title="Ceph file system client eviction" href="../eviction/" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../full/" title="Handling a full Ceph file system"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../eviction/" title="Ceph file system client eviction"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../" accesskey="U">Ceph File System</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Ceph File System Scrub</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="ceph-file-system-scrub">
+<span id="mds-scrub"></span><h1>Ceph File System Scrub<a class="headerlink" href="#ceph-file-system-scrub" title="Permalink to this heading">¶</a></h1>
+<p>CephFS provides the cluster admin (operator) to check consistency of a file system
+via a set of scrub commands. Scrub can be classified into two parts:</p>
+<ol class="arabic simple">
+<li><p>Forward Scrub: In which the scrub operation starts at the root of the file system
+(or a sub directory) and looks at everything that can be touched in the hierarchy
+to ensure consistency.</p></li>
+<li><p>Backward Scrub: In which the scrub operation looks at every RADOS object in the
+file system pools and maps it back to the file system hierarchy.</p></li>
+</ol>
+<p>This document details commands to initiate and control forward scrub (referred as
+scrub thereafter).</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>CephFS forward scrubs are started and manipulated on rank 0. All scrub
+commands must be directed at rank 0.</p>
+</div>
+<section id="initiate-file-system-scrub">
+<h2>Initiate File System Scrub<a class="headerlink" href="#initiate-file-system-scrub" title="Permalink to this heading">¶</a></h2>
+<p>To start a scrub operation for a directory tree use the following command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span> <span class="n">tell</span> <span class="n">mds</span><span class="o">.&lt;</span><span class="n">fsname</span><span class="o">&gt;</span><span class="p">:</span><span class="mi">0</span> <span class="n">scrub</span> <span class="n">start</span> <span class="o">&lt;</span><span class="n">path</span><span class="o">&gt;</span> <span class="p">[</span><span class="n">scrubopts</span><span class="p">]</span> <span class="p">[</span><span class="n">tag</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>where <code class="docutils literal notranslate"><span class="pre">scrubopts</span></code> is a comma delimited list of <code class="docutils literal notranslate"><span class="pre">recursive</span></code>, <code class="docutils literal notranslate"><span class="pre">force</span></code>, or
+<code class="docutils literal notranslate"><span class="pre">repair</span></code> and <code class="docutils literal notranslate"><span class="pre">tag</span></code> is an optional custom string tag (the default is a generated
+UUID). An example command is:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span> <span class="n">tell</span> <span class="n">mds</span><span class="o">.</span><span class="n">cephfs</span><span class="p">:</span><span class="mi">0</span> <span class="n">scrub</span> <span class="n">start</span> <span class="o">/</span> <span class="n">recursive</span>
+<span class="p">{</span>
+    <span class="s2">&quot;return_code&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+    <span class="s2">&quot;scrub_tag&quot;</span><span class="p">:</span> <span class="s2">&quot;6f0d204c-6cfd-4300-9e02-73f382fd23c1&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;mode&quot;</span><span class="p">:</span> <span class="s2">&quot;asynchronous&quot;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>Recursive scrub is asynchronous (as hinted by <cite>mode</cite> in the output above).
+Asynchronous scrubs must be polled using <code class="docutils literal notranslate"><span class="pre">scrub</span> <span class="pre">status</span></code> to determine the
+status.</p>
+<p>The scrub tag is used to differentiate scrubs and also to mark each inode’s
+first data object in the default data pool (where the backtrace information is
+stored) with a <code class="docutils literal notranslate"><span class="pre">scrub_tag</span></code> extended attribute with the value of the tag. You
+can verify an inode was scrubbed by looking at the extended attribute using the
+RADOS utilities.</p>
+<p>Scrubs work for multiple active MDS (multiple ranks). The scrub is managed by
+rank 0 and distributed across MDS as appropriate.</p>
+</section>
+<section id="monitor-ongoing-file-system-scrubs">
+<h2>Monitor (ongoing) File System Scrubs<a class="headerlink" href="#monitor-ongoing-file-system-scrubs" title="Permalink to this heading">¶</a></h2>
+<p>Status of ongoing scrubs can be monitored and polled using in <cite>scrub status</cite>
+command. This commands lists out ongoing scrubs (identified by the tag) along
+with the path and options used to initiate the scrub:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span> <span class="n">tell</span> <span class="n">mds</span><span class="o">.</span><span class="n">cephfs</span><span class="p">:</span><span class="mi">0</span> <span class="n">scrub</span> <span class="n">status</span>
+<span class="p">{</span>
+    <span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;scrub active (85 inodes in the stack)&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;scrubs&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">&quot;6f0d204c-6cfd-4300-9e02-73f382fd23c1&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;path&quot;</span><span class="p">:</span> <span class="s2">&quot;/&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;options&quot;</span><span class="p">:</span> <span class="s2">&quot;recursive&quot;</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p><cite>status</cite> shows the number of inodes that are scheduled to be scrubbed at any point in time,
+hence, can change on subsequent <cite>scrub status</cite> invocations. Also, a high level summary of
+scrub operation (which includes the operation state and paths on which scrub is triggered)
+gets displayed in <cite>ceph status</cite>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span> <span class="n">status</span>
+<span class="p">[</span><span class="o">...</span><span class="p">]</span>
+
+<span class="n">task</span> <span class="n">status</span><span class="p">:</span>
+  <span class="n">scrub</span> <span class="n">status</span><span class="p">:</span>
+      <span class="n">mds</span><span class="mf">.0</span><span class="p">:</span> <span class="n">active</span> <span class="p">[</span><span class="n">paths</span><span class="p">:</span><span class="o">/</span><span class="p">]</span>
+
+<span class="p">[</span><span class="o">...</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>A scrub is complete when it no longer shows up in this list (although that may
+change in future releases). Any damage will be reported via cluster health warnings.</p>
+</section>
+<section id="control-ongoing-file-system-scrubs">
+<h2>Control (ongoing) File System Scrubs<a class="headerlink" href="#control-ongoing-file-system-scrubs" title="Permalink to this heading">¶</a></h2>
+<ul>
+<li><p>Pause: Pausing ongoing scrub operations results in no new or pending inodes being
+scrubbed after in-flight RADOS ops (for the inodes that are currently being scrubbed)
+finish:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span> <span class="n">tell</span> <span class="n">mds</span><span class="o">.</span><span class="n">cephfs</span><span class="p">:</span><span class="mi">0</span> <span class="n">scrub</span> <span class="n">pause</span>
+<span class="p">{</span>
+    <span class="s2">&quot;return_code&quot;</span><span class="p">:</span> <span class="mi">0</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">scrub</span> <span class="pre">status</span></code> after pausing reflects the paused state. At this point,
+initiating new scrub operations (via <code class="docutils literal notranslate"><span class="pre">scrub</span> <span class="pre">start</span></code>) would just queue the
+inode for scrub:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span> <span class="n">tell</span> <span class="n">mds</span><span class="o">.</span><span class="n">cephfs</span><span class="p">:</span><span class="mi">0</span> <span class="n">scrub</span> <span class="n">status</span>
+<span class="p">{</span>
+    <span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;PAUSED (66 inodes in the stack)&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;scrubs&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">&quot;6f0d204c-6cfd-4300-9e02-73f382fd23c1&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;path&quot;</span><span class="p">:</span> <span class="s2">&quot;/&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;options&quot;</span><span class="p">:</span> <span class="s2">&quot;recursive&quot;</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</li>
+<li><p>Resume: Resuming kick starts a paused scrub operation:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span> <span class="n">tell</span> <span class="n">mds</span><span class="o">.</span><span class="n">cephfs</span><span class="p">:</span><span class="mi">0</span> <span class="n">scrub</span> <span class="n">resume</span>
+<span class="p">{</span>
+    <span class="s2">&quot;return_code&quot;</span><span class="p">:</span> <span class="mi">0</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</li>
+<li><p>Abort: Aborting ongoing scrub operations removes pending inodes from the scrub
+queue (thereby aborting the scrub) after in-flight RADOS ops (for the inodes that
+are currently being scrubbed) finish:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span> <span class="n">tell</span> <span class="n">mds</span><span class="o">.</span><span class="n">cephfs</span><span class="p">:</span><span class="mi">0</span> <span class="n">scrub</span> <span class="n">abort</span>
+<span class="p">{</span>
+    <span class="s2">&quot;return_code&quot;</span><span class="p">:</span> <span class="mi">0</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</li>
+</ul>
+</section>
+<section id="damages">
+<h2>Damages<a class="headerlink" href="#damages" title="Permalink to this heading">¶</a></h2>
+<p>The types of damage that can be reported and repaired by File System Scrub are:</p>
+<ul class="simple">
+<li><p>DENTRY : Inode’s dentry is missing.</p></li>
+<li><p>DIR_FRAG : Inode’s directory fragment(s) is missing.</p></li>
+<li><p>BACKTRACE : Inode’s backtrace in the data pool is corrupted.</p></li>
+</ul>
+</section>
+<section id="evaluate-strays-using-recursive-scrub">
+<h2>Evaluate strays using recursive scrub<a class="headerlink" href="#evaluate-strays-using-recursive-scrub" title="Permalink to this heading">¶</a></h2>
+<ul>
+<li><p>In order to evaluate strays i.e. purge stray directories in <code class="docutils literal notranslate"><span class="pre">~mdsdir</span></code> use the following command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span> <span class="n">tell</span> <span class="n">mds</span><span class="o">.&lt;</span><span class="n">fsname</span><span class="o">&gt;</span><span class="p">:</span><span class="mi">0</span> <span class="n">scrub</span> <span class="n">start</span> <span class="o">~</span><span class="n">mdsdir</span> <span class="n">recursive</span>
+</pre></div>
+</div>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">~mdsdir</span></code> is not enqueued by default when scrubbing at the CephFS root. In order to perform stray evaluation
+at root, run scrub with flags <code class="docutils literal notranslate"><span class="pre">scrub_mdsdir</span></code> and <code class="docutils literal notranslate"><span class="pre">recursive</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span> <span class="n">tell</span> <span class="n">mds</span><span class="o">.&lt;</span><span class="n">fsname</span><span class="o">&gt;</span><span class="p">:</span><span class="mi">0</span> <span class="n">scrub</span> <span class="n">start</span> <span class="o">/</span> <span class="n">recursive</span><span class="p">,</span><span class="n">scrub_mdsdir</span>
+</pre></div>
+</div>
+</li>
+</ul>
+</section>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../">
+              <img class="logo" src="../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../install/">Installing Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cephadm/">Cephadm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rados/">Ceph Storage Cluster</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../">Ceph File System</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../#getting-started-with-cephfs">Getting Started with CephFS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../#administration">Administration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../#mounting-cephfs">Mounting CephFS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../#cephfs-concepts">CephFS Concepts</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../#troubleshooting-and-disaster-recovery">Troubleshooting and Disaster Recovery</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../eviction/"> Client eviction</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#"> Scrubbing the File System</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#initiate-file-system-scrub">Initiate File System Scrub</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#monitor-ongoing-file-system-scrubs">Monitor (ongoing) File System Scrubs</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#control-ongoing-file-system-scrubs">Control (ongoing) File System Scrubs</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#damages">Damages</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#evaluate-strays-using-recursive-scrub">Evaluate strays using recursive scrub</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../full/"> Handling full file systems</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../disaster-recovery-experts/"> Metadata repair</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../troubleshooting/"> Troubleshooting</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../disaster-recovery/"> Disaster recovery</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../cephfs-journal-tool/"> cephfs-journal-tool</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../recover-fs-after-mon-store-loss/"> Recovering file system after monitor store loss</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../#developer-guides">Developer Guides</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../#additional-details">Additional Details</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../rbd/">Ceph Block Device</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../radosgw/">Ceph Object Gateway</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/">Ceph Manager Daemon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dev/developer_guide/">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dev/internals/">Ceph Internals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../full/" title="Handling a full Ceph file system"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../eviction/" title="Ceph file system client eviction"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../" >Ceph File System</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Ceph File System Scrub</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

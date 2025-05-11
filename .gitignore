@@ -43,7 +43,7 @@ core
 alpine/APKBUILD
 
 # specific local dir files
-/build-doc
+# /build-doc
 
 # where is this from?
 web/*.html

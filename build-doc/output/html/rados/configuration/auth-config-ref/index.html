@@ -1,0 +1,787 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>CephX Config Reference &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/css/custom.css" />
+    <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/jquery.js"></script>
+    <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../../genindex/" />
+    <link rel="search" title="Search" href="../../../search/" />
+    <link rel="next" title="Monitor Config Reference" href="../mon-config-ref/" />
+    <link rel="prev" title="Messenger v2" href="../msgr2/" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../mon-config-ref/" title="Monitor Config Reference"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../msgr2/" title="Messenger v2"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../" >Ceph Storage Cluster</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../" accesskey="U">Configuration</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">CephX Config Reference</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="cephx-config-reference">
+<span id="rados-cephx-config-ref"></span><h1>CephX Config Reference<a class="headerlink" href="#cephx-config-reference" title="Permalink to this heading">¶</a></h1>
+<p>The CephX protocol is enabled by default. The cryptographic authentication that
+CephX provides has some computational costs, though they should generally be
+quite low. If the network environment connecting your client and server hosts
+is very safe and you cannot afford authentication, you can disable it.
+<strong>Disabling authentication is not generally recommended</strong>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If you disable authentication, you will be at risk of a
+man-in-the-middle attack that alters your client/server messages, which
+could have disastrous security effects.</p>
+</div>
+<p>For information about creating users, see <a class="reference external" href="../../operations/user-management">User Management</a>. For details on
+the architecture of CephX, see <a class="reference external" href="../../../architecture#high-availability-authentication">Architecture - High Availability
+Authentication</a>.</p>
+<section id="deployment-scenarios">
+<h2>Deployment Scenarios<a class="headerlink" href="#deployment-scenarios" title="Permalink to this heading">¶</a></h2>
+<p>How you initially configure CephX depends on your scenario. There are two
+common strategies for deploying a Ceph cluster.  If you are a first-time Ceph
+user, you should probably take the easiest approach: using <code class="docutils literal notranslate"><span class="pre">cephadm</span></code> to
+deploy a cluster. But if your cluster uses other deployment tools (for example,
+Ansible, Chef, Juju, or Puppet), you will need either to use the manual
+deployment procedures or to configure your deployment tool so that it will
+bootstrap your monitor(s).</p>
+<section id="manual-deployment">
+<h3>Manual Deployment<a class="headerlink" href="#manual-deployment" title="Permalink to this heading">¶</a></h3>
+<p>When you deploy a cluster manually, it is necessary to bootstrap the monitors
+manually and to create the <code class="docutils literal notranslate"><span class="pre">client.admin</span></code> user and keyring. To bootstrap
+monitors, follow the steps in <a class="reference external" href="../../../install/manual-deployment#monitor-bootstrapping">Monitor Bootstrapping</a>. Follow these steps when
+using third-party deployment tools (for example, Chef, Puppet, and Juju).</p>
+</section>
+</section>
+<section id="enabling-disabling-cephx">
+<h2>Enabling/Disabling CephX<a class="headerlink" href="#enabling-disabling-cephx" title="Permalink to this heading">¶</a></h2>
+<p>Enabling CephX is possible only if the keys for your monitors, OSDs, and
+metadata servers have already been deployed. If you are simply toggling CephX
+on or off, it is not necessary to repeat the bootstrapping procedures.</p>
+<section id="enabling-cephx">
+<h3>Enabling CephX<a class="headerlink" href="#enabling-cephx" title="Permalink to this heading">¶</a></h3>
+<p>When CephX is enabled, Ceph will look for the keyring in the default search
+path: this path includes <code class="docutils literal notranslate"><span class="pre">/etc/ceph/$cluster.$name.keyring</span></code>. It is possible
+to override this search-path location by adding a <code class="docutils literal notranslate"><span class="pre">keyring</span></code> option in the
+<code class="docutils literal notranslate"><span class="pre">[global]</span></code> section of your <a class="reference external" href="../ceph-conf">Ceph configuration</a> file, but this is not
+recommended.</p>
+<p>To enable CephX on a cluster for which authentication has been disabled, carry
+out the following procedure.  If you (or your deployment utility) have already
+generated the keys, you may skip the steps related to generating keys.</p>
+<ol class="arabic">
+<li><p>Create a <code class="docutils literal notranslate"><span class="pre">client.admin</span></code> key, and save a copy of the key for your client
+host:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><style type="text/css">
+span.prompt1:before {
+  content: "$ ";
+}
+</style><span class="prompt1">ceph<span class="w"> </span>auth<span class="w"> </span>get-or-create<span class="w"> </span>client.admin<span class="w"> </span>mon<span class="w"> </span><span class="s1">&#39;allow *&#39;</span><span class="w"> </span>mds<span class="w"> </span><span class="s1">&#39;allow *&#39;</span><span class="w"> </span>mgr<span class="w"> </span><span class="s1">&#39;allow *&#39;</span><span class="w"> </span>osd<span class="w"> </span><span class="s1">&#39;allow *&#39;</span><span class="w"> </span>-o<span class="w"> </span>/etc/ceph/ceph.client.admin.keyring</span>
+</pre></div></div><p><strong>Warning:</strong> This step will clobber any existing
+<code class="docutils literal notranslate"><span class="pre">/etc/ceph/client.admin.keyring</span></code> file. Do not perform this step if a
+deployment tool has already generated a keyring file for you. Be careful!</p>
+</li>
+<li><p>Create a monitor keyring and generate a monitor secret key:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph-authtool<span class="w"> </span>--create-keyring<span class="w"> </span>/tmp/ceph.mon.keyring<span class="w"> </span>--gen-key<span class="w"> </span>-n<span class="w"> </span>mon.<span class="w"> </span>--cap<span class="w"> </span>mon<span class="w"> </span><span class="s1">&#39;allow *&#39;</span></span>
+</pre></div></div></li>
+<li><p>For each monitor, copy the monitor keyring into a <code class="docutils literal notranslate"><span class="pre">ceph.mon.keyring</span></code> file
+in the monitor’s <code class="docutils literal notranslate"><span class="pre">mon</span> <span class="pre">data</span></code> directory. For example, to copy the monitor
+keyring to <code class="docutils literal notranslate"><span class="pre">mon.a</span></code> in a cluster called <code class="docutils literal notranslate"><span class="pre">ceph</span></code>, run the following
+command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">cp<span class="w"> </span>/tmp/ceph.mon.keyring<span class="w"> </span>/var/lib/ceph/mon/ceph-a/keyring</span>
+</pre></div></div></li>
+<li><p>Generate a secret key for every MGR, where <code class="docutils literal notranslate"><span class="pre">{$id}</span></code> is the MGR letter:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>auth<span class="w"> </span>get-or-create<span class="w"> </span>mgr.<span class="o">{</span><span class="nv">$id</span><span class="o">}</span><span class="w"> </span>mon<span class="w"> </span><span class="s1">&#39;allow profile mgr&#39;</span><span class="w"> </span>mds<span class="w"> </span><span class="s1">&#39;allow *&#39;</span><span class="w"> </span>osd<span class="w"> </span><span class="s1">&#39;allow *&#39;</span><span class="w"> </span>-o<span class="w"> </span>/var/lib/ceph/mgr/ceph-<span class="o">{</span><span class="nv">$id</span><span class="o">}</span>/keyring</span>
+</pre></div></div></li>
+<li><p>Generate a secret key for every OSD, where <code class="docutils literal notranslate"><span class="pre">{$id}</span></code> is the OSD number:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>auth<span class="w"> </span>get-or-create<span class="w"> </span>osd.<span class="o">{</span><span class="nv">$id</span><span class="o">}</span><span class="w"> </span>mon<span class="w"> </span><span class="s1">&#39;allow rwx&#39;</span><span class="w"> </span>osd<span class="w"> </span><span class="s1">&#39;allow *&#39;</span><span class="w"> </span>-o<span class="w"> </span>/var/lib/ceph/osd/ceph-<span class="o">{</span><span class="nv">$id</span><span class="o">}</span>/keyring</span>
+</pre></div></div></li>
+<li><p>Generate a secret key for every MDS, where <code class="docutils literal notranslate"><span class="pre">{$id}</span></code> is the MDS letter:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>auth<span class="w"> </span>get-or-create<span class="w"> </span>mds.<span class="o">{</span><span class="nv">$id</span><span class="o">}</span><span class="w"> </span>mon<span class="w"> </span><span class="s1">&#39;allow rwx&#39;</span><span class="w"> </span>osd<span class="w"> </span><span class="s1">&#39;allow *&#39;</span><span class="w"> </span>mds<span class="w"> </span><span class="s1">&#39;allow *&#39;</span><span class="w"> </span>mgr<span class="w"> </span><span class="s1">&#39;allow profile mds&#39;</span><span class="w"> </span>-o<span class="w"> </span>/var/lib/ceph/mds/ceph-<span class="o">{</span><span class="nv">$id</span><span class="o">}</span>/keyring</span>
+</pre></div></div></li>
+<li><p>Enable CephX authentication by setting the following options in the
+<code class="docutils literal notranslate"><span class="pre">[global]</span></code> section of your <a class="reference external" href="../ceph-conf">Ceph configuration</a> file:</p>
+<div class="highlight-ini notranslate"><div class="highlight"><pre><span></span><span class="na">auth_cluster_required</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">cephx</span>
+<span class="na">auth_service_required</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">cephx</span>
+<span class="na">auth_client_required</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">cephx</span>
+</pre></div>
+</div>
+</li>
+<li><p>Start or restart the Ceph cluster. For details, see <a class="reference external" href="../../operations/operating">Operating a Cluster</a>.</p></li>
+</ol>
+<p>For details on bootstrapping a monitor manually, see <a class="reference external" href="../../../install/manual-deployment">Manual Deployment</a>.</p>
+</section>
+<section id="disabling-cephx">
+<h3>Disabling CephX<a class="headerlink" href="#disabling-cephx" title="Permalink to this heading">¶</a></h3>
+<p>The following procedure describes how to disable CephX. If your cluster
+environment is safe, you might want to disable CephX in order to offset the
+computational expense of running authentication. <strong>We do not recommend doing
+so.</strong> However, setup and troubleshooting might be easier if authentication is
+temporarily disabled and subsequently re-enabled.</p>
+<ol class="arabic">
+<li><p>Disable CephX authentication by setting the following options in the
+<code class="docutils literal notranslate"><span class="pre">[global]</span></code> section of your <a class="reference external" href="../ceph-conf">Ceph configuration</a> file:</p>
+<div class="highlight-ini notranslate"><div class="highlight"><pre><span></span><span class="na">auth_cluster_required</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">none</span>
+<span class="na">auth_service_required</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">none</span>
+<span class="na">auth_client_required</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">none</span>
+</pre></div>
+</div>
+</li>
+<li><p>Start or restart the Ceph cluster. For details, see <a class="reference external" href="../../operations/operating">Operating a Cluster</a>.</p></li>
+</ol>
+</section>
+</section>
+<section id="configuration-settings">
+<h2>Configuration Settings<a class="headerlink" href="#configuration-settings" title="Permalink to this heading">¶</a></h2>
+<section id="enablement">
+<h3>Enablement<a class="headerlink" href="#enablement" title="Permalink to this heading">¶</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">auth_cluster_required</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>If this configuration setting is enabled, the Ceph Storage
+Cluster daemons (that is, <code class="docutils literal notranslate"><span class="pre">ceph-mon</span></code>, <code class="docutils literal notranslate"><span class="pre">ceph-osd</span></code>,
+<code class="docutils literal notranslate"><span class="pre">ceph-mds</span></code>, and <code class="docutils literal notranslate"><span class="pre">ceph-mgr</span></code>) are required to authenticate with
+each other. Valid settings are <code class="docutils literal notranslate"><span class="pre">cephx</span></code> or <code class="docutils literal notranslate"><span class="pre">none</span></code>.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Required</dt>
+<dd class="field-odd"><p>No</p>
+</dd>
+<dt class="field-even">Default</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">cephx</span></code>.</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">auth_service_required</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>If this configuration setting is enabled, then Ceph clients can
+access Ceph services only if those clients authenticate with the
+Ceph Storage Cluster.  Valid settings are <code class="docutils literal notranslate"><span class="pre">cephx</span></code> or <code class="docutils literal notranslate"><span class="pre">none</span></code>.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Required</dt>
+<dd class="field-odd"><p>No</p>
+</dd>
+<dt class="field-even">Default</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">cephx</span></code>.</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">auth_client_required</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>If this configuration setting is enabled, then communication
+between the Ceph client and Ceph Storage Cluster can be
+established only if the Ceph Storage Cluster authenticates
+against the Ceph client. Valid settings are <code class="docutils literal notranslate"><span class="pre">cephx</span></code> or
+<code class="docutils literal notranslate"><span class="pre">none</span></code>.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Required</dt>
+<dd class="field-odd"><p>No</p>
+</dd>
+<dt class="field-even">Default</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">cephx</span></code>.</p>
+</dd>
+</dl>
+</section>
+<section id="keys">
+<span id="index-0"></span><h3>Keys<a class="headerlink" href="#keys" title="Permalink to this heading">¶</a></h3>
+<p>When Ceph is run with authentication enabled, <code class="docutils literal notranslate"><span class="pre">ceph</span></code> administrative commands
+and Ceph clients can access the Ceph Storage Cluster only if they use
+authentication keys.</p>
+<p>The most common way to make these keys available to <code class="docutils literal notranslate"><span class="pre">ceph</span></code> administrative
+commands and Ceph clients is to include a Ceph keyring under the <code class="docutils literal notranslate"><span class="pre">/etc/ceph</span></code>
+directory. For Octopus and later releases that use <code class="docutils literal notranslate"><span class="pre">cephadm</span></code>, the filename is
+usually <code class="docutils literal notranslate"><span class="pre">ceph.client.admin.keyring</span></code>.  If the keyring is included in the
+<code class="docutils literal notranslate"><span class="pre">/etc/ceph</span></code> directory, then it is unnecessary to specify a <code class="docutils literal notranslate"><span class="pre">keyring</span></code> entry
+in the Ceph configuration file.</p>
+<p>Because the Ceph Storage Cluster’s keyring file contains the <code class="docutils literal notranslate"><span class="pre">client.admin</span></code>
+key, we recommend copying the keyring file to nodes from which you run
+administrative commands.</p>
+<p>To perform this step manually, run the following command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">sudo<span class="w"> </span>scp<span class="w"> </span><span class="o">{</span>user<span class="o">}</span>@<span class="o">{</span>ceph-cluster-host<span class="o">}</span>:/etc/ceph/ceph.client.admin.keyring<span class="w"> </span>/etc/ceph/ceph.client.admin.keyring</span>
+</pre></div></div><div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>Make sure that the <code class="docutils literal notranslate"><span class="pre">ceph.keyring</span></code> file has appropriate permissions
+(for example, <code class="docutils literal notranslate"><span class="pre">chmod</span> <span class="pre">644</span></code>) set on your client machine.</p>
+</div>
+<p>You can specify the key itself by using the <code class="docutils literal notranslate"><span class="pre">key</span></code> setting in the Ceph
+configuration file (this approach is not recommended), or instead specify a
+path to a keyfile by using the <code class="docutils literal notranslate"><span class="pre">keyfile</span></code> setting in the Ceph configuration
+file.</p>
+<p><code class="docutils literal notranslate"><span class="pre">keyring</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The path to the keyring file.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Required</dt>
+<dd class="field-odd"><p>No</p>
+</dd>
+<dt class="field-even">Default</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">/etc/ceph/$cluster.$name.keyring,/etc/ceph/$cluster.keyring,/etc/ceph/keyring,/etc/ceph/keyring.bin</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">keyfile</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The path to a keyfile (that is, a file containing only the key).</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Required</dt>
+<dd class="field-odd"><p>No</p>
+</dd>
+<dt class="field-even">Default</dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">key</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The key (that is, the text string of the key itself). We do not
+recommend that you use this setting unless you know what you’re
+doing.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Required</dt>
+<dd class="field-odd"><p>No</p>
+</dd>
+<dt class="field-even">Default</dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</section>
+<section id="daemon-keyrings">
+<h3>Daemon Keyrings<a class="headerlink" href="#daemon-keyrings" title="Permalink to this heading">¶</a></h3>
+<p>Administrative users or deployment tools (for example, <code class="docutils literal notranslate"><span class="pre">cephadm</span></code>) generate
+daemon keyrings in the same way that they generate user keyrings. By default,
+Ceph stores the keyring of a daemon inside that daemon’s data directory. The
+default keyring locations and the capabilities that are necessary for the
+daemon to function are shown below.</p>
+<p><code class="docutils literal notranslate"><span class="pre">ceph-mon</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Location</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">$mon_data/keyring</span></code></p>
+</dd>
+<dt class="field-even">Capabilities</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">mon</span> <span class="pre">'allow</span> <span class="pre">*'</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">ceph-osd</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Location</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">$osd_data/keyring</span></code></p>
+</dd>
+<dt class="field-even">Capabilities</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">mgr</span> <span class="pre">'allow</span> <span class="pre">profile</span> <span class="pre">osd'</span> <span class="pre">mon</span> <span class="pre">'allow</span> <span class="pre">profile</span> <span class="pre">osd'</span> <span class="pre">osd</span> <span class="pre">'allow</span> <span class="pre">*'</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">ceph-mds</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Location</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">$mds_data/keyring</span></code></p>
+</dd>
+<dt class="field-even">Capabilities</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">mds</span> <span class="pre">'allow'</span> <span class="pre">mgr</span> <span class="pre">'allow</span> <span class="pre">profile</span> <span class="pre">mds'</span> <span class="pre">mon</span> <span class="pre">'allow</span> <span class="pre">profile</span> <span class="pre">mds'</span> <span class="pre">osd</span> <span class="pre">'allow</span> <span class="pre">rwx'</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">ceph-mgr</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Location</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">$mgr_data/keyring</span></code></p>
+</dd>
+<dt class="field-even">Capabilities</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">mon</span> <span class="pre">'allow</span> <span class="pre">profile</span> <span class="pre">mgr'</span> <span class="pre">mds</span> <span class="pre">'allow</span> <span class="pre">*'</span> <span class="pre">osd</span> <span class="pre">'allow</span> <span class="pre">*'</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">radosgw</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Location</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">$rgw_data/keyring</span></code></p>
+</dd>
+<dt class="field-even">Capabilities</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">mon</span> <span class="pre">'allow</span> <span class="pre">rwx'</span> <span class="pre">osd</span> <span class="pre">'allow</span> <span class="pre">rwx'</span></code></p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The monitor keyring (that is, <code class="docutils literal notranslate"><span class="pre">mon.</span></code>) contains a key but no
+capabilities, and this keyring is not part of the cluster <code class="docutils literal notranslate"><span class="pre">auth</span></code> database.</p>
+</div>
+<p>The daemon’s data-directory locations default to directories of the form:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>/var/lib/ceph/$type/$cluster-$id
+</pre></div>
+</div>
+<p>For example, <code class="docutils literal notranslate"><span class="pre">osd.12</span></code> would have the following data directory:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">/</span><span class="n">var</span><span class="o">/</span><span class="n">lib</span><span class="o">/</span><span class="n">ceph</span><span class="o">/</span><span class="n">osd</span><span class="o">/</span><span class="n">ceph</span><span class="o">-</span><span class="mi">12</span>
+</pre></div>
+</div>
+<p>It is possible to override these locations, but it is not recommended.</p>
+<p><code class="docutils literal notranslate"><span class="pre">keyring</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The path to the keyring file.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Required</dt>
+<dd class="field-odd"><p>No</p>
+</dd>
+<dt class="field-even">Default</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">/etc/ceph/$cluster.$name.keyring,/etc/ceph/$cluster.keyring,/etc/ceph/keyring,/etc/ceph/keyring.bin</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">keyfile</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The path to a key file (i.e,. a file containing only the key).</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Required</dt>
+<dd class="field-odd"><p>No</p>
+</dd>
+<dt class="field-even">Default</dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">key</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The key (i.e., the text string of the key itself). Not recommended.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Required</dt>
+<dd class="field-odd"><p>No</p>
+</dd>
+<dt class="field-even">Default</dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</section>
+<section id="id1">
+<h3>Daemon Keyrings<a class="headerlink" href="#id1" title="Permalink to this heading">¶</a></h3>
+<p>Administrative users or deployment tools  (e.g., <code class="docutils literal notranslate"><span class="pre">cephadm</span></code>) may generate
+daemon keyrings in the same way as generating user keyrings.  By default, Ceph
+stores daemons keyrings inside their data directory. The default keyring
+locations, and the capabilities necessary for the daemon to function, are shown
+below.</p>
+<p><code class="docutils literal notranslate"><span class="pre">ceph-mon</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Location</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">$mon_data/keyring</span></code></p>
+</dd>
+<dt class="field-even">Capabilities</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">mon</span> <span class="pre">'allow</span> <span class="pre">*'</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">ceph-osd</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Location</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">$osd_data/keyring</span></code></p>
+</dd>
+<dt class="field-even">Capabilities</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">mgr</span> <span class="pre">'allow</span> <span class="pre">profile</span> <span class="pre">osd'</span> <span class="pre">mon</span> <span class="pre">'allow</span> <span class="pre">profile</span> <span class="pre">osd'</span> <span class="pre">osd</span> <span class="pre">'allow</span> <span class="pre">*'</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">ceph-mds</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Location</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">$mds_data/keyring</span></code></p>
+</dd>
+<dt class="field-even">Capabilities</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">mds</span> <span class="pre">'allow'</span> <span class="pre">mgr</span> <span class="pre">'allow</span> <span class="pre">profile</span> <span class="pre">mds'</span> <span class="pre">mon</span> <span class="pre">'allow</span> <span class="pre">profile</span> <span class="pre">mds'</span> <span class="pre">osd</span> <span class="pre">'allow</span> <span class="pre">rwx'</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">ceph-mgr</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Location</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">$mgr_data/keyring</span></code></p>
+</dd>
+<dt class="field-even">Capabilities</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">mon</span> <span class="pre">'allow</span> <span class="pre">profile</span> <span class="pre">mgr'</span> <span class="pre">mds</span> <span class="pre">'allow</span> <span class="pre">*'</span> <span class="pre">osd</span> <span class="pre">'allow</span> <span class="pre">*'</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">radosgw</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Location</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">$rgw_data/keyring</span></code></p>
+</dd>
+<dt class="field-even">Capabilities</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">mon</span> <span class="pre">'allow</span> <span class="pre">rwx'</span> <span class="pre">osd</span> <span class="pre">'allow</span> <span class="pre">rwx'</span></code></p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The monitor keyring (i.e., <code class="docutils literal notranslate"><span class="pre">mon.</span></code>) contains a key but no
+capabilities, and is not part of the cluster <code class="docutils literal notranslate"><span class="pre">auth</span></code> database.</p>
+</div>
+<p>The daemon data directory locations default to directories of the form:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>/var/lib/ceph/$type/$cluster-$id
+</pre></div>
+</div>
+<p>For example, <code class="docutils literal notranslate"><span class="pre">osd.12</span></code> would be:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">/</span><span class="n">var</span><span class="o">/</span><span class="n">lib</span><span class="o">/</span><span class="n">ceph</span><span class="o">/</span><span class="n">osd</span><span class="o">/</span><span class="n">ceph</span><span class="o">-</span><span class="mi">12</span>
+</pre></div>
+</div>
+<p>You can override these locations, but it is not recommended.</p>
+</section>
+<section id="signatures">
+<span id="index-1"></span><h3>Signatures<a class="headerlink" href="#signatures" title="Permalink to this heading">¶</a></h3>
+<p>Ceph performs a signature check that provides some limited protection against
+messages being tampered with in flight (for example, by a “man in the middle”
+attack).</p>
+<p>As with other parts of Ceph authentication, signatures admit of fine-grained
+control.  You can enable or disable signatures for service messages between
+clients and Ceph, and for messages between Ceph daemons.</p>
+<p>Note that even when signatures are enabled data is not encrypted in flight.</p>
+<p><code class="docutils literal notranslate"><span class="pre">cephx_require_signatures</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>If this configuration setting is set to <code class="docutils literal notranslate"><span class="pre">true</span></code>, Ceph requires
+signatures on all message traffic between the Ceph client and the
+Ceph Storage Cluster, and between daemons within the Ceph Storage
+Cluster.</p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><strong>ANTIQUATED NOTE:</strong></p>
+<p>Neither Ceph Argonaut nor Linux kernel versions prior to 3.19
+support signatures; if one of these clients is in use, <code class="docutils literal notranslate"><span class="pre">cephx_require_signatures</span></code>
+can be disabled in order to allow the client to connect.</p>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>Boolean</p>
+</dd>
+<dt class="field-even">Required</dt>
+<dd class="field-even"><p>No</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">false</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">cephx_cluster_require_signatures</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>If this configuration setting is set to <code class="docutils literal notranslate"><span class="pre">true</span></code>, Ceph requires
+signatures on all message traffic between Ceph daemons within the
+Ceph Storage Cluster.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Boolean</p>
+</dd>
+<dt class="field-odd">Required</dt>
+<dd class="field-odd"><p>No</p>
+</dd>
+<dt class="field-even">Default</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">false</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">cephx_service_require_signatures</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>If this configuration setting is set to <code class="docutils literal notranslate"><span class="pre">true</span></code>, Ceph requires
+signatures on all message traffic between Ceph clients and the
+Ceph Storage Cluster.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Boolean</p>
+</dd>
+<dt class="field-odd">Required</dt>
+<dd class="field-odd"><p>No</p>
+</dd>
+<dt class="field-even">Default</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">false</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">cephx_sign_messages</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>If this configuration setting is set to <code class="docutils literal notranslate"><span class="pre">true</span></code>, and if the Ceph
+version supports message signing, then Ceph will sign all
+messages so that they are more difficult to spoof.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Boolean</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">true</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">cephx_require_signatures</span></code></p>
+<dl class="field-list">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>If set to <code class="docutils literal notranslate"><span class="pre">true</span></code>, Ceph requires signatures on all message
+traffic between the Ceph Client and the Ceph Storage Cluster, and
+between daemons comprising the Ceph Storage Cluster.</p>
+<p>Ceph Argonaut and Linux kernel versions prior to 3.19 do
+not support signatures; if such clients are in use this
+option can be turned off to allow them to connect.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Boolean</p>
+</dd>
+<dt class="field-odd">Required</dt>
+<dd class="field-odd"><p>No</p>
+</dd>
+<dt class="field-even">Default</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">false</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">cephx_cluster_require_signatures</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>If set to <code class="docutils literal notranslate"><span class="pre">true</span></code>, Ceph requires signatures on all message
+traffic between Ceph daemons comprising the Ceph Storage Cluster.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Boolean</p>
+</dd>
+<dt class="field-odd">Required</dt>
+<dd class="field-odd"><p>No</p>
+</dd>
+<dt class="field-even">Default</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">false</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">cephx_service_require_signatures</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>If set to <code class="docutils literal notranslate"><span class="pre">true</span></code>, Ceph requires signatures on all message
+traffic between Ceph Clients and the Ceph Storage Cluster.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Boolean</p>
+</dd>
+<dt class="field-odd">Required</dt>
+<dd class="field-odd"><p>No</p>
+</dd>
+<dt class="field-even">Default</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">false</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">cephx_sign_messages</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>If the Ceph version supports message signing, Ceph will sign
+all messages so they are more difficult to spoof.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Boolean</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">true</span></code></p>
+</dd>
+</dl>
+</section>
+<section id="time-to-live">
+<h3>Time to Live<a class="headerlink" href="#time-to-live" title="Permalink to this heading">¶</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">auth_service_ticket_ttl</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>When the Ceph Storage Cluster sends a ticket for authentication
+to a Ceph client, the Ceph Storage Cluster assigns that ticket a
+Time To Live (TTL).</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Double</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">60*60</span></code></p>
+</dd>
+</dl>
+</section>
+</section>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../../">
+              <img class="logo" src="../../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../install/">Installing Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cephadm/">Cephadm</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../">Ceph Storage Cluster</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../">Configuration</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../storage-devices/">Storage devices</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../ceph-conf/">Configuring Ceph</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../common/">Common Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../common/#networks">Networks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../common/#monitors">Monitors</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../common/#authentication">Authentication</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../common/#osds">OSDs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../common/#heartbeats">Heartbeats</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../common/#logs-debugging">Logs / Debugging</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../common/#example-ceph-conf">Example ceph.conf</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../common/#running-multiple-clusters-deprecated">Running Multiple Clusters (DEPRECATED)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../network-config-ref/">Network Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../msgr2/">Messenger v2 protocol</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Auth Settings</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#deployment-scenarios">Deployment Scenarios</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#manual-deployment">Manual Deployment</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#enabling-disabling-cephx">Enabling/Disabling CephX</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#enabling-cephx">Enabling CephX</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#disabling-cephx">Disabling CephX</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#configuration-settings">Configuration Settings</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#enablement">Enablement</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#keys">Keys</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#daemon-keyrings">Daemon Keyrings</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#id1">Daemon Keyrings</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#signatures">Signatures</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#time-to-live">Time to Live</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../mon-config-ref/">Monitor Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../mon-lookup-dns/">Looking up Monitors through DNS</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../mon-osd-interaction/">Heartbeat Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../osd-config-ref/">OSD Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../mclock-config-ref/">DmClock Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../bluestore-config-ref/">BlueStore Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../filestore-config-ref/">FileStore Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../journal-ref/">Journal Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../pool-pg-config-ref/">Pool, PG &amp; CRUSH Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../ms-ref/">Messaging Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../general-config-ref/">General Settings</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../cephadm/">Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../operations/">Operations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../man/">Man Pages</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../troubleshooting/">Troubleshooting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/">APIs</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cephfs/">Ceph File System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../rbd/">Ceph Block Device</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../radosgw/">Ceph Object Gateway</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../mgr/">Ceph Manager Daemon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../mgr/dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dev/developer_guide/">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dev/internals/">Ceph Internals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../../../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../mon-config-ref/" title="Monitor Config Reference"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../msgr2/" title="Messenger v2"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../" >Ceph Storage Cluster</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../" >Configuration</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">CephX Config Reference</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

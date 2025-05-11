@@ -1,0 +1,401 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Network Protocol &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css" />
+    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../genindex/" />
+    <link rel="search" title="Search" href="../../search/" />
+    <link rel="next" title="Object Store Architecture Overview" href="../object-store/" />
+    <link rel="prev" title="Network Encoding" href="../network-encoding/" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../object-store/" title="Object Store Architecture Overview"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../network-encoding/" title="Network Encoding"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../internals/" accesskey="U">Ceph Internals</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Network Protocol</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="network-protocol">
+<h1>Network Protocol<a class="headerlink" href="#network-protocol" title="Permalink to this heading">¶</a></h1>
+<p>This file describes the network protocol used by Ceph.  In order to understand
+the way the structures are defined it is recommended to read the introduction
+of <a class="reference internal" href="../network-encoding/"><span class="doc">Network Encoding</span></a> first.</p>
+<section id="hello">
+<h2>Hello<a class="headerlink" href="#hello" title="Permalink to this heading">¶</a></h2>
+<p>The protocol starts with a handshake that confirms that both nodes are talking
+ceph and shares some basic information.</p>
+<section id="banner">
+<h3>Banner<a class="headerlink" href="#banner" title="Permalink to this heading">¶</a></h3>
+<p>The first action is the server sending banner to the client.  The banner is
+defined in <code class="docutils literal notranslate"><span class="pre">CEPH_BANNER</span></code> from <code class="docutils literal notranslate"><span class="pre">src/include/msgr.h</span></code>.  This is followed by
+the server’s then client’s address each encoded as a <code class="docutils literal notranslate"><span class="pre">entity_addr_t</span></code>.</p>
+<p>Once the client verifies that the servers banner matches its own it replies with
+its banner and its address.</p>
+</section>
+<section id="connect">
+<h3>Connect<a class="headerlink" href="#connect" title="Permalink to this heading">¶</a></h3>
+<p>Once the banners have been verified and the addresses exchanged the connection
+negotiation begins.  First the client sends a <code class="docutils literal notranslate"><span class="pre">ceph_msg_connect</span></code> structure
+with its information.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">//</span> <span class="n">From</span> <span class="n">src</span><span class="o">/</span><span class="n">include</span><span class="o">/</span><span class="n">msgr</span><span class="o">.</span><span class="n">h</span>
+<span class="n">struct</span> <span class="n">ceph_msg_connect</span> <span class="p">{</span>
+        <span class="n">u64le</span> <span class="n">features</span><span class="p">;</span>            <span class="o">//</span> <span class="n">Supported</span> <span class="n">features</span> <span class="p">(</span><span class="n">CEPH_FEATURE_</span><span class="o">*</span><span class="p">)</span>
+        <span class="n">u32le</span> <span class="n">host_type</span><span class="p">;</span>           <span class="o">//</span> <span class="n">CEPH_ENTITY_TYPE_</span><span class="o">*</span>
+        <span class="n">u32le</span> <span class="n">global_seq</span><span class="p">;</span>          <span class="o">//</span> <span class="n">Number</span> <span class="n">of</span> <span class="n">connections</span> <span class="n">initiated</span> <span class="n">by</span> <span class="n">this</span> <span class="n">host</span><span class="o">.</span>
+        <span class="n">u32le</span> <span class="n">connect_seq</span><span class="p">;</span>         <span class="o">//</span> <span class="n">Number</span> <span class="n">of</span> <span class="n">connections</span> <span class="n">initiated</span> <span class="ow">in</span> <span class="n">this</span> <span class="n">session</span><span class="o">.</span>
+        <span class="n">u32le</span> <span class="n">protocol_version</span><span class="p">;</span>
+        <span class="n">u32le</span> <span class="n">authorizer_protocol</span><span class="p">;</span>
+        <span class="n">u32le</span> <span class="n">authorizer_len</span><span class="p">;</span>
+        <span class="n">u8</span>    <span class="n">flags</span><span class="p">;</span>               <span class="o">//</span> <span class="n">CEPH_MSG_CONNECT_</span><span class="o">*</span>
+        <span class="n">u8</span>    <span class="n">authorizer</span><span class="p">[</span><span class="n">authorizer_len</span><span class="p">];</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+<section id="connect-reply">
+<h3>Connect Reply<a class="headerlink" href="#connect-reply" title="Permalink to this heading">¶</a></h3>
+<p>Once the connect has been sent the connection has effectively been opened,
+however the first message the server sends must be a connect reply message.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">struct</span> <span class="n">ceph_msg_connect_reply</span> <span class="p">{</span>
+        <span class="n">u8</span>    <span class="n">tag</span><span class="p">;</span> <span class="o">//</span> <span class="n">Tag</span> <span class="n">indicating</span> <span class="n">response</span> <span class="n">code</span><span class="o">.</span>
+        <span class="n">u64le</span> <span class="n">features</span><span class="p">;</span>
+        <span class="n">u32le</span> <span class="n">global_seq</span><span class="p">;</span>
+        <span class="n">u32le</span> <span class="n">connect_seq</span><span class="p">;</span>
+        <span class="n">u32le</span> <span class="n">protocol_version</span><span class="p">;</span>
+        <span class="n">u32le</span> <span class="n">authorizer_len</span><span class="p">;</span>
+        <span class="n">u8</span>    <span class="n">flags</span><span class="p">;</span>
+        <span class="n">u8</span>    <span class="n">authorizer</span><span class="p">[</span><span class="n">authorizer_len</span><span class="p">];</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="msgr-protocol">
+<h2>MSGR Protocol<a class="headerlink" href="#msgr-protocol" title="Permalink to this heading">¶</a></h2>
+<p>This is a low level protocol over which messages are delivered.  The messages
+at this level consist of a tag byte, identifying the type of message, followed
+by the message data.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">//</span> <span class="n">Virtual</span> <span class="n">structure</span><span class="o">.</span>
+<span class="n">struct</span> <span class="p">{</span>
+        <span class="n">u8</span> <span class="n">tag</span><span class="p">;</span> <span class="o">//</span> <span class="n">CEPH_MSGR_TAG_</span><span class="o">*</span>
+        <span class="n">u8</span> <span class="n">data</span><span class="p">[];</span> <span class="o">//</span> <span class="n">Length</span> <span class="n">depends</span> <span class="n">on</span> <span class="n">tag</span> <span class="ow">and</span> <span class="n">data</span><span class="o">.</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>The length of <code class="docutils literal notranslate"><span class="pre">data</span></code> is determined by the tag byte and depending on the
+message type via information in the <code class="docutils literal notranslate"><span class="pre">data</span></code> array itself.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>There is no way to determine the length of the message if you do not
+understand the type of message.</p>
+</div>
+<p>The message tags are defined in <code class="docutils literal notranslate"><span class="pre">src/include/msgr.h</span></code> and the current ones
+are listed below along with the data they include.  Note that the defined
+structures don’t exist in the source and are merely for representing the
+protocol.</p>
+<section id="ceph-msgr-tag-close-0x06">
+<h3>CEPH_MSGR_TAG_CLOSE (0x06)<a class="headerlink" href="#ceph-msgr-tag-close-0x06" title="Permalink to this heading">¶</a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">struct</span> <span class="n">ceph_msgr_close</span> <span class="p">{</span>
+        <span class="n">u8</span> <span class="n">tag</span> <span class="o">=</span> <span class="mh">0x06</span><span class="p">;</span>
+        <span class="n">u8</span> <span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">];</span> <span class="o">//</span> <span class="n">No</span> <span class="n">data</span><span class="o">.</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>The close message indicates that the connection is being closed.</p>
+</section>
+<section id="ceph-msgr-tag-msg-0x07">
+<h3>CEPH_MSGR_TAG_MSG (0x07)<a class="headerlink" href="#ceph-msgr-tag-msg-0x07" title="Permalink to this heading">¶</a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">struct</span> <span class="n">ceph_msgr_msg</span> <span class="p">{</span>
+        <span class="n">u8</span> <span class="n">tag</span> <span class="o">=</span> <span class="mh">0x07</span><span class="p">;</span>
+        <span class="n">ceph_msg_header</span> <span class="n">header</span><span class="p">;</span>
+        <span class="n">u8</span> <span class="n">front</span> <span class="p">[</span><span class="n">header</span><span class="o">.</span><span class="n">front_len</span> <span class="p">];</span>
+        <span class="n">u8</span> <span class="n">middle</span><span class="p">[</span><span class="n">header</span><span class="o">.</span><span class="n">middle_len</span><span class="p">];</span>
+        <span class="n">u8</span> <span class="n">data</span>  <span class="p">[</span><span class="n">header</span><span class="o">.</span><span class="n">data_len</span>  <span class="p">];</span>
+        <span class="n">ceph_msg_footer</span> <span class="n">footer</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="o">//</span> <span class="n">From</span> <span class="n">src</span><span class="o">/</span><span class="n">include</span><span class="o">/</span><span class="n">msgr</span><span class="o">.</span><span class="n">h</span>
+<span class="n">struct</span> <span class="n">ceph_msg_header</span> <span class="p">{</span>
+        <span class="n">u64le</span> <span class="n">seq</span><span class="p">;</span>       <span class="o">//</span> <span class="n">Sequence</span> <span class="n">number</span><span class="o">.</span>
+        <span class="n">u64le</span> <span class="n">tid</span><span class="p">;</span>       <span class="o">//</span> <span class="n">Transaction</span> <span class="n">ID</span><span class="o">.</span>
+        <span class="n">u16le</span> <span class="nb">type</span><span class="p">;</span>      <span class="o">//</span> <span class="n">Message</span> <span class="nb">type</span> <span class="p">(</span><span class="n">CEPH_MSG_</span><span class="o">*</span> <span class="ow">or</span> <span class="n">MSG_</span><span class="o">*</span><span class="p">)</span><span class="o">.</span>
+        <span class="n">u16le</span> <span class="n">priority</span><span class="p">;</span>  <span class="o">//</span> <span class="n">Priority</span> <span class="p">(</span><span class="n">higher</span> <span class="ow">is</span> <span class="n">more</span> <span class="n">important</span><span class="p">)</span><span class="o">.</span>
+        <span class="n">u16le</span> <span class="n">version</span><span class="p">;</span>   <span class="o">//</span> <span class="n">Version</span> <span class="n">of</span> <span class="n">message</span> <span class="n">encoding</span><span class="o">.</span>
+
+        <span class="n">u32le</span> <span class="n">front_len</span><span class="p">;</span>  <span class="o">//</span> <span class="n">The</span> <span class="n">size</span> <span class="n">of</span> <span class="n">the</span> <span class="n">front</span> <span class="n">section</span><span class="o">.</span>
+        <span class="n">u32le</span> <span class="n">middle_len</span><span class="p">;</span> <span class="o">//</span> <span class="n">The</span> <span class="n">size</span> <span class="n">of</span> <span class="n">the</span> <span class="n">middle</span> <span class="n">section</span><span class="o">.</span>
+        <span class="n">u32le</span> <span class="n">data_len</span><span class="p">;</span>   <span class="o">//</span> <span class="n">The</span> <span class="n">size</span> <span class="n">of</span> <span class="n">the</span> <span class="n">data</span> <span class="n">section</span><span class="o">.</span>
+        <span class="n">u16le</span> <span class="n">data_off</span><span class="p">;</span>   <span class="o">//</span> <span class="n">The</span> <span class="n">way</span> <span class="n">data</span> <span class="n">should</span> <span class="n">be</span> <span class="n">aligned</span> <span class="n">by</span> <span class="n">the</span> <span class="n">receiver</span><span class="o">.</span>
+
+        <span class="n">ceph_entity_name</span> <span class="n">src</span><span class="p">;</span> <span class="o">//</span> <span class="n">Information</span> <span class="n">about</span> <span class="n">the</span> <span class="n">sender</span><span class="o">.</span>
+
+        <span class="n">u16le</span> <span class="n">compat_version</span><span class="p">;</span> <span class="o">//</span> <span class="n">Oldest</span> <span class="n">compatible</span> <span class="n">encoding</span> <span class="n">version</span><span class="o">.</span>
+        <span class="n">u16le</span> <span class="n">reserved</span><span class="p">;</span>       <span class="o">//</span> <span class="n">Unused</span><span class="o">.</span>
+        <span class="n">u32le</span> <span class="n">crc</span><span class="p">;</span>            <span class="o">//</span> <span class="n">CRC</span> <span class="n">of</span> <span class="n">header</span><span class="o">.</span>
+<span class="p">}</span>
+
+<span class="o">//</span> <span class="n">From</span> <span class="n">src</span><span class="o">/</span><span class="n">include</span><span class="o">/</span><span class="n">msgr</span><span class="o">.</span><span class="n">h</span>
+<span class="n">struct</span> <span class="n">ceph_msg_footer</span> <span class="p">{</span>
+        <span class="n">u32le</span> <span class="n">front_crc</span><span class="p">;</span>  <span class="o">//</span> <span class="n">Checksums</span> <span class="n">of</span> <span class="n">the</span> <span class="n">various</span> <span class="n">sections</span><span class="o">.</span>
+        <span class="n">u32le</span> <span class="n">middle_crc</span><span class="p">;</span> <span class="o">//</span>
+        <span class="n">u32le</span> <span class="n">data_crc</span><span class="p">;</span>   <span class="o">//</span>
+        <span class="n">u64le</span> <span class="n">sig</span><span class="p">;</span> <span class="o">//</span> <span class="n">Crypographic</span> <span class="n">signature</span><span class="o">.</span>
+        <span class="n">u8</span>    <span class="n">flags</span><span class="p">;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>Messages are the business logic of Ceph.  They are what is used to send data and
+requests between nodes.  The message header contains the length of the message
+so unknown messages can be handled gracefully.</p>
+<p>There are two names for the message type constants <code class="docutils literal notranslate"><span class="pre">CEPH_MSG_*</span></code> and <code class="docutils literal notranslate"><span class="pre">MSG_*</span></code>.
+The only difference between the two is that the first are considered “public”
+while the second is for internal use only.  There is no protocol-level
+difference.</p>
+</section>
+<section id="ceph-msgr-tag-ack-0x08">
+<h3>CEPH_MSGR_TAG_ACK (0x08)<a class="headerlink" href="#ceph-msgr-tag-ack-0x08" title="Permalink to this heading">¶</a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">struct</span> <span class="n">ceph_msgr_ack</span> <span class="p">{</span>
+        <span class="n">u8</span>    <span class="n">tag</span> <span class="o">=</span> <span class="mh">0x08</span><span class="p">;</span>
+        <span class="n">u64le</span> <span class="n">seq</span><span class="p">;</span> <span class="o">//</span> <span class="n">The</span> <span class="n">sequence</span> <span class="n">number</span> <span class="n">of</span> <span class="n">the</span> <span class="n">message</span> <span class="n">being</span> <span class="n">acknowledged</span><span class="o">.</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+<section id="ceph-msgr-tag-keepalive-0x09">
+<h3>CEPH_MSGR_TAG_KEEPALIVE (0x09)<a class="headerlink" href="#ceph-msgr-tag-keepalive-0x09" title="Permalink to this heading">¶</a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">struct</span> <span class="n">ceph_msgr_keepalive</span> <span class="p">{</span>
+        <span class="n">u8</span> <span class="n">tag</span> <span class="o">=</span> <span class="mh">0x09</span><span class="p">;</span>
+        <span class="n">u8</span> <span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">];</span> <span class="o">//</span> <span class="n">No</span> <span class="n">data</span><span class="o">.</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+<section id="ceph-msgr-tag-keepalive2-0x0e">
+<h3>CEPH_MSGR_TAG_KEEPALIVE2 (0x0E)<a class="headerlink" href="#ceph-msgr-tag-keepalive2-0x0e" title="Permalink to this heading">¶</a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">struct</span> <span class="n">ceph_msgr_keepalive2</span> <span class="p">{</span>
+        <span class="n">u8</span>      <span class="n">tag</span> <span class="o">=</span> <span class="mh">0x0E</span><span class="p">;</span>
+        <span class="n">utime_t</span> <span class="n">timestamp</span><span class="p">;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+<section id="ceph-msgr-tag-keepalive2-ack-0x0f">
+<h3>CEPH_MSGR_TAG_KEEPALIVE2_ACK (0x0F)<a class="headerlink" href="#ceph-msgr-tag-keepalive2-ack-0x0f" title="Permalink to this heading">¶</a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">struct</span> <span class="n">ceph_msgr_keepalive2_ack</span> <span class="p">{</span>
+        <span class="n">u8</span>      <span class="n">tag</span> <span class="o">=</span> <span class="mh">0x0F</span><span class="p">;</span>
+        <span class="n">utime_t</span> <span class="n">timestamp</span><span class="p">;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+</section>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../">
+              <img class="logo" src="../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../install/">Installing Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cephadm/">Cephadm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rados/">Ceph Storage Cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cephfs/">Ceph File System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rbd/">Ceph Block Device</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../radosgw/">Ceph Object Gateway</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/">Ceph Manager Daemon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../developer_guide/">Developer Guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../internals/">Ceph Internals</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../blkin/">Tracing Ceph With Blkin</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../bluestore/">BlueStore Internals</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cache-pool/">Cache pool</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../ceph_krb_auth/">A Detailed Documentation on How to Set up Ceph Kerberos Authentication</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cephfs-mirroring/">CephFS Mirroring</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cephfs-reclaim/">CephFS Reclaim Interface</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cephfs-snapshots/">CephFS Snapshots</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cephx/">Cephx</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cephx_protocol/">A Detailed Description of the Cephx Authentication Protocol</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../config/">Configuration Management System</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../config-key/">config-key layout</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../context/">CephContext</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../continuous-integration/">Continuous Integration Architecture</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../corpus/">Corpus structure</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpu-profiler/">Installing Oprofile</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cxx/">C++17 and libstdc++ ABI</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../delayed-delete/">CephFS delayed deletion</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../dev_cluster_deployement/">Deploying a development cluster</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../dev_cluster_deployement/#deploying-multiple-development-clusters-on-the-same-machine">Deploying multiple development clusters on the same machine</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../development-workflow/">Development workflows</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../documenting/">Documenting Ceph</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../encoding/">Serialization (encode/decode)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../erasure-coded-pool/">Erasure Coded pool</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../file-striping/">File striping</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../freebsd/">FreeBSD Implementation details</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../generatedocs/">Building Ceph Documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../iana/">IANA Numbers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../kubernetes/">Hacking on Ceph in Kubernetes with Rook</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../libs/">Library architecture</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../logging/">Use of the cluster log</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../logs/">Debug logs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../macos/">build on MacOS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../messenger/">Messenger notes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../mon-bootstrap/">Monitor bootstrap</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../mon-elections/">Monitor Elections</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../mon-on-disk-formats/">ON-DISK FORMAT</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../mon-osdmap-prune/">FULL OSDMAP VERSION PRUNING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../msgr2/">msgr2 protocol (msgr2.0 and msgr2.1)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../network-encoding/">Network Encoding</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Network Protocol</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#hello">Hello</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#banner">Banner</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#connect">Connect</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#connect-reply">Connect Reply</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#msgr-protocol">MSGR Protocol</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#ceph-msgr-tag-close-0x06">CEPH_MSGR_TAG_CLOSE (0x06)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#ceph-msgr-tag-msg-0x07">CEPH_MSGR_TAG_MSG (0x07)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#ceph-msgr-tag-ack-0x08">CEPH_MSGR_TAG_ACK (0x08)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#ceph-msgr-tag-keepalive-0x09">CEPH_MSGR_TAG_KEEPALIVE (0x09)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#ceph-msgr-tag-keepalive2-0x0e">CEPH_MSGR_TAG_KEEPALIVE2 (0x0E)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#ceph-msgr-tag-keepalive2-ack-0x0f">CEPH_MSGR_TAG_KEEPALIVE2_ACK (0x0F)</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../object-store/">Object Store Architecture Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../osd-class-path/">OSD class path issues</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../peering/">Peering</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../perf/">Using perf</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../perf_counters/">Perf counters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../perf_histograms/">Perf histograms</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../placement-group/">PG (Placement Group) notes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../quick_guide/">Developer Guide (Quick)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rados-client-protocol/">RADOS client protocol</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rbd-diff/">RBD Incremental Backup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rbd-export/">RBD Export &amp; Import</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rbd-layering/">RBD Layering</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../release-checklists/">Release checklists</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../release-process/">Ceph Release Process</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../seastore/">SeaStore</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../sepia/">Sepia community test lab</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../session_authentication/">Session Authentication for the Cephx Protocol</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../testing/">Testing notes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../versions/">Public OSD Version</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../vstart-ganesha/">NFS CephFS-RGW Developer Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../wireshark/">Wireshark Dissector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../zoned-storage/">Zoned Storage Support</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../osd_internals/">OSD developer documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../mds_internals/">MDS developer documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../radosgw/">RADOS Gateway developer documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../ceph-volume/">ceph-volume developer documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../crimson/">Crimson developer documentation</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../object-store/" title="Object Store Architecture Overview"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../network-encoding/" title="Network Encoding"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../internals/" >Ceph Internals</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Network Protocol</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

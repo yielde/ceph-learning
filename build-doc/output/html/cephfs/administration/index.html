@@ -1,0 +1,493 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>CephFS Administrative commands &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css" />
+    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../genindex/" />
+    <link rel="search" title="Search" href="../../search/" />
+    <link rel="next" title="Multiple Ceph File Systems" href="../multifs/" />
+    <link rel="prev" title="Create a Ceph file system" href="../createfs/" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../multifs/" title="Multiple Ceph File Systems"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../createfs/" title="Create a Ceph file system"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../" accesskey="U">Ceph File System</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">CephFS Administrative commands</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="cephfs-administrative-commands">
+<span id="cephfs-administration"></span><h1>CephFS Administrative commands<a class="headerlink" href="#cephfs-administrative-commands" title="Permalink to this heading">¶</a></h1>
+<section id="file-systems">
+<h2>File Systems<a class="headerlink" href="#file-systems" title="Permalink to this heading">¶</a></h2>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The names of the file systems, metadata pools, and data pools can
+only have characters in the set [a-zA-Z0-9_-.].</p>
+</div>
+<p>These commands operate on the CephFS file systems in your Ceph cluster.
+Note that by default only one file system is permitted: to enable
+creation of multiple file systems use <code class="docutils literal notranslate"><span class="pre">ceph</span> <span class="pre">fs</span> <span class="pre">flag</span> <span class="pre">set</span> <span class="pre">enable_multiple</span> <span class="pre">true</span></code>.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span> <span class="n">fs</span> <span class="n">new</span> <span class="o">&lt;</span><span class="n">file</span> <span class="n">system</span> <span class="n">name</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">metadata</span> <span class="n">pool</span> <span class="n">name</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">data</span> <span class="n">pool</span> <span class="n">name</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<p>This command creates a new file system. The file system name and metadata pool
+name are self-explanatory. The specified data pool is the default data pool and
+cannot be changed once set. Each file system has its own set of MDS daemons
+assigned to ranks so ensure that you have sufficient standby daemons available
+to accommodate the new file system.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span> <span class="n">fs</span> <span class="n">ls</span>
+</pre></div>
+</div>
+<p>List all file systems by name.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span> <span class="n">fs</span> <span class="n">dump</span> <span class="p">[</span><span class="n">epoch</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>This dumps the FSMap at the given epoch (default: current) which includes all
+file system settings, MDS daemons and the ranks they hold, and the list of
+standby MDS daemons.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span> <span class="n">fs</span> <span class="n">rm</span> <span class="o">&lt;</span><span class="n">file</span> <span class="n">system</span> <span class="n">name</span><span class="o">&gt;</span> <span class="p">[</span><span class="o">--</span><span class="n">yes</span><span class="o">-</span><span class="n">i</span><span class="o">-</span><span class="n">really</span><span class="o">-</span><span class="n">mean</span><span class="o">-</span><span class="n">it</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>Destroy a CephFS file system. This wipes information about the state of the
+file system from the FSMap. The metadata pool and data pools are untouched and
+must be destroyed separately.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span> <span class="n">fs</span> <span class="n">get</span> <span class="o">&lt;</span><span class="n">file</span> <span class="n">system</span> <span class="n">name</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<p>Get information about the named file system, including settings and ranks. This
+is a subset of the same information from the <code class="docutils literal notranslate"><span class="pre">ceph</span> <span class="pre">fs</span> <span class="pre">dump</span></code> command.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span> <span class="n">fs</span> <span class="nb">set</span> <span class="o">&lt;</span><span class="n">file</span> <span class="n">system</span> <span class="n">name</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">var</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">val</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<p>Change a setting on a file system. These settings are specific to the named
+file system and do not affect other file systems.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span> <span class="n">fs</span> <span class="n">add_data_pool</span> <span class="o">&lt;</span><span class="n">file</span> <span class="n">system</span> <span class="n">name</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">pool</span> <span class="n">name</span><span class="o">/</span><span class="nb">id</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<p>Add a data pool to the file system. This pool can be used for file layouts
+as an alternate location to store file data.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span> <span class="n">fs</span> <span class="n">rm_data_pool</span> <span class="o">&lt;</span><span class="n">file</span> <span class="n">system</span> <span class="n">name</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">pool</span> <span class="n">name</span><span class="o">/</span><span class="nb">id</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<p>This command removes the specified pool from the list of data pools for the
+file system.  If any files have layouts for the removed data pool, the file
+data will become unavailable. The default data pool (when creating the file
+system) cannot be removed.</p>
+</section>
+<section id="settings">
+<h2>Settings<a class="headerlink" href="#settings" title="Permalink to this heading">¶</a></h2>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span> <span class="n">fs</span> <span class="nb">set</span> <span class="o">&lt;</span><span class="n">fs</span> <span class="n">name</span><span class="o">&gt;</span> <span class="n">max_file_size</span> <span class="o">&lt;</span><span class="n">size</span> <span class="ow">in</span> <span class="nb">bytes</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<p>CephFS has a configurable maximum file size, and it’s 1TB by default.
+You may wish to set this limit higher if you expect to store large files
+in CephFS. It is a 64-bit field.</p>
+<p>Setting <code class="docutils literal notranslate"><span class="pre">max_file_size</span></code> to 0 does not disable the limit. It would
+simply limit clients to only creating empty files.</p>
+</section>
+<section id="maximum-file-sizes-and-performance">
+<h2>Maximum file sizes and performance<a class="headerlink" href="#maximum-file-sizes-and-performance" title="Permalink to this heading">¶</a></h2>
+<p>CephFS enforces the maximum file size limit at the point of appending to
+files or setting their size. It does not affect how anything is stored.</p>
+<p>When users create a file of an enormous size (without necessarily
+writing any data to it), some operations (such as deletes) cause the MDS
+to have to do a large number of operations to check if any of the RADOS
+objects within the range that could exist (according to the file size)
+really existed.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">max_file_size</span></code> setting prevents users from creating files that
+appear to be eg. exabytes in size, causing load on the MDS as it tries
+to enumerate the objects during operations like stats or deletes.</p>
+</section>
+<section id="taking-the-cluster-down">
+<h2>Taking the cluster down<a class="headerlink" href="#taking-the-cluster-down" title="Permalink to this heading">¶</a></h2>
+<p>Taking a CephFS cluster down is done by setting the down flag:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span> <span class="n">fs</span> <span class="nb">set</span> <span class="o">&lt;</span><span class="n">fs_name</span><span class="o">&gt;</span> <span class="n">down</span> <span class="n">true</span>
+</pre></div>
+</div>
+<p>To bring the cluster back online:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span> <span class="n">fs</span> <span class="nb">set</span> <span class="o">&lt;</span><span class="n">fs_name</span><span class="o">&gt;</span> <span class="n">down</span> <span class="n">false</span>
+</pre></div>
+</div>
+<p>This will also restore the previous value of max_mds. MDS daemons are brought
+down in a way such that journals are flushed to the metadata pool and all
+client I/O is stopped.</p>
+</section>
+<section id="taking-the-cluster-down-rapidly-for-deletion-or-disaster-recovery">
+<h2>Taking the cluster down rapidly for deletion or disaster recovery<a class="headerlink" href="#taking-the-cluster-down-rapidly-for-deletion-or-disaster-recovery" title="Permalink to this heading">¶</a></h2>
+<p>To allow rapidly deleting a file system (for testing) or to quickly bring the
+file system and MDS daemons down, use the <code class="docutils literal notranslate"><span class="pre">ceph</span> <span class="pre">fs</span> <span class="pre">fail</span></code> command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span> <span class="n">fs</span> <span class="n">fail</span> <span class="o">&lt;</span><span class="n">fs_name</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<p>This command sets a file system flag to prevent standbys from
+activating on the file system (the <code class="docutils literal notranslate"><span class="pre">joinable</span></code> flag).</p>
+<p>This process can also be done manually by doing the following:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span> <span class="n">fs</span> <span class="nb">set</span> <span class="o">&lt;</span><span class="n">fs_name</span><span class="o">&gt;</span> <span class="n">joinable</span> <span class="n">false</span>
+</pre></div>
+</div>
+<p>Then the operator can fail all of the ranks which causes the MDS daemons to
+respawn as standbys. The file system will be left in a degraded state.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># For all ranks, 0-N:</span>
+<span class="n">ceph</span> <span class="n">mds</span> <span class="n">fail</span> <span class="o">&lt;</span><span class="n">fs_name</span><span class="o">&gt;</span><span class="p">:</span><span class="o">&lt;</span><span class="n">n</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<p>Once all ranks are inactive, the file system may also be deleted or left in
+this state for other purposes (perhaps disaster recovery).</p>
+<p>To bring the cluster back up, simply set the joinable flag:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span> <span class="n">fs</span> <span class="nb">set</span> <span class="o">&lt;</span><span class="n">fs_name</span><span class="o">&gt;</span> <span class="n">joinable</span> <span class="n">true</span>
+</pre></div>
+</div>
+</section>
+<section id="daemons">
+<h2>Daemons<a class="headerlink" href="#daemons" title="Permalink to this heading">¶</a></h2>
+<p>Most commands manipulating MDSs take a <code class="docutils literal notranslate"><span class="pre">&lt;role&gt;</span></code> argument which can take one
+of three forms:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">&lt;</span><span class="n">fs_name</span><span class="o">&gt;</span><span class="p">:</span><span class="o">&lt;</span><span class="n">rank</span><span class="o">&gt;</span>
+<span class="o">&lt;</span><span class="n">fs_id</span><span class="o">&gt;</span><span class="p">:</span><span class="o">&lt;</span><span class="n">rank</span><span class="o">&gt;</span>
+<span class="o">&lt;</span><span class="n">rank</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<p>Commands to manipulate MDS daemons:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span> <span class="n">mds</span> <span class="n">fail</span> <span class="o">&lt;</span><span class="n">gid</span><span class="o">/</span><span class="n">name</span><span class="o">/</span><span class="n">role</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<p>Mark an MDS daemon as failed.  This is equivalent to what the cluster
+would do if an MDS daemon had failed to send a message to the mon
+for <code class="docutils literal notranslate"><span class="pre">mds_beacon_grace</span></code> second.  If the daemon was active and a suitable
+standby is available, using <code class="docutils literal notranslate"><span class="pre">ceph</span> <span class="pre">mds</span> <span class="pre">fail</span></code> will force a failover to the
+standby.</p>
+<p>If the MDS daemon was in reality still running, then using <code class="docutils literal notranslate"><span class="pre">ceph</span> <span class="pre">mds</span> <span class="pre">fail</span></code>
+will cause the daemon to restart.  If it was active and a standby was
+available, then the “failed” daemon will return as a standby.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span> <span class="n">tell</span> <span class="n">mds</span><span class="o">.&lt;</span><span class="n">daemon</span> <span class="n">name</span><span class="o">&gt;</span> <span class="n">command</span> <span class="o">...</span>
+</pre></div>
+</div>
+<p>Send a command to the MDS daemon(s). Use <code class="docutils literal notranslate"><span class="pre">mds.*</span></code> to send a command to all
+daemons. Use <code class="docutils literal notranslate"><span class="pre">ceph</span> <span class="pre">tell</span> <span class="pre">mds.*</span> <span class="pre">help</span></code> to learn available commands.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span> <span class="n">mds</span> <span class="n">metadata</span> <span class="o">&lt;</span><span class="n">gid</span><span class="o">/</span><span class="n">name</span><span class="o">/</span><span class="n">role</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<p>Get metadata about the given MDS known to the Monitors.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span> <span class="n">mds</span> <span class="n">repaired</span> <span class="o">&lt;</span><span class="n">role</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<p>Mark the file system rank as repaired. Unlike the name suggests, this command
+does not change a MDS; it manipulates the file system rank which has been
+marked damaged.</p>
+</section>
+<section id="required-client-features">
+<h2>Required Client Features<a class="headerlink" href="#required-client-features" title="Permalink to this heading">¶</a></h2>
+<p>It is sometimes desirable to set features that clients must support to talk to
+CephFS. Clients without those features may disrupt other clients or behave in
+surprising ways. Or, you may want to require newer features to prevent older
+and possibly buggy clients from connecting.</p>
+<p>Commands to manipulate required client features of a file system:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span> <span class="n">fs</span> <span class="n">required_client_features</span> <span class="o">&lt;</span><span class="n">fs</span> <span class="n">name</span><span class="o">&gt;</span> <span class="n">add</span> <span class="n">reply_encoding</span>
+<span class="n">ceph</span> <span class="n">fs</span> <span class="n">required_client_features</span> <span class="o">&lt;</span><span class="n">fs</span> <span class="n">name</span><span class="o">&gt;</span> <span class="n">rm</span> <span class="n">reply_encoding</span>
+</pre></div>
+</div>
+<p>To list all CephFS features</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span> <span class="n">fs</span> <span class="n">feature</span> <span class="n">ls</span>
+</pre></div>
+</div>
+<p>Clients that are missing newly added features will be evicted automatically.</p>
+<p>Here are the current CephFS features and first release they came out:</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 37%" />
+<col style="width: 29%" />
+<col style="width: 35%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Feature</p></th>
+<th class="head"><p>Ceph release</p></th>
+<th class="head"><p>Upstream Kernel</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>jewel</p></td>
+<td><p>jewel</p></td>
+<td><p>4.5</p></td>
+</tr>
+<tr class="row-odd"><td><p>kraken</p></td>
+<td><p>kraken</p></td>
+<td><p>4.13</p></td>
+</tr>
+<tr class="row-even"><td><p>luminous</p></td>
+<td><p>luminous</p></td>
+<td><p>4.13</p></td>
+</tr>
+<tr class="row-odd"><td><p>mimic</p></td>
+<td><p>mimic</p></td>
+<td><p>4.19</p></td>
+</tr>
+<tr class="row-even"><td><p>reply_encoding</p></td>
+<td><p>nautilus</p></td>
+<td><p>5.1</p></td>
+</tr>
+<tr class="row-odd"><td><p>reclaim_client</p></td>
+<td><p>nautilus</p></td>
+<td><p>N/A</p></td>
+</tr>
+<tr class="row-even"><td><p>lazy_caps_wanted</p></td>
+<td><p>nautilus</p></td>
+<td><p>5.1</p></td>
+</tr>
+<tr class="row-odd"><td><p>multi_reconnect</p></td>
+<td><p>nautilus</p></td>
+<td><p>5.1</p></td>
+</tr>
+<tr class="row-even"><td><p>deleg_ino</p></td>
+<td><p>octopus</p></td>
+<td><p>5.6</p></td>
+</tr>
+<tr class="row-odd"><td><p>metric_collect</p></td>
+<td><p>pacific</p></td>
+<td><p>N/A</p></td>
+</tr>
+<tr class="row-even"><td><p>alternate_name</p></td>
+<td><p>pacific</p></td>
+<td><p>PLANNED</p></td>
+</tr>
+</tbody>
+</table>
+<p>CephFS Feature Descriptions</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">reply_encoding</span>
+</pre></div>
+</div>
+<p>MDS encodes request reply in extensible format if client supports this feature.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">reclaim_client</span>
+</pre></div>
+</div>
+<p>MDS allows new client to reclaim another (dead) client’s states. This feature
+is used by NFS-Ganesha.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">lazy_caps_wanted</span>
+</pre></div>
+</div>
+<p>When a stale client resumes, if the client supports this feature, mds only needs
+to re-issue caps that are explicitly wanted.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">multi_reconnect</span>
+</pre></div>
+</div>
+<p>When mds failover, client sends reconnect messages to mds, to reestablish cache
+states. If MDS supports this feature, client can split large reconnect message
+into multiple ones.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">deleg_ino</span>
+</pre></div>
+</div>
+<p>MDS delegate inode numbers to client if client supports this feature. Having
+delegated inode numbers is a prerequisite for client to do async file creation.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">metric_collect</span>
+</pre></div>
+</div>
+<p>Clients can send performance metric to MDS if MDS support this feature.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">alternate_name</span>
+</pre></div>
+</div>
+<p>Clients can set and understand “alternate names” for directory entries. This is
+to be used for encrypted file name support.</p>
+</section>
+<section id="global-settings">
+<h2>Global settings<a class="headerlink" href="#global-settings" title="Permalink to this heading">¶</a></h2>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span> <span class="n">fs</span> <span class="n">flag</span> <span class="nb">set</span> <span class="o">&lt;</span><span class="n">flag</span> <span class="n">name</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">flag</span> <span class="n">val</span><span class="o">&gt;</span> <span class="p">[</span><span class="o">&lt;</span><span class="n">confirmation</span> <span class="n">string</span><span class="o">&gt;</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>Sets a global CephFS flag (i.e. not specific to a particular file system).
+Currently, the only flag setting is ‘enable_multiple’ which allows having
+multiple CephFS file systems.</p>
+<p>Some flags require you to confirm your intentions with “–yes-i-really-mean-it”
+or a similar string they will prompt you with. Consider these actions carefully
+before proceeding; they are placed on especially dangerous activities.</p>
+</section>
+<section id="advanced">
+<span id="advanced-cephfs-admin-settings"></span><h2>Advanced<a class="headerlink" href="#advanced" title="Permalink to this heading">¶</a></h2>
+<p>These commands are not required in normal operation, and exist
+for use in exceptional circumstances.  Incorrect use of these
+commands may cause serious problems, such as an inaccessible
+file system.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span> <span class="n">mds</span> <span class="n">rmfailed</span>
+</pre></div>
+</div>
+<p>This removes a rank from the failed set.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span> <span class="n">fs</span> <span class="n">reset</span> <span class="o">&lt;</span><span class="n">file</span> <span class="n">system</span> <span class="n">name</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<p>This command resets the file system state to defaults, except for the name and
+pools. Non-zero ranks are saved in the stopped set.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span> <span class="n">fs</span> <span class="n">new</span> <span class="o">&lt;</span><span class="n">file</span> <span class="n">system</span> <span class="n">name</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">metadata</span> <span class="n">pool</span> <span class="n">name</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">data</span> <span class="n">pool</span> <span class="n">name</span><span class="o">&gt;</span> <span class="o">--</span><span class="n">fscid</span> <span class="o">&lt;</span><span class="n">fscid</span><span class="o">&gt;</span> <span class="o">--</span><span class="n">force</span>
+</pre></div>
+</div>
+<p>This command creates a file system with a specific <strong>fscid</strong> (file system cluster ID).
+You may want to do this when an application expects the file system’s ID to be
+stable after it has been recovered, e.g., after monitor databases are lost and
+rebuilt. Consequently, file system IDs don’t always keep increasing with newer
+file systems.</p>
+</section>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../">
+              <img class="logo" src="../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../install/">Installing Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cephadm/">Cephadm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rados/">Ceph Storage Cluster</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../">Ceph File System</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../#getting-started-with-cephfs">Getting Started with CephFS</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../#administration">Administration</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../createfs/"> Create a CephFS file system</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#"> Administrative commands</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#file-systems">File Systems</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#settings">Settings</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#maximum-file-sizes-and-performance">Maximum file sizes and performance</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#taking-the-cluster-down">Taking the cluster down</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#taking-the-cluster-down-rapidly-for-deletion-or-disaster-recovery">Taking the cluster down rapidly for deletion or disaster recovery</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#daemons">Daemons</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#required-client-features">Required Client Features</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#global-settings">Global settings</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#advanced">Advanced</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../multifs/"> Creating Multiple File Systems</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../add-remove-mds/"> Provision/Add/Remove MDS(s)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../standby/">Terminology</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../standby/#referring-to-mds-daemons">Referring to MDS daemons</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../standby/#managing-failover">Managing failover</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../standby/#configuring-standby-replay">Configuring standby-replay</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../standby/#configuring-mds-file-system-affinity">Configuring MDS file system affinity</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../cache-configuration/"> MDS Cache Configuration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../mds-config-ref/"> MDS Configuration Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../man/8/ceph-mds/"> Manual: ceph-mds</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../nfs/"> Export over NFS</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../app-best-practices/"> Application best practices</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../fs-volumes/"> FS volume and subvolumes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../quota/"> CephFS Quotas</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../health-messages/"> Health messages</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../upgrading/">Upgrading the MDS Cluster</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../upgrading/#upgrading-pre-firefly-file-systems-past-jewel">Upgrading pre-Firefly file systems past Jewel</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../cephfs-top/"> CephFS Top Utility</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../snap-schedule/"> Scheduled Snapshots</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../cephfs-mirroring/"> CephFS Snapshot Mirroring</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../#mounting-cephfs">Mounting CephFS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../#cephfs-concepts">CephFS Concepts</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../#troubleshooting-and-disaster-recovery">Troubleshooting and Disaster Recovery</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../#developer-guides">Developer Guides</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../#additional-details">Additional Details</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../rbd/">Ceph Block Device</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../radosgw/">Ceph Object Gateway</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/">Ceph Manager Daemon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dev/developer_guide/">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dev/internals/">Ceph Internals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../multifs/" title="Multiple Ceph File Systems"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../createfs/" title="Create a Ceph file system"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../" >Ceph File System</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">CephFS Administrative commands</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

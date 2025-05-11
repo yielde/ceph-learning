@@ -1,0 +1,450 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Troubleshooting &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css" />
+    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../genindex/" />
+    <link rel="search" title="Search" href="../../search/" />
+    <link rel="next" title="Disaster recovery" href="../disaster-recovery/" />
+    <link rel="prev" title="Advanced: Metadata repair tools" href="../disaster-recovery-experts/" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../disaster-recovery/" title="Disaster recovery"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../disaster-recovery-experts/" title="Advanced: Metadata repair tools"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../" accesskey="U">Ceph File System</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Troubleshooting</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="troubleshooting">
+<h1>Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permalink to this heading">¶</a></h1>
+<section id="slow-stuck-operations">
+<h2>Slow/stuck operations<a class="headerlink" href="#slow-stuck-operations" title="Permalink to this heading">¶</a></h2>
+<p>If you are experiencing apparent hung operations, the first task is to identify
+where the problem is occurring: in the client, the MDS, or the network connecting
+them. Start by looking to see if either side has stuck operations
+(<a class="reference internal" href="#slow-requests"><span class="std std-ref">Slow requests (MDS)</span></a>, below), and narrow it down from there.</p>
+<p>We can get hints about what’s going on by dumping the MDS cache</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span> <span class="n">daemon</span> <span class="n">mds</span><span class="o">.&lt;</span><span class="n">name</span><span class="o">&gt;</span> <span class="n">dump</span> <span class="n">cache</span> <span class="o">/</span><span class="n">tmp</span><span class="o">/</span><span class="n">dump</span><span class="o">.</span><span class="n">txt</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The file <cite>dump.txt</cite> is on the machine executing the MDS and for systemd
+controlled MDS services, this is in a tmpfs in the MDS container.
+Use <cite>nsenter(1)</cite> to locate <cite>dump.txt</cite> or specify another system-wide path.</p>
+</div>
+<p>If high logging levels are set on the MDS, that will almost certainly hold the
+information we need to diagnose and solve the issue.</p>
+</section>
+<section id="rados-health">
+<h2>RADOS Health<a class="headerlink" href="#rados-health" title="Permalink to this heading">¶</a></h2>
+<p>If part of the CephFS metadata or data pools is unavailable and CephFS is not
+responding, it is probably because RADOS itself is unhealthy. Resolve those
+problems first (<a class="reference internal" href="../../rados/troubleshooting/"><span class="doc">Troubleshooting</span></a>).</p>
+</section>
+<section id="the-mds">
+<h2>The MDS<a class="headerlink" href="#the-mds" title="Permalink to this heading">¶</a></h2>
+<p>If an operation is hung inside the MDS, it will eventually show up in <code class="docutils literal notranslate"><span class="pre">ceph</span> <span class="pre">health</span></code>,
+identifying “slow requests are blocked”. It may also identify clients as
+“failing to respond” or misbehaving in other ways. If the MDS identifies
+specific clients as misbehaving, you should investigate why they are doing so.</p>
+<p>Generally it will be the result of</p>
+<ol class="arabic simple">
+<li><p>Overloading the system (if you have extra RAM, increase the
+“mds cache memory limit” config from its default 1GiB; having a larger active
+file set than your MDS cache is the #1 cause of this!).</p></li>
+<li><p>Running an older (misbehaving) client.</p></li>
+<li><p>Underlying RADOS issues.</p></li>
+</ol>
+<p>Otherwise, you have probably discovered a new bug and should report it to
+the developers!</p>
+<section id="slow-requests-mds">
+<span id="slow-requests"></span><h3>Slow requests (MDS)<a class="headerlink" href="#slow-requests-mds" title="Permalink to this heading">¶</a></h3>
+<p>You can list current operations via the admin socket by running:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span> <span class="n">daemon</span> <span class="n">mds</span><span class="o">.&lt;</span><span class="n">name</span><span class="o">&gt;</span> <span class="n">dump_ops_in_flight</span>
+</pre></div>
+</div>
+<p>from the MDS host. Identify the stuck commands and examine why they are stuck.
+Usually the last “event” will have been an attempt to gather locks, or sending
+the operation off to the MDS log. If it is waiting on the OSDs, fix them. If
+operations are stuck on a specific inode, you probably have a client holding
+caps which prevent others from using it, either because the client is trying
+to flush out dirty data or because you have encountered a bug in CephFS’
+distributed file lock code (the file “capabilities” [“caps”] system).</p>
+<p>If it’s a result of a bug in the capabilities code, restarting the MDS
+is likely to resolve the problem.</p>
+<p>If there are no slow requests reported on the MDS, and it is not reporting
+that clients are misbehaving, either the client has a problem or its
+requests are not reaching the MDS.</p>
+</section>
+</section>
+<section id="ceph-fuse-debugging">
+<span id="id1"></span><h2>ceph-fuse debugging<a class="headerlink" href="#ceph-fuse-debugging" title="Permalink to this heading">¶</a></h2>
+<p>ceph-fuse also supports <code class="docutils literal notranslate"><span class="pre">dump_ops_in_flight</span></code>. See if it has any and where they are
+stuck.</p>
+<section id="debug-output">
+<h3>Debug output<a class="headerlink" href="#debug-output" title="Permalink to this heading">¶</a></h3>
+<p>To get more debugging information from ceph-fuse, try running in the foreground
+with logging to the console (<code class="docutils literal notranslate"><span class="pre">-d</span></code>) and enabling client debug
+(<code class="docutils literal notranslate"><span class="pre">--debug-client=20</span></code>), enabling prints for each message sent
+(<code class="docutils literal notranslate"><span class="pre">--debug-ms=1</span></code>).</p>
+<p>If you suspect a potential monitor issue, enable monitor debugging as well
+(<code class="docutils literal notranslate"><span class="pre">--debug-monc=20</span></code>).</p>
+</section>
+</section>
+<section id="kernel-mount-debugging">
+<span id="id2"></span><h2>Kernel mount debugging<a class="headerlink" href="#kernel-mount-debugging" title="Permalink to this heading">¶</a></h2>
+<p>If there is an issue with the kernel client, the most important thing is
+figuring out whether the problem is with the kernel client or the MDS. Generally,
+this is easy to work out. If the kernel client broke directly, there will be
+output in <code class="docutils literal notranslate"><span class="pre">dmesg</span></code>. Collect it and any inappropriate kernel state.</p>
+<section id="id3">
+<h3>Slow requests<a class="headerlink" href="#id3" title="Permalink to this heading">¶</a></h3>
+<p>Unfortunately the kernel client does not support the admin socket, but it has
+similar (if limited) interfaces if your kernel has debugfs enabled. There
+will be a folder in <code class="docutils literal notranslate"><span class="pre">sys/kernel/debug/ceph/</span></code>, and that folder (whose name will
+look something like <code class="docutils literal notranslate"><span class="pre">28f7427e-5558-4ffd-ae1a-51ec3042759a.client25386880</span></code>)
+will contain a variety of files that output interesting output when you <code class="docutils literal notranslate"><span class="pre">cat</span></code>
+them. These files are described below; the most interesting when debugging
+slow requests are probably the <code class="docutils literal notranslate"><span class="pre">mdsc</span></code> and <code class="docutils literal notranslate"><span class="pre">osdc</span></code> files.</p>
+<ul class="simple">
+<li><p>bdi: BDI info about the Ceph system (blocks dirtied, written, etc)</p></li>
+<li><p>caps: counts of file “caps” structures in-memory and used</p></li>
+<li><p>client_options: dumps the options provided to the CephFS mount</p></li>
+<li><p>dentry_lru: Dumps the CephFS dentries currently in-memory</p></li>
+<li><p>mdsc: Dumps current requests to the MDS</p></li>
+<li><p>mdsmap: Dumps the current MDSMap epoch and MDSes</p></li>
+<li><p>mds_sessions: Dumps the current sessions to MDSes</p></li>
+<li><p>monc: Dumps the current maps from the monitor, and any “subscriptions” held</p></li>
+<li><p>monmap: Dumps the current monitor map epoch and monitors</p></li>
+<li><p>osdc: Dumps the current ops in-flight to OSDs (ie, file data IO)</p></li>
+<li><p>osdmap: Dumps the current OSDMap epoch, pools, and OSDs</p></li>
+</ul>
+<p>If there are no stuck requests but you have file IO which is not progressing,
+you might have a…</p>
+</section>
+</section>
+<section id="disconnected-remounted-fs">
+<h2>Disconnected+Remounted FS<a class="headerlink" href="#disconnected-remounted-fs" title="Permalink to this heading">¶</a></h2>
+<p>Because CephFS has a “consistent cache”, if your network connection is
+disrupted for a long enough time, the client will be forcibly
+disconnected from the system. At this point, the kernel client is in
+a bind: it cannot safely write back dirty data, and many applications
+do not handle IO errors correctly on close().
+At the moment, the kernel client will remount the FS, but outstanding file system
+IO may or may not be satisfied. In these cases, you may need to reboot your
+client system.</p>
+<p>You can identify you are in this situation if dmesg/kern.log report something like:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Jul</span> <span class="mi">20</span> <span class="mi">08</span><span class="p">:</span><span class="mi">14</span><span class="p">:</span><span class="mi">38</span> <span class="n">teuthology</span> <span class="n">kernel</span><span class="p">:</span> <span class="p">[</span><span class="mf">3677601.123718</span><span class="p">]</span> <span class="n">ceph</span><span class="p">:</span> <span class="n">mds0</span> <span class="n">closed</span> <span class="n">our</span> <span class="n">session</span>
+<span class="n">Jul</span> <span class="mi">20</span> <span class="mi">08</span><span class="p">:</span><span class="mi">14</span><span class="p">:</span><span class="mi">38</span> <span class="n">teuthology</span> <span class="n">kernel</span><span class="p">:</span> <span class="p">[</span><span class="mf">3677601.128019</span><span class="p">]</span> <span class="n">ceph</span><span class="p">:</span> <span class="n">mds0</span> <span class="n">reconnect</span> <span class="n">start</span>
+<span class="n">Jul</span> <span class="mi">20</span> <span class="mi">08</span><span class="p">:</span><span class="mi">14</span><span class="p">:</span><span class="mi">39</span> <span class="n">teuthology</span> <span class="n">kernel</span><span class="p">:</span> <span class="p">[</span><span class="mf">3677602.093378</span><span class="p">]</span> <span class="n">ceph</span><span class="p">:</span> <span class="n">mds0</span> <span class="n">reconnect</span> <span class="n">denied</span>
+<span class="n">Jul</span> <span class="mi">20</span> <span class="mi">08</span><span class="p">:</span><span class="mi">14</span><span class="p">:</span><span class="mi">39</span> <span class="n">teuthology</span> <span class="n">kernel</span><span class="p">:</span> <span class="p">[</span><span class="mf">3677602.098525</span><span class="p">]</span> <span class="n">ceph</span><span class="p">:</span>  <span class="n">dropping</span> <span class="n">dirty</span><span class="o">+</span><span class="n">flushing</span> <span class="n">Fw</span> <span class="n">state</span> <span class="k">for</span> <span class="n">ffff8802dc150518</span> <span class="mi">1099935956631</span>
+<span class="n">Jul</span> <span class="mi">20</span> <span class="mi">08</span><span class="p">:</span><span class="mi">14</span><span class="p">:</span><span class="mi">39</span> <span class="n">teuthology</span> <span class="n">kernel</span><span class="p">:</span> <span class="p">[</span><span class="mf">3677602.107145</span><span class="p">]</span> <span class="n">ceph</span><span class="p">:</span>  <span class="n">dropping</span> <span class="n">dirty</span><span class="o">+</span><span class="n">flushing</span> <span class="n">Fw</span> <span class="n">state</span> <span class="k">for</span> <span class="n">ffff8801008e8518</span> <span class="mi">1099935946707</span>
+<span class="n">Jul</span> <span class="mi">20</span> <span class="mi">08</span><span class="p">:</span><span class="mi">14</span><span class="p">:</span><span class="mi">39</span> <span class="n">teuthology</span> <span class="n">kernel</span><span class="p">:</span> <span class="p">[</span><span class="mf">3677602.196747</span><span class="p">]</span> <span class="n">libceph</span><span class="p">:</span> <span class="n">mds0</span> <span class="mf">172.21.5.114</span><span class="p">:</span><span class="mi">6812</span> <span class="n">socket</span> <span class="n">closed</span> <span class="p">(</span><span class="n">con</span> <span class="n">state</span> <span class="n">OPEN</span><span class="p">)</span>
+<span class="n">Jul</span> <span class="mi">20</span> <span class="mi">08</span><span class="p">:</span><span class="mi">14</span><span class="p">:</span><span class="mi">40</span> <span class="n">teuthology</span> <span class="n">kernel</span><span class="p">:</span> <span class="p">[</span><span class="mf">3677603.126214</span><span class="p">]</span> <span class="n">libceph</span><span class="p">:</span> <span class="n">mds0</span> <span class="mf">172.21.5.114</span><span class="p">:</span><span class="mi">6812</span> <span class="n">connection</span> <span class="n">reset</span>
+<span class="n">Jul</span> <span class="mi">20</span> <span class="mi">08</span><span class="p">:</span><span class="mi">14</span><span class="p">:</span><span class="mi">40</span> <span class="n">teuthology</span> <span class="n">kernel</span><span class="p">:</span> <span class="p">[</span><span class="mf">3677603.132176</span><span class="p">]</span> <span class="n">libceph</span><span class="p">:</span> <span class="n">reset</span> <span class="n">on</span> <span class="n">mds0</span>
+</pre></div>
+</div>
+<p>This is an area of ongoing work to improve the behavior. Kernels will soon
+be reliably issuing error codes to in-progress IO, although your application(s)
+may not deal with them well. In the longer-term, we hope to allow reconnect
+and reclaim of data in cases where it won’t violate POSIX semantics (generally,
+data which hasn’t been accessed or modified by other clients).</p>
+</section>
+<section id="mounting">
+<h2>Mounting<a class="headerlink" href="#mounting" title="Permalink to this heading">¶</a></h2>
+<section id="mount-5-error">
+<h3>Mount 5 Error<a class="headerlink" href="#mount-5-error" title="Permalink to this heading">¶</a></h3>
+<p>A mount 5 error typically occurs if a MDS server is laggy or if it crashed.
+Ensure at least one MDS is up and running, and the cluster is <code class="docutils literal notranslate"><span class="pre">active</span> <span class="pre">+</span>
+<span class="pre">healthy</span></code>.</p>
+</section>
+<section id="mount-12-error">
+<h3>Mount 12 Error<a class="headerlink" href="#mount-12-error" title="Permalink to this heading">¶</a></h3>
+<p>A mount 12 error with <code class="docutils literal notranslate"><span class="pre">cannot</span> <span class="pre">allocate</span> <span class="pre">memory</span></code> usually occurs if you  have a
+version mismatch between the <a class="reference internal" href="../../glossary/#term-Ceph-Client"><span class="xref std std-term">Ceph Client</span></a> version and the <a class="reference internal" href="../../glossary/#term-Ceph-Storage-Cluster"><span class="xref std std-term">Ceph
+Storage Cluster</span></a> version. Check the versions using:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span> <span class="o">-</span><span class="n">v</span>
+</pre></div>
+</div>
+<p>If the Ceph Client is behind the Ceph cluster, try to upgrade it:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">sudo</span> <span class="n">apt</span><span class="o">-</span><span class="n">get</span> <span class="n">update</span> <span class="o">&amp;&amp;</span> <span class="n">sudo</span> <span class="n">apt</span><span class="o">-</span><span class="n">get</span> <span class="n">install</span> <span class="n">ceph</span><span class="o">-</span><span class="n">common</span>
+</pre></div>
+</div>
+<p>You may need to uninstall, autoclean and autoremove <code class="docutils literal notranslate"><span class="pre">ceph-common</span></code>
+and then reinstall it so that you have the latest version.</p>
+</section>
+</section>
+<section id="dynamic-debugging">
+<h2>Dynamic Debugging<a class="headerlink" href="#dynamic-debugging" title="Permalink to this heading">¶</a></h2>
+<p>You can enable dynamic debug against the CephFS module.</p>
+<p>Please see: <a class="reference external" href="https://github.com/ceph/ceph/blob/master/src/script/kcon_all.sh">https://github.com/ceph/ceph/blob/master/src/script/kcon_all.sh</a></p>
+</section>
+<section id="in-memory-log-dump">
+<h2>In-memory Log Dump<a class="headerlink" href="#in-memory-log-dump" title="Permalink to this heading">¶</a></h2>
+<p>In-memory logs can be dumped by setting <code class="docutils literal notranslate"><span class="pre">mds_extraordinary_events_dump_interval</span></code>
+during a lower level debugging (log level &lt; 10). <code class="docutils literal notranslate"><span class="pre">mds_extraordinary_events_dump_interval</span></code>
+is the interval in seconds for dumping the recent in-memory logs when there is an Extra-Ordinary event.</p>
+<p>The Extra-Ordinary events are classified as:</p>
+<ul class="simple">
+<li><p>Client Eviction</p></li>
+<li><p>Missed Beacon ACK from the monitors</p></li>
+<li><p>Missed Internal Heartbeats</p></li>
+</ul>
+<p>In-memory Log Dump is disabled by default to prevent log file bloat in a production environment.
+The below commands consecutively enables it:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ ceph config set mds debug_mds &lt;log_level&gt;/&lt;gather_level&gt;
+$ ceph config set mds mds_extraordinary_events_dump_interval &lt;seconds&gt;
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">log_level</span></code> should be &lt; 10 and <code class="docutils literal notranslate"><span class="pre">gather_level</span></code> should be &gt;= 10 to enable in-memory log dump.
+When it is enabled, the MDS checks for the extra-ordinary events every
+<code class="docutils literal notranslate"><span class="pre">mds_extraordinary_events_dump_interval</span></code> seconds and if any of them occurs, MDS dumps the
+in-memory logs containing the relevant event details in ceph-mds log.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>For higher log levels (log_level &gt;= 10) there is no reason to dump the In-memory Logs and a
+lower gather level (gather_level &lt; 10) is insufficient to gather In-memory Logs. Thus a
+log level &gt;=10 or a gather level &lt; 10 in debug_mds would prevent enabling the In-memory Log Dump.
+In such cases, when there is a failure it’s required to reset the value of
+mds_extraordinary_events_dump_interval to 0 before enabling using the above commands.</p>
+</div>
+<p>The In-memory Log Dump can be disabled using:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ ceph config set mds mds_extraordinary_events_dump_interval 0
+</pre></div>
+</div>
+</section>
+<section id="filesystems-become-inaccessible-after-an-upgrade">
+<h2>Filesystems Become Inaccessible After an Upgrade<a class="headerlink" href="#filesystems-become-inaccessible-after-an-upgrade" title="Permalink to this heading">¶</a></h2>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>You can avoid <code class="docutils literal notranslate"><span class="pre">operation</span> <span class="pre">not</span> <span class="pre">permitted</span></code> errors by running this procedure
+before an upgrade. As of May 2023, it seems that <code class="docutils literal notranslate"><span class="pre">operation</span> <span class="pre">not</span> <span class="pre">permitted</span></code>
+errors of the kind discussed here occur after upgrades after Nautilus
+(inclusive).</p>
+</div>
+<p>IF</p>
+<p>you have CephFS file systems that have data and metadata pools that were
+created by a <code class="docutils literal notranslate"><span class="pre">ceph</span> <span class="pre">fs</span> <span class="pre">new</span></code> command (meaning that they were not created
+with the defaults)</p>
+<p>OR</p>
+<p>you have an existing CephFS file system and are upgrading to a new post-Nautilus
+major version of Ceph</p>
+<p>THEN</p>
+<p>in order for the documented <code class="docutils literal notranslate"><span class="pre">ceph</span> <span class="pre">fs</span> <span class="pre">authorize...</span></code> commands to function as
+documented (and to avoid ‘operation not permitted’ errors when doing file I/O
+or similar security-related problems for all users except the <code class="docutils literal notranslate"><span class="pre">client.admin</span></code>
+user), you must first run:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><style type="text/css">
+span.prompt1:before {
+  content: "$ ";
+}
+</style><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>pool<span class="w"> </span>application<span class="w"> </span><span class="nb">set</span><span class="w"> </span>&lt;your<span class="w"> </span>metadata<span class="w"> </span>pool<span class="w"> </span>name&gt;<span class="w"> </span>cephfs<span class="w"> </span>metadata<span class="w"> </span>&lt;your<span class="w"> </span>ceph<span class="w"> </span>fs<span class="w"> </span>filesystem<span class="w"> </span>name&gt;</span>
+</pre></div></div><p>and</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>pool<span class="w"> </span>application<span class="w"> </span><span class="nb">set</span><span class="w"> </span>&lt;your<span class="w"> </span>data<span class="w"> </span>pool<span class="w"> </span>name&gt;<span class="w"> </span>cephfs<span class="w"> </span>data<span class="w"> </span>&lt;your<span class="w"> </span>ceph<span class="w"> </span>fs<span class="w"> </span>filesystem<span class="w"> </span>name&gt;</span>
+</pre></div></div><p>Otherwise, when the OSDs receive a request to read or write data (not the
+directory info, but file data) they will not know which Ceph file system name
+to look up. This is true also of pool names, because the ‘defaults’ themselves
+changed in the major releases, from:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">data</span> <span class="n">pool</span><span class="o">=</span><span class="n">fsname</span>
+<span class="n">metadata</span> <span class="n">pool</span><span class="o">=</span><span class="n">fsname_metadata</span>
+</pre></div>
+</div>
+<p>to:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">data</span> <span class="n">pool</span><span class="o">=</span><span class="n">fsname</span><span class="o">.</span><span class="n">data</span> <span class="ow">and</span>
+<span class="n">metadata</span> <span class="n">pool</span><span class="o">=</span><span class="n">fsname</span><span class="o">.</span><span class="n">meta</span>
+</pre></div>
+</div>
+<p>Any setup that used <code class="docutils literal notranslate"><span class="pre">client.admin</span></code> for all mounts did not run into this
+problem, because the admin key gave blanket permissions.</p>
+<p>A temporary fix involves changing mount requests to the ‘client.admin’ user and
+its associated key. A less drastic but half-fix is to change the osd cap for
+your user to just <code class="docutils literal notranslate"><span class="pre">caps</span> <span class="pre">osd</span> <span class="pre">=</span> <span class="pre">&quot;allow</span> <span class="pre">rw&quot;</span></code>  and delete <code class="docutils literal notranslate"><span class="pre">tag</span> <span class="pre">cephfs</span>
+<span class="pre">data=....</span></code></p>
+</section>
+<section id="reporting-issues">
+<h2>Reporting Issues<a class="headerlink" href="#reporting-issues" title="Permalink to this heading">¶</a></h2>
+<p>If you have identified a specific issue, please report it with as much
+information as possible. Especially important information:</p>
+<ul class="simple">
+<li><p>Ceph versions installed on client and server</p></li>
+<li><p>Whether you are using the kernel or fuse client</p></li>
+<li><p>If you are using the kernel client, what kernel version?</p></li>
+<li><p>How many clients are in play, doing what kind of workload?</p></li>
+<li><p>If a system is ‘stuck’, is that affecting all clients or just one?</p></li>
+<li><p>Any ceph health messages</p></li>
+<li><p>Any backtraces in the ceph logs from crashes</p></li>
+</ul>
+<p>If you are satisfied that you have found a bug, please file it on <cite>the bug
+tracker</cite>. For more general queries, please write to the <cite>ceph-users mailing
+list</cite>.</p>
+</section>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../">
+              <img class="logo" src="../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../install/">Installing Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cephadm/">Cephadm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rados/">Ceph Storage Cluster</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../">Ceph File System</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../#getting-started-with-cephfs">Getting Started with CephFS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../#administration">Administration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../#mounting-cephfs">Mounting CephFS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../#cephfs-concepts">CephFS Concepts</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../#troubleshooting-and-disaster-recovery">Troubleshooting and Disaster Recovery</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../eviction/"> Client eviction</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../scrub/"> Scrubbing the File System</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../full/"> Handling full file systems</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../disaster-recovery-experts/"> Metadata repair</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#"> Troubleshooting</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#slow-stuck-operations">Slow/stuck operations</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#rados-health">RADOS Health</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#the-mds">The MDS</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#slow-requests-mds">Slow requests (MDS)</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#ceph-fuse-debugging">ceph-fuse debugging</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#debug-output">Debug output</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#kernel-mount-debugging">Kernel mount debugging</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#id3">Slow requests</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#disconnected-remounted-fs">Disconnected+Remounted FS</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#mounting">Mounting</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#mount-5-error">Mount 5 Error</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#mount-12-error">Mount 12 Error</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#dynamic-debugging">Dynamic Debugging</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#in-memory-log-dump">In-memory Log Dump</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#filesystems-become-inaccessible-after-an-upgrade">Filesystems Become Inaccessible After an Upgrade</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#reporting-issues">Reporting Issues</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../disaster-recovery/"> Disaster recovery</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../cephfs-journal-tool/"> cephfs-journal-tool</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../recover-fs-after-mon-store-loss/"> Recovering file system after monitor store loss</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../#developer-guides">Developer Guides</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../#additional-details">Additional Details</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../rbd/">Ceph Block Device</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../radosgw/">Ceph Object Gateway</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/">Ceph Manager Daemon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dev/developer_guide/">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dev/internals/">Ceph Internals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../disaster-recovery/" title="Disaster recovery"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../disaster-recovery-experts/" title="Advanced: Metadata repair tools"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../" >Ceph File System</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Troubleshooting</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

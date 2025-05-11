@@ -1,0 +1,488 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Orchestrator CLI &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css" />
+    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../genindex/" />
+    <link rel="search" title="Search" href="../../search/" />
+    <link rel="next" title="Rook" href="../rook/" />
+    <link rel="prev" title="Insights Module" href="../insights/" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../rook/" title="Rook"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../insights/" title="Insights Module"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../" accesskey="U">Ceph Manager Daemon</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Orchestrator CLI</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="orchestrator-cli">
+<span id="orchestrator-cli-module"></span><h1>Orchestrator CLI<a class="headerlink" href="#orchestrator-cli" title="Permalink to this heading">¶</a></h1>
+<p>This module provides a command line interface (CLI) for orchestrator modules.
+Orchestrator modules are <code class="docutils literal notranslate"><span class="pre">ceph-mgr</span></code> plugins that interface with external
+orchestration services.</p>
+<section id="definition-of-terms">
+<h2>Definition of Terms<a class="headerlink" href="#definition-of-terms" title="Permalink to this heading">¶</a></h2>
+<p>The orchestrator CLI unifies multiple external orchestrators, so we need a
+common nomenclature for the orchestrator module:</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 49%" />
+<col style="width: 51%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><em>host</em></p></td>
+<td><p>hostname (not the DNS name) of the
+physical host. Not the podname,
+container name, or hostname inside
+the container.</p></td>
+</tr>
+<tr class="row-even"><td><p><em>service type</em></p></td>
+<td><p>The type of the service. e.g., nfs,
+mds, osd, mon, rgw, mgr, iscsi</p></td>
+</tr>
+<tr class="row-odd"><td><p><em>service</em></p></td>
+<td><p>A logical service. Typically
+comprised of multiple service
+instances on multiple hosts for HA</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">fs_name</span></code> for mds type</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">rgw_zone</span></code> for rgw type</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ganesha_cluster_id</span></code> for nfs type</p></li>
+</ul>
+</td>
+</tr>
+<tr class="row-even"><td><p><em>daemon</em></p></td>
+<td><p>A single instance of a service.
+Usually a daemon, but maybe not
+(e.g., might be a kernel service
+like LIO or knfsd or whatever)</p>
+<p>This identifier should
+uniquely identify the instance.</p>
+</td>
+</tr>
+</tbody>
+</table>
+<p>Here is how the names relate:</p>
+<ul class="simple">
+<li><p>A <em>service</em> has a specific <em>service type</em>.</p></li>
+<li><p>A <em>daemon</em> is a physical instance of a <em>service type</em>.</p></li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Orchestrator modules might implement only a subset of the commands listed
+below. The implementation of the commands may differ between modules.</p>
+</div>
+</section>
+<section id="status">
+<h2>Status<a class="headerlink" href="#status" title="Permalink to this heading">¶</a></h2>
+<div class="highlight-default notranslate"><div class="highlight"><pre><style type="text/css">
+span.prompt1:before {
+  content: "$ ";
+}
+</style><span class="prompt1">ceph<span class="w"> </span>orch<span class="w"> </span>status<span class="w"> </span><span class="o">[</span>--detail<span class="o">]</span></span>
+</pre></div></div><p>This command shows the current orchestrator mode and its high-level status
+(whether the orchestrator plugin is available and operational).</p>
+</section>
+<section id="stateless-services-mds-rgw-nfs-rbd-mirror-iscsi">
+<span id="orchestrator-cli-stateless-services"></span><h2>Stateless services (MDS/RGW/NFS/rbd-mirror/iSCSI)<a class="headerlink" href="#stateless-services-mds-rgw-nfs-rbd-mirror-iscsi" title="Permalink to this heading">¶</a></h2>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The orchestrator will not configure the services. See the relevant
+documentation for details about how to configure particular services.</p>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">name</span></code> parameter identifies the kind of the group of instances. The
+following short list explains the meaning of the <code class="docutils literal notranslate"><span class="pre">name</span></code> parameter:</p>
+<ul class="simple">
+<li><p>A CephFS file system identifies a group of MDS daemons.</p></li>
+<li><p>A zone name identifies a group of RGWs.</p></li>
+</ul>
+<p>Creating/growing/shrinking/removing services:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>orch<span class="w"> </span>apply<span class="w"> </span>mds<span class="w"> </span>&lt;fs_name&gt;<span class="w"> </span><span class="o">[</span>--placement<span class="o">=</span>&lt;placement&gt;<span class="o">]</span><span class="w"> </span><span class="o">[</span>--dry-run<span class="o">]</span></span>
+<span class="prompt1">ceph<span class="w"> </span>orch<span class="w"> </span>apply<span class="w"> </span>rgw<span class="w"> </span>&lt;name&gt;<span class="w"> </span><span class="o">[</span>--realm<span class="o">=</span>&lt;realm&gt;<span class="o">]</span><span class="w"> </span><span class="o">[</span>--zone<span class="o">=</span>&lt;zone&gt;<span class="o">]</span><span class="w"> </span><span class="o">[</span>--port<span class="o">=</span>&lt;port&gt;<span class="o">]</span><span class="w"> </span><span class="o">[</span>--ssl<span class="o">]</span><span class="w"> </span><span class="o">[</span>--placement<span class="o">=</span>&lt;placement&gt;<span class="o">]</span><span class="w"> </span><span class="o">[</span>--dry-run<span class="o">]</span></span>
+<span class="prompt1">ceph<span class="w"> </span>orch<span class="w"> </span>apply<span class="w"> </span>nfs<span class="w"> </span>&lt;name&gt;<span class="w"> </span>&lt;pool&gt;<span class="w"> </span><span class="o">[</span>--namespace<span class="o">=</span>&lt;namespace&gt;<span class="o">]</span><span class="w"> </span><span class="o">[</span>--placement<span class="o">=</span>&lt;placement&gt;<span class="o">]</span><span class="w"> </span><span class="o">[</span>--dry-run<span class="o">]</span></span>
+<span class="prompt1">ceph<span class="w"> </span>orch<span class="w"> </span>rm<span class="w"> </span>&lt;service_name&gt;<span class="w"> </span><span class="o">[</span>--force<span class="o">]</span></span>
+</pre></div></div><p>where <code class="docutils literal notranslate"><span class="pre">placement</span></code> is a <a class="reference internal" href="../../cephadm/services/#orchestrator-cli-placement-spec"><span class="std std-ref">Daemon Placement</span></a>.</p>
+<p>e.g., <code class="docutils literal notranslate"><span class="pre">ceph</span> <span class="pre">orch</span> <span class="pre">apply</span> <span class="pre">mds</span> <span class="pre">myfs</span> <span class="pre">--placement=&quot;3</span> <span class="pre">host1</span> <span class="pre">host2</span> <span class="pre">host3&quot;</span></code></p>
+<p>Service Commands:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>orch<span class="w"> </span>&lt;start<span class="p">|</span>stop<span class="p">|</span>restart<span class="p">|</span>redeploy<span class="p">|</span>reconfig&gt;<span class="w"> </span>&lt;service_name&gt;</span>
+</pre></div></div><div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>These commands apply only to cephadm containerized daemons.</p>
+</div>
+</section>
+<section id="options">
+<h2>Options<a class="headerlink" href="#options" title="Permalink to this heading">¶</a></h2>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-arg-start">
+<span class="sig-name descname"><span class="pre">start</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-arg-start" title="Permalink to this definition">¶</a></dt>
+<dd><p>Start the daemon on the corresponding host.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-arg-stop">
+<span class="sig-name descname"><span class="pre">stop</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-arg-stop" title="Permalink to this definition">¶</a></dt>
+<dd><p>Stop the daemon on the corresponding host.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-arg-restart">
+<span class="sig-name descname"><span class="pre">restart</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-arg-restart" title="Permalink to this definition">¶</a></dt>
+<dd><p>Restart the daemon on the corresponding host.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-arg-redeploy">
+<span class="sig-name descname"><span class="pre">redeploy</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-arg-redeploy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Redeploy the ceph daemon on the corresponding host. This will recreate the daemon directory
+structure under <code class="docutils literal notranslate"><span class="pre">/var/lib/ceph/&lt;fsid&gt;/&lt;daemon-name&gt;</span></code> (if it doesn’t exist), refresh its
+configuration files, regenerate its unit-files and restarts the systemd daemon.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-arg-reconfig">
+<span class="sig-name descname"><span class="pre">reconfig</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-arg-reconfig" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reconfigure the daemon on the corresponding host. This will refresh configuration files then restart the daemon.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>this command assumes the daemon directory <code class="docutils literal notranslate"><span class="pre">/var/lib/ceph/&lt;fsid&gt;/&lt;daemon-name&gt;</span></code> already exists.</p>
+</div>
+</dd></dl>
+
+</section>
+<section id="configuring-the-orchestrator-cli">
+<h2>Configuring the Orchestrator CLI<a class="headerlink" href="#configuring-the-orchestrator-cli" title="Permalink to this heading">¶</a></h2>
+<p>Enable the orchestrator by using the <code class="docutils literal notranslate"><span class="pre">set</span> <span class="pre">backend</span></code> command to select the orchestrator module that will be used:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>orch<span class="w"> </span><span class="nb">set</span><span class="w"> </span>backend<span class="w"> </span>&lt;module&gt;</span>
+</pre></div></div><section id="example-configuring-the-orchestrator-cli">
+<h3>Example - Configuring the Orchestrator CLI<a class="headerlink" href="#example-configuring-the-orchestrator-cli" title="Permalink to this heading">¶</a></h3>
+<p>For example, to enable the Rook orchestrator module and use it with the CLI:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>mgr<span class="w"> </span>module<span class="w"> </span><span class="nb">enable</span><span class="w"> </span>rook</span>
+<span class="prompt1">ceph<span class="w"> </span>orch<span class="w"> </span><span class="nb">set</span><span class="w"> </span>backend<span class="w"> </span>rook</span>
+</pre></div></div><p>Confirm that the backend is properly configured:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>orch<span class="w"> </span>status</span>
+</pre></div></div></section>
+<section id="disable-the-orchestrator">
+<h3>Disable the Orchestrator<a class="headerlink" href="#disable-the-orchestrator" title="Permalink to this heading">¶</a></h3>
+<p>To disable the orchestrator, use the empty string <code class="docutils literal notranslate"><span class="pre">&quot;&quot;</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>orch<span class="w"> </span><span class="nb">set</span><span class="w"> </span>backend<span class="w"> </span><span class="s2">&quot;&quot;</span></span>
+<span class="prompt1">ceph<span class="w"> </span>mgr<span class="w"> </span>module<span class="w"> </span>disable<span class="w"> </span>rook</span>
+</pre></div></div></section>
+</section>
+<section id="current-implementation-status">
+<h2>Current Implementation Status<a class="headerlink" href="#current-implementation-status" title="Permalink to this heading">¶</a></h2>
+<p>This is an overview of the current implementation status of the orchestrators.</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 70%" />
+<col style="width: 12%" />
+<col style="width: 18%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Command</p></th>
+<th class="head"><p>Rook</p></th>
+<th class="head"><p>Cephadm</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>apply iscsi</p></td>
+<td><p>⚪</p></td>
+<td><p>✔</p></td>
+</tr>
+<tr class="row-odd"><td><p>apply mds</p></td>
+<td><p>✔</p></td>
+<td><p>✔</p></td>
+</tr>
+<tr class="row-even"><td><p>apply mgr</p></td>
+<td><p>⚪</p></td>
+<td><p>✔</p></td>
+</tr>
+<tr class="row-odd"><td><p>apply mon</p></td>
+<td><p>✔</p></td>
+<td><p>✔</p></td>
+</tr>
+<tr class="row-even"><td><p>apply nfs</p></td>
+<td><p>✔</p></td>
+<td><p>✔</p></td>
+</tr>
+<tr class="row-odd"><td><p>apply osd</p></td>
+<td><p>✔</p></td>
+<td><p>✔</p></td>
+</tr>
+<tr class="row-even"><td><p>apply rbd-mirror</p></td>
+<td><p>✔</p></td>
+<td><p>✔</p></td>
+</tr>
+<tr class="row-odd"><td><p>apply cephfs-mirror</p></td>
+<td><p>⚪</p></td>
+<td><p>✔</p></td>
+</tr>
+<tr class="row-even"><td><p>apply grafana</p></td>
+<td><p>⚪</p></td>
+<td><p>✔</p></td>
+</tr>
+<tr class="row-odd"><td><p>apply prometheus</p></td>
+<td><p>❌</p></td>
+<td><p>✔</p></td>
+</tr>
+<tr class="row-even"><td><p>apply alertmanager</p></td>
+<td><p>❌</p></td>
+<td><p>✔</p></td>
+</tr>
+<tr class="row-odd"><td><p>apply node-exporter</p></td>
+<td><p>❌</p></td>
+<td><p>✔</p></td>
+</tr>
+<tr class="row-even"><td><p>apply rgw</p></td>
+<td><p>✔</p></td>
+<td><p>✔</p></td>
+</tr>
+<tr class="row-odd"><td><p>apply container</p></td>
+<td><p>⚪</p></td>
+<td><p>✔</p></td>
+</tr>
+<tr class="row-even"><td><p>apply snmp-gateway</p></td>
+<td><p>❌</p></td>
+<td><p>✔</p></td>
+</tr>
+<tr class="row-odd"><td><p>host add</p></td>
+<td><p>⚪</p></td>
+<td><p>✔</p></td>
+</tr>
+<tr class="row-even"><td><p>host ls</p></td>
+<td><p>✔</p></td>
+<td><p>✔</p></td>
+</tr>
+<tr class="row-odd"><td><p>host rm</p></td>
+<td><p>⚪</p></td>
+<td><p>✔</p></td>
+</tr>
+<tr class="row-even"><td><p>host maintenance enter</p></td>
+<td><p>❌</p></td>
+<td><p>✔</p></td>
+</tr>
+<tr class="row-odd"><td><p>host maintenance exit</p></td>
+<td><p>❌</p></td>
+<td><p>✔</p></td>
+</tr>
+<tr class="row-even"><td><p>daemon status</p></td>
+<td><p>⚪</p></td>
+<td><p>✔</p></td>
+</tr>
+<tr class="row-odd"><td><p>daemon {stop,start,…}</p></td>
+<td><p>⚪</p></td>
+<td><p>✔</p></td>
+</tr>
+<tr class="row-even"><td><p>device {ident,fault}-(on,off}</p></td>
+<td><p>⚪</p></td>
+<td><p>✔</p></td>
+</tr>
+<tr class="row-odd"><td><p>device ls</p></td>
+<td><p>✔</p></td>
+<td><p>✔</p></td>
+</tr>
+<tr class="row-even"><td><p>iscsi add</p></td>
+<td><p>⚪</p></td>
+<td><p>✔</p></td>
+</tr>
+<tr class="row-odd"><td><p>mds add</p></td>
+<td><p>⚪</p></td>
+<td><p>✔</p></td>
+</tr>
+<tr class="row-even"><td><p>nfs add</p></td>
+<td><p>⚪</p></td>
+<td><p>✔</p></td>
+</tr>
+<tr class="row-odd"><td><p>rbd-mirror add</p></td>
+<td><p>⚪</p></td>
+<td><p>✔</p></td>
+</tr>
+<tr class="row-even"><td><p>rgw add</p></td>
+<td><p>⚪</p></td>
+<td><p>✔</p></td>
+</tr>
+<tr class="row-odd"><td><p>ls</p></td>
+<td><p>✔</p></td>
+<td><p>✔</p></td>
+</tr>
+<tr class="row-even"><td><p>ps</p></td>
+<td><p>✔</p></td>
+<td><p>✔</p></td>
+</tr>
+<tr class="row-odd"><td><p>status</p></td>
+<td><p>✔</p></td>
+<td><p>✔</p></td>
+</tr>
+<tr class="row-even"><td><p>upgrade</p></td>
+<td><p>❌</p></td>
+<td><p>✔</p></td>
+</tr>
+</tbody>
+</table>
+<p>where</p>
+<ul class="simple">
+<li><p>⚪ = not yet implemented</p></li>
+<li><p>❌ = not applicable</p></li>
+<li><p>✔ = implemented</p></li>
+</ul>
+</section>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../">
+              <img class="logo" src="../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../install/">Installing Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cephadm/">Cephadm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rados/">Ceph Storage Cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cephfs/">Ceph File System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rbd/">Ceph Block Device</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../radosgw/">Ceph Object Gateway</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../">Ceph Manager Daemon</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../administrator/">Installation and Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../modules/">Writing modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../orchestrator_modules/">Writing orchestrator plugins</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../dashboard/">Dashboard module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../ceph_api/">Ceph RESTful API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../alerts/">Alerts module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../diskprediction/">DiskPrediction module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../localpool/">Local pool module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../restful/">RESTful module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../zabbix/">Zabbix module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../prometheus/">Prometheus module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../influx/">Influx module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../hello/">Hello module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../telegraf/">Telegraf module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../telemetry/">Telemetry module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../iostat/">Iostat module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../crash/">Crash module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../insights/">Insights module</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Orchestrator module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#definition-of-terms">Definition of Terms</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#status">Status</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#stateless-services-mds-rgw-nfs-rbd-mirror-iscsi">Stateless services (MDS/RGW/NFS/rbd-mirror/iSCSI)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#options">Options</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#configuring-the-orchestrator-cli">Configuring the Orchestrator CLI</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#example-configuring-the-orchestrator-cli">Example - Configuring the Orchestrator CLI</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#disable-the-orchestrator">Disable the Orchestrator</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#current-implementation-status">Current Implementation Status</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../rook/">Rook module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../mds_autoscaler/">MDS Autoscaler module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../nfs/">NFS module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cli_api/">CLI API Commands module</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dev/developer_guide/">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dev/internals/">Ceph Internals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../rook/" title="Rook"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../insights/" title="Insights Module"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../" >Ceph Manager Daemon</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Orchestrator CLI</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

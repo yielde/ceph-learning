@@ -1,0 +1,705 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>RBD Mirroring &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css" />
+    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../genindex/" />
+    <link rel="search" title="Search" href="../../search/" />
+    <link rel="next" title="Image Live-Migration" href="../rbd-live-migration/" />
+    <link rel="prev" title="RBD Exclusive Locks" href="../rbd-exclusive-locks/" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../rbd-live-migration/" title="Image Live-Migration"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../rbd-exclusive-locks/" title="RBD Exclusive Locks"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../" >Ceph Block Device</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../rbd-operations/" accesskey="U">Ceph Block Device Operations</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">RBD Mirroring</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="rbd-mirroring">
+<h1>RBD Mirroring<a class="headerlink" href="#rbd-mirroring" title="Permalink to this heading">¶</a></h1>
+<p id="index-0">RBD images can be asynchronously mirrored between two Ceph clusters. This
+capability is available in two modes:</p>
+<ul class="simple">
+<li><p><strong>Journal-based</strong>: This mode uses the RBD journaling image feature to ensure
+point-in-time, crash-consistent replication between clusters. Every write to
+the RBD image is first recorded to the associated journal before modifying the
+actual image. The remote cluster will read from this associated journal and
+replay the updates to its local copy of the image. Since each write to the
+RBD image will result in two writes to the Ceph cluster, expect write
+latencies to nearly double while using the RBD journaling image feature.</p></li>
+<li><p><strong>Snapshot-based</strong>: This mode uses periodically scheduled or manually
+created RBD image mirror-snapshots to replicate crash-consistent RBD images
+between clusters. The remote cluster will determine any data or metadata
+updates between two mirror-snapshots and copy the deltas to its local copy of
+the image. With the help of the RBD <code class="docutils literal notranslate"><span class="pre">fast-diff</span></code> image feature, updated data
+blocks can be quickly determined without the need to scan the full RBD image.
+Since this mode is not as fine-grained as journaling, the complete delta
+between two snapshots will need to be synced prior to use during a failover
+scenario. Any partially applied set of deltas will be rolled back at moment
+of failover.</p></li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>journal-based mirroring requires the Ceph Jewel release or later;
+snapshot-based mirroring requires the Ceph Octopus release or later.</p>
+</div>
+<p>Mirroring is configured on a per-pool basis within peer clusters and can be
+configured on a specific subset of images within the pool.  You can also mirror
+all images within a given pool when using journal-based
+mirroring. Mirroring is configured using the <code class="docutils literal notranslate"><span class="pre">rbd</span></code> command. The
+<code class="docutils literal notranslate"><span class="pre">rbd-mirror</span></code> daemon is responsible for pulling image updates from the remote
+peer cluster and applying them to the image within the local cluster.</p>
+<p>Depending on the desired needs for replication, RBD mirroring can be configured
+for either one- or two-way replication:</p>
+<ul class="simple">
+<li><p><strong>One-way Replication</strong>: When data is only mirrored from a primary cluster to
+a secondary cluster, the <code class="docutils literal notranslate"><span class="pre">rbd-mirror</span></code> daemon runs only on the secondary
+cluster.</p></li>
+<li><p><strong>Two-way Replication</strong>: When data is mirrored from primary images on one
+cluster to non-primary images on another cluster (and vice-versa), the
+<code class="docutils literal notranslate"><span class="pre">rbd-mirror</span></code> daemon runs on both clusters.</p></li>
+</ul>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>Each instance of the <code class="docutils literal notranslate"><span class="pre">rbd-mirror</span></code> daemon must be able to
+connect to both the local and remote Ceph clusters simultaneously (i.e.
+all monitor and OSD hosts). Additionally, the network must have sufficient
+bandwidth between the two data centers to handle mirroring workload.</p>
+</div>
+<section id="pool-configuration">
+<h2>Pool Configuration<a class="headerlink" href="#pool-configuration" title="Permalink to this heading">¶</a></h2>
+<p>The following procedures demonstrate how to perform the basic administrative
+tasks to configure mirroring using the <code class="docutils literal notranslate"><span class="pre">rbd</span></code> command. Mirroring is
+configured on a per-pool basis.</p>
+<p>These pool configuration steps should be performed on both peer clusters. These
+procedures assume that both clusters, named “site-a” and “site-b”, are accessible
+from a single host for clarity.</p>
+<p>See the <a class="reference external" href="../../man/8/rbd">rbd</a> manpage for additional details of how to connect to different
+Ceph clusters.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The cluster name in the following examples corresponds to a Ceph
+configuration file of the same name (e.g. /etc/ceph/site-b.conf).  See the
+<a class="reference external" href="../../rados/configuration/ceph-conf/#running-multiple-clusters">ceph-conf</a> documentation for how to configure multiple clusters.  Note
+that <code class="docutils literal notranslate"><span class="pre">rbd-mirror</span></code> does <strong>not</strong> require the source and destination clusters
+to have unique internal names; both can and should call themselves <code class="docutils literal notranslate"><span class="pre">ceph</span></code>.
+The config <cite>files</cite> that <code class="docutils literal notranslate"><span class="pre">rbd-mirror</span></code> needs for local and remote clusters
+can be named arbitrarily, and containerizing the daemon is one strategy
+for maintaining them outside of <code class="docutils literal notranslate"><span class="pre">/etc/ceph</span></code> to avoid confusion.</p>
+</div>
+<section id="enable-mirroring">
+<h3>Enable Mirroring<a class="headerlink" href="#enable-mirroring" title="Permalink to this heading">¶</a></h3>
+<p>To enable mirroring on a pool with <code class="docutils literal notranslate"><span class="pre">rbd</span></code>, issue the <code class="docutils literal notranslate"><span class="pre">mirror</span> <span class="pre">pool</span> <span class="pre">enable</span></code>
+subcommand with the pool name, and the mirroring mode:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">rbd</span> <span class="n">mirror</span> <span class="n">pool</span> <span class="n">enable</span> <span class="p">{</span><span class="n">pool</span><span class="o">-</span><span class="n">name</span><span class="p">}</span> <span class="p">{</span><span class="n">mode</span><span class="p">}</span>
+</pre></div>
+</div>
+<p>The mirroring mode can either be <code class="docutils literal notranslate"><span class="pre">image</span></code> or <code class="docutils literal notranslate"><span class="pre">pool</span></code>:</p>
+<ul class="simple">
+<li><p><strong>image</strong>: When configured in <code class="docutils literal notranslate"><span class="pre">image</span></code> mode, mirroring must
+<a class="reference external" href="#enable-image-mirroring">explicitly enabled</a> on each image.</p></li>
+<li><p><strong>pool</strong> (default):  When configured in <code class="docutils literal notranslate"><span class="pre">pool</span></code> mode, all images in the pool
+with the journaling feature enabled are mirrored.</p></li>
+</ul>
+<p>For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ rbd --cluster site-a mirror pool enable image-pool image
+$ rbd --cluster site-b mirror pool enable image-pool image
+</pre></div>
+</div>
+</section>
+<section id="disable-mirroring">
+<h3>Disable Mirroring<a class="headerlink" href="#disable-mirroring" title="Permalink to this heading">¶</a></h3>
+<p>To disable mirroring on a pool with <code class="docutils literal notranslate"><span class="pre">rbd</span></code>, specify the <code class="docutils literal notranslate"><span class="pre">mirror</span> <span class="pre">pool</span> <span class="pre">disable</span></code>
+command and the pool name:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">rbd</span> <span class="n">mirror</span> <span class="n">pool</span> <span class="n">disable</span> <span class="p">{</span><span class="n">pool</span><span class="o">-</span><span class="n">name</span><span class="p">}</span>
+</pre></div>
+</div>
+<p>When mirroring is disabled on a pool in this way, mirroring will also be
+disabled on any images (within the pool) for which mirroring was enabled
+explicitly.</p>
+<p>For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ rbd --cluster site-a mirror pool disable image-pool
+$ rbd --cluster site-b mirror pool disable image-pool
+</pre></div>
+</div>
+</section>
+<section id="bootstrap-peers">
+<h3>Bootstrap Peers<a class="headerlink" href="#bootstrap-peers" title="Permalink to this heading">¶</a></h3>
+<p>In order for the <code class="docutils literal notranslate"><span class="pre">rbd-mirror</span></code> daemon to discover its peer cluster, the peer
+must be registered and a user account must be created.
+This process can be automated with <code class="docutils literal notranslate"><span class="pre">rbd</span></code> and the
+<code class="docutils literal notranslate"><span class="pre">mirror</span> <span class="pre">pool</span> <span class="pre">peer</span> <span class="pre">bootstrap</span> <span class="pre">create</span></code> and <code class="docutils literal notranslate"><span class="pre">mirror</span> <span class="pre">pool</span> <span class="pre">peer</span> <span class="pre">bootstrap</span> <span class="pre">import</span></code>
+commands.</p>
+<p>To manually create a new bootstrap token with <code class="docutils literal notranslate"><span class="pre">rbd</span></code>, issue the
+<code class="docutils literal notranslate"><span class="pre">mirror</span> <span class="pre">pool</span> <span class="pre">peer</span> <span class="pre">bootstrap</span> <span class="pre">create</span></code> subcommand, a pool name, and an
+optional friendly site name to describe the local cluster:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">rbd</span> <span class="n">mirror</span> <span class="n">pool</span> <span class="n">peer</span> <span class="n">bootstrap</span> <span class="n">create</span> <span class="p">[</span><span class="o">--</span><span class="n">site</span><span class="o">-</span><span class="n">name</span> <span class="p">{</span><span class="n">local</span><span class="o">-</span><span class="n">site</span><span class="o">-</span><span class="n">name</span><span class="p">}]</span> <span class="p">{</span><span class="n">pool</span><span class="o">-</span><span class="n">name</span><span class="p">}</span>
+</pre></div>
+</div>
+<p>The output of <code class="docutils literal notranslate"><span class="pre">mirror</span> <span class="pre">pool</span> <span class="pre">peer</span> <span class="pre">bootstrap</span> <span class="pre">create</span></code> will be a token that should
+be provided to the <code class="docutils literal notranslate"><span class="pre">mirror</span> <span class="pre">pool</span> <span class="pre">peer</span> <span class="pre">bootstrap</span> <span class="pre">import</span></code> command. For example,
+on site-a:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ rbd --cluster site-a mirror pool peer bootstrap create --site-name site-a image-pool
+eyJmc2lkIjoiOWY1MjgyZGItYjg5OS00NTk2LTgwOTgtMzIwYzFmYzM5NmYzIiwiY2xpZW50X2lkIjoicmJkLW1pcnJvci1wZWVyIiwia2V5IjoiQVFBUnczOWQwdkhvQmhBQVlMM1I4RmR5dHNJQU50bkFTZ0lOTVE9PSIsIm1vbl9ob3N0IjoiW3YyOjE5Mi4xNjguMS4zOjY4MjAsdjE6MTkyLjE2OC4xLjM6NjgyMV0ifQ==
+</pre></div>
+</div>
+<p>To manually import the bootstrap token created by another cluster with <code class="docutils literal notranslate"><span class="pre">rbd</span></code>,
+specify the <code class="docutils literal notranslate"><span class="pre">mirror</span> <span class="pre">pool</span> <span class="pre">peer</span> <span class="pre">bootstrap</span> <span class="pre">import</span></code> command, the pool name, a file
+path to the created token (or ‘-’ to read from standard input), along with an
+optional friendly site name to describe the local cluster and a mirroring
+direction (defaults to rx-tx for bidirectional mirroring, but can also be set
+to rx-only for unidirectional mirroring):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">rbd</span> <span class="n">mirror</span> <span class="n">pool</span> <span class="n">peer</span> <span class="n">bootstrap</span> <span class="kn">import</span><span class="w"> </span><span class="p">[</span><span class="o">--</span><span class="n">site</span><span class="o">-</span><span class="n">name</span> <span class="p">{</span><span class="n">local</span><span class="o">-</span><span class="n">site</span><span class="o">-</span><span class="n">name</span><span class="p">}]</span> <span class="p">[</span><span class="o">--</span><span class="n">direction</span> <span class="p">{</span><span class="n">rx</span><span class="o">-</span><span class="n">only</span> <span class="ow">or</span> <span class="n">rx</span><span class="o">-</span><span class="n">tx</span><span class="p">}]</span> <span class="p">{</span><span class="n">pool</span><span class="o">-</span><span class="n">name</span><span class="p">}</span> <span class="p">{</span><span class="n">token</span><span class="o">-</span><span class="n">path</span><span class="p">}</span>
+</pre></div>
+</div>
+<p>For example, on site-b:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ cat &lt;&lt;EOF &gt; token
+eyJmc2lkIjoiOWY1MjgyZGItYjg5OS00NTk2LTgwOTgtMzIwYzFmYzM5NmYzIiwiY2xpZW50X2lkIjoicmJkLW1pcnJvci1wZWVyIiwia2V5IjoiQVFBUnczOWQwdkhvQmhBQVlMM1I4RmR5dHNJQU50bkFTZ0lOTVE9PSIsIm1vbl9ob3N0IjoiW3YyOjE5Mi4xNjguMS4zOjY4MjAsdjE6MTkyLjE2OC4xLjM6NjgyMV0ifQ==
+EOF
+$ rbd --cluster site-b mirror pool peer bootstrap import --site-name site-b image-pool token
+</pre></div>
+</div>
+</section>
+<section id="add-cluster-peer-manually">
+<h3>Add Cluster Peer Manually<a class="headerlink" href="#add-cluster-peer-manually" title="Permalink to this heading">¶</a></h3>
+<p>Cluster peers can be specified manually if desired or if the above bootstrap
+commands are not available with the currently installed Ceph release.</p>
+<p>The remote <code class="docutils literal notranslate"><span class="pre">rbd-mirror</span></code> daemon will need access to the local cluster to
+perform mirroring. A new local Ceph user should be created for the remote
+daemon to use. To <a class="reference external" href="../../rados/operations/user-management#add-a-user">create a Ceph user</a>, with <code class="docutils literal notranslate"><span class="pre">ceph</span></code> specify the
+<code class="docutils literal notranslate"><span class="pre">auth</span> <span class="pre">get-or-create</span></code> command, user name, monitor caps, and OSD caps:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span> <span class="n">auth</span> <span class="n">get</span><span class="o">-</span><span class="ow">or</span><span class="o">-</span><span class="n">create</span> <span class="n">client</span><span class="o">.</span><span class="n">rbd</span><span class="o">-</span><span class="n">mirror</span><span class="o">-</span><span class="n">peer</span> <span class="n">mon</span> <span class="s1">&#39;profile rbd&#39;</span> <span class="n">osd</span> <span class="s1">&#39;profile rbd&#39;</span>
+</pre></div>
+</div>
+<p>The resulting keyring should be copied to the other cluster’s <code class="docutils literal notranslate"><span class="pre">rbd-mirror</span></code>
+daemon hosts if not using the Ceph monitor <code class="docutils literal notranslate"><span class="pre">config-key</span></code> store described below.</p>
+<p>To manually add a mirroring peer Ceph cluster with <code class="docutils literal notranslate"><span class="pre">rbd</span></code>, specify the
+<code class="docutils literal notranslate"><span class="pre">mirror</span> <span class="pre">pool</span> <span class="pre">peer</span> <span class="pre">add</span></code> command, the pool name, and a cluster specification:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">rbd</span> <span class="n">mirror</span> <span class="n">pool</span> <span class="n">peer</span> <span class="n">add</span> <span class="p">{</span><span class="n">pool</span><span class="o">-</span><span class="n">name</span><span class="p">}</span> <span class="p">{</span><span class="n">client</span><span class="o">-</span><span class="n">name</span><span class="p">}</span><span class="o">@</span><span class="p">{</span><span class="n">cluster</span><span class="o">-</span><span class="n">name</span><span class="p">}</span>
+</pre></div>
+</div>
+<p>For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ rbd --cluster site-a mirror pool peer add image-pool client.rbd-mirror-peer@site-b
+$ rbd --cluster site-b mirror pool peer add image-pool client.rbd-mirror-peer@site-a
+</pre></div>
+</div>
+<p>By default, the <code class="docutils literal notranslate"><span class="pre">rbd-mirror</span></code> daemon needs to have access to a Ceph
+configuration file located at <code class="docutils literal notranslate"><span class="pre">/etc/ceph/{cluster-name}.conf</span></code> that provides
+the addresses of the peer cluster’s monitors, in addition to a keyring for
+<code class="docutils literal notranslate"><span class="pre">{client-name}</span></code> located in the default or configured keyring search paths
+(e.g. <code class="docutils literal notranslate"><span class="pre">/etc/ceph/{cluster-name}.{client-name}.keyring</span></code>).</p>
+<p>Alternatively, the peer cluster’s monitor and/or client key can be securely
+stored within the local Ceph monitor <code class="docutils literal notranslate"><span class="pre">config-key</span></code> store. To specify the
+peer cluster connection attributes when adding a mirroring peer, use the
+<code class="docutils literal notranslate"><span class="pre">--remote-mon-host</span></code> and <code class="docutils literal notranslate"><span class="pre">--remote-key-file</span></code> optionals. For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ cat &lt;&lt;EOF &gt; remote-key-file
+AQAeuZdbMMoBChAAcj++/XUxNOLFaWdtTREEsw==
+EOF
+$ rbd --cluster site-a mirror pool peer add image-pool client.rbd-mirror-peer@site-b --remote-mon-host 192.168.1.1,192.168.1.2 --remote-key-file remote-key-file
+$ rbd --cluster site-a mirror pool info image-pool --all
+Mode: pool
+Peers:
+  UUID                                 NAME   CLIENT                 MON_HOST                KEY
+  587b08db-3d33-4f32-8af8-421e77abb081 site-b client.rbd-mirror-peer 192.168.1.1,192.168.1.2 AQAeuZdbMMoBChAAcj++/XUxNOLFaWdtTREEsw==
+</pre></div>
+</div>
+</section>
+<section id="remove-cluster-peer">
+<h3>Remove Cluster Peer<a class="headerlink" href="#remove-cluster-peer" title="Permalink to this heading">¶</a></h3>
+<p>To remove a mirroring peer Ceph cluster with <code class="docutils literal notranslate"><span class="pre">rbd</span></code>, specify the
+<code class="docutils literal notranslate"><span class="pre">mirror</span> <span class="pre">pool</span> <span class="pre">peer</span> <span class="pre">remove</span></code> command, the pool name, and the peer UUID
+(available from the <code class="docutils literal notranslate"><span class="pre">rbd</span> <span class="pre">mirror</span> <span class="pre">pool</span> <span class="pre">info</span></code> command):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">rbd</span> <span class="n">mirror</span> <span class="n">pool</span> <span class="n">peer</span> <span class="n">remove</span> <span class="p">{</span><span class="n">pool</span><span class="o">-</span><span class="n">name</span><span class="p">}</span> <span class="p">{</span><span class="n">peer</span><span class="o">-</span><span class="n">uuid</span><span class="p">}</span>
+</pre></div>
+</div>
+<p>For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ rbd --cluster site-a mirror pool peer remove image-pool 55672766-c02b-4729-8567-f13a66893445
+$ rbd --cluster site-b mirror pool peer remove image-pool 60c0e299-b38f-4234-91f6-eed0a367be08
+</pre></div>
+</div>
+</section>
+<section id="data-pools">
+<h3>Data Pools<a class="headerlink" href="#data-pools" title="Permalink to this heading">¶</a></h3>
+<p>When creating images in the destination cluster, <code class="docutils literal notranslate"><span class="pre">rbd-mirror</span></code> selects a data
+pool as follows:</p>
+<ol class="arabic simple">
+<li><p>If the destination cluster has a default data pool configured (with the
+<code class="docutils literal notranslate"><span class="pre">rbd_default_data_pool</span></code> configuration option), it will be used.</p></li>
+<li><p>Otherwise, if the source image uses a separate data pool, and a pool with the
+same name exists on the destination cluster, that pool will be used.</p></li>
+<li><p>If neither of the above is true, no data pool will be set.</p></li>
+</ol>
+</section>
+</section>
+<section id="image-configuration">
+<h2>Image Configuration<a class="headerlink" href="#image-configuration" title="Permalink to this heading">¶</a></h2>
+<p>Unlike pool configuration, image configuration only needs to be performed
+against a single mirroring peer Ceph cluster.</p>
+<p>Mirrored RBD images are designated as either primary or non-primary. This is a
+property of the image and not the pool. Images that are designated as
+non-primary cannot be modified.</p>
+<p>Images are automatically promoted to primary when mirroring is first enabled on
+an image (either implicitly if the pool mirror mode was <code class="docutils literal notranslate"><span class="pre">pool</span></code> and the image
+has the journaling image feature enabled, or <a class="reference external" href="#enable-image-mirroring">explicitly enabled</a> by the
+<code class="docutils literal notranslate"><span class="pre">rbd</span></code> command if the pool mirror mode was <code class="docutils literal notranslate"><span class="pre">image</span></code>).</p>
+<section id="enable-image-mirroring">
+<h3>Enable Image Mirroring<a class="headerlink" href="#enable-image-mirroring" title="Permalink to this heading">¶</a></h3>
+<p>If mirroring is configured in <code class="docutils literal notranslate"><span class="pre">image</span></code> mode for the image’s pool, then it
+is necessary to explicitly enable mirroring for each image within the pool.
+To enable mirroring for a specific image with <code class="docutils literal notranslate"><span class="pre">rbd</span></code>, specify the
+<code class="docutils literal notranslate"><span class="pre">mirror</span> <span class="pre">image</span> <span class="pre">enable</span></code> command along with the pool, image name, and mode:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">rbd</span> <span class="n">mirror</span> <span class="n">image</span> <span class="n">enable</span> <span class="p">{</span><span class="n">pool</span><span class="o">-</span><span class="n">name</span><span class="p">}</span><span class="o">/</span><span class="p">{</span><span class="n">image</span><span class="o">-</span><span class="n">name</span><span class="p">}</span> <span class="p">{</span><span class="n">mode</span><span class="p">}</span>
+</pre></div>
+</div>
+<p>The mirror image mode can either be <code class="docutils literal notranslate"><span class="pre">journal</span></code> or <code class="docutils literal notranslate"><span class="pre">snapshot</span></code>:</p>
+<ul class="simple">
+<li><p><strong>journal</strong> (default): When configured in <code class="docutils literal notranslate"><span class="pre">journal</span></code> mode, mirroring will
+utilize the RBD journaling image feature to replicate the image contents. If
+the RBD journaling image feature is not yet enabled on the image, it will be
+automatically enabled.</p></li>
+<li><p><strong>snapshot</strong>:  When configured in <code class="docutils literal notranslate"><span class="pre">snapshot</span></code> mode, mirroring will utilize
+RBD image mirror-snapshots to replicate the image contents. Once enabled, an
+initial mirror-snapshot will automatically be created. Additional RBD image
+<a class="reference external" href="#create-image-mirror-snapshots">mirror-snapshots</a> can be created by the <code class="docutils literal notranslate"><span class="pre">rbd</span></code> command.</p></li>
+</ul>
+<p>For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ rbd --cluster site-a mirror image enable image-pool/image-1 snapshot
+$ rbd --cluster site-a mirror image enable image-pool/image-2 journal
+</pre></div>
+</div>
+</section>
+<section id="enable-image-journaling-feature">
+<h3>Enable Image Journaling Feature<a class="headerlink" href="#enable-image-journaling-feature" title="Permalink to this heading">¶</a></h3>
+<p>RBD journal-based mirroring uses the RBD image journaling feature to ensure that
+the replicated image always remains crash-consistent. When using the <code class="docutils literal notranslate"><span class="pre">image</span></code>
+mirroring mode, the journaling feature will be automatically enabled when
+mirroring is enabled on the image. When using the <code class="docutils literal notranslate"><span class="pre">pool</span></code> mirroring mode,
+before an image can be mirrored to a peer cluster, the RBD image journaling
+feature must be enabled. The feature can be enabled at image creation time by
+providing the <code class="docutils literal notranslate"><span class="pre">--image-feature</span> <span class="pre">exclusive-lock,journaling</span></code> option to the
+<code class="docutils literal notranslate"><span class="pre">rbd</span></code> command.</p>
+<p>Alternatively, the journaling feature can be dynamically enabled on
+pre-existing RBD images. To enable journaling with <code class="docutils literal notranslate"><span class="pre">rbd</span></code>, specify
+the <code class="docutils literal notranslate"><span class="pre">feature</span> <span class="pre">enable</span></code> command, the pool and image name, and the feature name:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">rbd</span> <span class="n">feature</span> <span class="n">enable</span> <span class="p">{</span><span class="n">pool</span><span class="o">-</span><span class="n">name</span><span class="p">}</span><span class="o">/</span><span class="p">{</span><span class="n">image</span><span class="o">-</span><span class="n">name</span><span class="p">}</span> <span class="p">{</span><span class="n">feature</span><span class="o">-</span><span class="n">name</span><span class="p">}</span>
+</pre></div>
+</div>
+<p>For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ rbd --cluster site-a feature enable image-pool/image-1 journaling
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The journaling feature is dependent on the exclusive-lock feature. If
+the exclusive-lock feature is not already enabled, it should be enabled prior
+to enabling the journaling feature.</p>
+</div>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>You can enable journaling on all new images by default by adding
+<code class="docutils literal notranslate"><span class="pre">rbd</span> <span class="pre">default</span> <span class="pre">features</span> <span class="pre">=</span> <span class="pre">125</span></code> to your Ceph configuration file.</p>
+</div>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p><code class="docutils literal notranslate"><span class="pre">rbd-mirror</span></code> tunables are set by default to values suitable for
+mirroring an entire pool.  When using <code class="docutils literal notranslate"><span class="pre">rbd-mirror</span></code> to migrate single
+volumes been clusters you may achieve substantial performance gains
+by setting <code class="docutils literal notranslate"><span class="pre">rbd_mirror_journal_max_fetch_bytes=33554432</span></code> and
+<code class="docutils literal notranslate"><span class="pre">rbd_journal_max_payload_bytes=8388608</span></code> within the <code class="docutils literal notranslate"><span class="pre">[client]</span></code> config
+section of the local or centralized configuration.  Note that these
+settings may allow <code class="docutils literal notranslate"><span class="pre">rbd-mirror</span></code> to present a substantial write workload
+to the destination cluster:  monitor cluster performance closely during
+migrations and test carefuly before running multiple migrations in parallel.</p>
+</div>
+</section>
+<section id="create-image-mirror-snapshots">
+<h3>Create Image Mirror-Snapshots<a class="headerlink" href="#create-image-mirror-snapshots" title="Permalink to this heading">¶</a></h3>
+<p>When using snapshot-based mirroring, mirror-snapshots will need to be created
+whenever it is desired to mirror the changed contents of the RBD image. To
+create a mirror-snapshot manually with <code class="docutils literal notranslate"><span class="pre">rbd</span></code>, specify the
+<code class="docutils literal notranslate"><span class="pre">mirror</span> <span class="pre">image</span> <span class="pre">snapshot</span></code> command along with the pool and image name:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">rbd</span> <span class="n">mirror</span> <span class="n">image</span> <span class="n">snapshot</span> <span class="p">{</span><span class="n">pool</span><span class="o">-</span><span class="n">name</span><span class="p">}</span><span class="o">/</span><span class="p">{</span><span class="n">image</span><span class="o">-</span><span class="n">name</span><span class="p">}</span>
+</pre></div>
+</div>
+<p>For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ rbd --cluster site-a mirror image snapshot image-pool/image-1
+</pre></div>
+</div>
+<p>By default up to <code class="docutils literal notranslate"><span class="pre">5</span></code> mirror-snapshots will be created per-image. The most
+recent mirror-snapshot is automatically pruned if the limit is reached.
+The limit can be overridden via the <code class="docutils literal notranslate"><span class="pre">rbd_mirroring_max_mirroring_snapshots</span></code>
+configuration option if required. Additionally, mirror-snapshots are
+automatically deleted when the image is removed or when mirroring is disabled.</p>
+<p>Mirror-snapshots can also be automatically created on a periodic basis if
+mirror-snapshot schedules are defined. The mirror-snapshot can be scheduled
+globally, per-pool, or per-image levels. Multiple mirror-snapshot schedules can
+be defined at any level, but only the most-specific snapshot schedules that
+match an individual mirrored image will run.</p>
+<p>To create a mirror-snapshot schedule with <code class="docutils literal notranslate"><span class="pre">rbd</span></code>, specify the
+<code class="docutils literal notranslate"><span class="pre">mirror</span> <span class="pre">snapshot</span> <span class="pre">schedule</span> <span class="pre">add</span></code> command along with an optional pool or
+image name; interval; and optional start time:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">rbd</span> <span class="n">mirror</span> <span class="n">snapshot</span> <span class="n">schedule</span> <span class="n">add</span> <span class="p">[</span><span class="o">--</span><span class="n">pool</span> <span class="p">{</span><span class="n">pool</span><span class="o">-</span><span class="n">name</span><span class="p">}]</span> <span class="p">[</span><span class="o">--</span><span class="n">image</span> <span class="p">{</span><span class="n">image</span><span class="o">-</span><span class="n">name</span><span class="p">}]</span> <span class="p">{</span><span class="n">interval</span><span class="p">}</span> <span class="p">[{</span><span class="n">start</span><span class="o">-</span><span class="n">time</span><span class="p">}]</span>
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">interval</span></code> can be specified in days, hours, or minutes using <code class="docutils literal notranslate"><span class="pre">d</span></code>, <code class="docutils literal notranslate"><span class="pre">h</span></code>,
+<code class="docutils literal notranslate"><span class="pre">m</span></code> suffix respectively. The optional <code class="docutils literal notranslate"><span class="pre">start-time</span></code> can be specified using
+the ISO 8601 time format. For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ rbd --cluster site-a mirror snapshot schedule add --pool image-pool 24h 14:00:00-05:00
+$ rbd --cluster site-a mirror snapshot schedule add --pool image-pool --image image1 6h
+</pre></div>
+</div>
+<p>To remove a mirror-snapshot schedules with <code class="docutils literal notranslate"><span class="pre">rbd</span></code>, specify the
+<code class="docutils literal notranslate"><span class="pre">mirror</span> <span class="pre">snapshot</span> <span class="pre">schedule</span> <span class="pre">remove</span></code> command with options that match the
+corresponding <code class="docutils literal notranslate"><span class="pre">add</span></code> schedule command.</p>
+<p>To list all snapshot schedules for a specific level (global, pool, or image)
+with <code class="docutils literal notranslate"><span class="pre">rbd</span></code>, specify the <code class="docutils literal notranslate"><span class="pre">mirror</span> <span class="pre">snapshot</span> <span class="pre">schedule</span> <span class="pre">ls</span></code> command along with
+an optional pool or image name. Additionally, the <code class="docutils literal notranslate"><span class="pre">--recursive</span></code> option can
+be specified to list all schedules at the specified level and below. For
+example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ rbd --cluster site-a mirror schedule ls --pool image-pool --recursive
+POOL        NAMESPACE IMAGE  SCHEDULE
+image-pool  -         -      every 1d starting at 14:00:00-05:00
+image-pool            image1 every 6h
+</pre></div>
+</div>
+<p>To view the status for when the next snapshots will be created for
+snapshot-based mirroring RBD images with <code class="docutils literal notranslate"><span class="pre">rbd</span></code>, specify the
+<code class="docutils literal notranslate"><span class="pre">mirror</span> <span class="pre">snapshot</span> <span class="pre">schedule</span> <span class="pre">status</span></code> command along with an optional pool or
+image name:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">rbd</span> <span class="n">mirror</span> <span class="n">snapshot</span> <span class="n">schedule</span> <span class="n">status</span> <span class="p">[</span><span class="o">--</span><span class="n">pool</span> <span class="p">{</span><span class="n">pool</span><span class="o">-</span><span class="n">name</span><span class="p">}]</span> <span class="p">[</span><span class="o">--</span><span class="n">image</span> <span class="p">{</span><span class="n">image</span><span class="o">-</span><span class="n">name</span><span class="p">}]</span>
+</pre></div>
+</div>
+<p>For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ rbd --cluster site-a mirror schedule status
+SCHEDULE TIME       IMAGE
+2020-02-26 18:00:00 image-pool/image1
+</pre></div>
+</div>
+</section>
+<section id="disable-image-mirroring">
+<h3>Disable Image Mirroring<a class="headerlink" href="#disable-image-mirroring" title="Permalink to this heading">¶</a></h3>
+<p>To disable mirroring for a specific image with <code class="docutils literal notranslate"><span class="pre">rbd</span></code>, specify the
+<code class="docutils literal notranslate"><span class="pre">mirror</span> <span class="pre">image</span> <span class="pre">disable</span></code> command along with the pool and image name:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">rbd</span> <span class="n">mirror</span> <span class="n">image</span> <span class="n">disable</span> <span class="p">{</span><span class="n">pool</span><span class="o">-</span><span class="n">name</span><span class="p">}</span><span class="o">/</span><span class="p">{</span><span class="n">image</span><span class="o">-</span><span class="n">name</span><span class="p">}</span>
+</pre></div>
+</div>
+<p>For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ rbd --cluster site-a mirror image disable image-pool/image-1
+</pre></div>
+</div>
+</section>
+<section id="image-promotion-and-demotion">
+<h3>Image Promotion and Demotion<a class="headerlink" href="#image-promotion-and-demotion" title="Permalink to this heading">¶</a></h3>
+<p>In a failover scenario where the primary designation needs to be moved to the
+image in the peer Ceph cluster, access to the primary image should be stopped
+(e.g. power down the VM or remove the associated drive from a VM), demote the
+current primary image, promote the new primary image, and resume access to the
+image on the alternate cluster.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>RBD only provides the necessary tools to facilitate an orderly
+failover of an image. An external mechanism is required to coordinate the
+full failover process (e.g. closing the image before demotion).</p>
+</div>
+<p>To demote a specific image to non-primary with <code class="docutils literal notranslate"><span class="pre">rbd</span></code>, specify the
+<code class="docutils literal notranslate"><span class="pre">mirror</span> <span class="pre">image</span> <span class="pre">demote</span></code> command along with the pool and image name:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">rbd</span> <span class="n">mirror</span> <span class="n">image</span> <span class="n">demote</span> <span class="p">{</span><span class="n">pool</span><span class="o">-</span><span class="n">name</span><span class="p">}</span><span class="o">/</span><span class="p">{</span><span class="n">image</span><span class="o">-</span><span class="n">name</span><span class="p">}</span>
+</pre></div>
+</div>
+<p>For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ rbd --cluster site-a mirror image demote image-pool/image-1
+</pre></div>
+</div>
+<p>To demote all primary images within a pool to non-primary with <code class="docutils literal notranslate"><span class="pre">rbd</span></code>, specify
+the <code class="docutils literal notranslate"><span class="pre">mirror</span> <span class="pre">pool</span> <span class="pre">demote</span></code> command along with the pool name:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">rbd</span> <span class="n">mirror</span> <span class="n">pool</span> <span class="n">demote</span> <span class="p">{</span><span class="n">pool</span><span class="o">-</span><span class="n">name</span><span class="p">}</span>
+</pre></div>
+</div>
+<p>For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ rbd --cluster site-a mirror pool demote image-pool
+</pre></div>
+</div>
+<p>To promote a specific image to primary with <code class="docutils literal notranslate"><span class="pre">rbd</span></code>, specify the
+<code class="docutils literal notranslate"><span class="pre">mirror</span> <span class="pre">image</span> <span class="pre">promote</span></code> command along with the pool and image name:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">rbd</span> <span class="n">mirror</span> <span class="n">image</span> <span class="n">promote</span> <span class="p">[</span><span class="o">--</span><span class="n">force</span><span class="p">]</span> <span class="p">{</span><span class="n">pool</span><span class="o">-</span><span class="n">name</span><span class="p">}</span><span class="o">/</span><span class="p">{</span><span class="n">image</span><span class="o">-</span><span class="n">name</span><span class="p">}</span>
+</pre></div>
+</div>
+<p>For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ rbd --cluster site-b mirror image promote image-pool/image-1
+</pre></div>
+</div>
+<p>To promote all non-primary images within a pool to primary with <code class="docutils literal notranslate"><span class="pre">rbd</span></code>, specify
+the <code class="docutils literal notranslate"><span class="pre">mirror</span> <span class="pre">pool</span> <span class="pre">promote</span></code> command along with the pool name:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">rbd</span> <span class="n">mirror</span> <span class="n">pool</span> <span class="n">promote</span> <span class="p">[</span><span class="o">--</span><span class="n">force</span><span class="p">]</span> <span class="p">{</span><span class="n">pool</span><span class="o">-</span><span class="n">name</span><span class="p">}</span>
+</pre></div>
+</div>
+<p>For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ rbd --cluster site-a mirror pool promote image-pool
+</pre></div>
+</div>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>Since the primary / non-primary status is per-image, it is possible to
+have two clusters split the IO load and stage failover / failback.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Promotion can be forced using the <code class="docutils literal notranslate"><span class="pre">--force</span></code> option. Forced
+promotion is needed when the demotion cannot be propagated to the peer
+Ceph cluster (e.g. Ceph cluster failure, communication outage). This will
+result in a split-brain scenario between the two peers and the image will no
+longer be in-sync until a <a class="reference external" href="#force-image-resync">force resync command</a> is issued.</p>
+</div>
+</section>
+<section id="force-image-resync">
+<h3>Force Image Resync<a class="headerlink" href="#force-image-resync" title="Permalink to this heading">¶</a></h3>
+<p>If a split-brain event is detected by the <code class="docutils literal notranslate"><span class="pre">rbd-mirror</span></code> daemon, it will not
+attempt to mirror the affected image until corrected. To resume mirroring for an
+image, first <a class="reference external" href="#image-promotion-and-demotion">demote the image</a> determined to be out-of-date and then request a
+resync to the primary image. To request an image resync with <code class="docutils literal notranslate"><span class="pre">rbd</span></code>, specify
+the <code class="docutils literal notranslate"><span class="pre">mirror</span> <span class="pre">image</span> <span class="pre">resync</span></code> command along with the pool and image name:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">rbd</span> <span class="n">mirror</span> <span class="n">image</span> <span class="n">resync</span> <span class="p">{</span><span class="n">pool</span><span class="o">-</span><span class="n">name</span><span class="p">}</span><span class="o">/</span><span class="p">{</span><span class="n">image</span><span class="o">-</span><span class="n">name</span><span class="p">}</span>
+</pre></div>
+</div>
+<p>For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ rbd mirror image resync image-pool/image-1
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">rbd</span></code> command only flags the image as requiring a resync. The
+local cluster’s <code class="docutils literal notranslate"><span class="pre">rbd-mirror</span></code> daemon process is responsible for performing
+the resync asynchronously.</p>
+</div>
+</section>
+</section>
+<section id="mirror-status">
+<h2>Mirror Status<a class="headerlink" href="#mirror-status" title="Permalink to this heading">¶</a></h2>
+<p>The peer cluster replication status is stored for every primary mirrored image.
+This status can be retrieved using the <code class="docutils literal notranslate"><span class="pre">mirror</span> <span class="pre">image</span> <span class="pre">status</span></code> and
+<code class="docutils literal notranslate"><span class="pre">mirror</span> <span class="pre">pool</span> <span class="pre">status</span></code> commands.</p>
+<p>To request the mirror image status with <code class="docutils literal notranslate"><span class="pre">rbd</span></code>, specify the
+<code class="docutils literal notranslate"><span class="pre">mirror</span> <span class="pre">image</span> <span class="pre">status</span></code> command along with the pool and image name:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">rbd</span> <span class="n">mirror</span> <span class="n">image</span> <span class="n">status</span> <span class="p">{</span><span class="n">pool</span><span class="o">-</span><span class="n">name</span><span class="p">}</span><span class="o">/</span><span class="p">{</span><span class="n">image</span><span class="o">-</span><span class="n">name</span><span class="p">}</span>
+</pre></div>
+</div>
+<p>For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ rbd mirror image status image-pool/image-1
+</pre></div>
+</div>
+<p>To request the mirror pool summary status with <code class="docutils literal notranslate"><span class="pre">rbd</span></code>, specify the
+<code class="docutils literal notranslate"><span class="pre">mirror</span> <span class="pre">pool</span> <span class="pre">status</span></code> command along with the pool name:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">rbd</span> <span class="n">mirror</span> <span class="n">pool</span> <span class="n">status</span> <span class="p">{</span><span class="n">pool</span><span class="o">-</span><span class="n">name</span><span class="p">}</span>
+</pre></div>
+</div>
+<p>For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ rbd mirror pool status image-pool
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Adding <code class="docutils literal notranslate"><span class="pre">--verbose</span></code> option to the <code class="docutils literal notranslate"><span class="pre">mirror</span> <span class="pre">pool</span> <span class="pre">status</span></code> command will
+additionally output status details for every mirroring image in the pool.</p>
+</div>
+</section>
+<section id="rbd-mirror-daemon">
+<h2>rbd-mirror Daemon<a class="headerlink" href="#rbd-mirror-daemon" title="Permalink to this heading">¶</a></h2>
+<p>The two <code class="docutils literal notranslate"><span class="pre">rbd-mirror</span></code> daemons are responsible for watching image journals on
+the remote, peer cluster and replaying the journal events against the local
+cluster. The RBD image journaling feature records all modifications to the
+image in the order they occur. This ensures that a crash-consistent mirror of
+the remote image is available locally.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">rbd-mirror</span></code> daemon is available within the optional <code class="docutils literal notranslate"><span class="pre">rbd-mirror</span></code>
+distribution package.</p>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>Each <code class="docutils literal notranslate"><span class="pre">rbd-mirror</span></code> daemon requires the ability to connect
+to both clusters simultaneously.</p>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Pre-Luminous releases: only run a single <code class="docutils literal notranslate"><span class="pre">rbd-mirror</span></code> daemon per
+Ceph cluster.</p>
+</div>
+<p>Each <code class="docutils literal notranslate"><span class="pre">rbd-mirror</span></code> daemon should use a unique Ceph user ID. To
+<a class="reference external" href="../../rados/operations/user-management#add-a-user">create a Ceph user</a>, with <code class="docutils literal notranslate"><span class="pre">ceph</span></code> specify the <code class="docutils literal notranslate"><span class="pre">auth</span> <span class="pre">get-or-create</span></code>
+command, user name, monitor caps, and OSD caps:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span> <span class="n">auth</span> <span class="n">get</span><span class="o">-</span><span class="ow">or</span><span class="o">-</span><span class="n">create</span> <span class="n">client</span><span class="o">.</span><span class="n">rbd</span><span class="o">-</span><span class="n">mirror</span><span class="o">.</span><span class="p">{</span><span class="n">unique</span> <span class="nb">id</span><span class="p">}</span> <span class="n">mon</span> <span class="s1">&#39;profile rbd-mirror&#39;</span> <span class="n">osd</span> <span class="s1">&#39;profile rbd&#39;</span>
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">rbd-mirror</span></code> daemon can be managed by <code class="docutils literal notranslate"><span class="pre">systemd</span></code> by specifying the user
+ID as the daemon instance:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">systemctl</span> <span class="n">enable</span> <span class="n">ceph</span><span class="o">-</span><span class="n">rbd</span><span class="o">-</span><span class="n">mirror</span><span class="nd">@rbd</span><span class="o">-</span><span class="n">mirror</span><span class="o">.</span><span class="p">{</span><span class="n">unique</span> <span class="nb">id</span><span class="p">}</span>
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">rbd-mirror</span></code> can also be run in foreground by <code class="docutils literal notranslate"><span class="pre">rbd-mirror</span></code> command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">rbd</span><span class="o">-</span><span class="n">mirror</span> <span class="o">-</span><span class="n">f</span> <span class="o">--</span><span class="n">log</span><span class="o">-</span><span class="n">file</span><span class="o">=</span><span class="p">{</span><span class="n">log_path</span><span class="p">}</span>
+</pre></div>
+</div>
+</section>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../">
+              <img class="logo" src="../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../install/">Installing Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cephadm/">Cephadm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rados/">Ceph Storage Cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cephfs/">Ceph File System</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../">Ceph Block Device</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../rados-rbd-cmds/">Basic Commands</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../rbd-operations/">Operations</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../rbd-snapshot/">Snapshots</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rbd-exclusive-locks/">Exclusive Locking</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Mirroring</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#pool-configuration">Pool Configuration</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#enable-mirroring">Enable Mirroring</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#disable-mirroring">Disable Mirroring</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#bootstrap-peers">Bootstrap Peers</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#add-cluster-peer-manually">Add Cluster Peer Manually</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#remove-cluster-peer">Remove Cluster Peer</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#data-pools">Data Pools</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#image-configuration">Image Configuration</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#enable-image-mirroring">Enable Image Mirroring</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#enable-image-journaling-feature">Enable Image Journaling Feature</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#create-image-mirror-snapshots">Create Image Mirror-Snapshots</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#disable-image-mirroring">Disable Image Mirroring</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#image-promotion-and-demotion">Image Promotion and Demotion</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#force-image-resync">Force Image Resync</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#mirror-status">Mirror Status</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#rbd-mirror-daemon">rbd-mirror Daemon</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../rbd-live-migration/">Live-Migration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rbd-persistent-read-only-cache/">Persistent Read-only Cache</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rbd-persistent-write-back-cache/">Persistent Write-back Cache</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rbd-encryption/">Encryption</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rbd-config-ref/">Config Settings (librbd)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rbd-replay/">RBD Replay</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../rbd-integrations/">Integrations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../man/">Manpages</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/">APIs</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../radosgw/">Ceph Object Gateway</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/">Ceph Manager Daemon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dev/developer_guide/">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dev/internals/">Ceph Internals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../rbd-live-migration/" title="Image Live-Migration"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../rbd-exclusive-locks/" title="RBD Exclusive Locks"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../" >Ceph Block Device</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../rbd-operations/" >Ceph Block Device Operations</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">RBD Mirroring</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

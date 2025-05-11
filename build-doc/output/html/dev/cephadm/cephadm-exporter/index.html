@@ -1,0 +1,491 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>cephadm Exporter &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/css/custom.css" />
+    <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/jquery.js"></script>
+    <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../../genindex/" />
+    <link rel="search" title="Search" href="../../../search/" />
+    <link rel="next" title="Notes and Thoughts on Cephadm’s scalability" href="../scalability-notes/" />
+    <link rel="prev" title="Compliance Check" href="../compliance-check/" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../scalability-notes/" title="Notes and Thoughts on Cephadm’s scalability"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../compliance-check/" title="Compliance Check"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../../cephadm/" >Cephadm</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../" accesskey="U">CEPHADM Developer Documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">cephadm Exporter</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="cephadm-exporter">
+<h1>cephadm Exporter<a class="headerlink" href="#cephadm-exporter" title="Permalink to this heading">¶</a></h1>
+<p>There are a number of long running tasks that the cephadm ‘binary’ runs which can take several seconds
+to run. This latency represents a scalability challenge to the Ceph orchestrator management plane.</p>
+<p>To address this, cephadm needs to be able to run some of these longer running tasks asynchronously - this
+frees up processing on the mgr by offloading tasks to each host, reduces latency and improves scalability.</p>
+<p>This document describes the implementation requirements and design for an ‘exporter’ feature</p>
+<section id="requirements">
+<h2>Requirements<a class="headerlink" href="#requirements" title="Permalink to this heading">¶</a></h2>
+<p>The exporter should address these functional and non-functional requirements;</p>
+<ul class="simple">
+<li><p>run as a normal systemd unit</p></li>
+<li><p>utilise the same filesystem schema as other services deployed with cephadm</p></li>
+<li><p>require only python3 standard library modules (no external dependencies)</p></li>
+<li><p>use encryption to protect the data flowing from a host to Ceph mgr</p></li>
+<li><p>execute data gathering tasks as background threads</p></li>
+<li><p>be easily extended to include more data gathering tasks</p></li>
+<li><p>monitor itself for the health of the data gathering threads</p></li>
+<li><p>cache metadata to respond to queries quickly</p></li>
+<li><p>respond to a metadata query in &lt;30ms to support large Ceph clusters (000’s nodes)</p></li>
+<li><p>provide CLI interaction to enable the exporter to be deployed either at bootstrap time, or once the
+cluster has been deployed.</p></li>
+<li><p>be deployed as a normal orchestrator service (similar to the node-exporter)</p></li>
+</ul>
+</section>
+<section id="high-level-design">
+<h2>High Level Design<a class="headerlink" href="#high-level-design" title="Permalink to this heading">¶</a></h2>
+<p>This section will focus on the exporter logic <strong>only</strong>.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Establish</span> <span class="n">a</span> <span class="n">metadata</span> <span class="n">cache</span> <span class="nb">object</span> <span class="p">(</span><span class="n">tasks</span> <span class="n">will</span> <span class="n">be</span> <span class="n">represented</span> <span class="n">by</span> <span class="n">separate</span> <span class="n">attributes</span><span class="p">)</span>
+<span class="n">Create</span> <span class="n">a</span> <span class="n">thread</span> <span class="k">for</span> <span class="n">each</span> <span class="n">data</span> <span class="n">gathering</span> <span class="n">task</span><span class="p">;</span> <span class="n">host</span><span class="p">,</span> <span class="n">ceph</span><span class="o">-</span><span class="n">volume</span> <span class="ow">and</span> <span class="n">list_daemons</span>
+    <span class="n">each</span> <span class="n">thread</span> <span class="n">updates</span> <span class="n">it</span><span class="s1">&#39;s own attribute within the cache object</span>
+<span class="n">Start</span> <span class="n">a</span> <span class="n">server</span> <span class="n">instance</span> <span class="n">passing</span> <span class="n">requests</span> <span class="n">to</span> <span class="n">a</span> <span class="n">specific</span> <span class="n">request</span> <span class="n">handler</span>
+    <span class="n">the</span> <span class="n">request</span> <span class="n">handler</span> <span class="n">only</span> <span class="n">interacts</span> <span class="k">with</span> <span class="n">the</span> <span class="n">cache</span> <span class="nb">object</span>
+    <span class="n">the</span> <span class="n">request</span> <span class="n">handler</span> <span class="n">passes</span> <span class="n">metadata</span> <span class="n">back</span> <span class="n">to</span> <span class="n">the</span> <span class="n">caller</span>
+<span class="n">Main</span> <span class="n">Loop</span>
+    <span class="n">Leave</span> <span class="n">the</span> <span class="n">loop</span> <span class="k">if</span> <span class="n">a</span> <span class="s1">&#39;stop&#39;</span> <span class="n">request</span> <span class="ow">is</span> <span class="n">received</span>
+    <span class="n">check</span> <span class="n">thread</span> <span class="n">health</span>
+        <span class="k">if</span> <span class="n">a</span> <span class="n">thread</span> <span class="n">that</span> <span class="n">was</span> <span class="n">active</span><span class="p">,</span> <span class="ow">is</span> <span class="n">now</span> <span class="n">inactive</span>
+            <span class="n">update</span> <span class="n">the</span> <span class="n">cache</span> <span class="n">marking</span> <span class="n">the</span> <span class="n">task</span> <span class="k">as</span> <span class="n">inactive</span>
+            <span class="n">update</span> <span class="n">the</span> <span class="n">cache</span> <span class="k">with</span> <span class="n">an</span> <span class="n">error</span> <span class="n">message</span> <span class="k">for</span> <span class="n">that</span> <span class="n">task</span>
+    <span class="n">wait</span> <span class="k">for</span> <span class="n">n</span> <span class="n">secs</span>
+</pre></div>
+</div>
+<p>In the initial exporter implementation, the exporter has been implemented as a RESTful API.</p>
+</section>
+<section id="security">
+<h2>Security<a class="headerlink" href="#security" title="Permalink to this heading">¶</a></h2>
+<p>The cephadm ‘binary’ only supports standard python3 features, which has meant the RESTful API has been
+developed using the http module, which itself is not intended for production use. However, the implementation
+is not complex (based only on HTTPServer and BaseHHTPRequestHandler) and only supports the GET method - so the
+security risk is perceived as low.</p>
+<p>Current mgr to host interactions occurs within an ssh connection, so the goal of the exporter is to adopt a similar
+security model.</p>
+<p>The initial REST API is implemented with the following features;</p>
+<ul class="simple">
+<li><p>generic self-signed, or user provided SSL crt/key to encrypt traffic between the mgr and the host</p></li>
+<li><p>‘token’ based authentication of the request</p></li>
+</ul>
+<p>All exporter instances will use the <strong>same</strong> crt/key to secure the link from the mgr to the host(s), in the same way
+that the ssh access uses the same public key and port for each host connection.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Since the same SSL configuration is used on every exporter, when you supply your own settings you must
+ensure that the CN or SAN components of the distinguished name are either <strong>not</strong> used or created using wildcard naming.</p>
+</div>
+<p>The crt, key and token files are all defined with restrictive permissions (600), to help mitigate against the risk of exposure
+to any other user on the Ceph cluster node(s).</p>
+</section>
+<section id="administrator-interaction">
+<h2>Administrator Interaction<a class="headerlink" href="#administrator-interaction" title="Permalink to this heading">¶</a></h2>
+<p>Several new commands are required to configure the exporter, and additional parameters should be added to the bootstrap
+process to allow the exporter to be deployed automatically for new clusters.</p>
+<section id="enhancements-to-the-bootstrap-process">
+<h3>Enhancements to the ‘bootstrap’ process<a class="headerlink" href="#enhancements-to-the-bootstrap-process" title="Permalink to this heading">¶</a></h3>
+<p>bootstrap should support additional parameters to automatically configure exporter daemons across hosts</p>
+<p><code class="docutils literal notranslate"><span class="pre">--with-exporter</span></code></p>
+<p>By using this flag, you’re telling the bootstrap process to include the cephadm-exporter service within the
+cluster. If you do not provide a specific configuration (SSL, token, port) to use, defaults would be applied.</p>
+<p><code class="docutils literal notranslate"><span class="pre">--exporter-config</span></code></p>
+<p>With the –exporter-config option, you may pass your own SSL, token and port information. The file must be in
+JSON format and contain the following fields; crt, key, token and port. The JSON content should be validated, and any
+errors detected passed back to the user during the argument parsing phase (before any changes are done).</p>
+</section>
+<section id="additional-ceph-commands">
+<h3>Additional ceph commands<a class="headerlink" href="#additional-ceph-commands" title="Permalink to this heading">¶</a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># ceph cephadm generate-exporter-config</span>
+</pre></div>
+</div>
+<p>This command will create generate a default configuration consisting of; a self signed certificate, a randomly generated
+32 character token and the default port of 9443 for the REST API.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># ceph cephadm set-exporter-config -i &lt;config.json&gt;</span>
+</pre></div>
+</div>
+<p>Use a JSON file to define the crt, key, token and port for the REST API. The crt, key and token are validated by
+the mgr/cephadm module prior storing the values in the KV store. Invalid or missing entries should be reported to the
+user.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># ceph cephadm clear-exporter-config</span>
+</pre></div>
+</div>
+<p>Clear the current configuration (removes the associated keys from the KV store)</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># ceph cephadm get-exporter-config</span>
+</pre></div>
+</div>
+<p>Show the current exporter configuration, in JSON format</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If the service is already deployed any attempt to change or clear the configuration will
+be denied. In order to change settings you must remove the service, apply the required configuration
+and re-apply (<code class="docutils literal notranslate"><span class="pre">ceph</span> <span class="pre">orch</span> <span class="pre">apply</span> <span class="pre">cephadm-exporter</span></code>)</p>
+</div>
+</section>
+</section>
+<section id="new-ceph-configuration-keys">
+<h2>New Ceph Configuration Keys<a class="headerlink" href="#new-ceph-configuration-keys" title="Permalink to this heading">¶</a></h2>
+<p>The exporter configuration is persisted to the monitor’s KV store, with the following keys:</p>
+<div class="line-block">
+<div class="line">mgr/cephadm/exporter_config</div>
+<div class="line">mgr/cephadm/exporter_enabled</div>
+</div>
+</section>
+<section id="restful-api">
+<h2>RESTful API<a class="headerlink" href="#restful-api" title="Permalink to this heading">¶</a></h2>
+<p>The primary goal of the exporter is the provision of metadata from the host to the mgr. This interaction takes
+place over a simple GET interface. Although only the GET method is supported, the API provides multiple URLs to
+provide different views on the metadata that has been gathered.</p>
+<table class="docutils align-default" id="id1">
+<caption><span class="caption-text">Supported URL endpoints</span><a class="headerlink" href="#id1" title="Permalink to this table">¶</a></caption>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>URL</p></th>
+<th class="head"><p>Purpose</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>/v1/metadata</p></td>
+<td><p>show all metadata including health of all threads</p></td>
+</tr>
+<tr class="row-odd"><td><p>/v1/metadata/health</p></td>
+<td><p>only report on the health of the data gathering threads</p></td>
+</tr>
+<tr class="row-even"><td><p>/v1/metadata/disks</p></td>
+<td><p>show the disk output (ceph-volume inventory data)</p></td>
+</tr>
+<tr class="row-odd"><td><p>/v1/metadata/host</p></td>
+<td><p>show host related metadata from the gather-facts command</p></td>
+</tr>
+<tr class="row-even"><td><p>/v1/metatdata/daemons</p></td>
+<td><p>show the status of all ceph cluster related daemons on the host</p></td>
+</tr>
+</tbody>
+</table>
+<section id="return-codes">
+<h3>Return Codes<a class="headerlink" href="#return-codes" title="Permalink to this heading">¶</a></h3>
+<p>The following HTTP return codes are generated by the API</p>
+<table class="docutils align-default" id="id2">
+<caption><span class="caption-text">Supported HTTP Responses</span><a class="headerlink" href="#id2" title="Permalink to this table">¶</a></caption>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Status Code</p></th>
+<th class="head"><p>Meaning</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>200</p></td>
+<td><p>OK</p></td>
+</tr>
+<tr class="row-odd"><td><p>204</p></td>
+<td><p>the thread associated with this request is no longer active, no data is returned</p></td>
+</tr>
+<tr class="row-even"><td><p>206</p></td>
+<td><p>some threads have stopped, so some content is missing</p></td>
+</tr>
+<tr class="row-odd"><td><p>401</p></td>
+<td><p>request is not authorised - check your token is correct</p></td>
+</tr>
+<tr class="row-even"><td><p>404</p></td>
+<td><p>URL is malformed, not found</p></td>
+</tr>
+<tr class="row-odd"><td><p>500</p></td>
+<td><p>all threads have stopped - unable to provide any metadata for the host</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="deployment">
+<h2>Deployment<a class="headerlink" href="#deployment" title="Permalink to this heading">¶</a></h2>
+<p>During the initial phases of the exporter implementation, deployment is regarded as optional but is available
+to new clusters and existing clusters that have the feature (Pacific and above).</p>
+<ul class="simple">
+<li><p>new clusters : use the <code class="docutils literal notranslate"><span class="pre">--with-exporter</span></code> option</p></li>
+<li><p>existing clusters : you’ll need to set the configuration and deploy the service manually</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># ceph cephadm generate-exporter-config</span>
+<span class="c1"># ceph orch apply cephadm-exporter</span>
+</pre></div>
+</div>
+<p>If you choose to remove the cephadm-exporter service, you may simply</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># ceph orch rm cephadm-exporter</span>
+</pre></div>
+</div>
+<p>This will remove the daemons, and the exporter releated settings stored in the KV store.</p>
+</section>
+<section id="management">
+<h2>Management<a class="headerlink" href="#management" title="Permalink to this heading">¶</a></h2>
+<p>Once the exporter is deployed, you can use the following snippet to extract the host’s metadata.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">ssl</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">tempfile</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">urllib.request</span><span class="w"> </span><span class="kn">import</span> <span class="n">Request</span><span class="p">,</span> <span class="n">urlopen</span>
+
+<span class="c1"># CHANGE THIS V</span>
+<span class="n">hostname</span> <span class="o">=</span> <span class="s2">&quot;rh8-1.storage.lab&quot;</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Reading config.json&quot;</span><span class="p">)</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s1">&#39;./config.json&#39;</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">raw</span><span class="o">=</span><span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+<span class="k">except</span> <span class="ne">FileNotFoundError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;You must first create a config.json file using the cephadm get-exporter-config command&quot;</span><span class="p">)</span>
+    <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+<span class="n">cfg</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">raw</span><span class="p">)</span>
+<span class="k">with</span> <span class="n">tempfile</span><span class="o">.</span><span class="n">NamedTemporaryFile</span><span class="p">(</span><span class="n">buffering</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span> <span class="k">as</span> <span class="n">t</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;creating a temporary local crt file from the json&quot;</span><span class="p">)</span>
+    <span class="n">t</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">cfg</span><span class="p">[</span><span class="s1">&#39;crt&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s1">&#39;utf-8&#39;</span><span class="p">))</span>
+
+    <span class="n">ctx</span> <span class="o">=</span> <span class="n">ssl</span><span class="o">.</span><span class="n">create_default_context</span><span class="p">()</span>
+    <span class="n">ctx</span><span class="o">.</span><span class="n">check_hostname</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">ctx</span><span class="o">.</span><span class="n">load_verify_locations</span><span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+    <span class="n">hdrs</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;Authorization&quot;</span><span class="p">:</span><span class="sa">f</span><span class="s2">&quot;Bearer </span><span class="si">{</span><span class="n">cfg</span><span class="p">[</span><span class="s1">&#39;token&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">}</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Issuing call to gather metadata&quot;</span><span class="p">)</span>
+    <span class="n">req</span><span class="o">=</span><span class="n">Request</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;https://</span><span class="si">{</span><span class="n">hostname</span><span class="si">}</span><span class="s2">:9443/v1/metadata&quot;</span><span class="p">,</span><span class="n">headers</span><span class="o">=</span><span class="n">hdrs</span><span class="p">)</span>
+    <span class="n">s_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+    <span class="n">r</span> <span class="o">=</span> <span class="n">urlopen</span><span class="p">(</span><span class="n">req</span><span class="p">,</span><span class="n">context</span><span class="o">=</span><span class="n">ctx</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">r</span><span class="o">.</span><span class="n">status</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;call complete&quot;</span><span class="p">)</span>
+    <span class="c1"># assert r.status == 200</span>
+    <span class="k">if</span> <span class="n">r</span><span class="o">.</span><span class="n">status</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">200</span><span class="p">,</span> <span class="mi">206</span><span class="p">]:</span>
+
+        <span class="n">raw</span><span class="o">=</span><span class="n">r</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>  <span class="c1"># bytes string</span>
+        <span class="n">js</span><span class="o">=</span><span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">raw</span><span class="o">.</span><span class="n">decode</span><span class="p">())</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">js</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">))</span>
+    <span class="n">elapsed</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">s_time</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Elapsed secs : </span><span class="si">{</span><span class="n">elapsed</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>the above example uses python3, and assumes that you’ve extracted the config using the <code class="docutils literal notranslate"><span class="pre">get-exporter-config</span></code> command.</p>
+</div>
+</section>
+<section id="implementation-specific-details">
+<h2>Implementation Specific Details<a class="headerlink" href="#implementation-specific-details" title="Permalink to this heading">¶</a></h2>
+<p>In the same way as a typical container based deployment, the exporter is deployed to a directory under <code class="docutils literal notranslate"><span class="pre">/var/lib/ceph/&lt;fsid&gt;</span></code>. The
+cephadm binary is stored in this cluster folder, and the daemon’s configuration and systemd settings are stored
+under <code class="docutils literal notranslate"><span class="pre">/var/lib/ceph/&lt;fsid&gt;/cephadm-exporter.&lt;id&gt;/</span></code>.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[</span><span class="n">root</span><span class="nd">@rh8</span><span class="o">-</span><span class="mi">1</span> <span class="n">cephadm</span><span class="o">-</span><span class="n">exporter</span><span class="o">.</span><span class="n">rh8</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="c1"># pwd</span>
+<span class="o">/</span><span class="n">var</span><span class="o">/</span><span class="n">lib</span><span class="o">/</span><span class="n">ceph</span><span class="o">/</span><span class="n">cb576f70</span><span class="o">-</span><span class="mi">2</span><span class="n">f72</span><span class="o">-</span><span class="mi">11</span><span class="n">eb</span><span class="o">-</span><span class="n">b141</span><span class="o">-</span><span class="mi">525400</span><span class="n">da3eb7</span><span class="o">/</span><span class="n">cephadm</span><span class="o">-</span><span class="n">exporter</span><span class="o">.</span><span class="n">rh8</span><span class="o">-</span><span class="mi">1</span>
+<span class="p">[</span><span class="n">root</span><span class="nd">@rh8</span><span class="o">-</span><span class="mi">1</span> <span class="n">cephadm</span><span class="o">-</span><span class="n">exporter</span><span class="o">.</span><span class="n">rh8</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="c1"># ls -al</span>
+<span class="n">total</span> <span class="mi">24</span>
+<span class="n">drwx</span><span class="o">------.</span> <span class="mi">2</span> <span class="n">root</span> <span class="n">root</span>  <span class="mi">100</span> <span class="n">Nov</span> <span class="mi">25</span> <span class="mi">18</span><span class="p">:</span><span class="mi">10</span> <span class="o">.</span>
+<span class="n">drwx</span><span class="o">------.</span> <span class="mi">8</span> <span class="n">root</span> <span class="n">root</span>  <span class="mi">160</span> <span class="n">Nov</span> <span class="mi">25</span> <span class="mi">23</span><span class="p">:</span><span class="mi">19</span> <span class="o">..</span>
+<span class="o">-</span><span class="n">rw</span><span class="o">-------.</span> <span class="mi">1</span> <span class="n">root</span> <span class="n">root</span> <span class="mi">1046</span> <span class="n">Nov</span> <span class="mi">25</span> <span class="mi">18</span><span class="p">:</span><span class="mi">10</span> <span class="n">crt</span>
+<span class="o">-</span><span class="n">rw</span><span class="o">-------.</span> <span class="mi">1</span> <span class="n">root</span> <span class="n">root</span> <span class="mi">1704</span> <span class="n">Nov</span> <span class="mi">25</span> <span class="mi">18</span><span class="p">:</span><span class="mi">10</span> <span class="n">key</span>
+<span class="o">-</span><span class="n">rw</span><span class="o">-------.</span> <span class="mi">1</span> <span class="n">root</span> <span class="n">root</span>   <span class="mi">64</span> <span class="n">Nov</span> <span class="mi">25</span> <span class="mi">18</span><span class="p">:</span><span class="mi">10</span> <span class="n">token</span>
+<span class="o">-</span><span class="n">rw</span><span class="o">-------.</span> <span class="mi">1</span> <span class="n">root</span> <span class="n">root</span>   <span class="mi">38</span> <span class="n">Nov</span> <span class="mi">25</span> <span class="mi">18</span><span class="p">:</span><span class="mi">10</span> <span class="n">unit</span><span class="o">.</span><span class="n">configured</span>
+<span class="o">-</span><span class="n">rw</span><span class="o">-------.</span> <span class="mi">1</span> <span class="n">root</span> <span class="n">root</span>   <span class="mi">48</span> <span class="n">Nov</span> <span class="mi">25</span> <span class="mi">18</span><span class="p">:</span><span class="mi">10</span> <span class="n">unit</span><span class="o">.</span><span class="n">created</span>
+<span class="o">-</span><span class="n">rw</span><span class="o">-</span><span class="n">r</span><span class="o">--</span><span class="n">r</span><span class="o">--.</span> <span class="mi">1</span> <span class="n">root</span> <span class="n">root</span>  <span class="mi">157</span> <span class="n">Nov</span> <span class="mi">25</span> <span class="mi">18</span><span class="p">:</span><span class="mi">10</span> <span class="n">unit</span><span class="o">.</span><span class="n">run</span>
+</pre></div>
+</div>
+<p>In order to respond to requests quickly, the CephadmDaemon uses a cache object (CephadmCache) to hold the results
+of the cephadm commands.</p>
+<p>The exporter doesn’t introduce any new data gathering capability - instead it merely calls the existing cephadm commands.</p>
+<p>The CephadmDaemon class creates a local HTTP server(uses ThreadingMixIn), secured with TLS and uses the CephadmDaemonHandler
+to handle the requests. The request handler inspects the request header and looks for a valid Bearer token - if this is invalid
+or missing the caller receives a 401 Unauthorized error.</p>
+<p>The ‘run’ method of the CephadmDaemon class, places the scrape_* methods into different threads with each thread supporting
+a different refresh interval. Each thread then periodically issues it’s cephadm command, and places the output
+in the cache object.</p>
+<p>In addition to the command output, each thread also maintains it’s own timestamp record in the cache so the caller can
+very easily determine the age of the data it’s received.</p>
+<p>If the underlying cephadm command execution hits an exception, the thread passes control to a _handle_thread_exception method.
+Here the exception is logged to the daemon’s log file and the exception details are added to the cache, providing visibility
+of the problem to the caller.</p>
+<p>Although each thread is effectively given it’s own URL endpoint (host, disks, daemons), the recommended way to gather data from
+the host is to simply use the <code class="docutils literal notranslate"><span class="pre">/v1/metadata</span></code> endpoint. This will provide all of the data, and indicate whether any of the
+threads have failed.</p>
+<p>The run method uses “signal” to establish a reload hook, but in the initial implementation this doesn’t take any action and simply
+logs that a reload was received.</p>
+</section>
+<section id="future-work">
+<h2>Future Work<a class="headerlink" href="#future-work" title="Permalink to this heading">¶</a></h2>
+<ol class="arabic simple">
+<li><p>Consider the potential of adding a restart policy for threads</p></li>
+<li><p>Once the exporter is fully integrated into mgr/cephadm, the goal would be to make the exporter the
+default means of data gathering. However, until then the exporter will remain as an opt-in ‘feature
+preview’.</p></li>
+</ol>
+</section>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../../">
+              <img class="logo" src="../../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../install/">Installing Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cephadm/">Cephadm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../rados/">Ceph Storage Cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cephfs/">Ceph File System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../rbd/">Ceph Block Device</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../radosgw/">Ceph Object Gateway</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../mgr/">Ceph Manager Daemon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../mgr/dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../architecture/">Architecture</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../developer_guide/">Developer Guide</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../../developer_guide/intro/">Introduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../developer_guide/essentials/">Essentials</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../developer_guide/merging/">What is Merged and When</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../developer_guide/issue-tracker/">Issue tracker</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../developer_guide/basic-workflow/">Basic workflow</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../developer_guide/tests-unit-tests/">Tests: Unit Tests</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../developer_guide/tests-integration-tests/">Tests: Integration Tests</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../developer_guide/running-tests-locally/">Running Tests Locally</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../developer_guide/running-tests-using-teuth/">Running Integration Tests using Teuthology</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../developer_guide/running-tests-in-cloud/">Running Tests in the Cloud</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../developer_guide/dash-devel/">Ceph Dashboard Developer Documentation (formerly HACKING.rst)</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../">cephadm Developer Documentation</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../developing-cephadm/">Developing with cephadm</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../host-maintenance/">Host Maintenance</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../compliance-check/">Compliance Check</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">cephadm Exporter</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#requirements">Requirements</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#high-level-design">High Level Design</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#security">Security</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#administrator-interaction">Administrator Interaction</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#enhancements-to-the-bootstrap-process">Enhancements to the ‘bootstrap’ process</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#additional-ceph-commands">Additional ceph commands</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#new-ceph-configuration-keys">New Ceph Configuration Keys</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#restful-api">RESTful API</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#return-codes">Return Codes</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#deployment">Deployment</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#management">Management</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#implementation-specific-details">Implementation Specific Details</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#future-work">Future Work</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../scalability-notes/">Notes and Thoughts on Cephadm’s scalability</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../internals/">Ceph Internals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../../../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../scalability-notes/" title="Notes and Thoughts on Cephadm’s scalability"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../compliance-check/" title="Compliance Check"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../../cephadm/" >Cephadm</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../" >CEPHADM Developer Documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">cephadm Exporter</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

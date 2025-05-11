@@ -1,0 +1,332 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Backfill Reservation &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/css/custom.css" />
+    <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/jquery.js"></script>
+    <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../../genindex/" />
+    <link rel="search" title="Search" href="../../../search/" />
+    <link rel="next" title="Erasure Coded Placement Groups" href="../erasure_coding/" />
+    <link rel="prev" title="Asynchronous Recovery" href="../async_recovery/" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../erasure_coding/" title="Erasure Coded Placement Groups"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../async_recovery/" title="Asynchronous Recovery"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../internals/" >Ceph Internals</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../" accesskey="U">OSD developer documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Backfill Reservation</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="backfill-reservation">
+<h1>Backfill Reservation<a class="headerlink" href="#backfill-reservation" title="Permalink to this heading">¶</a></h1>
+<p>When a new OSD joins a cluster all PGs with it in their acting sets must
+eventually backfill.  If all of these backfills happen simultaneously
+they will present excessive load on the OSD:  the “thundering herd”
+effect.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">osd_max_backfills</span></code> tunable limits the number of outgoing or
+incoming backfills that are active on a given OSD. Note that this limit is
+applied separately to incoming and to outgoing backfill operations.
+Thus there can be as many as <code class="docutils literal notranslate"><span class="pre">osd_max_backfills</span> <span class="pre">*</span> <span class="pre">2</span></code> backfill operations
+in flight on each OSD.  This subtlety is often missed, and Ceph
+operators can be puzzled as to why more ops are observed than expected.</p>
+<p>Each <code class="docutils literal notranslate"><span class="pre">OSDService</span></code> now has two AsyncReserver instances: one for backfills going
+from the OSD (<code class="docutils literal notranslate"><span class="pre">local_reserver</span></code>) and one for backfills going to the OSD
+(<code class="docutils literal notranslate"><span class="pre">remote_reserver</span></code>).  An <code class="docutils literal notranslate"><span class="pre">AsyncReserver</span></code> (<code class="docutils literal notranslate"><span class="pre">common/AsyncReserver.h</span></code>)
+manages a queue by priority of waiting items and a set of current reservation
+holders.  When a slot frees up, the <code class="docutils literal notranslate"><span class="pre">AsyncReserver</span></code> queues the <code class="docutils literal notranslate"><span class="pre">Context*</span></code>
+associated with the next item on the highest priority queue in the finisher
+provided to the constructor.</p>
+<p>For a primary to initiate a backfill it must first obtain a reservation from
+its own <code class="docutils literal notranslate"><span class="pre">local_reserver</span></code>.  Then it must obtain a reservation from the backfill
+target’s <code class="docutils literal notranslate"><span class="pre">remote_reserver</span></code> via a <code class="docutils literal notranslate"><span class="pre">MBackfillReserve</span></code> message. This process is
+managed by sub-states of <code class="docutils literal notranslate"><span class="pre">Active</span></code> and <code class="docutils literal notranslate"><span class="pre">ReplicaActive</span></code> (see the sub-states
+of <code class="docutils literal notranslate"><span class="pre">Active</span></code> in PG.h).  The reservations are dropped either on the <code class="docutils literal notranslate"><span class="pre">Backfilled</span></code>
+event, which is sent on the primary before calling <code class="docutils literal notranslate"><span class="pre">recovery_complete</span></code>
+and on the replica on receipt of the <code class="docutils literal notranslate"><span class="pre">BackfillComplete</span></code> progress message),
+or upon leaving <code class="docutils literal notranslate"><span class="pre">Active</span></code> or <code class="docutils literal notranslate"><span class="pre">ReplicaActive</span></code>.</p>
+<p>It’s important to always grab the local reservation before the remote
+reservation in order to prevent a circular dependency.</p>
+<p>We minimize the risk of data loss by prioritizing the order in
+which PGs are recovered.  Admins can override the default order by using
+<code class="docutils literal notranslate"><span class="pre">force-recovery</span></code> or <code class="docutils literal notranslate"><span class="pre">force-backfill</span></code>. A <code class="docutils literal notranslate"><span class="pre">force-recovery</span></code> with op
+priority <code class="docutils literal notranslate"><span class="pre">255</span></code> will start before a <code class="docutils literal notranslate"><span class="pre">force-backfill</span></code> op at priority <code class="docutils literal notranslate"><span class="pre">254</span></code>.</p>
+<p>If recovery is needed because a PG is below <code class="docutils literal notranslate"><span class="pre">min_size</span></code> a base priority of
+<code class="docutils literal notranslate"><span class="pre">220</span></code> is used. This is incremented by the number of OSDs short of the pool’s
+<code class="docutils literal notranslate"><span class="pre">min_size</span></code> as well as a value relative to the pool’s <code class="docutils literal notranslate"><span class="pre">recovery_priority</span></code>.
+The resultant priority is capped at <code class="docutils literal notranslate"><span class="pre">253</span></code> so that it does not confound forced
+ops as described above. Under ordinary circumstances a recovery op is
+prioritized at <code class="docutils literal notranslate"><span class="pre">180</span></code> plus a value relative to the pool’s <code class="docutils literal notranslate"><span class="pre">recovery_priority</span></code>.
+The resultant priority is capped at <code class="docutils literal notranslate"><span class="pre">219</span></code>.</p>
+<p>If backfill is needed because the number of acting OSDs is less than
+the pool’s <code class="docutils literal notranslate"><span class="pre">min_size</span></code>, a priority of <code class="docutils literal notranslate"><span class="pre">220</span></code> is used.  The number of OSDs
+short of the pool’s <code class="docutils literal notranslate"><span class="pre">min_size</span></code> is added as well as a value relative to
+the pool’s <code class="docutils literal notranslate"><span class="pre">recovery_priority</span></code>.  The total priority is limited to <code class="docutils literal notranslate"><span class="pre">253</span></code>.</p>
+<p>If backfill is needed because a PG is undersized,
+a priority of <code class="docutils literal notranslate"><span class="pre">140</span></code> is used.  The number of OSDs below the size of the pool is
+added as well as a value relative to the pool’s <code class="docutils literal notranslate"><span class="pre">recovery_priority</span></code>.  The
+resultant priority is capped at <code class="docutils literal notranslate"><span class="pre">179</span></code>.  If a backfill op is
+needed because a PG is degraded, a priority of <code class="docutils literal notranslate"><span class="pre">140</span></code> is used.  A value
+relative to the pool’s <code class="docutils literal notranslate"><span class="pre">recovery_priority</span></code> is added.  The resultant priority
+is capped at <code class="docutils literal notranslate"><span class="pre">179</span></code> .  Under ordinary circumstances a
+backfill op priority of <code class="docutils literal notranslate"><span class="pre">100</span></code> is used.  A value relative to the pool’s
+<code class="docutils literal notranslate"><span class="pre">recovery_priority</span></code> is added.  The total priority is capped at <code class="docutils literal notranslate"><span class="pre">139</span></code>.</p>
+<table class="colwidths-given docutils align-default" id="id1">
+<caption><span class="caption-text">Backfill and Recovery op priorities</span><a class="headerlink" href="#id1" title="Permalink to this table">¶</a></caption>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Description</p></th>
+<th class="head"><p>Base priority</p></th>
+<th class="head"><p>Maximum priority</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Backfill</p></td>
+<td><p>100</p></td>
+<td><p>139</p></td>
+</tr>
+<tr class="row-odd"><td><p>Degraded Backfill</p></td>
+<td><p>140</p></td>
+<td><p>179</p></td>
+</tr>
+<tr class="row-even"><td><p>Recovery</p></td>
+<td><p>180</p></td>
+<td><p>219</p></td>
+</tr>
+<tr class="row-odd"><td><p>Inactive Recovery</p></td>
+<td><p>220</p></td>
+<td><p>253</p></td>
+</tr>
+<tr class="row-even"><td><p>Inactive Backfill</p></td>
+<td><p>220</p></td>
+<td><p>253</p></td>
+</tr>
+<tr class="row-odd"><td><p>force-backfill</p></td>
+<td><p>254</p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p>force-recovery</p></td>
+<td><p>255</p></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../../">
+              <img class="logo" src="../../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../install/">Installing Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cephadm/">Cephadm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../rados/">Ceph Storage Cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cephfs/">Ceph File System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../rbd/">Ceph Block Device</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../radosgw/">Ceph Object Gateway</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../mgr/">Ceph Manager Daemon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../mgr/dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../developer_guide/">Developer Guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../internals/">Ceph Internals</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../../blkin/">Tracing Ceph With Blkin</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../bluestore/">BlueStore Internals</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../cache-pool/">Cache pool</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../ceph_krb_auth/">A Detailed Documentation on How to Set up Ceph Kerberos Authentication</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../cephfs-mirroring/">CephFS Mirroring</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../cephfs-reclaim/">CephFS Reclaim Interface</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../cephfs-snapshots/">CephFS Snapshots</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../cephx/">Cephx</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../cephx_protocol/">A Detailed Description of the Cephx Authentication Protocol</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../config/">Configuration Management System</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../config-key/">config-key layout</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../context/">CephContext</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../continuous-integration/">Continuous Integration Architecture</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../corpus/">Corpus structure</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../cpu-profiler/">Installing Oprofile</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../cxx/">C++17 and libstdc++ ABI</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../delayed-delete/">CephFS delayed deletion</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../dev_cluster_deployement/">Deploying a development cluster</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../dev_cluster_deployement/#deploying-multiple-development-clusters-on-the-same-machine">Deploying multiple development clusters on the same machine</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../development-workflow/">Development workflows</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../documenting/">Documenting Ceph</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../encoding/">Serialization (encode/decode)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../erasure-coded-pool/">Erasure Coded pool</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../file-striping/">File striping</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../freebsd/">FreeBSD Implementation details</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../generatedocs/">Building Ceph Documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../iana/">IANA Numbers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../kubernetes/">Hacking on Ceph in Kubernetes with Rook</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../libs/">Library architecture</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../logging/">Use of the cluster log</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../logs/">Debug logs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../macos/">build on MacOS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../messenger/">Messenger notes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../mon-bootstrap/">Monitor bootstrap</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../mon-elections/">Monitor Elections</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../mon-on-disk-formats/">ON-DISK FORMAT</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../mon-osdmap-prune/">FULL OSDMAP VERSION PRUNING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../msgr2/">msgr2 protocol (msgr2.0 and msgr2.1)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../network-encoding/">Network Encoding</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../network-protocol/">Network Protocol</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../object-store/">Object Store Architecture Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../osd-class-path/">OSD class path issues</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../peering/">Peering</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../perf/">Using perf</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../perf_counters/">Perf counters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../perf_histograms/">Perf histograms</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../placement-group/">PG (Placement Group) notes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../quick_guide/">Developer Guide (Quick)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../rados-client-protocol/">RADOS client protocol</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../rbd-diff/">RBD Incremental Backup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../rbd-export/">RBD Export &amp; Import</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../rbd-layering/">RBD Layering</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../release-checklists/">Release checklists</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../release-process/">Ceph Release Process</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../seastore/">SeaStore</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../sepia/">Sepia community test lab</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../session_authentication/">Session Authentication for the Cephx Protocol</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../testing/">Testing notes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../versions/">Public OSD Version</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../vstart-ganesha/">NFS CephFS-RGW Developer Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../wireshark/">Wireshark Dissector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../zoned-storage/">Zoned Storage Support</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../">OSD developer documentation</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../async_recovery/">Asynchronous Recovery</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Backfill Reservation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../erasure_coding/">Erasure Coded Placement Groups</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../last_epoch_started/">last_epoch_started</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../log_based_pg/">Log Based PG</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../manifest/">Manifest</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../map_message_handling/">Map and PG Message handling</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../osd_overview/">OSD</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../osd_throttles/">OSD Throttles</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../partial_object_recovery/">Partial Object Recovery</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../past_intervals/">PastIntervals</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../pg/">PG</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../pg_removal/">PG Removal</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../pgpool/">PGPool</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../recovery_reservation/">Recovery Reservation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../refcount/">Refcount</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../scrub/">Scrub internals and diagnostics</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../snaps/">Snaps</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../stale_read/">Preventing Stale Reads</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../watch_notify/">Watch Notify</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../wbthrottle/">Writeback Throttle</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../mds_internals/">MDS developer documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../radosgw/">RADOS Gateway developer documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../ceph-volume/">ceph-volume developer documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../crimson/">Crimson developer documentation</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../../../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../erasure_coding/" title="Erasure Coded Placement Groups"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../async_recovery/" title="Asynchronous Recovery"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../internals/" >Ceph Internals</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../" >OSD developer documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Backfill Reservation</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

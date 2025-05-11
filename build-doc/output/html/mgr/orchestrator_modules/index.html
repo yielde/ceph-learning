@@ -1,0 +1,1809 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>ceph-mgr orchestrator modules &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css" />
+    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../genindex/" />
+    <link rel="search" title="Search" href="../../search/" />
+    <link rel="next" title="Ceph Dashboard" href="../dashboard/" />
+    <link rel="prev" title="ceph-mgr module developer’s guide" href="../modules/" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../dashboard/" title="Ceph Dashboard"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../modules/" title="ceph-mgr module developer’s guide"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../" accesskey="U">Ceph Manager Daemon</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">ceph-mgr orchestrator modules</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="ceph-mgr-orchestrator-modules">
+<span id="orchestrator-modules"></span><h1>ceph-mgr orchestrator modules<a class="headerlink" href="#ceph-mgr-orchestrator-modules" title="Permalink to this heading">¶</a></h1>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>This is developer documentation, describing Ceph internals that
+are only relevant to people writing ceph-mgr orchestrator modules.</p>
+</div>
+<p>In this context, <em>orchestrator</em> refers to some external service that
+provides the ability to discover devices and create Ceph services.  This
+includes external projects such as Rook.</p>
+<p>An <em>orchestrator module</em> is a ceph-mgr module (<a class="reference internal" href="../modules/#mgr-module-dev"><span class="std std-ref">ceph-mgr module developer’s guide</span></a>)
+which implements common management operations using a particular
+orchestrator.</p>
+<p>Orchestrator modules subclass the <code class="docutils literal notranslate"><span class="pre">Orchestrator</span></code> class: this class is
+an interface, it only provides method definitions to be implemented
+by subclasses.  The purpose of defining this common interface
+for different orchestrators is to enable common UI code, such as
+the dashboard, to work with various different backends.</p>
+<div class="graphviz"><object data="../../_images/graphviz-01b439e673e075fe481154e92bd10b86897ecd6f.svg" type="image/svg+xml" class="graphviz">
+<p class="warning">digraph G {
+    subgraph cluster_1 {
+        volumes [label=&quot;mgr/volumes&quot;]
+        rook [label=&quot;mgr/rook&quot;]
+        dashboard [label=&quot;mgr/dashboard&quot;]
+        orchestrator_cli [label=&quot;mgr/orchestrator&quot;]
+        orchestrator [label=&quot;Orchestrator Interface&quot;]
+        cephadm [label=&quot;mgr/cephadm&quot;]
+
+        label = &quot;ceph-mgr&quot;;
+    }
+
+    volumes -&gt; orchestrator
+    dashboard -&gt; orchestrator
+    orchestrator_cli -&gt; orchestrator
+    orchestrator -&gt; rook -&gt; rook_io
+    orchestrator -&gt; cephadm
+
+
+    rook_io [label=&quot;Rook&quot;]
+
+    rankdir=&quot;TB&quot;;
+}</p></object></div>
+<p>Behind all the abstraction, the purpose of orchestrator modules is simple:
+enable Ceph to do things like discover available hardware, create and
+destroy OSDs, and run MDS and RGW services.</p>
+<p>A tutorial is not included here: for full and concrete examples, see
+the existing implemented orchestrator modules in the Ceph source tree.</p>
+<section id="glossary">
+<h2>Glossary<a class="headerlink" href="#glossary" title="Permalink to this heading">¶</a></h2>
+<dl class="simple">
+<dt>Stateful service</dt><dd><p>a daemon that uses local storage, such as OSD or mon.</p>
+</dd>
+<dt>Stateless service</dt><dd><p>a daemon that doesn’t use any local storage, such
+as an MDS, RGW, nfs-ganesha, iSCSI gateway.</p>
+</dd>
+<dt>Label</dt><dd><p>arbitrary string tags that may be applied by administrators
+to hosts.  Typically administrators use labels to indicate
+which hosts should run which kinds of service.  Labels are
+advisory (from human input) and do not guarantee that hosts
+have particular physical capabilities.</p>
+</dd>
+<dt>Drive group</dt><dd><p>collection of block devices with common/shared OSD
+formatting (typically one or more SSDs acting as
+journals/dbs for a group of HDDs).</p>
+</dd>
+<dt>Placement</dt><dd><p>choice of which host is used to run a service.</p>
+</dd>
+</dl>
+</section>
+<section id="key-concepts">
+<h2>Key Concepts<a class="headerlink" href="#key-concepts" title="Permalink to this heading">¶</a></h2>
+<p>The underlying orchestrator remains the source of truth for information
+about whether a service is running, what is running where, which
+hosts are available, etc.  Orchestrator modules should avoid taking
+any internal copies of this information, and read it directly from
+the orchestrator backend as much as possible.</p>
+<p>Bootstrapping hosts and adding them to the underlying orchestration
+system is outside the scope of Ceph’s orchestrator interface.  Ceph
+can only work on hosts when the orchestrator is already aware of them.</p>
+<p>Where possible, placement of stateless services should be left up to the
+orchestrator.</p>
+</section>
+<section id="completions-and-batching">
+<h2>Completions and batching<a class="headerlink" href="#completions-and-batching" title="Permalink to this heading">¶</a></h2>
+<p>All methods that read or modify the state of the system can potentially
+be long running. Therefore the module needs to schedule those operations.</p>
+<p>Each orchestrator module implements its own underlying mechanisms
+for completions.  This might involve running the underlying operations
+in threads, or batching the operations up before later executing
+in one go in the background.  If implementing such a batching pattern, the
+module would do no work on any operation until it appeared in a list
+of completions passed into <em>process</em>.</p>
+</section>
+<section id="error-handling">
+<h2>Error Handling<a class="headerlink" href="#error-handling" title="Permalink to this heading">¶</a></h2>
+<p>The main goal of error handling within orchestrator modules is to provide debug information to
+assist users when dealing with deployment errors.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="orchestrator.OrchestratorError">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">orchestrator.</span></span><span class="sig-name descname"><span class="pre">OrchestratorError</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">errno</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-</span> <span class="pre">22</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">event_kind_subject</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orchestrator.OrchestratorError" title="Permalink to this definition">¶</a></dt>
+<dd><p>General orchestrator specific error.</p>
+<p>Used for deployment, configuration or user errors.</p>
+<p>It’s not intended for programming errors or orchestrator internal errors.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="orchestrator.NoOrchestrator">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">orchestrator.</span></span><span class="sig-name descname"><span class="pre">NoOrchestrator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'No</span> <span class="pre">orchestrator</span> <span class="pre">configured</span> <span class="pre">(try</span> <span class="pre">`ceph</span> <span class="pre">orch</span> <span class="pre">set</span> <span class="pre">backend`)'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orchestrator.NoOrchestrator" title="Permalink to this definition">¶</a></dt>
+<dd><p>No orchestrator in configured.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="orchestrator.OrchestratorValidationError">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">orchestrator.</span></span><span class="sig-name descname"><span class="pre">OrchestratorValidationError</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">errno</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-</span> <span class="pre">22</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">event_kind_subject</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orchestrator.OrchestratorValidationError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Raised when an orchestrator doesn’t support a specific feature.</p>
+</dd></dl>
+
+<p>In detail, orchestrators need to explicitly deal with different kinds of errors:</p>
+<ol class="arabic">
+<li><p>No orchestrator configured</p>
+<p>See <a class="reference internal" href="#orchestrator.NoOrchestrator" title="orchestrator.NoOrchestrator"><code class="xref py py-class docutils literal notranslate"><span class="pre">NoOrchestrator</span></code></a>.</p>
+</li>
+<li><p>An orchestrator doesn’t implement a specific method.</p>
+<p>For example, an Orchestrator doesn’t support <code class="docutils literal notranslate"><span class="pre">add_host</span></code>.</p>
+<p>In this case, a <code class="docutils literal notranslate"><span class="pre">NotImplementedError</span></code> is raised.</p>
+</li>
+<li><p>Missing features within implemented methods.</p>
+<p>E.g. optional parameters to a command that are not supported by the
+backend (e.g. the hosts field in <code class="xref py py-func docutils literal notranslate"><span class="pre">Orchestrator.apply_mons()</span></code> command with the rook backend).</p>
+<p>See <a class="reference internal" href="#orchestrator.OrchestratorValidationError" title="orchestrator.OrchestratorValidationError"><code class="xref py py-class docutils literal notranslate"><span class="pre">OrchestratorValidationError</span></code></a>.</p>
+</li>
+<li><p>Input validation errors</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">orchestrator</span></code> module and other calling modules are supposed to
+provide meaningful error messages.</p>
+<p>See <a class="reference internal" href="#orchestrator.OrchestratorValidationError" title="orchestrator.OrchestratorValidationError"><code class="xref py py-class docutils literal notranslate"><span class="pre">OrchestratorValidationError</span></code></a>.</p>
+</li>
+<li><p>Errors when actually executing commands</p>
+<p>The resulting Completion should contain an error string that assists in understanding the
+problem. In addition, <code class="xref py py-func docutils literal notranslate"><span class="pre">Completion.is_errored()</span></code> is set to <code class="docutils literal notranslate"><span class="pre">True</span></code></p>
+</li>
+<li><p>Invalid configuration in the orchestrator modules</p>
+<p>This can be tackled similar to 5.</p>
+</li>
+</ol>
+<p>All other errors are unexpected orchestrator issues and thus should raise an exception that are then
+logged into the mgr log file. If there is a completion object at that point,
+<code class="xref py py-func docutils literal notranslate"><span class="pre">Completion.result()</span></code> may contain an error message.</p>
+</section>
+<section id="excluded-functionality">
+<h2>Excluded functionality<a class="headerlink" href="#excluded-functionality" title="Permalink to this heading">¶</a></h2>
+<ul class="simple">
+<li><p>Ceph’s orchestrator interface is not a general purpose framework for
+managing linux servers – it is deliberately constrained to manage
+the Ceph cluster’s services only.</p></li>
+<li><p>Multipathed storage is not handled (multipathing is unnecessary for
+Ceph clusters).  Each drive is assumed to be visible only on
+a single host.</p></li>
+</ul>
+</section>
+<section id="host-management">
+<h2>Host management<a class="headerlink" href="#host-management" title="Permalink to this heading">¶</a></h2>
+<dl class="py method">
+<dt class="sig sig-object py" id="orchestrator.Orchestrator.add_host">
+<span class="sig-prename descclassname"><span class="pre">Orchestrator.</span></span><span class="sig-name descname"><span class="pre">add_host</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">host_spec</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orchestrator.Orchestrator.add_host" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add a host to the orchestrator inventory.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>host</strong> – hostname</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">OrchResult</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="orchestrator.Orchestrator.remove_host">
+<span class="sig-prename descclassname"><span class="pre">Orchestrator.</span></span><span class="sig-name descname"><span class="pre">remove_host</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">host</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">force</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">offline</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orchestrator.Orchestrator.remove_host" title="Permalink to this definition">¶</a></dt>
+<dd><p>Remove a host from the orchestrator inventory.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>host</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – hostname</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">OrchResult</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="orchestrator.Orchestrator.get_hosts">
+<span class="sig-prename descclassname"><span class="pre">Orchestrator.</span></span><span class="sig-name descname"><span class="pre">get_hosts</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#orchestrator.Orchestrator.get_hosts" title="Permalink to this definition">¶</a></dt>
+<dd><p>Report the hosts in the cluster.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">OrchResult</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<a class="reference internal" href="#orchestrator.HostSpec" title="ceph.deployment.hostspec.HostSpec"><code class="xref py py-class docutils literal notranslate"><span class="pre">HostSpec</span></code></a>]]</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>list of HostSpec</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="orchestrator.Orchestrator.update_host_addr">
+<span class="sig-prename descclassname"><span class="pre">Orchestrator.</span></span><span class="sig-name descname"><span class="pre">update_host_addr</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">host</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">addr</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orchestrator.Orchestrator.update_host_addr" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update a host’s address</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>host</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – hostname</p></li>
+<li><p><strong>addr</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – address (dns name or IP)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">OrchResult</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="orchestrator.Orchestrator.add_host_label">
+<span class="sig-prename descclassname"><span class="pre">Orchestrator.</span></span><span class="sig-name descname"><span class="pre">add_host_label</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">host</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">label</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orchestrator.Orchestrator.add_host_label" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add a host label</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">OrchResult</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="orchestrator.Orchestrator.remove_host_label">
+<span class="sig-prename descclassname"><span class="pre">Orchestrator.</span></span><span class="sig-name descname"><span class="pre">remove_host_label</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">host</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">label</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">force</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orchestrator.Orchestrator.remove_host_label" title="Permalink to this definition">¶</a></dt>
+<dd><p>Remove a host label</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">OrchResult</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="orchestrator.HostSpec">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">orchestrator.</span></span><span class="sig-name descname"><span class="pre">HostSpec</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hostname</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">addr</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">labels</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">status</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">location</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orchestrator.HostSpec" title="Permalink to this definition">¶</a></dt>
+<dd><p>Information about hosts. Like e.g. <code class="docutils literal notranslate"><span class="pre">kubectl</span> <span class="pre">get</span> <span class="pre">nodes</span></code></p>
+</dd></dl>
+
+</section>
+<section id="devices">
+<h2>Devices<a class="headerlink" href="#devices" title="Permalink to this heading">¶</a></h2>
+<dl class="py method">
+<dt class="sig sig-object py" id="orchestrator.Orchestrator.get_inventory">
+<span class="sig-prename descclassname"><span class="pre">Orchestrator.</span></span><span class="sig-name descname"><span class="pre">get_inventory</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">host_filter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">refresh</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orchestrator.Orchestrator.get_inventory" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns something that was created by <cite>ceph-volume inventory</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">OrchResult</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">InventoryHost</span></code>]]</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>list of InventoryHost</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="orchestrator.InventoryFilter">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">orchestrator.</span></span><span class="sig-name descname"><span class="pre">InventoryFilter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">labels</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hosts</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orchestrator.InventoryFilter" title="Permalink to this definition">¶</a></dt>
+<dd><p>When fetching inventory, use this filter to avoid unnecessarily
+scanning the whole estate.</p>
+<p>Typical use:</p>
+<blockquote>
+<div><p>filter by host when presentig UI workflow for configuring
+a particular server.
+filter by label when not all of estate is Ceph servers,
+and we want to only learn about the Ceph servers.
+filter by label when we are interested particularly
+in e.g. OSD servers.</p>
+</div></blockquote>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="ceph.deployment.inventory.Devices">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">ceph.deployment.inventory.</span></span><span class="sig-name descname"><span class="pre">Devices</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">devices</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#ceph.deployment.inventory.Devices" title="Permalink to this definition">¶</a></dt>
+<dd><p>A container for Device instances with reporting</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="ceph.deployment.inventory.Device">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">ceph.deployment.inventory.</span></span><span class="sig-name descname"><span class="pre">Device</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sys_api</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">available</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rejected_reasons</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lvs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lsm_data</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">created</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ceph_device</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#ceph.deployment.inventory.Device" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</section>
+<section id="placement">
+<h2>Placement<a class="headerlink" href="#placement" title="Permalink to this heading">¶</a></h2>
+<p>A <a class="reference internal" href="../../cephadm/services/#orchestrator-cli-placement-spec"><span class="std std-ref">Daemon Placement</span></a> defines the placement of
+daemons of a specific service.</p>
+<p>In general, stateless services do not require any specific placement
+rules as they can run anywhere that sufficient system resources
+are available. However, some orchestrators may not include the
+functionality to choose a location in this way. Optionally, you can
+specify a location when creating a stateless service.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="ceph.deployment.service_spec.PlacementSpec">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">ceph.deployment.service_spec.</span></span><span class="sig-name descname"><span class="pre">PlacementSpec</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">label</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hosts</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">count</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">count_per_host</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">host_pattern</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#ceph.deployment.service_spec.PlacementSpec" title="Permalink to this definition">¶</a></dt>
+<dd><p>For APIs that need to specify a host subset</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="ceph.deployment.service_spec.PlacementSpec.from_string">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_string</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">arg</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#ceph.deployment.service_spec.PlacementSpec.from_string" title="Permalink to this definition">¶</a></dt>
+<dd><p>A single integer is parsed as a count:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">PlacementSpec</span><span class="o">.</span><span class="n">from_string</span><span class="p">(</span><span class="s1">&#39;3&#39;</span><span class="p">)</span>
+<span class="go">PlacementSpec(count=3)</span>
+</pre></div>
+</div>
+<p>A list of names is parsed as host specifications:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">PlacementSpec</span><span class="o">.</span><span class="n">from_string</span><span class="p">(</span><span class="s1">&#39;host1 host2&#39;</span><span class="p">)</span>
+<span class="go">PlacementSpec(hosts=[HostPlacementSpec(hostname=&#39;host1&#39;, network=&#39;&#39;, name=&#39;&#39;), HostPlacementSpec(hostname=&#39;host2&#39;, network=&#39;&#39;, name=&#39;&#39;)])</span>
+</pre></div>
+</div>
+<p>You can also prefix the hosts with a count as follows:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">PlacementSpec</span><span class="o">.</span><span class="n">from_string</span><span class="p">(</span><span class="s1">&#39;2 host1 host2&#39;</span><span class="p">)</span>
+<span class="go">PlacementSpec(count=2, hosts=[HostPlacementSpec(hostname=&#39;host1&#39;, network=&#39;&#39;, name=&#39;&#39;), HostPlacementSpec(hostname=&#39;host2&#39;, network=&#39;&#39;, name=&#39;&#39;)])</span>
+</pre></div>
+</div>
+<p>You can specify labels using <cite>label:&lt;label&gt;</cite></p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">PlacementSpec</span><span class="o">.</span><span class="n">from_string</span><span class="p">(</span><span class="s1">&#39;label:mon&#39;</span><span class="p">)</span>
+<span class="go">PlacementSpec(label=&#39;mon&#39;)</span>
+</pre></div>
+</div>
+<p>Labels also support a count:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">PlacementSpec</span><span class="o">.</span><span class="n">from_string</span><span class="p">(</span><span class="s1">&#39;3 label:mon&#39;</span><span class="p">)</span>
+<span class="go">PlacementSpec(count=3, label=&#39;mon&#39;)</span>
+</pre></div>
+</div>
+<p>fnmatch is also supported:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">PlacementSpec</span><span class="o">.</span><span class="n">from_string</span><span class="p">(</span><span class="s1">&#39;data[1-3]&#39;</span><span class="p">)</span>
+<span class="go">PlacementSpec(host_pattern=&#39;data[1-3]&#39;)</span>
+</pre></div>
+</div>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">PlacementSpec</span><span class="o">.</span><span class="n">from_string</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+<span class="go">PlacementSpec()</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#ceph.deployment.service_spec.PlacementSpec" title="ceph.deployment.service_spec.PlacementSpec"><code class="xref py py-class docutils literal notranslate"><span class="pre">PlacementSpec</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ceph.deployment.service_spec.PlacementSpec.host_pattern">
+<span class="sig-name descname"><span class="pre">host_pattern</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#ceph.deployment.service_spec.PlacementSpec.host_pattern" title="Permalink to this definition">¶</a></dt>
+<dd><p>fnmatch patterns to select hosts. Can also be a single host.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ceph.deployment.service_spec.PlacementSpec.pretty_str">
+<span class="sig-name descname"><span class="pre">pretty_str</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#ceph.deployment.service_spec.PlacementSpec.pretty_str" title="Permalink to this definition">¶</a></dt>
+<dd><div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span>
+<span class="gp">... </span><span class="n">ps</span> <span class="o">=</span> <span class="n">PlacementSpec</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>  <span class="c1"># For all placement specs:</span>
+<span class="gp">... </span><span class="n">PlacementSpec</span><span class="o">.</span><span class="n">from_string</span><span class="p">(</span><span class="n">ps</span><span class="o">.</span><span class="n">pretty_str</span><span class="p">())</span> <span class="o">==</span> <span class="n">ps</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="services">
+<h2>Services<a class="headerlink" href="#services" title="Permalink to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="orchestrator.ServiceDescription">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">orchestrator.</span></span><span class="sig-name descname"><span class="pre">ServiceDescription</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">spec</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">container_image_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">container_image_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">service_url</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">last_refresh</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">created</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">deleted</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">running</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">events</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">virtual_ip</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ports</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orchestrator.ServiceDescription" title="Permalink to this definition">¶</a></dt>
+<dd><p>For responding to queries about the status of a particular service,
+stateful or stateless.</p>
+<p>This is not about health or performance monitoring of services: it’s
+about letting the orchestrator tell Ceph whether and where a
+service is scheduled in the cluster.  When an orchestrator tells
+Ceph “it’s running on host123”, that’s not a promise that the process
+is literally up this second, it’s a description of where the orchestrator
+has decided the service should run.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">ceph.deployment.service_spec.</span></span><span class="sig-name descname"><span class="pre">ServiceSpec</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">service_type</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">service_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">placement</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">count</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">unmanaged</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">preview_only</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">networks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">extra_container_args</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">extra_entrypoint_args</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">custom_configs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span></dt>
+<dd><p>Details of service creation.</p>
+<p>Request to the orchestrator for a cluster of daemons
+such as MDS, RGW, iscsi gateway, MONs, MGRs, Prometheus</p>
+<p>This structure is supposed to be enough information to
+start the services.</p>
+<dl class="py method">
+<dt class="sig sig-object py">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_json</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cls</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">json_spec</span></span></em><span class="sig-paren">)</span></dt>
+<dd><p>Initialize ‘ServiceSpec’ object data from a json structure</p>
+<p>There are two valid styles for service specs:</p>
+<p>the “old” style:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">service_type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nfs</span>
+<span class="nt">service_id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">foo</span>
+<span class="nt">pool</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">mypool</span>
+<span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">myns</span>
+</pre></div>
+</div>
+<p>and the “new” style:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">service_type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nfs</span>
+<span class="nt">service_id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">foo</span>
+<span class="nt">config</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">some_option</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">the_value</span>
+<span class="nt">networks</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">10.10.0.0/16</span><span class="p p-Indicator">]</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">pool</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">mypool</span>
+<span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">myns</span>
+</pre></div>
+</div>
+<p>In <a class="reference external" href="https://tracker.ceph.com/issues/45321">https://tracker.ceph.com/issues/45321</a> we decided that we’d like to
+prefer the new style as it is more readable and provides a better
+understanding of what fields are special for a give service type.</p>
+<p>Note, we’ll need to stay compatible with both versions for the
+the next two major releases (octoups, pacific).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>json_spec</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>) – A valid dict with ServiceSpec</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">TypeVar</span></code>(<code class="docutils literal notranslate"><span class="pre">ServiceSpecT</span></code>, bound= ServiceSpec)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">networks</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></em></dt>
+<dd><p>A list of network identities instructing the daemons to only bind
+on the particular networks in that list. In case the cluster is distributed
+across multiple networks, you can add multiple networks. See
+<a class="reference internal" href="../../cephadm/services/monitoring/#cephadm-monitoring-networks-ports"><span class="std std-ref">Networks and Ports</span></a>,
+<a class="reference internal" href="../../cephadm/services/rgw/#cephadm-rgw-networks"><span class="std std-ref">Specifying Networks</span></a> and <a class="reference internal" href="../../cephadm/services/mgr/#cephadm-mgr-networks"><span class="std std-ref">Specifying Networks</span></a>.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">placement</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#ceph.deployment.service_spec.PlacementSpec" title="ceph.deployment.service_spec.PlacementSpec"><span class="pre">PlacementSpec</span></a></em></dt>
+<dd><p>See <a class="reference internal" href="../../cephadm/services/#orchestrator-cli-placement-spec"><span class="std std-ref">Daemon Placement</span></a>.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">service_id</span></span></dt>
+<dd><p>The name of the service. Required for <code class="docutils literal notranslate"><span class="pre">iscsi</span></code>, <code class="docutils literal notranslate"><span class="pre">mds</span></code>, <code class="docutils literal notranslate"><span class="pre">nfs</span></code>, <code class="docutils literal notranslate"><span class="pre">osd</span></code>, <code class="docutils literal notranslate"><span class="pre">rgw</span></code>,
+<code class="docutils literal notranslate"><span class="pre">container</span></code>, <code class="docutils literal notranslate"><span class="pre">ingress</span></code></p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">service_type</span></span></dt>
+<dd><p>The type of the service. Needs to be either a Ceph
+service (<code class="docutils literal notranslate"><span class="pre">mon</span></code>, <code class="docutils literal notranslate"><span class="pre">crash</span></code>, <code class="docutils literal notranslate"><span class="pre">mds</span></code>, <code class="docutils literal notranslate"><span class="pre">mgr</span></code>, <code class="docutils literal notranslate"><span class="pre">osd</span></code> or
+<code class="docutils literal notranslate"><span class="pre">rbd-mirror</span></code>), a gateway (<code class="docutils literal notranslate"><span class="pre">nfs</span></code> or <code class="docutils literal notranslate"><span class="pre">rgw</span></code>), part of the
+monitoring stack (<code class="docutils literal notranslate"><span class="pre">alertmanager</span></code>, <code class="docutils literal notranslate"><span class="pre">grafana</span></code>, <code class="docutils literal notranslate"><span class="pre">node-exporter</span></code> or
+<code class="docutils literal notranslate"><span class="pre">prometheus</span></code>) or (<code class="docutils literal notranslate"><span class="pre">container</span></code>) for custom containers.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">unmanaged</span></span></dt>
+<dd><p>If set to <code class="docutils literal notranslate"><span class="pre">true</span></code>, the orchestrator will not deploy nor remove
+any daemon associated with this service. Placement and all other properties
+will be ignored. This is useful, if you do not want this service to be
+managed temporarily. For cephadm, See <a class="reference internal" href="../../cephadm/services/#cephadm-spec-unmanaged"><span class="std std-ref">Disabling automatic deployment of daemons</span></a></p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="orchestrator.Orchestrator.describe_service">
+<span class="sig-prename descclassname"><span class="pre">Orchestrator.</span></span><span class="sig-name descname"><span class="pre">describe_service</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">service_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">service_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">refresh</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orchestrator.Orchestrator.describe_service" title="Permalink to this definition">¶</a></dt>
+<dd><p>Describe a service (of any kind) that is already configured in
+the orchestrator.  For example, when viewing an OSD in the dashboard
+we might like to also display information about the orchestrator’s
+view of the service (like the kubernetes pod ID).</p>
+<p>When viewing a CephFS filesystem in the dashboard, we would use this
+to display the pods being currently run for MDS daemons.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">OrchResult</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<a class="reference internal" href="#orchestrator.ServiceDescription" title="orchestrator._interface.ServiceDescription"><code class="xref py py-class docutils literal notranslate"><span class="pre">ServiceDescription</span></code></a>]]</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>list of ServiceDescription objects.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="orchestrator.Orchestrator.service_action">
+<span class="sig-prename descclassname"><span class="pre">Orchestrator.</span></span><span class="sig-name descname"><span class="pre">service_action</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">action</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">service_name</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orchestrator.Orchestrator.service_action" title="Permalink to this definition">¶</a></dt>
+<dd><p>Perform an action (start/stop/reload) on a service (i.e., all daemons
+providing the logical service).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>action</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – one of “start”, “stop”, “restart”, “redeploy”, “reconfig”</p></li>
+<li><p><strong>service_name</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – service_type + ‘.’ + service_id
+(e.g. “mon”, “mgr”, “mds.mycephfs”, “rgw.realm.zone”, …)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>OrchResult</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="orchestrator.Orchestrator.remove_service">
+<span class="sig-prename descclassname"><span class="pre">Orchestrator.</span></span><span class="sig-name descname"><span class="pre">remove_service</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">service_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">force</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orchestrator.Orchestrator.remove_service" title="Permalink to this definition">¶</a></dt>
+<dd><p>Remove a service (a collection of daemons).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">OrchResult</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="daemons">
+<h2>Daemons<a class="headerlink" href="#daemons" title="Permalink to this heading">¶</a></h2>
+<dl class="py method">
+<dt class="sig sig-object py" id="orchestrator.Orchestrator.list_daemons">
+<span class="sig-prename descclassname"><span class="pre">Orchestrator.</span></span><span class="sig-name descname"><span class="pre">list_daemons</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">service_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">daemon_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">daemon_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">host</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">refresh</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orchestrator.Orchestrator.list_daemons" title="Permalink to this definition">¶</a></dt>
+<dd><p>Describe a daemon (of any kind) that is already configured in
+the orchestrator.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">OrchResult</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<a class="reference internal" href="#orchestrator.DaemonDescription" title="orchestrator._interface.DaemonDescription"><code class="xref py py-class docutils literal notranslate"><span class="pre">DaemonDescription</span></code></a>]]</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>list of DaemonDescription objects.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="orchestrator.Orchestrator.remove_daemons">
+<span class="sig-prename descclassname"><span class="pre">Orchestrator.</span></span><span class="sig-name descname"><span class="pre">remove_daemons</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">names</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orchestrator.Orchestrator.remove_daemons" title="Permalink to this definition">¶</a></dt>
+<dd><p>Remove specific daemon(s).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">OrchResult</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]]</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="orchestrator.Orchestrator.daemon_action">
+<span class="sig-prename descclassname"><span class="pre">Orchestrator.</span></span><span class="sig-name descname"><span class="pre">daemon_action</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">action</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">daemon_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">image</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orchestrator.Orchestrator.daemon_action" title="Permalink to this definition">¶</a></dt>
+<dd><p>Perform an action (start/stop/reload) on a daemon.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>action</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – one of “start”, “stop”, “restart”, “redeploy”, “reconfig”</p></li>
+<li><p><strong>daemon_name</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – name of daemon</p></li>
+<li><p><strong>image</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – Container image when redeploying that daemon</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>OrchResult</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="orchestrator.DaemonDescription">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">orchestrator.</span></span><span class="sig-name descname"><span class="pre">DaemonDescription</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">daemon_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">daemon_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hostname</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">container_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">container_image_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">container_image_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">container_image_digests</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">version</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">status</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">status_desc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">last_refresh</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">created</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">started</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">last_configured</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">osdspec_affinity</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">last_deployed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">events</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">is_active</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">memory_usage</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">memory_request</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">memory_limit</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cpu_percentage</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">service_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ports</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ip</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">deployed_by</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rank</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rank_generation</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">extra_container_args</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">extra_entrypoint_args</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orchestrator.DaemonDescription" title="Permalink to this definition">¶</a></dt>
+<dd><p>For responding to queries about the status of a particular daemon,
+stateful or stateless.</p>
+<p>This is not about health or performance monitoring of daemons: it’s
+about letting the orchestrator tell Ceph whether and where a
+daemon is scheduled in the cluster.  When an orchestrator tells
+Ceph “it’s running on host123”, that’s not a promise that the process
+is literally up this second, it’s a description of where the orchestrator
+has decided the daemon should run.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="orchestrator.DaemonDescriptionStatus">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">orchestrator.</span></span><span class="sig-name descname"><span class="pre">DaemonDescriptionStatus</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orchestrator.DaemonDescriptionStatus" title="Permalink to this definition">¶</a></dt>
+<dd><p>An enumeration.</p>
+</dd></dl>
+
+</section>
+<section id="osd-management">
+<h2>OSD management<a class="headerlink" href="#osd-management" title="Permalink to this heading">¶</a></h2>
+<dl class="py method">
+<dt class="sig sig-object py" id="orchestrator.Orchestrator.create_osds">
+<span class="sig-prename descclassname"><span class="pre">Orchestrator.</span></span><span class="sig-name descname"><span class="pre">create_osds</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">drive_group</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orchestrator.Orchestrator.create_osds" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create one or more OSDs within a single Drive Group.</p>
+<p>The principal argument here is the drive_group member
+of OsdSpec: other fields are advisory/extensible for any
+finer-grained OSD feature enablement (choice of backing store,
+compression/encryption, etc).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">OrchResult</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="orchestrator.Orchestrator.blink_device_light">
+<span class="sig-prename descclassname"><span class="pre">Orchestrator.</span></span><span class="sig-name descname"><span class="pre">blink_device_light</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ident_fault</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">on</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">locations</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orchestrator.Orchestrator.blink_device_light" title="Permalink to this definition">¶</a></dt>
+<dd><p>Instructs the orchestrator to enable or disable either the ident or the fault LED.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ident_fault</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – either <code class="docutils literal notranslate"><span class="pre">&quot;ident&quot;</span></code> or <code class="docutils literal notranslate"><span class="pre">&quot;fault&quot;</span></code></p></li>
+<li><p><strong>on</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – <code class="docutils literal notranslate"><span class="pre">True</span></code> = on.</p></li>
+<li><p><strong>locations</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<a class="reference internal" href="#orchestrator.DeviceLightLoc" title="orchestrator._interface.DeviceLightLoc"><code class="xref py py-class docutils literal notranslate"><span class="pre">DeviceLightLoc</span></code></a>]) – See <a class="reference internal" href="#orchestrator.DeviceLightLoc" title="orchestrator.DeviceLightLoc"><code class="xref py py-class docutils literal notranslate"><span class="pre">orchestrator.DeviceLightLoc</span></code></a></p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">OrchResult</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="orchestrator.DeviceLightLoc">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">orchestrator.</span></span><span class="sig-name descname"><span class="pre">DeviceLightLoc</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">host</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dev</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orchestrator.DeviceLightLoc" title="Permalink to this definition">¶</a></dt>
+<dd><p>Describes a specific device on a specific host. Used for enabling or disabling LEDs
+on devices.</p>
+<p>hostname as in <a class="reference internal" href="#orchestrator.Orchestrator.get_hosts" title="orchestrator.Orchestrator.get_hosts"><code class="xref py py-func docutils literal notranslate"><span class="pre">orchestrator.Orchestrator.get_hosts()</span></code></a></p>
+<dl class="simple">
+<dt>device_id: e.g. <code class="docutils literal notranslate"><span class="pre">ABC1234DEF567-1R1234_ABC8DE0Q</span></code>.</dt><dd><p>See <code class="docutils literal notranslate"><span class="pre">ceph</span> <span class="pre">osd</span> <span class="pre">metadata</span> <span class="pre">|</span> <span class="pre">jq</span> <span class="pre">'.[].device_ids'</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<section id="osd-replacement">
+<span id="orchestrator-osd-replace"></span><h3>OSD Replacement<a class="headerlink" href="#osd-replacement" title="Permalink to this heading">¶</a></h3>
+<p>See <a class="reference internal" href="../../rados/operations/add-or-rm-osds/#rados-replacing-an-osd"><span class="std std-ref">Replacing an OSD</span></a> for the underlying process.</p>
+<p>Replacing OSDs is fundamentally a two-staged process, as users need to
+physically replace drives. The orchestrator therefore exposes this two-staged process.</p>
+<p>Phase one is a call to <a class="reference internal" href="#orchestrator.Orchestrator.remove_daemons" title="orchestrator.Orchestrator.remove_daemons"><code class="xref py py-meth docutils literal notranslate"><span class="pre">Orchestrator.remove_daemons()</span></code></a> with <code class="docutils literal notranslate"><span class="pre">destroy=True</span></code> in order to mark
+the OSD as destroyed.</p>
+<p>Phase two is a call to  <a class="reference internal" href="#orchestrator.Orchestrator.create_osds" title="orchestrator.Orchestrator.create_osds"><code class="xref py py-meth docutils literal notranslate"><span class="pre">Orchestrator.create_osds()</span></code></a> with a Drive Group with</p>
+<p><a class="reference internal" href="../../cephadm/services/osd/#ceph.deployment.drive_group.DriveGroupSpec.osd_id_claims" title="ceph.deployment.drive_group.DriveGroupSpec.osd_id_claims"><code class="xref py py-attr docutils literal notranslate"><span class="pre">DriveGroupSpec.osd_id_claims</span></code></a> set to the destroyed OSD ids.</p>
+</section>
+</section>
+<section id="id1">
+<h2>Services<a class="headerlink" href="#id1" title="Permalink to this heading">¶</a></h2>
+<dl class="py method">
+<dt class="sig sig-object py" id="orchestrator.Orchestrator.add_daemon">
+<span class="sig-prename descclassname"><span class="pre">Orchestrator.</span></span><span class="sig-name descname"><span class="pre">add_daemon</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">spec</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orchestrator.Orchestrator.add_daemon" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create daemons daemon(s) for unmanaged services</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">OrchResult</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="orchestrator.Orchestrator.apply_mon">
+<span class="sig-prename descclassname"><span class="pre">Orchestrator.</span></span><span class="sig-name descname"><span class="pre">apply_mon</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">spec</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orchestrator.Orchestrator.apply_mon" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update mon cluster</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">OrchResult</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="orchestrator.Orchestrator.apply_mgr">
+<span class="sig-prename descclassname"><span class="pre">Orchestrator.</span></span><span class="sig-name descname"><span class="pre">apply_mgr</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">spec</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orchestrator.Orchestrator.apply_mgr" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update mgr cluster</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">OrchResult</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="orchestrator.Orchestrator.apply_mds">
+<span class="sig-prename descclassname"><span class="pre">Orchestrator.</span></span><span class="sig-name descname"><span class="pre">apply_mds</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">spec</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orchestrator.Orchestrator.apply_mds" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update MDS cluster</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">OrchResult</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="orchestrator.Orchestrator.apply_rbd_mirror">
+<span class="sig-prename descclassname"><span class="pre">Orchestrator.</span></span><span class="sig-name descname"><span class="pre">apply_rbd_mirror</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">spec</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orchestrator.Orchestrator.apply_rbd_mirror" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update rbd-mirror cluster</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">OrchResult</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">ceph.deployment.service_spec.</span></span><span class="sig-name descname"><span class="pre">RGWSpec</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">service_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'rgw'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">service_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">placement</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rgw_realm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rgw_zone</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rgw_frontend_port</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rgw_frontend_ssl_certificate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rgw_frontend_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">unmanaged</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ssl</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">preview_only</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">networks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">subcluster</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">extra_container_args</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">extra_entrypoint_args</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">custom_configs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span></dt>
+<dd><p>Settings to configure a (multisite) Ceph RGW</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">service_type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">rgw</span>
+<span class="nt">service_id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">myrealm.myzone</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">rgw_realm</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">myrealm</span>
+<span class="w">    </span><span class="nt">rgw_zone</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">myzone</span>
+<span class="w">    </span><span class="nt">ssl</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">    </span><span class="nt">rgw_frontend_port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1234</span>
+<span class="w">    </span><span class="nt">rgw_frontend_type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">beast</span>
+<span class="w">    </span><span class="nt">rgw_frontend_ssl_certificate</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">...</span>
+</pre></div>
+</div>
+<p>See also: <a class="reference internal" href="../../cephadm/services/#orchestrator-cli-service-spec"><span class="std std-ref">Service Specification</span></a></p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="orchestrator.Orchestrator.apply_rgw">
+<span class="sig-prename descclassname"><span class="pre">Orchestrator.</span></span><span class="sig-name descname"><span class="pre">apply_rgw</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">spec</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orchestrator.Orchestrator.apply_rgw" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update RGW cluster</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">OrchResult</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="ceph.deployment.service_spec.NFSServiceSpec">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">ceph.deployment.service_spec.</span></span><span class="sig-name descname"><span class="pre">NFSServiceSpec</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">service_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'nfs'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">service_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">placement</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">unmanaged</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">preview_only</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">networks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">port</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">extra_container_args</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">extra_entrypoint_args</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">custom_configs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#ceph.deployment.service_spec.NFSServiceSpec" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="orchestrator.Orchestrator.apply_nfs">
+<span class="sig-prename descclassname"><span class="pre">Orchestrator.</span></span><span class="sig-name descname"><span class="pre">apply_nfs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">spec</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orchestrator.Orchestrator.apply_nfs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update NFS cluster</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">OrchResult</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="upgrades">
+<h2>Upgrades<a class="headerlink" href="#upgrades" title="Permalink to this heading">¶</a></h2>
+<dl class="py method">
+<dt class="sig sig-object py" id="orchestrator.Orchestrator.upgrade_available">
+<span class="sig-prename descclassname"><span class="pre">Orchestrator.</span></span><span class="sig-name descname"><span class="pre">upgrade_available</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#orchestrator.Orchestrator.upgrade_available" title="Permalink to this definition">¶</a></dt>
+<dd><p>Report on what versions are available to upgrade to</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">OrchResult</span></code></p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>List of strings</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="orchestrator.Orchestrator.upgrade_start">
+<span class="sig-prename descclassname"><span class="pre">Orchestrator.</span></span><span class="sig-name descname"><span class="pre">upgrade_start</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">image</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">version</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">daemon_types</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hosts</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">services</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">limit</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orchestrator.Orchestrator.upgrade_start" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">OrchResult</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="orchestrator.Orchestrator.upgrade_status">
+<span class="sig-prename descclassname"><span class="pre">Orchestrator.</span></span><span class="sig-name descname"><span class="pre">upgrade_status</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#orchestrator.Orchestrator.upgrade_status" title="Permalink to this definition">¶</a></dt>
+<dd><p>If an upgrade is currently underway, report on where
+we are in the process, or if some error has occurred.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">OrchResult</span></code>[<a class="reference internal" href="#orchestrator.UpgradeStatusSpec" title="orchestrator._interface.UpgradeStatusSpec"><code class="xref py py-class docutils literal notranslate"><span class="pre">UpgradeStatusSpec</span></code></a>]</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>UpgradeStatusSpec instance</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="orchestrator.UpgradeStatusSpec">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">orchestrator.</span></span><span class="sig-name descname"><span class="pre">UpgradeStatusSpec</span></span><a class="headerlink" href="#orchestrator.UpgradeStatusSpec" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</section>
+<section id="utility">
+<h2>Utility<a class="headerlink" href="#utility" title="Permalink to this heading">¶</a></h2>
+<dl class="py method">
+<dt class="sig sig-object py" id="orchestrator.Orchestrator.available">
+<span class="sig-prename descclassname"><span class="pre">Orchestrator.</span></span><span class="sig-name descname"><span class="pre">available</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#orchestrator.Orchestrator.available" title="Permalink to this definition">¶</a></dt>
+<dd><p>Report whether we can talk to the orchestrator.  This is the
+place to give the user a meaningful message if the orchestrator
+isn’t running or can’t be contacted.</p>
+<p>This method may be called frequently (e.g. every page load
+to conditionally display a warning banner), so make sure it’s
+not too expensive.  It’s okay to give a slightly stale status
+(e.g. based on a periodic background ping of the orchestrator)
+if that’s necessary to make this method fast.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><cite>True</cite> doesn’t mean that the desired functionality
+is actually available in the orchestrator. I.e. this
+won’t work as expected:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span>
+<span class="gp">... </span><span class="k">if</span> <span class="n">OrchestratorClientMixin</span><span class="p">()</span><span class="o">.</span><span class="n">available</span><span class="p">()[</span><span class="mi">0</span><span class="p">]:</span>  <span class="c1"># wrong.</span>
+<span class="gp">... </span>    <span class="n">OrchestratorClientMixin</span><span class="p">()</span><span class="o">.</span><span class="n">get_hosts</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>boolean representing whether the module is available/usable</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>string describing any error</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>]]</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>dict containing any module specific information</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="orchestrator.Orchestrator.get_feature_set">
+<span class="sig-prename descclassname"><span class="pre">Orchestrator.</span></span><span class="sig-name descname"><span class="pre">get_feature_set</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#orchestrator.Orchestrator.get_feature_set" title="Permalink to this definition">¶</a></dt>
+<dd><p>Describes which methods this orchestrator implements</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><cite>True</cite> doesn’t mean that the desired functionality
+is actually possible in the orchestrator. I.e. this
+won’t work as expected:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span>
+<span class="gp">... </span><span class="n">api</span> <span class="o">=</span> <span class="n">OrchestratorClientMixin</span><span class="p">()</span>
+<span class="gp">... </span><span class="k">if</span> <span class="n">api</span><span class="o">.</span><span class="n">get_feature_set</span><span class="p">()[</span><span class="s1">&#39;get_hosts&#39;</span><span class="p">][</span><span class="s1">&#39;available&#39;</span><span class="p">]:</span>  <span class="c1"># wrong.</span>
+<span class="gp">... </span>    <span class="n">api</span><span class="o">.</span><span class="n">get_hosts</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>It’s better to ask for forgiveness instead:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span>
+<span class="gp">... </span><span class="k">try</span><span class="p">:</span>
+<span class="gp">... </span>    <span class="n">OrchestratorClientMixin</span><span class="p">()</span><span class="o">.</span><span class="n">get_hosts</span><span class="p">()</span>
+<span class="gp">... </span><span class="k">except</span> <span class="p">(</span><span class="n">OrchestratorError</span><span class="p">,</span> <span class="ne">NotImplementedError</span><span class="p">):</span>
+<span class="gp">... </span>    <span class="o">...</span>
+</pre></div>
+</div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>]</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Dict of API method names to <code class="docutils literal notranslate"><span class="pre">{'available':</span> <span class="pre">True</span> <span class="pre">or</span> <span class="pre">False}</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="client-modules">
+<h2>Client Modules<a class="headerlink" href="#client-modules" title="Permalink to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="orchestrator.OrchestratorClientMixin">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">orchestrator.</span></span><span class="sig-name descname"><span class="pre">OrchestratorClientMixin</span></span><a class="headerlink" href="#orchestrator.OrchestratorClientMixin" title="Permalink to this definition">¶</a></dt>
+<dd><p>A module that inherents from <cite>OrchestratorClientMixin</cite> can directly call
+all <code class="xref py py-class docutils literal notranslate"><span class="pre">Orchestrator</span></code> methods without manually calling remote.</p>
+<p>Every interface method from <code class="docutils literal notranslate"><span class="pre">Orchestrator</span></code> is converted into a stub method that internally
+calls <code class="xref py py-func docutils literal notranslate"><span class="pre">OrchestratorClientMixin._oremote()</span></code></p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="k">class</span><span class="w"> </span><span class="nc">MyModule</span><span class="p">(</span><span class="n">OrchestratorClientMixin</span><span class="p">):</span>
+<span class="gp">... </span>   <span class="k">def</span><span class="w"> </span><span class="nf">func</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="gp">... </span>       <span class="n">completion</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_host</span><span class="p">(</span><span class="s1">&#39;somehost&#39;</span><span class="p">)</span>  <span class="c1"># calls `_oremote()`</span>
+<span class="gp">... </span>       <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">completion</span><span class="o">.</span><span class="n">result</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Orchestrator implementations should not inherit from <cite>OrchestratorClientMixin</cite>.
+Reason is, that OrchestratorClientMixin magically redirects all methods to the
+“real” implementation of the orchestrator.</p>
+</div>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">mgr_module</span>
+<span class="gp">&gt;&gt;&gt; </span>
+<span class="gp">... </span><span class="k">class</span><span class="w"> </span><span class="nc">MyImplentation</span><span class="p">(</span><span class="n">mgr_module</span><span class="o">.</span><span class="n">MgrModule</span><span class="p">,</span> <span class="n">Orchestrator</span><span class="p">):</span>
+<span class="gp">... </span>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">...</span><span class="p">):</span>
+<span class="gp">... </span>        <span class="bp">self</span><span class="o">.</span><span class="n">orch_client</span> <span class="o">=</span> <span class="n">OrchestratorClientMixin</span><span class="p">()</span>
+<span class="gp">... </span>        <span class="bp">self</span><span class="o">.</span><span class="n">orch_client</span><span class="o">.</span><span class="n">set_mgr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mgr</span><span class="p">))</span>
+</pre></div>
+</div>
+<dl class="py method">
+<dt class="sig sig-object py" id="orchestrator.OrchestratorClientMixin.add_daemon">
+<span class="sig-name descname"><span class="pre">add_daemon</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">spec</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orchestrator.OrchestratorClientMixin.add_daemon" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create daemons daemon(s) for unmanaged services</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">OrchResult</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="orchestrator.OrchestratorClientMixin.add_host">
+<span class="sig-name descname"><span class="pre">add_host</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">host_spec</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orchestrator.OrchestratorClientMixin.add_host" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add a host to the orchestrator inventory.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>host</strong> – hostname</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">OrchResult</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="orchestrator.OrchestratorClientMixin.add_host_label">
+<span class="sig-name descname"><span class="pre">add_host_label</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">host</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">label</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orchestrator.OrchestratorClientMixin.add_host_label" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add a host label</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">OrchResult</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="orchestrator.OrchestratorClientMixin.apply">
+<span class="sig-name descname"><span class="pre">apply</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">specs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">no_overwrite</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orchestrator.OrchestratorClientMixin.apply" title="Permalink to this definition">¶</a></dt>
+<dd><p>Applies any spec</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="orchestrator.OrchestratorClientMixin.apply_alertmanager">
+<span class="sig-name descname"><span class="pre">apply_alertmanager</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">spec</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orchestrator.OrchestratorClientMixin.apply_alertmanager" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update an existing AlertManager daemon(s)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">OrchResult</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="orchestrator.OrchestratorClientMixin.apply_cephadm_exporter">
+<span class="sig-name descname"><span class="pre">apply_cephadm_exporter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">spec</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orchestrator.OrchestratorClientMixin.apply_cephadm_exporter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update an existing cephadm exporter daemon</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">OrchResult</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="orchestrator.OrchestratorClientMixin.apply_crash">
+<span class="sig-name descname"><span class="pre">apply_crash</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">spec</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orchestrator.OrchestratorClientMixin.apply_crash" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update existing a crash daemon(s)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">OrchResult</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="orchestrator.OrchestratorClientMixin.apply_drivegroups">
+<span class="sig-name descname"><span class="pre">apply_drivegroups</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">specs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orchestrator.OrchestratorClientMixin.apply_drivegroups" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update OSD cluster</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">OrchResult</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="orchestrator.OrchestratorClientMixin.apply_grafana">
+<span class="sig-name descname"><span class="pre">apply_grafana</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">spec</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orchestrator.OrchestratorClientMixin.apply_grafana" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update existing a grafana service</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">OrchResult</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="orchestrator.OrchestratorClientMixin.apply_ingress">
+<span class="sig-name descname"><span class="pre">apply_ingress</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">spec</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orchestrator.OrchestratorClientMixin.apply_ingress" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update ingress daemons</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">OrchResult</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="orchestrator.OrchestratorClientMixin.apply_iscsi">
+<span class="sig-name descname"><span class="pre">apply_iscsi</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">spec</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orchestrator.OrchestratorClientMixin.apply_iscsi" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update iscsi cluster</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">OrchResult</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="orchestrator.OrchestratorClientMixin.apply_mds">
+<span class="sig-name descname"><span class="pre">apply_mds</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">spec</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orchestrator.OrchestratorClientMixin.apply_mds" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update MDS cluster</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">OrchResult</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="orchestrator.OrchestratorClientMixin.apply_mgr">
+<span class="sig-name descname"><span class="pre">apply_mgr</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">spec</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orchestrator.OrchestratorClientMixin.apply_mgr" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update mgr cluster</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">OrchResult</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="orchestrator.OrchestratorClientMixin.apply_mon">
+<span class="sig-name descname"><span class="pre">apply_mon</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">spec</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orchestrator.OrchestratorClientMixin.apply_mon" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update mon cluster</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">OrchResult</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="orchestrator.OrchestratorClientMixin.apply_nfs">
+<span class="sig-name descname"><span class="pre">apply_nfs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">spec</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orchestrator.OrchestratorClientMixin.apply_nfs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update NFS cluster</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">OrchResult</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="orchestrator.OrchestratorClientMixin.apply_node_exporter">
+<span class="sig-name descname"><span class="pre">apply_node_exporter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">spec</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orchestrator.OrchestratorClientMixin.apply_node_exporter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update existing a Node-Exporter daemon(s)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">OrchResult</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="orchestrator.OrchestratorClientMixin.apply_prometheus">
+<span class="sig-name descname"><span class="pre">apply_prometheus</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">spec</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orchestrator.OrchestratorClientMixin.apply_prometheus" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update prometheus cluster</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">OrchResult</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="orchestrator.OrchestratorClientMixin.apply_rbd_mirror">
+<span class="sig-name descname"><span class="pre">apply_rbd_mirror</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">spec</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orchestrator.OrchestratorClientMixin.apply_rbd_mirror" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update rbd-mirror cluster</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">OrchResult</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="orchestrator.OrchestratorClientMixin.apply_rgw">
+<span class="sig-name descname"><span class="pre">apply_rgw</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">spec</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orchestrator.OrchestratorClientMixin.apply_rgw" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update RGW cluster</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">OrchResult</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="orchestrator.OrchestratorClientMixin.apply_snmp_gateway">
+<span class="sig-name descname"><span class="pre">apply_snmp_gateway</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">spec</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orchestrator.OrchestratorClientMixin.apply_snmp_gateway" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update an existing snmp gateway service</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">OrchResult</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="orchestrator.OrchestratorClientMixin.available">
+<span class="sig-name descname"><span class="pre">available</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#orchestrator.OrchestratorClientMixin.available" title="Permalink to this definition">¶</a></dt>
+<dd><p>Report whether we can talk to the orchestrator.  This is the
+place to give the user a meaningful message if the orchestrator
+isn’t running or can’t be contacted.</p>
+<p>This method may be called frequently (e.g. every page load
+to conditionally display a warning banner), so make sure it’s
+not too expensive.  It’s okay to give a slightly stale status
+(e.g. based on a periodic background ping of the orchestrator)
+if that’s necessary to make this method fast.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><cite>True</cite> doesn’t mean that the desired functionality
+is actually available in the orchestrator. I.e. this
+won’t work as expected:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span>
+<span class="gp">... </span><span class="k">if</span> <span class="n">OrchestratorClientMixin</span><span class="p">()</span><span class="o">.</span><span class="n">available</span><span class="p">()[</span><span class="mi">0</span><span class="p">]:</span>  <span class="c1"># wrong.</span>
+<span class="gp">... </span>    <span class="n">OrchestratorClientMixin</span><span class="p">()</span><span class="o">.</span><span class="n">get_hosts</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>boolean representing whether the module is available/usable</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>string describing any error</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>]]</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>dict containing any module specific information</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="orchestrator.OrchestratorClientMixin.blink_device_light">
+<span class="sig-name descname"><span class="pre">blink_device_light</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ident_fault</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">on</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">locations</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orchestrator.OrchestratorClientMixin.blink_device_light" title="Permalink to this definition">¶</a></dt>
+<dd><p>Instructs the orchestrator to enable or disable either the ident or the fault LED.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ident_fault</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – either <code class="docutils literal notranslate"><span class="pre">&quot;ident&quot;</span></code> or <code class="docutils literal notranslate"><span class="pre">&quot;fault&quot;</span></code></p></li>
+<li><p><strong>on</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – <code class="docutils literal notranslate"><span class="pre">True</span></code> = on.</p></li>
+<li><p><strong>locations</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<a class="reference internal" href="#orchestrator.DeviceLightLoc" title="orchestrator._interface.DeviceLightLoc"><code class="xref py py-class docutils literal notranslate"><span class="pre">DeviceLightLoc</span></code></a>]) – See <a class="reference internal" href="#orchestrator.DeviceLightLoc" title="orchestrator.DeviceLightLoc"><code class="xref py py-class docutils literal notranslate"><span class="pre">orchestrator.DeviceLightLoc</span></code></a></p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">OrchResult</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="orchestrator.OrchestratorClientMixin.cancel_completions">
+<span class="sig-name descname"><span class="pre">cancel_completions</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#orchestrator.OrchestratorClientMixin.cancel_completions" title="Permalink to this definition">¶</a></dt>
+<dd><p>Cancels ongoing completions. Unstuck the mgr.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="orchestrator.OrchestratorClientMixin.create_osds">
+<span class="sig-name descname"><span class="pre">create_osds</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">drive_group</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orchestrator.OrchestratorClientMixin.create_osds" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create one or more OSDs within a single Drive Group.</p>
+<p>The principal argument here is the drive_group member
+of OsdSpec: other fields are advisory/extensible for any
+finer-grained OSD feature enablement (choice of backing store,
+compression/encryption, etc).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">OrchResult</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="orchestrator.OrchestratorClientMixin.daemon_action">
+<span class="sig-name descname"><span class="pre">daemon_action</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">action</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">daemon_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">image</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orchestrator.OrchestratorClientMixin.daemon_action" title="Permalink to this definition">¶</a></dt>
+<dd><p>Perform an action (start/stop/reload) on a daemon.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>action</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – one of “start”, “stop”, “restart”, “redeploy”, “reconfig”</p></li>
+<li><p><strong>daemon_name</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – name of daemon</p></li>
+<li><p><strong>image</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – Container image when redeploying that daemon</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>OrchResult</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="orchestrator.OrchestratorClientMixin.describe_service">
+<span class="sig-name descname"><span class="pre">describe_service</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">service_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">service_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">refresh</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orchestrator.OrchestratorClientMixin.describe_service" title="Permalink to this definition">¶</a></dt>
+<dd><p>Describe a service (of any kind) that is already configured in
+the orchestrator.  For example, when viewing an OSD in the dashboard
+we might like to also display information about the orchestrator’s
+view of the service (like the kubernetes pod ID).</p>
+<p>When viewing a CephFS filesystem in the dashboard, we would use this
+to display the pods being currently run for MDS daemons.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">OrchResult</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<a class="reference internal" href="#orchestrator.ServiceDescription" title="orchestrator._interface.ServiceDescription"><code class="xref py py-class docutils literal notranslate"><span class="pre">ServiceDescription</span></code></a>]]</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>list of ServiceDescription objects.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="orchestrator.OrchestratorClientMixin.drain_host">
+<span class="sig-name descname"><span class="pre">drain_host</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hostname</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">force</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orchestrator.OrchestratorClientMixin.drain_host" title="Permalink to this definition">¶</a></dt>
+<dd><p>drain all daemons from a host</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>hostname</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – hostname</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">OrchResult</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="orchestrator.OrchestratorClientMixin.enter_host_maintenance">
+<span class="sig-name descname"><span class="pre">enter_host_maintenance</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hostname</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">force</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orchestrator.OrchestratorClientMixin.enter_host_maintenance" title="Permalink to this definition">¶</a></dt>
+<dd><p>Place a host in maintenance, stopping daemons and disabling it’s systemd target</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">OrchResult</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="orchestrator.OrchestratorClientMixin.exit_host_maintenance">
+<span class="sig-name descname"><span class="pre">exit_host_maintenance</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hostname</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orchestrator.OrchestratorClientMixin.exit_host_maintenance" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a host from maintenance, restarting the clusters systemd target</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">OrchResult</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="orchestrator.OrchestratorClientMixin.get_facts">
+<span class="sig-name descname"><span class="pre">get_facts</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hostname</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orchestrator.OrchestratorClientMixin.get_facts" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return hosts metadata(gather_facts).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">OrchResult</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>]]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="orchestrator.OrchestratorClientMixin.get_feature_set">
+<span class="sig-name descname"><span class="pre">get_feature_set</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#orchestrator.OrchestratorClientMixin.get_feature_set" title="Permalink to this definition">¶</a></dt>
+<dd><p>Describes which methods this orchestrator implements</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><cite>True</cite> doesn’t mean that the desired functionality
+is actually possible in the orchestrator. I.e. this
+won’t work as expected:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span>
+<span class="gp">... </span><span class="n">api</span> <span class="o">=</span> <span class="n">OrchestratorClientMixin</span><span class="p">()</span>
+<span class="gp">... </span><span class="k">if</span> <span class="n">api</span><span class="o">.</span><span class="n">get_feature_set</span><span class="p">()[</span><span class="s1">&#39;get_hosts&#39;</span><span class="p">][</span><span class="s1">&#39;available&#39;</span><span class="p">]:</span>  <span class="c1"># wrong.</span>
+<span class="gp">... </span>    <span class="n">api</span><span class="o">.</span><span class="n">get_hosts</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>It’s better to ask for forgiveness instead:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span>
+<span class="gp">... </span><span class="k">try</span><span class="p">:</span>
+<span class="gp">... </span>    <span class="n">OrchestratorClientMixin</span><span class="p">()</span><span class="o">.</span><span class="n">get_hosts</span><span class="p">()</span>
+<span class="gp">... </span><span class="k">except</span> <span class="p">(</span><span class="n">OrchestratorError</span><span class="p">,</span> <span class="ne">NotImplementedError</span><span class="p">):</span>
+<span class="gp">... </span>    <span class="o">...</span>
+</pre></div>
+</div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>]</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Dict of API method names to <code class="docutils literal notranslate"><span class="pre">{'available':</span> <span class="pre">True</span> <span class="pre">or</span> <span class="pre">False}</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="orchestrator.OrchestratorClientMixin.get_hosts">
+<span class="sig-name descname"><span class="pre">get_hosts</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#orchestrator.OrchestratorClientMixin.get_hosts" title="Permalink to this definition">¶</a></dt>
+<dd><p>Report the hosts in the cluster.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">OrchResult</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<a class="reference internal" href="#orchestrator.HostSpec" title="ceph.deployment.hostspec.HostSpec"><code class="xref py py-class docutils literal notranslate"><span class="pre">HostSpec</span></code></a>]]</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>list of HostSpec</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="orchestrator.OrchestratorClientMixin.get_inventory">
+<span class="sig-name descname"><span class="pre">get_inventory</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">host_filter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">refresh</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orchestrator.OrchestratorClientMixin.get_inventory" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns something that was created by <cite>ceph-volume inventory</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">OrchResult</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">InventoryHost</span></code>]]</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>list of InventoryHost</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="orchestrator.OrchestratorClientMixin.host_ok_to_stop">
+<span class="sig-name descname"><span class="pre">host_ok_to_stop</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hostname</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orchestrator.OrchestratorClientMixin.host_ok_to_stop" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check if the specified host can be safely stopped without reducing availability</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>host</strong> – hostname</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">OrchResult</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="orchestrator.OrchestratorClientMixin.list_daemons">
+<span class="sig-name descname"><span class="pre">list_daemons</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">service_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">daemon_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">daemon_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">host</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">refresh</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orchestrator.OrchestratorClientMixin.list_daemons" title="Permalink to this definition">¶</a></dt>
+<dd><p>Describe a daemon (of any kind) that is already configured in
+the orchestrator.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">OrchResult</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<a class="reference internal" href="#orchestrator.DaemonDescription" title="orchestrator._interface.DaemonDescription"><code class="xref py py-class docutils literal notranslate"><span class="pre">DaemonDescription</span></code></a>]]</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>list of DaemonDescription objects.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="orchestrator.OrchestratorClientMixin.plan">
+<span class="sig-name descname"><span class="pre">plan</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">spec</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orchestrator.OrchestratorClientMixin.plan" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plan (Dry-run, Preview) a List of Specs.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">OrchResult</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="orchestrator.OrchestratorClientMixin.preview_osdspecs">
+<span class="sig-name descname"><span class="pre">preview_osdspecs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">osdspec_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'osd'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">osdspecs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orchestrator.OrchestratorClientMixin.preview_osdspecs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get a preview for OSD deployments</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">OrchResult</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="orchestrator.OrchestratorClientMixin.remove_daemons">
+<span class="sig-name descname"><span class="pre">remove_daemons</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">names</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orchestrator.OrchestratorClientMixin.remove_daemons" title="Permalink to this definition">¶</a></dt>
+<dd><p>Remove specific daemon(s).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">OrchResult</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]]</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="orchestrator.OrchestratorClientMixin.remove_host">
+<span class="sig-name descname"><span class="pre">remove_host</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">host</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">force</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">offline</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orchestrator.OrchestratorClientMixin.remove_host" title="Permalink to this definition">¶</a></dt>
+<dd><p>Remove a host from the orchestrator inventory.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>host</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – hostname</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">OrchResult</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="orchestrator.OrchestratorClientMixin.remove_host_label">
+<span class="sig-name descname"><span class="pre">remove_host_label</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">host</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">label</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">force</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orchestrator.OrchestratorClientMixin.remove_host_label" title="Permalink to this definition">¶</a></dt>
+<dd><p>Remove a host label</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">OrchResult</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="orchestrator.OrchestratorClientMixin.remove_osds">
+<span class="sig-name descname"><span class="pre">remove_osds</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">osd_ids</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">replace</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">force</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">zap</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">no_destroy</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orchestrator.OrchestratorClientMixin.remove_osds" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>osd_ids</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – list of OSD IDs</p></li>
+<li><p><strong>replace</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – marks the OSD as being destroyed. See <a class="reference internal" href="#orchestrator-osd-replace"><span class="std std-ref">OSD Replacement</span></a></p></li>
+<li><p><strong>force</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Forces the OSD removal process without waiting for the data to be drained first.</p></li>
+<li><p><strong>zap</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Zap/Erase all devices associated with the OSDs (DESTROYS DATA)</p></li>
+<li><p><strong>no_destroy</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Do not destroy associated VGs/LVs with the OSD.</p></li>
+</ul>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>this can only remove OSDs that were successfully
+created (i.e. got an OSD ID).</p>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">OrchResult</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="orchestrator.OrchestratorClientMixin.remove_osds_status">
+<span class="sig-name descname"><span class="pre">remove_osds_status</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#orchestrator.OrchestratorClientMixin.remove_osds_status" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a status of the ongoing OSD removal operations.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">OrchResult</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="orchestrator.OrchestratorClientMixin.remove_service">
+<span class="sig-name descname"><span class="pre">remove_service</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">service_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">force</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orchestrator.OrchestratorClientMixin.remove_service" title="Permalink to this definition">¶</a></dt>
+<dd><p>Remove a service (a collection of daemons).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">OrchResult</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="orchestrator.OrchestratorClientMixin.rescan_host">
+<span class="sig-name descname"><span class="pre">rescan_host</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hostname</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orchestrator.OrchestratorClientMixin.rescan_host" title="Permalink to this definition">¶</a></dt>
+<dd><p>Use cephadm to issue a disk rescan on each HBA</p>
+<p>Some HBAs and external enclosures don’t automatically register
+device insertion with the kernel, so for these scenarios we need
+to manually rescan</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>hostname</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – (str) host name</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">OrchResult</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="orchestrator.OrchestratorClientMixin.service_action">
+<span class="sig-name descname"><span class="pre">service_action</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">action</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">service_name</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orchestrator.OrchestratorClientMixin.service_action" title="Permalink to this definition">¶</a></dt>
+<dd><p>Perform an action (start/stop/reload) on a service (i.e., all daemons
+providing the logical service).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>action</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – one of “start”, “stop”, “restart”, “redeploy”, “reconfig”</p></li>
+<li><p><strong>service_name</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – service_type + ‘.’ + service_id
+(e.g. “mon”, “mgr”, “mds.mycephfs”, “rgw.realm.zone”, …)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>OrchResult</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="orchestrator.OrchestratorClientMixin.set_mgr">
+<span class="sig-name descname"><span class="pre">set_mgr</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mgr</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orchestrator.OrchestratorClientMixin.set_mgr" title="Permalink to this definition">¶</a></dt>
+<dd><p>Useable in the Dashbord that uses a global <code class="docutils literal notranslate"><span class="pre">mgr</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="orchestrator.OrchestratorClientMixin.stop_remove_osds">
+<span class="sig-name descname"><span class="pre">stop_remove_osds</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">osd_ids</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orchestrator.OrchestratorClientMixin.stop_remove_osds" title="Permalink to this definition">¶</a></dt>
+<dd><p>TODO</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">OrchResult</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="orchestrator.OrchestratorClientMixin.update_host_addr">
+<span class="sig-name descname"><span class="pre">update_host_addr</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">host</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">addr</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orchestrator.OrchestratorClientMixin.update_host_addr" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update a host’s address</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>host</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – hostname</p></li>
+<li><p><strong>addr</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – address (dns name or IP)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">OrchResult</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="orchestrator.OrchestratorClientMixin.upgrade_available">
+<span class="sig-name descname"><span class="pre">upgrade_available</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#orchestrator.OrchestratorClientMixin.upgrade_available" title="Permalink to this definition">¶</a></dt>
+<dd><p>Report on what versions are available to upgrade to</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">OrchResult</span></code></p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>List of strings</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="orchestrator.OrchestratorClientMixin.upgrade_status">
+<span class="sig-name descname"><span class="pre">upgrade_status</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#orchestrator.OrchestratorClientMixin.upgrade_status" title="Permalink to this definition">¶</a></dt>
+<dd><p>If an upgrade is currently underway, report on where
+we are in the process, or if some error has occurred.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">OrchResult</span></code>[<a class="reference internal" href="#orchestrator.UpgradeStatusSpec" title="orchestrator._interface.UpgradeStatusSpec"><code class="xref py py-class docutils literal notranslate"><span class="pre">UpgradeStatusSpec</span></code></a>]</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>UpgradeStatusSpec instance</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="orchestrator.OrchestratorClientMixin.zap_device">
+<span class="sig-name descname"><span class="pre">zap_device</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">host</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orchestrator.OrchestratorClientMixin.zap_device" title="Permalink to this definition">¶</a></dt>
+<dd><p>Zap/Erase a device (DESTROYS DATA)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">OrchResult</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../">
+              <img class="logo" src="../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../install/">Installing Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cephadm/">Cephadm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rados/">Ceph Storage Cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cephfs/">Ceph File System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rbd/">Ceph Block Device</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../radosgw/">Ceph Object Gateway</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../">Ceph Manager Daemon</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../administrator/">Installation and Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../modules/">Writing modules</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Writing orchestrator plugins</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#glossary">Glossary</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#key-concepts">Key Concepts</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#completions-and-batching">Completions and batching</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#error-handling">Error Handling</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#excluded-functionality">Excluded functionality</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#host-management">Host management</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#devices">Devices</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#placement">Placement</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#services">Services</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#daemons">Daemons</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#osd-management">OSD management</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#osd-replacement">OSD Replacement</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#id1">Services</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#upgrades">Upgrades</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#utility">Utility</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#client-modules">Client Modules</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../dashboard/">Dashboard module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../ceph_api/">Ceph RESTful API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../alerts/">Alerts module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../diskprediction/">DiskPrediction module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../localpool/">Local pool module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../restful/">RESTful module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../zabbix/">Zabbix module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../prometheus/">Prometheus module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../influx/">Influx module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../hello/">Hello module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../telegraf/">Telegraf module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../telemetry/">Telemetry module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../iostat/">Iostat module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../crash/">Crash module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../insights/">Insights module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../orchestrator/">Orchestrator module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rook/">Rook module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../mds_autoscaler/">MDS Autoscaler module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../nfs/">NFS module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cli_api/">CLI API Commands module</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dev/developer_guide/">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dev/internals/">Ceph Internals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../dashboard/" title="Ceph Dashboard"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../modules/" title="ceph-mgr module developer’s guide"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../" >Ceph Manager Daemon</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">ceph-mgr orchestrator modules</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

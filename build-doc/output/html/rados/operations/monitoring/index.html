@@ -1,0 +1,705 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Monitoring a Cluster &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/css/custom.css" />
+    <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/jquery.js"></script>
+    <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../../genindex/" />
+    <link rel="search" title="Search" href="../../../search/" />
+    <link rel="next" title="Monitoring OSDs and PGs" href="../monitoring-osd-pg/" />
+    <link rel="prev" title="Health checks" href="../health-checks/" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../monitoring-osd-pg/" title="Monitoring OSDs and PGs"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../health-checks/" title="Health checks"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../" >Ceph Storage Cluster</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../" accesskey="U">Cluster Operations</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Monitoring a Cluster</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="monitoring-a-cluster">
+<h1>Monitoring a Cluster<a class="headerlink" href="#monitoring-a-cluster" title="Permalink to this heading">¶</a></h1>
+<p>After you have a running cluster, you can use the <code class="docutils literal notranslate"><span class="pre">ceph</span></code> tool to monitor your
+cluster. Monitoring a cluster typically involves checking OSD status, monitor
+status, placement group status, and metadata server status.</p>
+<section id="using-the-command-line">
+<h2>Using the command line<a class="headerlink" href="#using-the-command-line" title="Permalink to this heading">¶</a></h2>
+<section id="interactive-mode">
+<h3>Interactive mode<a class="headerlink" href="#interactive-mode" title="Permalink to this heading">¶</a></h3>
+<p>To run the <code class="docutils literal notranslate"><span class="pre">ceph</span></code> tool in interactive mode, type <code class="docutils literal notranslate"><span class="pre">ceph</span></code> at the command line
+with no arguments. For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><style type="text/css">
+span.prompt1:before {
+  content: "$ ";
+}
+</style><span class="prompt1">ceph</span>
+</pre></div></div><div class="highlight-default notranslate"><div class="highlight"><pre><style type="text/css">
+span.prompt2:before {
+  content: "ceph> ";
+}
+</style><span class="prompt2">health</span>
+<span class="prompt2">status</span>
+<span class="prompt2">quorum_status</span>
+<span class="prompt2">mon stat</span>
+</pre></div></div></section>
+<section id="non-default-paths">
+<h3>Non-default paths<a class="headerlink" href="#non-default-paths" title="Permalink to this heading">¶</a></h3>
+<p>If you specified non-default locations for your configuration or keyring when
+you install the cluster, you may specify their locations to the <code class="docutils literal notranslate"><span class="pre">ceph</span></code> tool
+by running the following command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>-c<span class="w"> </span>/path/to/conf<span class="w"> </span>-k<span class="w"> </span>/path/to/keyring<span class="w"> </span>health</span>
+</pre></div></div></section>
+</section>
+<section id="checking-a-cluster-s-status">
+<h2>Checking a Cluster’s Status<a class="headerlink" href="#checking-a-cluster-s-status" title="Permalink to this heading">¶</a></h2>
+<p>After you start your cluster, and before you start reading and/or writing data,
+you should check your cluster’s status.</p>
+<p>To check a cluster’s status, run the following command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>status</span>
+</pre></div></div><p>Alternatively, you can run the following command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>-s</span>
+</pre></div></div><p>In interactive mode, this operation is performed by typing <code class="docutils literal notranslate"><span class="pre">status</span></code> and
+pressing <strong>Enter</strong>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt2">status</span>
+</pre></div></div><p>Ceph will print the cluster status. For example, a tiny Ceph “demonstration
+cluster” that is running one instance of each service (monitor, manager, and
+OSD) might print the following:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">cluster</span><span class="p">:</span>
+  <span class="nb">id</span><span class="p">:</span>     <span class="mf">477e46</span><span class="n">f1</span><span class="o">-</span><span class="n">ae41</span><span class="o">-</span><span class="mf">4e43</span><span class="o">-</span><span class="mi">9</span><span class="n">c8f</span><span class="o">-</span><span class="mi">72</span><span class="n">c918ab0a20</span>
+  <span class="n">health</span><span class="p">:</span> <span class="n">HEALTH_OK</span>
+
+<span class="n">services</span><span class="p">:</span>
+  <span class="n">mon</span><span class="p">:</span> <span class="mi">3</span> <span class="n">daemons</span><span class="p">,</span> <span class="n">quorum</span> <span class="n">a</span><span class="p">,</span><span class="n">b</span><span class="p">,</span><span class="n">c</span>
+  <span class="n">mgr</span><span class="p">:</span> <span class="n">x</span><span class="p">(</span><span class="n">active</span><span class="p">)</span>
+  <span class="n">mds</span><span class="p">:</span> <span class="n">cephfs_a</span><span class="o">-</span><span class="mi">1</span><span class="o">/</span><span class="mi">1</span><span class="o">/</span><span class="mi">1</span> <span class="n">up</span>  <span class="p">{</span><span class="mi">0</span><span class="o">=</span><span class="n">a</span><span class="o">=</span><span class="n">up</span><span class="p">:</span><span class="n">active</span><span class="p">},</span> <span class="mi">2</span> <span class="n">up</span><span class="p">:</span><span class="n">standby</span>
+  <span class="n">osd</span><span class="p">:</span> <span class="mi">3</span> <span class="n">osds</span><span class="p">:</span> <span class="mi">3</span> <span class="n">up</span><span class="p">,</span> <span class="mi">3</span> <span class="ow">in</span>
+
+<span class="n">data</span><span class="p">:</span>
+  <span class="n">pools</span><span class="p">:</span>   <span class="mi">2</span> <span class="n">pools</span><span class="p">,</span> <span class="mi">16</span> <span class="n">pgs</span>
+  <span class="n">objects</span><span class="p">:</span> <span class="mi">21</span> <span class="n">objects</span><span class="p">,</span> <span class="mf">2.19</span><span class="n">K</span>
+  <span class="n">usage</span><span class="p">:</span>   <span class="mi">546</span> <span class="n">GB</span> <span class="n">used</span><span class="p">,</span> <span class="mi">384</span> <span class="n">GB</span> <span class="o">/</span> <span class="mi">931</span> <span class="n">GB</span> <span class="n">avail</span>
+  <span class="n">pgs</span><span class="p">:</span>     <span class="mi">16</span> <span class="n">active</span><span class="o">+</span><span class="n">clean</span>
+</pre></div>
+</div>
+<section id="how-ceph-calculates-data-usage">
+<h3>How Ceph Calculates Data Usage<a class="headerlink" href="#how-ceph-calculates-data-usage" title="Permalink to this heading">¶</a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">usage</span></code> value reflects the <em>actual</em> amount of raw storage used. The <code class="docutils literal notranslate"><span class="pre">xxx</span>
+<span class="pre">GB</span> <span class="pre">/</span> <span class="pre">xxx</span> <span class="pre">GB</span></code> value means the amount available (the lesser number) of the
+overall storage capacity of the cluster. The notional number reflects the size
+of the stored data before it is replicated, cloned or snapshotted.  Therefore,
+the amount of data actually stored typically exceeds the notional amount
+stored, because Ceph creates replicas of the data and may also use storage
+capacity for cloning and snapshotting.</p>
+</section>
+</section>
+<section id="watching-a-cluster">
+<h2>Watching a Cluster<a class="headerlink" href="#watching-a-cluster" title="Permalink to this heading">¶</a></h2>
+<p>Each daemon in the Ceph cluster maintains a log of events, and the Ceph cluster
+itself maintains a <em>cluster log</em> that records high-level events about the
+entire Ceph cluster.  These events are logged to disk on monitor servers (in
+the default location <code class="docutils literal notranslate"><span class="pre">/var/log/ceph/ceph.log</span></code>), and they can be monitored via
+the command line.</p>
+<p>To follow the cluster log, run the following command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>-w</span>
+</pre></div></div><p>Ceph will print the status of the system, followed by each log message as it is
+added. For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">cluster</span><span class="p">:</span>
+  <span class="nb">id</span><span class="p">:</span>     <span class="mf">477e46</span><span class="n">f1</span><span class="o">-</span><span class="n">ae41</span><span class="o">-</span><span class="mf">4e43</span><span class="o">-</span><span class="mi">9</span><span class="n">c8f</span><span class="o">-</span><span class="mi">72</span><span class="n">c918ab0a20</span>
+  <span class="n">health</span><span class="p">:</span> <span class="n">HEALTH_OK</span>
+
+<span class="n">services</span><span class="p">:</span>
+  <span class="n">mon</span><span class="p">:</span> <span class="mi">3</span> <span class="n">daemons</span><span class="p">,</span> <span class="n">quorum</span> <span class="n">a</span><span class="p">,</span><span class="n">b</span><span class="p">,</span><span class="n">c</span>
+  <span class="n">mgr</span><span class="p">:</span> <span class="n">x</span><span class="p">(</span><span class="n">active</span><span class="p">)</span>
+  <span class="n">mds</span><span class="p">:</span> <span class="n">cephfs_a</span><span class="o">-</span><span class="mi">1</span><span class="o">/</span><span class="mi">1</span><span class="o">/</span><span class="mi">1</span> <span class="n">up</span>  <span class="p">{</span><span class="mi">0</span><span class="o">=</span><span class="n">a</span><span class="o">=</span><span class="n">up</span><span class="p">:</span><span class="n">active</span><span class="p">},</span> <span class="mi">2</span> <span class="n">up</span><span class="p">:</span><span class="n">standby</span>
+  <span class="n">osd</span><span class="p">:</span> <span class="mi">3</span> <span class="n">osds</span><span class="p">:</span> <span class="mi">3</span> <span class="n">up</span><span class="p">,</span> <span class="mi">3</span> <span class="ow">in</span>
+
+<span class="n">data</span><span class="p">:</span>
+  <span class="n">pools</span><span class="p">:</span>   <span class="mi">2</span> <span class="n">pools</span><span class="p">,</span> <span class="mi">16</span> <span class="n">pgs</span>
+  <span class="n">objects</span><span class="p">:</span> <span class="mi">21</span> <span class="n">objects</span><span class="p">,</span> <span class="mf">2.19</span><span class="n">K</span>
+  <span class="n">usage</span><span class="p">:</span>   <span class="mi">546</span> <span class="n">GB</span> <span class="n">used</span><span class="p">,</span> <span class="mi">384</span> <span class="n">GB</span> <span class="o">/</span> <span class="mi">931</span> <span class="n">GB</span> <span class="n">avail</span>
+  <span class="n">pgs</span><span class="p">:</span>     <span class="mi">16</span> <span class="n">active</span><span class="o">+</span><span class="n">clean</span>
+
+
+<span class="mi">2017</span><span class="o">-</span><span class="mi">07</span><span class="o">-</span><span class="mi">24</span> <span class="mi">08</span><span class="p">:</span><span class="mi">15</span><span class="p">:</span><span class="mf">11.329298</span> <span class="n">mon</span><span class="o">.</span><span class="n">a</span> <span class="n">mon</span><span class="mf">.0</span> <span class="mf">172.21.9.34</span><span class="p">:</span><span class="mi">6789</span><span class="o">/</span><span class="mi">0</span> <span class="mi">23</span> <span class="p">:</span> <span class="n">cluster</span> <span class="p">[</span><span class="n">INF</span><span class="p">]</span> <span class="n">osd</span><span class="mf">.0</span> <span class="mf">172.21.9.34</span><span class="p">:</span><span class="mi">6806</span><span class="o">/</span><span class="mi">20527</span> <span class="n">boot</span>
+<span class="mi">2017</span><span class="o">-</span><span class="mi">07</span><span class="o">-</span><span class="mi">24</span> <span class="mi">08</span><span class="p">:</span><span class="mi">15</span><span class="p">:</span><span class="mf">14.258143</span> <span class="n">mon</span><span class="o">.</span><span class="n">a</span> <span class="n">mon</span><span class="mf">.0</span> <span class="mf">172.21.9.34</span><span class="p">:</span><span class="mi">6789</span><span class="o">/</span><span class="mi">0</span> <span class="mi">39</span> <span class="p">:</span> <span class="n">cluster</span> <span class="p">[</span><span class="n">INF</span><span class="p">]</span> <span class="n">Activating</span> <span class="n">manager</span> <span class="n">daemon</span> <span class="n">x</span>
+<span class="mi">2017</span><span class="o">-</span><span class="mi">07</span><span class="o">-</span><span class="mi">24</span> <span class="mi">08</span><span class="p">:</span><span class="mi">15</span><span class="p">:</span><span class="mf">15.446025</span> <span class="n">mon</span><span class="o">.</span><span class="n">a</span> <span class="n">mon</span><span class="mf">.0</span> <span class="mf">172.21.9.34</span><span class="p">:</span><span class="mi">6789</span><span class="o">/</span><span class="mi">0</span> <span class="mi">47</span> <span class="p">:</span> <span class="n">cluster</span> <span class="p">[</span><span class="n">INF</span><span class="p">]</span> <span class="n">Manager</span> <span class="n">daemon</span> <span class="n">x</span> <span class="ow">is</span> <span class="n">now</span> <span class="n">available</span>
+</pre></div>
+</div>
+<p>Instead of printing log lines as they are added, you might want to print only
+the most recent lines. Run <code class="docutils literal notranslate"><span class="pre">ceph</span> <span class="pre">log</span> <span class="pre">last</span> <span class="pre">[n]</span></code> to see the most recent <code class="docutils literal notranslate"><span class="pre">n</span></code>
+lines from the cluster log.</p>
+</section>
+<section id="monitoring-health-checks">
+<h2>Monitoring Health Checks<a class="headerlink" href="#monitoring-health-checks" title="Permalink to this heading">¶</a></h2>
+<p>Ceph continuously runs various <em>health checks</em>. When
+a health check fails, this failure is reflected in the output of <code class="docutils literal notranslate"><span class="pre">ceph</span> <span class="pre">status</span></code> and
+<code class="docutils literal notranslate"><span class="pre">ceph</span> <span class="pre">health</span></code>. The cluster log receives messages that
+indicate when a check has failed and when the cluster has recovered.</p>
+<p>For example, when an OSD goes down, the <code class="docutils literal notranslate"><span class="pre">health</span></code> section of the status
+output is updated as follows:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">health</span><span class="p">:</span> <span class="n">HEALTH_WARN</span>
+        <span class="mi">1</span> <span class="n">osds</span> <span class="n">down</span>
+        <span class="n">Degraded</span> <span class="n">data</span> <span class="n">redundancy</span><span class="p">:</span> <span class="mi">21</span><span class="o">/</span><span class="mi">63</span> <span class="n">objects</span> <span class="n">degraded</span> <span class="p">(</span><span class="mf">33.333</span><span class="o">%</span><span class="p">),</span> <span class="mi">16</span> <span class="n">pgs</span> <span class="n">unclean</span><span class="p">,</span> <span class="mi">16</span> <span class="n">pgs</span> <span class="n">degraded</span>
+</pre></div>
+</div>
+<p>At the same time, cluster log messages are emitted to record the failure of the
+health checks:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="mi">2017</span><span class="o">-</span><span class="mi">07</span><span class="o">-</span><span class="mi">25</span> <span class="mi">10</span><span class="p">:</span><span class="mi">08</span><span class="p">:</span><span class="mf">58.265945</span> <span class="n">mon</span><span class="o">.</span><span class="n">a</span> <span class="n">mon</span><span class="mf">.0</span> <span class="mf">172.21.9.34</span><span class="p">:</span><span class="mi">6789</span><span class="o">/</span><span class="mi">0</span> <span class="mi">91</span> <span class="p">:</span> <span class="n">cluster</span> <span class="p">[</span><span class="n">WRN</span><span class="p">]</span> <span class="n">Health</span> <span class="n">check</span> <span class="n">failed</span><span class="p">:</span> <span class="mi">1</span> <span class="n">osds</span> <span class="n">down</span> <span class="p">(</span><span class="n">OSD_DOWN</span><span class="p">)</span>
+<span class="mi">2017</span><span class="o">-</span><span class="mi">07</span><span class="o">-</span><span class="mi">25</span> <span class="mi">10</span><span class="p">:</span><span class="mi">09</span><span class="p">:</span><span class="mf">01.302624</span> <span class="n">mon</span><span class="o">.</span><span class="n">a</span> <span class="n">mon</span><span class="mf">.0</span> <span class="mf">172.21.9.34</span><span class="p">:</span><span class="mi">6789</span><span class="o">/</span><span class="mi">0</span> <span class="mi">94</span> <span class="p">:</span> <span class="n">cluster</span> <span class="p">[</span><span class="n">WRN</span><span class="p">]</span> <span class="n">Health</span> <span class="n">check</span> <span class="n">failed</span><span class="p">:</span> <span class="n">Degraded</span> <span class="n">data</span> <span class="n">redundancy</span><span class="p">:</span> <span class="mi">21</span><span class="o">/</span><span class="mi">63</span> <span class="n">objects</span> <span class="n">degraded</span> <span class="p">(</span><span class="mf">33.333</span><span class="o">%</span><span class="p">),</span> <span class="mi">16</span> <span class="n">pgs</span> <span class="n">unclean</span><span class="p">,</span> <span class="mi">16</span> <span class="n">pgs</span> <span class="n">degraded</span> <span class="p">(</span><span class="n">PG_DEGRADED</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>When the OSD comes back online, the cluster log records the cluster’s return
+to a healthy state:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="mi">2017</span><span class="o">-</span><span class="mi">07</span><span class="o">-</span><span class="mi">25</span> <span class="mi">10</span><span class="p">:</span><span class="mi">11</span><span class="p">:</span><span class="mf">11.526841</span> <span class="n">mon</span><span class="o">.</span><span class="n">a</span> <span class="n">mon</span><span class="mf">.0</span> <span class="mf">172.21.9.34</span><span class="p">:</span><span class="mi">6789</span><span class="o">/</span><span class="mi">0</span> <span class="mi">109</span> <span class="p">:</span> <span class="n">cluster</span> <span class="p">[</span><span class="n">WRN</span><span class="p">]</span> <span class="n">Health</span> <span class="n">check</span> <span class="n">update</span><span class="p">:</span> <span class="n">Degraded</span> <span class="n">data</span> <span class="n">redundancy</span><span class="p">:</span> <span class="mi">2</span> <span class="n">pgs</span> <span class="n">unclean</span><span class="p">,</span> <span class="mi">2</span> <span class="n">pgs</span> <span class="n">degraded</span><span class="p">,</span> <span class="mi">2</span> <span class="n">pgs</span> <span class="n">undersized</span> <span class="p">(</span><span class="n">PG_DEGRADED</span><span class="p">)</span>
+<span class="mi">2017</span><span class="o">-</span><span class="mi">07</span><span class="o">-</span><span class="mi">25</span> <span class="mi">10</span><span class="p">:</span><span class="mi">11</span><span class="p">:</span><span class="mf">13.535493</span> <span class="n">mon</span><span class="o">.</span><span class="n">a</span> <span class="n">mon</span><span class="mf">.0</span> <span class="mf">172.21.9.34</span><span class="p">:</span><span class="mi">6789</span><span class="o">/</span><span class="mi">0</span> <span class="mi">110</span> <span class="p">:</span> <span class="n">cluster</span> <span class="p">[</span><span class="n">INF</span><span class="p">]</span> <span class="n">Health</span> <span class="n">check</span> <span class="n">cleared</span><span class="p">:</span> <span class="n">PG_DEGRADED</span> <span class="p">(</span><span class="n">was</span><span class="p">:</span> <span class="n">Degraded</span> <span class="n">data</span> <span class="n">redundancy</span><span class="p">:</span> <span class="mi">2</span> <span class="n">pgs</span> <span class="n">unclean</span><span class="p">,</span> <span class="mi">2</span> <span class="n">pgs</span> <span class="n">degraded</span><span class="p">,</span> <span class="mi">2</span> <span class="n">pgs</span> <span class="n">undersized</span><span class="p">)</span>
+<span class="mi">2017</span><span class="o">-</span><span class="mi">07</span><span class="o">-</span><span class="mi">25</span> <span class="mi">10</span><span class="p">:</span><span class="mi">11</span><span class="p">:</span><span class="mf">13.535577</span> <span class="n">mon</span><span class="o">.</span><span class="n">a</span> <span class="n">mon</span><span class="mf">.0</span> <span class="mf">172.21.9.34</span><span class="p">:</span><span class="mi">6789</span><span class="o">/</span><span class="mi">0</span> <span class="mi">111</span> <span class="p">:</span> <span class="n">cluster</span> <span class="p">[</span><span class="n">INF</span><span class="p">]</span> <span class="n">Cluster</span> <span class="ow">is</span> <span class="n">now</span> <span class="n">healthy</span>
+</pre></div>
+</div>
+<section id="network-performance-checks">
+<h3>Network Performance Checks<a class="headerlink" href="#network-performance-checks" title="Permalink to this heading">¶</a></h3>
+<p>Ceph OSDs send heartbeat ping messages to each other in order to monitor daemon
+availability and network performance. If a single delayed response is detected,
+this might indicate nothing more than a busy OSD. But if multiple delays
+between distinct pairs of OSDs are detected, this might indicate a failed
+network switch, a NIC failure, or a layer 1 failure.</p>
+<p>By default, a heartbeat time that exceeds 1 second (1000 milliseconds) raises a
+health check (a <code class="docutils literal notranslate"><span class="pre">HEALTH_WARN</span></code>. For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">HEALTH_WARN</span> <span class="n">Slow</span> <span class="n">OSD</span> <span class="n">heartbeats</span> <span class="n">on</span> <span class="n">back</span> <span class="p">(</span><span class="n">longest</span> <span class="mf">1118.001</span><span class="n">ms</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>In the output of the <code class="docutils literal notranslate"><span class="pre">ceph</span> <span class="pre">health</span> <span class="pre">detail</span></code> command, you can see which OSDs are
+experiencing delays and how long the delays are. The output of <code class="docutils literal notranslate"><span class="pre">ceph</span> <span class="pre">health</span>
+<span class="pre">detail</span></code> is limited to ten lines. Here is an example of the output you can
+expect from the <code class="docutils literal notranslate"><span class="pre">ceph</span> <span class="pre">health</span> <span class="pre">detail</span></code> command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[</span><span class="n">WRN</span><span class="p">]</span> <span class="n">OSD_SLOW_PING_TIME_BACK</span><span class="p">:</span> <span class="n">Slow</span> <span class="n">OSD</span> <span class="n">heartbeats</span> <span class="n">on</span> <span class="n">back</span> <span class="p">(</span><span class="n">longest</span> <span class="mf">1118.001</span><span class="n">ms</span><span class="p">)</span>
+    <span class="n">Slow</span> <span class="n">OSD</span> <span class="n">heartbeats</span> <span class="n">on</span> <span class="n">back</span> <span class="kn">from</span><span class="w"> </span><span class="nn">osd.</span><span class="mi">0</span> <span class="p">[</span><span class="n">dc1</span><span class="p">,</span><span class="n">rack1</span><span class="p">]</span> <span class="n">to</span> <span class="n">osd</span><span class="mf">.1</span> <span class="p">[</span><span class="n">dc1</span><span class="p">,</span><span class="n">rack1</span><span class="p">]</span> <span class="mf">1118.001</span> <span class="n">msec</span> <span class="n">possibly</span> <span class="n">improving</span>
+    <span class="n">Slow</span> <span class="n">OSD</span> <span class="n">heartbeats</span> <span class="n">on</span> <span class="n">back</span> <span class="kn">from</span><span class="w"> </span><span class="nn">osd.</span><span class="mi">0</span> <span class="p">[</span><span class="n">dc1</span><span class="p">,</span><span class="n">rack1</span><span class="p">]</span> <span class="n">to</span> <span class="n">osd</span><span class="mf">.2</span> <span class="p">[</span><span class="n">dc1</span><span class="p">,</span><span class="n">rack2</span><span class="p">]</span> <span class="mf">1030.123</span> <span class="n">msec</span>
+    <span class="n">Slow</span> <span class="n">OSD</span> <span class="n">heartbeats</span> <span class="n">on</span> <span class="n">back</span> <span class="kn">from</span><span class="w"> </span><span class="nn">osd.</span><span class="mi">2</span> <span class="p">[</span><span class="n">dc1</span><span class="p">,</span><span class="n">rack2</span><span class="p">]</span> <span class="n">to</span> <span class="n">osd</span><span class="mf">.1</span> <span class="p">[</span><span class="n">dc1</span><span class="p">,</span><span class="n">rack1</span><span class="p">]</span> <span class="mf">1015.321</span> <span class="n">msec</span>
+    <span class="n">Slow</span> <span class="n">OSD</span> <span class="n">heartbeats</span> <span class="n">on</span> <span class="n">back</span> <span class="kn">from</span><span class="w"> </span><span class="nn">osd.</span><span class="mi">1</span> <span class="p">[</span><span class="n">dc1</span><span class="p">,</span><span class="n">rack1</span><span class="p">]</span> <span class="n">to</span> <span class="n">osd</span><span class="mf">.0</span> <span class="p">[</span><span class="n">dc1</span><span class="p">,</span><span class="n">rack1</span><span class="p">]</span> <span class="mf">1010.456</span> <span class="n">msec</span>
+</pre></div>
+</div>
+<p>To see more detail and to collect a complete dump of network performance
+information, use the <code class="docutils literal notranslate"><span class="pre">dump_osd_network</span></code> command. This command is usually sent
+to a Ceph Manager Daemon, but it can be used to collect information about a
+specific OSD’s interactions by sending it to that OSD. The default threshold
+for a slow heartbeat is 1 second (1000 milliseconds), but this can be
+overridden by providing a number of milliseconds as an argument.</p>
+<p>To show all network performance data with a specified threshold of 0, send the
+following command to the mgr:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>daemon<span class="w"> </span>/var/run/ceph/ceph-mgr.x.asok<span class="w"> </span>dump_osd_network<span class="w"> </span><span class="m">0</span></span>
+</pre></div></div><div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+    <span class="s2">&quot;threshold&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+    <span class="s2">&quot;entries&quot;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="p">{</span>
+            <span class="s2">&quot;last update&quot;</span><span class="p">:</span> <span class="s2">&quot;Wed Sep  4 17:04:49 2019&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;stale&quot;</span><span class="p">:</span> <span class="n">false</span><span class="p">,</span>
+            <span class="s2">&quot;from osd&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
+            <span class="s2">&quot;to osd&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="s2">&quot;interface&quot;</span><span class="p">:</span> <span class="s2">&quot;front&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;average&quot;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s2">&quot;1min&quot;</span><span class="p">:</span> <span class="mf">1.023</span><span class="p">,</span>
+                <span class="s2">&quot;5min&quot;</span><span class="p">:</span> <span class="mf">0.860</span><span class="p">,</span>
+                <span class="s2">&quot;15min&quot;</span><span class="p">:</span> <span class="mf">0.883</span>
+            <span class="p">},</span>
+            <span class="s2">&quot;min&quot;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s2">&quot;1min&quot;</span><span class="p">:</span> <span class="mf">0.818</span><span class="p">,</span>
+                <span class="s2">&quot;5min&quot;</span><span class="p">:</span> <span class="mf">0.607</span><span class="p">,</span>
+                <span class="s2">&quot;15min&quot;</span><span class="p">:</span> <span class="mf">0.607</span>
+            <span class="p">},</span>
+            <span class="s2">&quot;max&quot;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s2">&quot;1min&quot;</span><span class="p">:</span> <span class="mf">1.164</span><span class="p">,</span>
+                <span class="s2">&quot;5min&quot;</span><span class="p">:</span> <span class="mf">1.173</span><span class="p">,</span>
+                <span class="s2">&quot;15min&quot;</span><span class="p">:</span> <span class="mf">1.544</span>
+            <span class="p">},</span>
+            <span class="s2">&quot;last&quot;</span><span class="p">:</span> <span class="mf">0.924</span>
+        <span class="p">},</span>
+        <span class="p">{</span>
+            <span class="s2">&quot;last update&quot;</span><span class="p">:</span> <span class="s2">&quot;Wed Sep  4 17:04:49 2019&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;stale&quot;</span><span class="p">:</span> <span class="n">false</span><span class="p">,</span>
+            <span class="s2">&quot;from osd&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
+            <span class="s2">&quot;to osd&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="s2">&quot;interface&quot;</span><span class="p">:</span> <span class="s2">&quot;back&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;average&quot;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s2">&quot;1min&quot;</span><span class="p">:</span> <span class="mf">0.968</span><span class="p">,</span>
+                <span class="s2">&quot;5min&quot;</span><span class="p">:</span> <span class="mf">0.897</span><span class="p">,</span>
+                <span class="s2">&quot;15min&quot;</span><span class="p">:</span> <span class="mf">0.830</span>
+            <span class="p">},</span>
+            <span class="s2">&quot;min&quot;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s2">&quot;1min&quot;</span><span class="p">:</span> <span class="mf">0.860</span><span class="p">,</span>
+                <span class="s2">&quot;5min&quot;</span><span class="p">:</span> <span class="mf">0.563</span><span class="p">,</span>
+                <span class="s2">&quot;15min&quot;</span><span class="p">:</span> <span class="mf">0.502</span>
+            <span class="p">},</span>
+            <span class="s2">&quot;max&quot;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s2">&quot;1min&quot;</span><span class="p">:</span> <span class="mf">1.171</span><span class="p">,</span>
+                <span class="s2">&quot;5min&quot;</span><span class="p">:</span> <span class="mf">1.216</span><span class="p">,</span>
+                <span class="s2">&quot;15min&quot;</span><span class="p">:</span> <span class="mf">1.456</span>
+            <span class="p">},</span>
+            <span class="s2">&quot;last&quot;</span><span class="p">:</span> <span class="mf">0.845</span>
+        <span class="p">},</span>
+        <span class="p">{</span>
+            <span class="s2">&quot;last update&quot;</span><span class="p">:</span> <span class="s2">&quot;Wed Sep  4 17:04:48 2019&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;stale&quot;</span><span class="p">:</span> <span class="n">false</span><span class="p">,</span>
+            <span class="s2">&quot;from osd&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="s2">&quot;to osd&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+            <span class="s2">&quot;interface&quot;</span><span class="p">:</span> <span class="s2">&quot;front&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;average&quot;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s2">&quot;1min&quot;</span><span class="p">:</span> <span class="mf">0.965</span><span class="p">,</span>
+                <span class="s2">&quot;5min&quot;</span><span class="p">:</span> <span class="mf">0.811</span><span class="p">,</span>
+                <span class="s2">&quot;15min&quot;</span><span class="p">:</span> <span class="mf">0.850</span>
+            <span class="p">},</span>
+            <span class="s2">&quot;min&quot;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s2">&quot;1min&quot;</span><span class="p">:</span> <span class="mf">0.650</span><span class="p">,</span>
+                <span class="s2">&quot;5min&quot;</span><span class="p">:</span> <span class="mf">0.488</span><span class="p">,</span>
+                <span class="s2">&quot;15min&quot;</span><span class="p">:</span> <span class="mf">0.466</span>
+            <span class="p">},</span>
+            <span class="s2">&quot;max&quot;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s2">&quot;1min&quot;</span><span class="p">:</span> <span class="mf">1.252</span><span class="p">,</span>
+                <span class="s2">&quot;5min&quot;</span><span class="p">:</span> <span class="mf">1.252</span><span class="p">,</span>
+                <span class="s2">&quot;15min&quot;</span><span class="p">:</span> <span class="mf">1.362</span>
+            <span class="p">},</span>
+        <span class="s2">&quot;last&quot;</span><span class="p">:</span> <span class="mf">0.791</span>
+    <span class="p">},</span>
+    <span class="o">...</span>
+</pre></div>
+</div>
+</section>
+<section id="muting-health-checks">
+<h3>Muting Health Checks<a class="headerlink" href="#muting-health-checks" title="Permalink to this heading">¶</a></h3>
+<p>Health checks can be muted so that they have no effect on the overall
+reported status of the cluster. For example, if the cluster has raised a
+single health check and then you mute that health check, then the cluster will report a status of <code class="docutils literal notranslate"><span class="pre">HEALTH_OK</span></code>.
+To mute a specific health check, use the health check code that corresponds to that health check (see <a class="reference internal" href="../health-checks/#health-checks"><span class="std std-ref">Health checks</span></a>), and
+run the following command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>health<span class="w"> </span>mute<span class="w"> </span>&lt;code&gt;</span>
+</pre></div></div><p>For example, to mute an <code class="docutils literal notranslate"><span class="pre">OSD_DOWN</span></code> health check, run the following command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>health<span class="w"> </span>mute<span class="w"> </span>OSD_DOWN</span>
+</pre></div></div><p>Mutes are reported as part of the short and long form of the <code class="docutils literal notranslate"><span class="pre">ceph</span> <span class="pre">health</span></code> command’s output.
+For example, in the above scenario, the cluster would report:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>health</span>
+</pre></div></div><div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">HEALTH_OK</span> <span class="p">(</span><span class="n">muted</span><span class="p">:</span> <span class="n">OSD_DOWN</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>health<span class="w"> </span>detail</span>
+</pre></div></div><div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">HEALTH_OK</span> <span class="p">(</span><span class="n">muted</span><span class="p">:</span> <span class="n">OSD_DOWN</span><span class="p">)</span>
+<span class="p">(</span><span class="n">MUTED</span><span class="p">)</span> <span class="n">OSD_DOWN</span> <span class="mi">1</span> <span class="n">osds</span> <span class="n">down</span>
+    <span class="n">osd</span><span class="mf">.1</span> <span class="ow">is</span> <span class="n">down</span>
+</pre></div>
+</div>
+<p>A mute can be removed by running the following command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>health<span class="w"> </span>unmute<span class="w"> </span>&lt;code&gt;</span>
+</pre></div></div><p>For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>health<span class="w"> </span>unmute<span class="w"> </span>OSD_DOWN</span>
+</pre></div></div><p>A “health mute” can have a TTL (<strong>T</strong>ime <strong>T</strong>o <strong>L</strong>ive)
+associated with it: this means that the mute will automatically expire
+after a specified period of time. The TTL is specified as an optional
+duration argument, as seen in the following examples:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>health<span class="w"> </span>mute<span class="w"> </span>OSD_DOWN<span class="w"> </span>4h<span class="w">    </span><span class="c1"># mute for 4 hours</span></span>
+<span class="prompt1">ceph<span class="w"> </span>health<span class="w"> </span>mute<span class="w"> </span>MON_DOWN<span class="w"> </span>15m<span class="w">   </span><span class="c1"># mute for 15 minutes</span></span>
+</pre></div></div><p>Normally, if a muted health check is resolved (for example, if the OSD that raised the <code class="docutils literal notranslate"><span class="pre">OSD_DOWN</span></code> health check
+in the example above has come back up), the mute goes away. If the health check comes
+back later, it will be reported in the usual way.</p>
+<p>It is possible to make a health mute “sticky”: this means that the mute will remain even if the
+health check clears. For example, to make a health mute “sticky”, you might run the following command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>health<span class="w"> </span>mute<span class="w"> </span>OSD_DOWN<span class="w"> </span>1h<span class="w"> </span>--sticky<span class="w">   </span><span class="c1"># ignore any/all down OSDs for next hour</span></span>
+</pre></div></div><p>Most health mutes disappear if the unhealthy condition that triggered the health check gets worse.
+For example, suppose that there is one OSD down and the health check is muted. In that case, if
+one or more additional OSDs go down, then the health mute disappears. This behavior occurs in any health check with a threshold value.</p>
+</section>
+</section>
+<section id="checking-a-cluster-s-usage-stats">
+<h2>Checking a Cluster’s Usage Stats<a class="headerlink" href="#checking-a-cluster-s-usage-stats" title="Permalink to this heading">¶</a></h2>
+<p>To check a cluster’s data usage and data distribution among pools, use the
+<code class="docutils literal notranslate"><span class="pre">df</span></code> command. This option is similar to Linux’s <code class="docutils literal notranslate"><span class="pre">df</span></code> command. Run the
+following command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>df</span>
+</pre></div></div><p>The output of <code class="docutils literal notranslate"><span class="pre">ceph</span> <span class="pre">df</span></code> resembles the following:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">CLASS</span>     <span class="n">SIZE</span>    <span class="n">AVAIL</span>     <span class="n">USED</span>  <span class="n">RAW</span> <span class="n">USED</span>  <span class="o">%</span><span class="n">RAW</span> <span class="n">USED</span>
+<span class="n">ssd</span>    <span class="mi">202</span> <span class="n">GiB</span>  <span class="mi">200</span> <span class="n">GiB</span>  <span class="mf">2.0</span> <span class="n">GiB</span>   <span class="mf">2.0</span> <span class="n">GiB</span>       <span class="mf">1.00</span>
+<span class="n">TOTAL</span>  <span class="mi">202</span> <span class="n">GiB</span>  <span class="mi">200</span> <span class="n">GiB</span>  <span class="mf">2.0</span> <span class="n">GiB</span>   <span class="mf">2.0</span> <span class="n">GiB</span>       <span class="mf">1.00</span>
+
+<span class="o">---</span> <span class="n">POOLS</span> <span class="o">---</span>
+<span class="n">POOL</span>                   <span class="n">ID</span>  <span class="n">PGS</span>   <span class="n">STORED</span>   <span class="p">(</span><span class="n">DATA</span><span class="p">)</span>   <span class="p">(</span><span class="n">OMAP</span><span class="p">)</span>   <span class="n">OBJECTS</span>     <span class="n">USED</span>  <span class="p">(</span><span class="n">DATA</span><span class="p">)</span>   <span class="p">(</span><span class="n">OMAP</span><span class="p">)</span>   <span class="o">%</span><span class="n">USED</span>  <span class="n">MAX</span> <span class="n">AVAIL</span>  <span class="n">QUOTA</span> <span class="n">OBJECTS</span>  <span class="n">QUOTA</span> <span class="n">BYTES</span>  <span class="n">DIRTY</span>  <span class="n">USED</span> <span class="n">COMPR</span>  <span class="n">UNDER</span> <span class="n">COMPR</span>
+<span class="n">device_health_metrics</span>   <span class="mi">1</span>    <span class="mi">1</span>  <span class="mi">242</span> <span class="n">KiB</span>   <span class="mi">15</span> <span class="n">KiB</span>  <span class="mi">227</span> <span class="n">KiB</span>         <span class="mi">4</span>  <span class="mi">251</span> <span class="n">KiB</span>  <span class="mi">24</span> <span class="n">KiB</span>  <span class="mi">227</span> <span class="n">KiB</span>       <span class="mi">0</span>    <span class="mi">297</span> <span class="n">GiB</span>            <span class="n">N</span><span class="o">/</span><span class="n">A</span>          <span class="n">N</span><span class="o">/</span><span class="n">A</span>      <span class="mi">4</span>         <span class="mi">0</span> <span class="n">B</span>          <span class="mi">0</span> <span class="n">B</span>
+<span class="n">cephfs</span><span class="o">.</span><span class="n">a</span><span class="o">.</span><span class="n">meta</span>           <span class="mi">2</span>   <span class="mi">32</span>  <span class="mf">6.8</span> <span class="n">KiB</span>  <span class="mf">6.8</span> <span class="n">KiB</span>      <span class="mi">0</span> <span class="n">B</span>        <span class="mi">22</span>   <span class="mi">96</span> <span class="n">KiB</span>  <span class="mi">96</span> <span class="n">KiB</span>      <span class="mi">0</span> <span class="n">B</span>       <span class="mi">0</span>    <span class="mi">297</span> <span class="n">GiB</span>            <span class="n">N</span><span class="o">/</span><span class="n">A</span>          <span class="n">N</span><span class="o">/</span><span class="n">A</span>     <span class="mi">22</span>         <span class="mi">0</span> <span class="n">B</span>          <span class="mi">0</span> <span class="n">B</span>
+<span class="n">cephfs</span><span class="o">.</span><span class="n">a</span><span class="o">.</span><span class="n">data</span>           <span class="mi">3</span>   <span class="mi">32</span>      <span class="mi">0</span> <span class="n">B</span>      <span class="mi">0</span> <span class="n">B</span>      <span class="mi">0</span> <span class="n">B</span>         <span class="mi">0</span>      <span class="mi">0</span> <span class="n">B</span>     <span class="mi">0</span> <span class="n">B</span>      <span class="mi">0</span> <span class="n">B</span>       <span class="mi">0</span>     <span class="mi">99</span> <span class="n">GiB</span>            <span class="n">N</span><span class="o">/</span><span class="n">A</span>          <span class="n">N</span><span class="o">/</span><span class="n">A</span>      <span class="mi">0</span>         <span class="mi">0</span> <span class="n">B</span>          <span class="mi">0</span> <span class="n">B</span>
+<span class="n">test</span>                    <span class="mi">4</span>   <span class="mi">32</span>   <span class="mi">22</span> <span class="n">MiB</span>   <span class="mi">22</span> <span class="n">MiB</span>   <span class="mi">50</span> <span class="n">KiB</span>       <span class="mi">248</span>   <span class="mi">19</span> <span class="n">MiB</span>  <span class="mi">19</span> <span class="n">MiB</span>   <span class="mi">50</span> <span class="n">KiB</span>       <span class="mi">0</span>    <span class="mi">297</span> <span class="n">GiB</span>            <span class="n">N</span><span class="o">/</span><span class="n">A</span>          <span class="n">N</span><span class="o">/</span><span class="n">A</span>    <span class="mi">248</span>         <span class="mi">0</span> <span class="n">B</span>          <span class="mi">0</span> <span class="n">B</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p><strong>CLASS:</strong> For example, “ssd” or “hdd”.</p></li>
+<li><p><strong>SIZE:</strong> The amount of storage capacity managed by the cluster.</p></li>
+<li><p><strong>AVAIL:</strong> The amount of free space available in the cluster.</p></li>
+<li><p><strong>USED:</strong> The amount of raw storage consumed by user data (excluding
+BlueStore’s database).</p></li>
+<li><p><strong>RAW USED:</strong> The amount of raw storage consumed by user data, internal
+overhead, and reserved capacity.</p></li>
+<li><p><strong>%RAW USED:</strong> The percentage of raw storage used. Watch this number in
+conjunction with <code class="docutils literal notranslate"><span class="pre">full</span> <span class="pre">ratio</span></code> and <code class="docutils literal notranslate"><span class="pre">near</span> <span class="pre">full</span> <span class="pre">ratio</span></code> to be forewarned when
+your cluster approaches the fullness thresholds. See <a class="reference external" href="../../configuration/mon-config-ref#storage-capacity">Storage Capacity</a>.</p></li>
+</ul>
+<p><strong>POOLS:</strong></p>
+<p>The POOLS section of the output provides a list of pools and the <em>notional</em>
+usage of each pool. This section of the output <strong>DOES NOT</strong> reflect replicas,
+clones, or snapshots. For example, if you store an object with 1MB of data,
+then the notional usage will be 1MB, but the actual usage might be 2MB or more
+depending on the number of replicas, clones, and snapshots.</p>
+<ul class="simple">
+<li><p><strong>ID:</strong> The number of the specific node within the pool.</p></li>
+<li><p><strong>STORED:</strong> The actual amount of data that the user has stored in a pool.
+This is similar to the USED column in earlier versions of Ceph, but the
+calculations (for BlueStore!) are more precise (in that gaps are properly
+handled).</p>
+<ul>
+<li><p><strong>(DATA):</strong> Usage for RBD (RADOS Block Device), CephFS file data, and RGW
+(RADOS Gateway) object data.</p></li>
+<li><p><strong>(OMAP):</strong> Key-value pairs. Used primarily by CephFS and RGW (RADOS
+Gateway) for metadata storage.</p></li>
+</ul>
+</li>
+<li><p><strong>OBJECTS:</strong> The notional number of objects stored per pool (that is, the
+number of objects other than replicas, clones, or snapshots).</p></li>
+<li><p><strong>USED:</strong> The space allocated for a pool over all OSDs. This includes space
+for replication, space for allocation granularity, and space for the overhead
+associated with erasure-coding. Compression savings and object-content gaps
+are also taken into account. However, BlueStore’s database is not included in
+the amount reported under USED.</p>
+<ul>
+<li><p><strong>(DATA):</strong> Object usage for RBD (RADOS Block Device), CephFS file data,
+and RGW (RADOS Gateway) object data.</p></li>
+<li><p><strong>(OMAP):</strong> Object key-value pairs. Used primarily by CephFS and RGW (RADOS
+Gateway) for metadata storage.</p></li>
+</ul>
+</li>
+<li><p><strong>%USED:</strong> The notional percentage of storage used per pool.</p></li>
+<li><p><strong>MAX AVAIL:</strong> An estimate of the notional amount of data that can be written
+to this pool.</p></li>
+<li><p><strong>QUOTA OBJECTS:</strong> The number of quota objects.</p></li>
+<li><p><strong>QUOTA BYTES:</strong> The number of bytes in the quota objects.</p></li>
+<li><p><strong>DIRTY:</strong> The number of objects in the cache pool that have been written to
+the cache pool but have not yet been flushed to the base pool. This field is
+available only when cache tiering is in use.</p></li>
+<li><p><strong>USED COMPR:</strong> The amount of space allocated for compressed data. This
+includes compressed data in addition to all of the space required for
+replication, allocation granularity, and erasure- coding overhead.</p></li>
+<li><p><strong>UNDER COMPR:</strong> The amount of data that has passed through compression
+(summed over all replicas) and that is worth storing in a compressed form.</p></li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The numbers in the POOLS section are notional. They do not include
+the number of replicas, clones, or snapshots. As a result, the sum of the
+USED and %USED amounts in the POOLS section of the output will not be equal
+to the sum of the USED and %USED amounts in the RAW section of the output.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The MAX AVAIL value is a complicated function of the replication or
+the kind of erasure coding used, the CRUSH rule that maps storage to
+devices, the utilization of those devices, and the configured
+<code class="docutils literal notranslate"><span class="pre">mon_osd_full_ratio</span></code> setting.</p>
+</div>
+</section>
+<section id="checking-osd-status">
+<h2>Checking OSD Status<a class="headerlink" href="#checking-osd-status" title="Permalink to this heading">¶</a></h2>
+<p>To check if OSDs are <code class="docutils literal notranslate"><span class="pre">up</span></code> and <code class="docutils literal notranslate"><span class="pre">in</span></code>, run the
+following command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><style type="text/css">
+span.prompt3:before {
+  content: "# ";
+}
+</style><span class="prompt3">ceph<span class="w"> </span>osd<span class="w"> </span>stat</span>
+</pre></div></div><p>Alternatively, you can run the following command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt3">ceph<span class="w"> </span>osd<span class="w"> </span>dump</span>
+</pre></div></div><p>To view OSDs according to their position in the CRUSH map, run the following
+command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt3">ceph<span class="w"> </span>osd<span class="w"> </span>tree</span>
+</pre></div></div><p>To print out a CRUSH tree that displays a host, its OSDs, whether the OSDs are
+<code class="docutils literal notranslate"><span class="pre">up</span></code>, and the weight of the OSDs, run the following command:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1">#ID CLASS WEIGHT  TYPE NAME             STATUS REWEIGHT PRI-AFF</span>
+<span class="w"> </span>-1<span class="w">       </span><span class="m">3</span>.00000<span class="w"> </span>pool<span class="w"> </span>default
+<span class="w"> </span>-3<span class="w">       </span><span class="m">3</span>.00000<span class="w"> </span>rack<span class="w"> </span>mainrack
+<span class="w"> </span>-2<span class="w">       </span><span class="m">3</span>.00000<span class="w"> </span>host<span class="w"> </span>osd-host
+<span class="w">  </span><span class="m">0</span><span class="w">   </span>ssd<span class="w"> </span><span class="m">1</span>.00000<span class="w">         </span>osd.0<span class="w">             </span>up<span class="w">  </span><span class="m">1</span>.00000<span class="w"> </span><span class="m">1</span>.00000
+<span class="w">  </span><span class="m">1</span><span class="w">   </span>ssd<span class="w"> </span><span class="m">1</span>.00000<span class="w">         </span>osd.1<span class="w">             </span>up<span class="w">  </span><span class="m">1</span>.00000<span class="w"> </span><span class="m">1</span>.00000
+<span class="w">  </span><span class="m">2</span><span class="w">   </span>ssd<span class="w"> </span><span class="m">1</span>.00000<span class="w">         </span>osd.2<span class="w">             </span>up<span class="w">  </span><span class="m">1</span>.00000<span class="w"> </span><span class="m">1</span>.00000
+</pre></div>
+</div>
+<p>See <a class="reference external" href="../monitoring-osd-pg">Monitoring OSDs and Placement Groups</a>.</p>
+</section>
+<section id="checking-monitor-status">
+<h2>Checking Monitor Status<a class="headerlink" href="#checking-monitor-status" title="Permalink to this heading">¶</a></h2>
+<p>If your cluster has multiple monitors, then you need to perform certain
+“monitor status” checks.  After starting the cluster and before reading or
+writing data, you should check quorum status. A quorum must be present when
+multiple monitors are running to ensure proper functioning of your Ceph
+cluster. Check monitor status regularly in order to ensure that all of the
+monitors are running.</p>
+<p>To display the monitor map, run the following command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>mon<span class="w"> </span>stat</span>
+</pre></div></div><p>Alternatively, you can run the following command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>mon<span class="w"> </span>dump</span>
+</pre></div></div><p>To check the quorum status for the monitor cluster, run the following command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>quorum_status</span>
+</pre></div></div><p>Ceph returns the quorum status. For example, a Ceph cluster that consists of
+three monitors might return the following:</p>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="p">{</span><span class="w"> </span><span class="s2">&quot;election_epoch&quot;</span><span class="o">:</span><span class="w"> </span><span class="mf">10</span><span class="p">,</span>
+<span class="w">  </span><span class="s2">&quot;quorum&quot;</span><span class="o">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">        </span><span class="mf">0</span><span class="p">,</span>
+<span class="w">        </span><span class="mf">1</span><span class="p">,</span>
+<span class="w">        </span><span class="mf">2</span><span class="p">],</span>
+<span class="w">  </span><span class="s2">&quot;quorum_names&quot;</span><span class="o">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="s2">&quot;a&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;b&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;c&quot;</span><span class="p">],</span>
+<span class="w">  </span><span class="s2">&quot;quorum_leader_name&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;a&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="s2">&quot;monmap&quot;</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="s2">&quot;epoch&quot;</span><span class="o">:</span><span class="w"> </span><span class="mf">1</span><span class="p">,</span>
+<span class="w">      </span><span class="s2">&quot;fsid&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;444b489c-4f16-4b75-83f0-cb8097468898&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="s2">&quot;modified&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;2011-12-12 13:28:27.505520&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="s2">&quot;created&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;2011-12-12 13:28:27.505520&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="s2">&quot;features&quot;</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="s2">&quot;persistent&quot;</span><span class="o">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">            </span><span class="s2">&quot;kraken&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;luminous&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;mimic&quot;</span><span class="p">],</span>
+<span class="w">    </span><span class="s2">&quot;optional&quot;</span><span class="o">:</span><span class="w"> </span><span class="p">[]</span>
+<span class="w">      </span><span class="p">},</span>
+<span class="w">      </span><span class="s2">&quot;mons&quot;</span><span class="o">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">            </span><span class="p">{</span><span class="w"> </span><span class="s2">&quot;rank&quot;</span><span class="o">:</span><span class="w"> </span><span class="mf">0</span><span class="p">,</span>
+<span class="w">              </span><span class="s2">&quot;name&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;a&quot;</span><span class="p">,</span>
+<span class="w">              </span><span class="s2">&quot;addr&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;127.0.0.1:6789/0&quot;</span><span class="p">,</span>
+<span class="w">          </span><span class="s2">&quot;public_addr&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;127.0.0.1:6789/0&quot;</span><span class="p">},</span>
+<span class="w">            </span><span class="p">{</span><span class="w"> </span><span class="s2">&quot;rank&quot;</span><span class="o">:</span><span class="w"> </span><span class="mf">1</span><span class="p">,</span>
+<span class="w">              </span><span class="s2">&quot;name&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;b&quot;</span><span class="p">,</span>
+<span class="w">              </span><span class="s2">&quot;addr&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;127.0.0.1:6790/0&quot;</span><span class="p">,</span>
+<span class="w">          </span><span class="s2">&quot;public_addr&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;127.0.0.1:6790/0&quot;</span><span class="p">},</span>
+<span class="w">            </span><span class="p">{</span><span class="w"> </span><span class="s2">&quot;rank&quot;</span><span class="o">:</span><span class="w"> </span><span class="mf">2</span><span class="p">,</span>
+<span class="w">              </span><span class="s2">&quot;name&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;c&quot;</span><span class="p">,</span>
+<span class="w">              </span><span class="s2">&quot;addr&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;127.0.0.1:6791/0&quot;</span><span class="p">,</span>
+<span class="w">          </span><span class="s2">&quot;public_addr&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;127.0.0.1:6791/0&quot;</span><span class="p">}</span>
+<span class="w">           </span><span class="p">]</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+<section id="checking-mds-status">
+<h2>Checking MDS Status<a class="headerlink" href="#checking-mds-status" title="Permalink to this heading">¶</a></h2>
+<p>Metadata servers provide metadata services for CephFS. Metadata servers have
+two sets of states: <code class="docutils literal notranslate"><span class="pre">up</span> <span class="pre">|</span> <span class="pre">down</span></code> and <code class="docutils literal notranslate"><span class="pre">active</span> <span class="pre">|</span> <span class="pre">inactive</span></code>. To check if your
+metadata servers are <code class="docutils literal notranslate"><span class="pre">up</span></code> and <code class="docutils literal notranslate"><span class="pre">active</span></code>, run the following command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>mds<span class="w"> </span>stat</span>
+</pre></div></div><p>To display details of the metadata servers, run the following command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>fs<span class="w"> </span>dump</span>
+</pre></div></div></section>
+<section id="checking-placement-group-states">
+<h2>Checking Placement Group States<a class="headerlink" href="#checking-placement-group-states" title="Permalink to this heading">¶</a></h2>
+<p>Placement groups (PGs) map objects to OSDs. PGs are monitored in order to
+ensure that they are <code class="docutils literal notranslate"><span class="pre">active</span></code> and <code class="docutils literal notranslate"><span class="pre">clean</span></code>.  See <a class="reference external" href="../monitoring-osd-pg">Monitoring OSDs and
+Placement Groups</a>.</p>
+</section>
+<section id="using-the-admin-socket">
+<span id="rados-monitoring-using-admin-socket"></span><h2>Using the Admin Socket<a class="headerlink" href="#using-the-admin-socket" title="Permalink to this heading">¶</a></h2>
+<p>The Ceph admin socket allows you to query a daemon via a socket interface.  By
+default, Ceph sockets reside under <code class="docutils literal notranslate"><span class="pre">/var/run/ceph</span></code>. To access a daemon via
+the admin socket, log in to the host that is running the daemon and run one of
+the two following commands:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>daemon<span class="w"> </span><span class="o">{</span>daemon-name<span class="o">}</span></span>
+<span class="prompt1">ceph<span class="w"> </span>daemon<span class="w"> </span><span class="o">{</span>path-to-socket-file<span class="o">}</span></span>
+</pre></div></div><p>For example, the following commands are equivalent to each other:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>daemon<span class="w"> </span>osd.0<span class="w"> </span>foo</span>
+<span class="prompt1">ceph<span class="w"> </span>daemon<span class="w"> </span>/var/run/ceph/ceph-osd.0.asok<span class="w"> </span>foo</span>
+</pre></div></div><p>To view the available admin-socket commands, run the following command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>daemon<span class="w"> </span><span class="o">{</span>daemon-name<span class="o">}</span><span class="w"> </span><span class="nb">help</span></span>
+</pre></div></div><p>Admin-socket commands enable you to view and set your configuration at runtime.
+For more on viewing your configuration, see <a class="reference external" href="../../configuration/ceph-conf#viewing-a-configuration-at-runtime">Viewing a Configuration at
+Runtime</a>. There are two methods of setting configuration value at runtime: (1)
+using the admin socket, which bypasses the monitor and requires a direct login
+to the host in question, and (2) using the <code class="docutils literal notranslate"><span class="pre">ceph</span> <span class="pre">tell</span> <span class="pre">{daemon-type}.{id}</span>
+<span class="pre">config</span> <span class="pre">set</span></code> command, which relies on the monitor and does not require a direct
+login.</p>
+</section>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../../">
+              <img class="logo" src="../../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../install/">Installing Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cephadm/">Cephadm</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../">Ceph Storage Cluster</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../../configuration/">Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../cephadm/">Deployment</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../">Operations</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../operating/">Operating a Cluster</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../health-checks/">Health checks</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Monitoring a Cluster</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#using-the-command-line">Using the command line</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#interactive-mode">Interactive mode</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#non-default-paths">Non-default paths</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#checking-a-cluster-s-status">Checking a Cluster’s Status</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#how-ceph-calculates-data-usage">How Ceph Calculates Data Usage</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#watching-a-cluster">Watching a Cluster</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#monitoring-health-checks">Monitoring Health Checks</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#network-performance-checks">Network Performance Checks</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#muting-health-checks">Muting Health Checks</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#checking-a-cluster-s-usage-stats">Checking a Cluster’s Usage Stats</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#checking-osd-status">Checking OSD Status</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#checking-monitor-status">Checking Monitor Status</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#checking-mds-status">Checking MDS Status</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#checking-placement-group-states">Checking Placement Group States</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#using-the-admin-socket">Using the Admin Socket</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../monitoring-osd-pg/">Monitoring OSDs and PGs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../user-management/">User Management</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../pg-repair/">Repairing PG Inconsistencies</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../data-placement/">Data Placement Overview</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../pools/">Pools</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../erasure-code/">Erasure code</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../cache-tiering/">Cache Tiering</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../placement-groups/">Placement Groups</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../balancer/">Balancer</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../upmap/">Using pg-upmap</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../crush-map/">CRUSH Maps</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../crush-map-edits/">Manually editing a CRUSH Map</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../stretch-mode/">Stretch Clusters</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../change-mon-elections/">Configure Monitor Election Strategies</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../add-or-rm-osds/">Adding/Removing OSDs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../add-or-rm-mons/">Adding/Removing Monitors</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../devices/">Device Management</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../bluestore-migration/">BlueStore Migration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../control/">Command Reference</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../troubleshooting/community/">The Ceph Community</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../troubleshooting/troubleshooting-mon/">Troubleshooting Monitors</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../troubleshooting/troubleshooting-osd/">Troubleshooting OSDs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../troubleshooting/troubleshooting-pg/">Troubleshooting PGs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../troubleshooting/log-and-debug/">Logging and Debugging</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../troubleshooting/cpu-profiling/">CPU Profiling</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../troubleshooting/memory-profiling/">Memory Profiling</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../man/">Man Pages</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../troubleshooting/">Troubleshooting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/">APIs</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cephfs/">Ceph File System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../rbd/">Ceph Block Device</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../radosgw/">Ceph Object Gateway</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../mgr/">Ceph Manager Daemon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../mgr/dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dev/developer_guide/">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dev/internals/">Ceph Internals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../../../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../monitoring-osd-pg/" title="Monitoring OSDs and PGs"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../health-checks/" title="Health checks"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../" >Ceph Storage Cluster</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../" >Cluster Operations</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Monitoring a Cluster</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

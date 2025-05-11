@@ -1,0 +1,1106 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Logging and Debugging &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/css/custom.css" />
+    <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/jquery.js"></script>
+    <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../../genindex/" />
+    <link rel="search" title="Search" href="../../../search/" />
+    <link rel="next" title="CPU Profiling" href="../cpu-profiling/" />
+    <link rel="prev" title="Troubleshooting PGs" href="../troubleshooting-pg/" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../cpu-profiling/" title="CPU Profiling"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../troubleshooting-pg/" title="Troubleshooting PGs"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../" >Ceph Storage Cluster</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../../operations/" accesskey="U">Cluster Operations</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Logging and Debugging</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="logging-and-debugging">
+<h1>Logging and Debugging<a class="headerlink" href="#logging-and-debugging" title="Permalink to this heading">¶</a></h1>
+<p>Typically, when you add debugging to your Ceph configuration, you do so at
+runtime. You can also add Ceph debug logging to your Ceph configuration file if
+you are encountering issues when starting your cluster. You may view Ceph log
+files under <code class="docutils literal notranslate"><span class="pre">/var/log/ceph</span></code> (the default location).</p>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>When debug output slows down your system, the latency can hide
+race conditions.</p>
+</div>
+<p>Logging is resource intensive. If you are encountering a problem in a specific
+area of your cluster, enable logging for that area of the cluster. For example,
+if your OSDs are running fine, but your metadata servers are not, you should
+start by enabling debug logging for the specific metadata server instance(s)
+giving you trouble. Enable logging for each subsystem as needed.</p>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>Verbose logging can generate over 1GB of data per hour. If your
+OS disk reaches its capacity, the node will stop working.</p>
+</div>
+<p>If you enable or increase the rate of Ceph logging, ensure that you have
+sufficient disk space on your OS disk.  See <a class="reference internal" href="#accelerating-log-rotation">Accelerating Log Rotation</a> for
+details on rotating log files. When your system is running well, remove
+unnecessary debugging settings to ensure your cluster runs optimally. Logging
+debug output messages is relatively slow, and a waste of resources when
+operating your cluster.</p>
+<p>See <a class="reference internal" href="#subsystem-log-and-debug-settings">Subsystem, Log and Debug Settings</a> for details on available settings.</p>
+<section id="runtime">
+<h2>Runtime<a class="headerlink" href="#runtime" title="Permalink to this heading">¶</a></h2>
+<p>If you would like to see the configuration settings at runtime, you must log
+in to a host with a running daemon and execute the following:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span> <span class="n">daemon</span> <span class="p">{</span><span class="n">daemon</span><span class="o">-</span><span class="n">name</span><span class="p">}</span> <span class="n">config</span> <span class="n">show</span> <span class="o">|</span> <span class="n">less</span>
+</pre></div>
+</div>
+<p>For example,:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span> <span class="n">daemon</span> <span class="n">osd</span><span class="mf">.0</span> <span class="n">config</span> <span class="n">show</span> <span class="o">|</span> <span class="n">less</span>
+</pre></div>
+</div>
+<p>To activate Ceph’s debugging output (<em>i.e.</em>, <code class="docutils literal notranslate"><span class="pre">dout()</span></code>) at runtime,  use the
+<code class="docutils literal notranslate"><span class="pre">ceph</span> <span class="pre">tell</span></code> command to inject arguments into the runtime configuration:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span> <span class="n">tell</span> <span class="p">{</span><span class="n">daemon</span><span class="o">-</span><span class="nb">type</span><span class="p">}</span><span class="o">.</span><span class="p">{</span><span class="n">daemon</span> <span class="nb">id</span> <span class="ow">or</span> <span class="o">*</span><span class="p">}</span> <span class="n">config</span> <span class="nb">set</span> <span class="p">{</span><span class="n">name</span><span class="p">}</span> <span class="p">{</span><span class="n">value</span><span class="p">}</span>
+</pre></div>
+</div>
+<p>Replace <code class="docutils literal notranslate"><span class="pre">{daemon-type}</span></code> with one of <code class="docutils literal notranslate"><span class="pre">osd</span></code>, <code class="docutils literal notranslate"><span class="pre">mon</span></code> or <code class="docutils literal notranslate"><span class="pre">mds</span></code>. You may apply
+the runtime setting to all daemons of a particular type with <code class="docutils literal notranslate"><span class="pre">*</span></code>, or specify
+a specific daemon’s ID. For example, to increase
+debug logging for a <code class="docutils literal notranslate"><span class="pre">ceph-osd</span></code> daemon named <code class="docutils literal notranslate"><span class="pre">osd.0</span></code>, execute the following:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span> <span class="n">tell</span> <span class="n">osd</span><span class="mf">.0</span> <span class="n">config</span> <span class="nb">set</span> <span class="n">debug_osd</span> <span class="mi">0</span><span class="o">/</span><span class="mi">5</span>
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">ceph</span> <span class="pre">tell</span></code> command goes through the monitors. If you cannot bind to the
+monitor, you can still make the change by logging into the host of the daemon
+whose configuration you’d like to change using <code class="docutils literal notranslate"><span class="pre">ceph</span> <span class="pre">daemon</span></code>.
+For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">sudo</span> <span class="n">ceph</span> <span class="n">daemon</span> <span class="n">osd</span><span class="mf">.0</span> <span class="n">config</span> <span class="nb">set</span> <span class="n">debug_osd</span> <span class="mi">0</span><span class="o">/</span><span class="mi">5</span>
+</pre></div>
+</div>
+<p>See <a class="reference internal" href="#subsystem-log-and-debug-settings">Subsystem, Log and Debug Settings</a> for details on available settings.</p>
+</section>
+<section id="boot-time">
+<h2>Boot Time<a class="headerlink" href="#boot-time" title="Permalink to this heading">¶</a></h2>
+<p>To activate Ceph’s debugging output (<em>i.e.</em>, <code class="docutils literal notranslate"><span class="pre">dout()</span></code>) at boot time, you must
+add settings to your Ceph configuration file. Subsystems common to each daemon
+may be set under <code class="docutils literal notranslate"><span class="pre">[global]</span></code> in your configuration file. Subsystems for
+particular daemons are set under the daemon section in your configuration file
+(<em>e.g.</em>, <code class="docutils literal notranslate"><span class="pre">[mon]</span></code>, <code class="docutils literal notranslate"><span class="pre">[osd]</span></code>, <code class="docutils literal notranslate"><span class="pre">[mds]</span></code>). For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[</span><span class="k">global</span><span class="p">]</span>
+        <span class="n">debug</span> <span class="n">ms</span> <span class="o">=</span> <span class="mi">1</span><span class="o">/</span><span class="mi">5</span>
+
+<span class="p">[</span><span class="n">mon</span><span class="p">]</span>
+        <span class="n">debug</span> <span class="n">mon</span> <span class="o">=</span> <span class="mi">20</span>
+        <span class="n">debug</span> <span class="n">paxos</span> <span class="o">=</span> <span class="mi">1</span><span class="o">/</span><span class="mi">5</span>
+        <span class="n">debug</span> <span class="n">auth</span> <span class="o">=</span> <span class="mi">2</span>
+
+<span class="p">[</span><span class="n">osd</span><span class="p">]</span>
+        <span class="n">debug</span> <span class="n">osd</span> <span class="o">=</span> <span class="mi">1</span><span class="o">/</span><span class="mi">5</span>
+        <span class="n">debug</span> <span class="n">filestore</span> <span class="o">=</span> <span class="mi">1</span><span class="o">/</span><span class="mi">5</span>
+        <span class="n">debug</span> <span class="n">journal</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="n">debug</span> <span class="n">monc</span> <span class="o">=</span> <span class="mi">5</span><span class="o">/</span><span class="mi">20</span>
+
+<span class="p">[</span><span class="n">mds</span><span class="p">]</span>
+        <span class="n">debug</span> <span class="n">mds</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="n">debug</span> <span class="n">mds</span> <span class="n">balancer</span> <span class="o">=</span> <span class="mi">1</span>
+</pre></div>
+</div>
+<p>See <a class="reference internal" href="#subsystem-log-and-debug-settings">Subsystem, Log and Debug Settings</a> for details.</p>
+</section>
+<section id="accelerating-log-rotation">
+<h2>Accelerating Log Rotation<a class="headerlink" href="#accelerating-log-rotation" title="Permalink to this heading">¶</a></h2>
+<p>If your OS disk is relatively full, you can accelerate log rotation by modifying
+the Ceph log rotation file at <code class="docutils literal notranslate"><span class="pre">/etc/logrotate.d/ceph</span></code>. Add  a size setting
+after the rotation frequency to accelerate log rotation (via cronjob) if your
+logs exceed the size setting. For example, the  default setting looks like
+this:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">rotate</span> <span class="mi">7</span>
+<span class="n">weekly</span>
+<span class="n">compress</span>
+<span class="n">sharedscripts</span>
+</pre></div>
+</div>
+<p>Modify it by adding a <code class="docutils literal notranslate"><span class="pre">size</span></code> setting.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">rotate</span> <span class="mi">7</span>
+<span class="n">weekly</span>
+<span class="n">size</span> <span class="mi">500</span><span class="n">M</span>
+<span class="n">compress</span>
+<span class="n">sharedscripts</span>
+</pre></div>
+</div>
+<p>Then, start the crontab editor for your user space.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">crontab</span> <span class="o">-</span><span class="n">e</span>
+</pre></div>
+</div>
+<p>Finally, add an entry to check the <code class="docutils literal notranslate"><span class="pre">etc/logrotate.d/ceph</span></code> file.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="mi">30</span> <span class="o">*</span> <span class="o">*</span> <span class="o">*</span> <span class="o">*</span> <span class="o">/</span><span class="n">usr</span><span class="o">/</span><span class="n">sbin</span><span class="o">/</span><span class="n">logrotate</span> <span class="o">/</span><span class="n">etc</span><span class="o">/</span><span class="n">logrotate</span><span class="o">.</span><span class="n">d</span><span class="o">/</span><span class="n">ceph</span> <span class="o">&gt;/</span><span class="n">dev</span><span class="o">/</span><span class="n">null</span> <span class="mi">2</span><span class="o">&gt;&amp;</span><span class="mi">1</span>
+</pre></div>
+</div>
+<p>The preceding example checks the <code class="docutils literal notranslate"><span class="pre">etc/logrotate.d/ceph</span></code> file every 30 minutes.</p>
+</section>
+<section id="valgrind">
+<h2>Valgrind<a class="headerlink" href="#valgrind" title="Permalink to this heading">¶</a></h2>
+<p>Debugging may also require you to track down memory and threading issues.
+You can run a single daemon, a type of daemon, or the whole cluster with
+Valgrind. You should only use Valgrind when developing or debugging Ceph.
+Valgrind is computationally expensive, and will slow down your system otherwise.
+Valgrind messages are logged to <code class="docutils literal notranslate"><span class="pre">stderr</span></code>.</p>
+</section>
+<section id="subsystem-log-and-debug-settings">
+<h2>Subsystem, Log and Debug Settings<a class="headerlink" href="#subsystem-log-and-debug-settings" title="Permalink to this heading">¶</a></h2>
+<p>In most cases, you will enable debug logging output via subsystems.</p>
+<section id="ceph-subsystems">
+<h3>Ceph Subsystems<a class="headerlink" href="#ceph-subsystems" title="Permalink to this heading">¶</a></h3>
+<p>Each subsystem has a logging level for its output logs, and for its logs
+in-memory. You may set different values for each of these subsystems by setting
+a log file level and a memory level for debug logging. Ceph’s logging levels
+operate on a scale of <code class="docutils literal notranslate"><span class="pre">1</span></code> to <code class="docutils literal notranslate"><span class="pre">20</span></code>, where <code class="docutils literal notranslate"><span class="pre">1</span></code> is terse and <code class="docutils literal notranslate"><span class="pre">20</span></code> is
+verbose <a class="footnote-reference brackets" href="#id2" id="id1">1</a> . In general, the logs in-memory are not sent to the output log unless:</p>
+<ul class="simple">
+<li><p>a fatal signal is raised or</p></li>
+<li><p>an <code class="docutils literal notranslate"><span class="pre">assert</span></code> in source code is triggered or</p></li>
+<li><p>upon requested. Please consult <a class="reference external" href="http://docs.ceph.com/en/latest/man/8/ceph/#daemon">document on admin socket</a> for more details.</p></li>
+</ul>
+<p>A debug logging setting can take a single value for the log level and the
+memory level, which sets them both as the same value. For example, if you
+specify <code class="docutils literal notranslate"><span class="pre">debug</span> <span class="pre">ms</span> <span class="pre">=</span> <span class="pre">5</span></code>, Ceph will treat it as a log level and a memory level
+of <code class="docutils literal notranslate"><span class="pre">5</span></code>. You may also specify them separately. The first setting is the log
+level, and the second setting is the memory level.  You must separate them with
+a forward slash (/). For example, if you want to set the <code class="docutils literal notranslate"><span class="pre">ms</span></code> subsystem’s
+debug logging level to <code class="docutils literal notranslate"><span class="pre">1</span></code> and its memory level to <code class="docutils literal notranslate"><span class="pre">5</span></code>, you would specify it
+as <code class="docutils literal notranslate"><span class="pre">debug</span> <span class="pre">ms</span> <span class="pre">=</span> <span class="pre">1/5</span></code>. For example:</p>
+<div class="highlight-ini notranslate"><div class="highlight"><pre><span></span><span class="na">debug {subsystem}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">{log-level}/{memory-level}</span>
+<span class="c1">#for example</span>
+<span class="na">debug mds balancer</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">1/20</span>
+</pre></div>
+</div>
+<p>The following table provides a list of Ceph subsystems and their default log and
+memory levels. Once you complete your logging efforts, restore the subsystems
+to their default level or to a level suitable for normal operations.</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 44%" />
+<col style="width: 24%" />
+<col style="width: 31%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Subsystem</p></th>
+<th class="head"><p>Log Level</p></th>
+<th class="head"><p>Memory Level</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">default</span></code></p></td>
+<td><p>0</p></td>
+<td><p>5</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">lockdep</span></code></p></td>
+<td><p>0</p></td>
+<td><p>1</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">context</span></code></p></td>
+<td><p>0</p></td>
+<td><p>1</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">crush</span></code></p></td>
+<td><p>1</p></td>
+<td><p>1</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">mds</span></code></p></td>
+<td><p>1</p></td>
+<td><p>5</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">mds</span> <span class="pre">balancer</span></code></p></td>
+<td><p>1</p></td>
+<td><p>5</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">mds</span> <span class="pre">locker</span></code></p></td>
+<td><p>1</p></td>
+<td><p>5</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">mds</span> <span class="pre">log</span></code></p></td>
+<td><p>1</p></td>
+<td><p>5</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">mds</span> <span class="pre">log</span> <span class="pre">expire</span></code></p></td>
+<td><p>1</p></td>
+<td><p>5</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">mds</span> <span class="pre">migrator</span></code></p></td>
+<td><p>1</p></td>
+<td><p>5</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">buffer</span></code></p></td>
+<td><p>0</p></td>
+<td><p>1</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">timer</span></code></p></td>
+<td><p>0</p></td>
+<td><p>1</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">filer</span></code></p></td>
+<td><p>0</p></td>
+<td><p>1</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">striper</span></code></p></td>
+<td><p>0</p></td>
+<td><p>1</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">objecter</span></code></p></td>
+<td><p>0</p></td>
+<td><p>1</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">rados</span></code></p></td>
+<td><p>0</p></td>
+<td><p>5</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">rbd</span></code></p></td>
+<td><p>0</p></td>
+<td><p>5</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">rbd</span> <span class="pre">mirror</span></code></p></td>
+<td><p>0</p></td>
+<td><p>5</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">rbd</span> <span class="pre">replay</span></code></p></td>
+<td><p>0</p></td>
+<td><p>5</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">journaler</span></code></p></td>
+<td><p>0</p></td>
+<td><p>5</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">objectcacher</span></code></p></td>
+<td><p>0</p></td>
+<td><p>5</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">client</span></code></p></td>
+<td><p>0</p></td>
+<td><p>5</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">osd</span></code></p></td>
+<td><p>1</p></td>
+<td><p>5</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">optracker</span></code></p></td>
+<td><p>0</p></td>
+<td><p>5</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">objclass</span></code></p></td>
+<td><p>0</p></td>
+<td><p>5</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">filestore</span></code></p></td>
+<td><p>1</p></td>
+<td><p>3</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">journal</span></code></p></td>
+<td><p>1</p></td>
+<td><p>3</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ms</span></code></p></td>
+<td><p>0</p></td>
+<td><p>5</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">mon</span></code></p></td>
+<td><p>1</p></td>
+<td><p>5</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">monc</span></code></p></td>
+<td><p>0</p></td>
+<td><p>10</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">paxos</span></code></p></td>
+<td><p>1</p></td>
+<td><p>5</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">tp</span></code></p></td>
+<td><p>0</p></td>
+<td><p>5</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">auth</span></code></p></td>
+<td><p>1</p></td>
+<td><p>5</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">crypto</span></code></p></td>
+<td><p>1</p></td>
+<td><p>5</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">finisher</span></code></p></td>
+<td><p>1</p></td>
+<td><p>1</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">reserver</span></code></p></td>
+<td><p>1</p></td>
+<td><p>1</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">heartbeatmap</span></code></p></td>
+<td><p>1</p></td>
+<td><p>5</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">perfcounter</span></code></p></td>
+<td><p>1</p></td>
+<td><p>5</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">rgw</span></code></p></td>
+<td><p>1</p></td>
+<td><p>5</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">rgw</span> <span class="pre">sync</span></code></p></td>
+<td><p>1</p></td>
+<td><p>5</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">civetweb</span></code></p></td>
+<td><p>1</p></td>
+<td><p>10</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">javaclient</span></code></p></td>
+<td><p>1</p></td>
+<td><p>5</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">asok</span></code></p></td>
+<td><p>1</p></td>
+<td><p>5</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">throttle</span></code></p></td>
+<td><p>1</p></td>
+<td><p>1</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">refs</span></code></p></td>
+<td><p>0</p></td>
+<td><p>0</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">compressor</span></code></p></td>
+<td><p>1</p></td>
+<td><p>5</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">bluestore</span></code></p></td>
+<td><p>1</p></td>
+<td><p>5</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">bluefs</span></code></p></td>
+<td><p>1</p></td>
+<td><p>5</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">bdev</span></code></p></td>
+<td><p>1</p></td>
+<td><p>3</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">kstore</span></code></p></td>
+<td><p>1</p></td>
+<td><p>5</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">rocksdb</span></code></p></td>
+<td><p>4</p></td>
+<td><p>5</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">leveldb</span></code></p></td>
+<td><p>4</p></td>
+<td><p>5</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">memdb</span></code></p></td>
+<td><p>4</p></td>
+<td><p>5</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">fuse</span></code></p></td>
+<td><p>1</p></td>
+<td><p>5</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">mgr</span></code></p></td>
+<td><p>1</p></td>
+<td><p>5</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">mgrc</span></code></p></td>
+<td><p>1</p></td>
+<td><p>5</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">dpdk</span></code></p></td>
+<td><p>1</p></td>
+<td><p>5</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">eventtrace</span></code></p></td>
+<td><p>1</p></td>
+<td><p>5</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="logging-settings">
+<h3>Logging Settings<a class="headerlink" href="#logging-settings" title="Permalink to this heading">¶</a></h3>
+<p>Logging and debugging settings are not required in a Ceph configuration file,
+but you may override default settings as needed. Ceph supports the following
+settings:</p>
+<p><code class="docutils literal notranslate"><span class="pre">log</span> <span class="pre">file</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The location of the logging file for your cluster.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Required</dt>
+<dd class="field-odd"><p>No</p>
+</dd>
+<dt class="field-even">Default</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">/var/log/ceph/$cluster-$name.log</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">log</span> <span class="pre">max</span> <span class="pre">new</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The maximum number of new log files.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Integer</p>
+</dd>
+<dt class="field-odd">Required</dt>
+<dd class="field-odd"><p>No</p>
+</dd>
+<dt class="field-even">Default</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">1000</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">log</span> <span class="pre">max</span> <span class="pre">recent</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The maximum number of recent events to include in a log file.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Integer</p>
+</dd>
+<dt class="field-odd">Required</dt>
+<dd class="field-odd"><p>No</p>
+</dd>
+<dt class="field-even">Default</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">10000</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">log</span> <span class="pre">to</span> <span class="pre">file</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Determines if logging messages should appear in a file.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Boolean</p>
+</dd>
+<dt class="field-odd">Required</dt>
+<dd class="field-odd"><p>No</p>
+</dd>
+<dt class="field-even">Default</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">true</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">log</span> <span class="pre">to</span> <span class="pre">stderr</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Determines if logging messages should appear in <code class="docutils literal notranslate"><span class="pre">stderr</span></code>.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Boolean</p>
+</dd>
+<dt class="field-odd">Required</dt>
+<dd class="field-odd"><p>No</p>
+</dd>
+<dt class="field-even">Default</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">false</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">err</span> <span class="pre">to</span> <span class="pre">stderr</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Determines if error messages should appear in <code class="docutils literal notranslate"><span class="pre">stderr</span></code>.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Boolean</p>
+</dd>
+<dt class="field-odd">Required</dt>
+<dd class="field-odd"><p>No</p>
+</dd>
+<dt class="field-even">Default</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">true</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">log</span> <span class="pre">to</span> <span class="pre">syslog</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Determines if logging messages should appear in <code class="docutils literal notranslate"><span class="pre">syslog</span></code>.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Boolean</p>
+</dd>
+<dt class="field-odd">Required</dt>
+<dd class="field-odd"><p>No</p>
+</dd>
+<dt class="field-even">Default</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">false</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">err</span> <span class="pre">to</span> <span class="pre">syslog</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Determines if error messages should appear in <code class="docutils literal notranslate"><span class="pre">syslog</span></code>.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Boolean</p>
+</dd>
+<dt class="field-odd">Required</dt>
+<dd class="field-odd"><p>No</p>
+</dd>
+<dt class="field-even">Default</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">false</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">log</span> <span class="pre">flush</span> <span class="pre">on</span> <span class="pre">exit</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Determines if Ceph should flush the log files after exit.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Boolean</p>
+</dd>
+<dt class="field-odd">Required</dt>
+<dd class="field-odd"><p>No</p>
+</dd>
+<dt class="field-even">Default</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">false</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">clog</span> <span class="pre">to</span> <span class="pre">monitors</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Determines if <code class="docutils literal notranslate"><span class="pre">clog</span></code> messages should be sent to monitors.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Boolean</p>
+</dd>
+<dt class="field-odd">Required</dt>
+<dd class="field-odd"><p>No</p>
+</dd>
+<dt class="field-even">Default</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">true</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">clog</span> <span class="pre">to</span> <span class="pre">syslog</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Determines if <code class="docutils literal notranslate"><span class="pre">clog</span></code> messages should be sent to syslog.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Boolean</p>
+</dd>
+<dt class="field-odd">Required</dt>
+<dd class="field-odd"><p>No</p>
+</dd>
+<dt class="field-even">Default</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">false</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">mon</span> <span class="pre">cluster</span> <span class="pre">log</span> <span class="pre">to</span> <span class="pre">syslog</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Determines if the cluster log should be output to the syslog.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Boolean</p>
+</dd>
+<dt class="field-odd">Required</dt>
+<dd class="field-odd"><p>No</p>
+</dd>
+<dt class="field-even">Default</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">false</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">mon</span> <span class="pre">cluster</span> <span class="pre">log</span> <span class="pre">file</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The locations of the cluster’s log files. There are two channels in
+Ceph: <code class="docutils literal notranslate"><span class="pre">cluster</span></code> and <code class="docutils literal notranslate"><span class="pre">audit</span></code>. This option represents a mapping
+from channels to log files, where the log entries of that
+channel are sent to. The <code class="docutils literal notranslate"><span class="pre">default</span></code> entry is a fallback
+mapping for channels not explicitly specified. So, the following
+default setting will send cluster log to <code class="docutils literal notranslate"><span class="pre">$cluster.log</span></code>, and
+send audit log to <code class="docutils literal notranslate"><span class="pre">$cluster.audit.log</span></code>, where <code class="docutils literal notranslate"><span class="pre">$cluster</span></code> will
+be replaced with the actual cluster name.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Required</dt>
+<dd class="field-odd"><p>No</p>
+</dd>
+<dt class="field-even">Default</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">default=/var/log/ceph/$cluster.$channel.log,cluster=/var/log/ceph/$cluster.log</span></code></p>
+</dd>
+</dl>
+</section>
+<section id="osd">
+<h3>OSD<a class="headerlink" href="#osd" title="Permalink to this heading">¶</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">osd</span> <span class="pre">debug</span> <span class="pre">drop</span> <span class="pre">ping</span> <span class="pre">probability</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>?</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Double</p>
+</dd>
+<dt class="field-odd">Required</dt>
+<dd class="field-odd"><p>No</p>
+</dd>
+<dt class="field-even">Default</dt>
+<dd class="field-even"><p>0</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">osd</span> <span class="pre">debug</span> <span class="pre">drop</span> <span class="pre">ping</span> <span class="pre">duration</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p></p></dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Integer</p>
+</dd>
+<dt class="field-odd">Required</dt>
+<dd class="field-odd"><p>No</p>
+</dd>
+<dt class="field-even">Default</dt>
+<dd class="field-even"><p>0</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">osd</span> <span class="pre">debug</span> <span class="pre">drop</span> <span class="pre">pg</span> <span class="pre">create</span> <span class="pre">probability</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p></p></dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Integer</p>
+</dd>
+<dt class="field-odd">Required</dt>
+<dd class="field-odd"><p>No</p>
+</dd>
+<dt class="field-even">Default</dt>
+<dd class="field-even"><p>0</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">osd</span> <span class="pre">debug</span> <span class="pre">drop</span> <span class="pre">pg</span> <span class="pre">create</span> <span class="pre">duration</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>?</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Double</p>
+</dd>
+<dt class="field-odd">Required</dt>
+<dd class="field-odd"><p>No</p>
+</dd>
+<dt class="field-even">Default</dt>
+<dd class="field-even"><p>1</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">osd</span> <span class="pre">min</span> <span class="pre">pg</span> <span class="pre">log</span> <span class="pre">entries</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The minimum number of log entries for placement groups.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>32-bit Unsigned Integer</p>
+</dd>
+<dt class="field-odd">Required</dt>
+<dd class="field-odd"><p>No</p>
+</dd>
+<dt class="field-even">Default</dt>
+<dd class="field-even"><p>250</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">osd</span> <span class="pre">op</span> <span class="pre">log</span> <span class="pre">threshold</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>How many op log messages to show up in one pass.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Integer</p>
+</dd>
+<dt class="field-odd">Required</dt>
+<dd class="field-odd"><p>No</p>
+</dd>
+<dt class="field-even">Default</dt>
+<dd class="field-even"><p>5</p>
+</dd>
+</dl>
+</section>
+<section id="filestore">
+<h3>Filestore<a class="headerlink" href="#filestore" title="Permalink to this heading">¶</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">filestore</span> <span class="pre">debug</span> <span class="pre">omap</span> <span class="pre">check</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Debugging check on synchronization. This is an expensive operation.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Boolean</p>
+</dd>
+<dt class="field-odd">Required</dt>
+<dd class="field-odd"><p>No</p>
+</dd>
+<dt class="field-even">Default</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">false</span></code></p>
+</dd>
+</dl>
+</section>
+<section id="mds">
+<h3>MDS<a class="headerlink" href="#mds" title="Permalink to this heading">¶</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">mds</span> <span class="pre">debug</span> <span class="pre">scatterstat</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Ceph will assert that various recursive stat invariants are true
+(for developers only).</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Boolean</p>
+</dd>
+<dt class="field-odd">Required</dt>
+<dd class="field-odd"><p>No</p>
+</dd>
+<dt class="field-even">Default</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">false</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">mds</span> <span class="pre">debug</span> <span class="pre">frag</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Ceph will verify directory fragmentation invariants when
+convenient (developers only).</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Boolean</p>
+</dd>
+<dt class="field-odd">Required</dt>
+<dd class="field-odd"><p>No</p>
+</dd>
+<dt class="field-even">Default</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">false</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">mds</span> <span class="pre">debug</span> <span class="pre">auth</span> <span class="pre">pins</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The debug auth pin invariants (for developers only).</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Boolean</p>
+</dd>
+<dt class="field-odd">Required</dt>
+<dd class="field-odd"><p>No</p>
+</dd>
+<dt class="field-even">Default</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">false</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">mds</span> <span class="pre">debug</span> <span class="pre">subtrees</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The debug subtree invariants (for developers only).</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Boolean</p>
+</dd>
+<dt class="field-odd">Required</dt>
+<dd class="field-odd"><p>No</p>
+</dd>
+<dt class="field-even">Default</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">false</span></code></p>
+</dd>
+</dl>
+</section>
+<section id="rados-gateway">
+<h3>RADOS Gateway<a class="headerlink" href="#rados-gateway" title="Permalink to this heading">¶</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">rgw</span> <span class="pre">log</span> <span class="pre">nonexistent</span> <span class="pre">bucket</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Should we log a non-existent buckets?</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Boolean</p>
+</dd>
+<dt class="field-odd">Required</dt>
+<dd class="field-odd"><p>No</p>
+</dd>
+<dt class="field-even">Default</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">false</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">rgw</span> <span class="pre">log</span> <span class="pre">object</span> <span class="pre">name</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Should an object’s name be logged. // man date to see codes (a subset are supported)</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Required</dt>
+<dd class="field-odd"><p>No</p>
+</dd>
+<dt class="field-even">Default</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">%Y-%m-%d-%H-%i-%n</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">rgw</span> <span class="pre">log</span> <span class="pre">object</span> <span class="pre">name</span> <span class="pre">utc</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Object log name contains UTC?</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Boolean</p>
+</dd>
+<dt class="field-odd">Required</dt>
+<dd class="field-odd"><p>No</p>
+</dd>
+<dt class="field-even">Default</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">false</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">rgw</span> <span class="pre">enable</span> <span class="pre">ops</span> <span class="pre">log</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Enables logging of every RGW operation.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Boolean</p>
+</dd>
+<dt class="field-odd">Required</dt>
+<dd class="field-odd"><p>No</p>
+</dd>
+<dt class="field-even">Default</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">true</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">rgw</span> <span class="pre">enable</span> <span class="pre">usage</span> <span class="pre">log</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Enable logging of RGW’s bandwidth usage.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Boolean</p>
+</dd>
+<dt class="field-odd">Required</dt>
+<dd class="field-odd"><p>No</p>
+</dd>
+<dt class="field-even">Default</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">false</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">rgw</span> <span class="pre">usage</span> <span class="pre">log</span> <span class="pre">flush</span> <span class="pre">threshold</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Threshold to flush pending log data.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Integer</p>
+</dd>
+<dt class="field-odd">Required</dt>
+<dd class="field-odd"><p>No</p>
+</dd>
+<dt class="field-even">Default</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">1024</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">rgw</span> <span class="pre">usage</span> <span class="pre">log</span> <span class="pre">tick</span> <span class="pre">interval</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Flush pending log data every <code class="docutils literal notranslate"><span class="pre">s</span></code> seconds.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Integer</p>
+</dd>
+<dt class="field-odd">Required</dt>
+<dd class="field-odd"><p>No</p>
+</dd>
+<dt class="field-even">Default</dt>
+<dd class="field-even"><p>30</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">rgw</span> <span class="pre">intent</span> <span class="pre">log</span> <span class="pre">object</span> <span class="pre">name</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p></p></dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Required</dt>
+<dd class="field-odd"><p>No</p>
+</dd>
+<dt class="field-even">Default</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">%Y-%m-%d-%i-%n</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">rgw</span> <span class="pre">intent</span> <span class="pre">log</span> <span class="pre">object</span> <span class="pre">name</span> <span class="pre">utc</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Include a UTC timestamp in the intent log object name.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Boolean</p>
+</dd>
+<dt class="field-odd">Required</dt>
+<dd class="field-odd"><p>No</p>
+</dd>
+<dt class="field-even">Default</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">false</span></code></p>
+</dd>
+</dl>
+<dl class="footnote brackets">
+<dt class="label" id="id2"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
+<dd><p>there are levels &gt;20 in some rare cases and that they are extremely verbose.</p>
+</dd>
+</dl>
+</section>
+</section>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../../">
+              <img class="logo" src="../../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../install/">Installing Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cephadm/">Cephadm</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../">Ceph Storage Cluster</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../../configuration/">Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../cephadm/">Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../operations/">Operations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../man/">Man Pages</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../">Troubleshooting</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../community/">The Ceph Community</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Logging and Debugging</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#runtime">Runtime</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#boot-time">Boot Time</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#accelerating-log-rotation">Accelerating Log Rotation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#valgrind">Valgrind</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#subsystem-log-and-debug-settings">Subsystem, Log and Debug Settings</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#ceph-subsystems">Ceph Subsystems</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#logging-settings">Logging Settings</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#osd">OSD</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#filestore">Filestore</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#mds">MDS</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#rados-gateway">RADOS Gateway</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../troubleshooting-mon/">Troubleshooting Monitors</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../troubleshooting-osd/">Troubleshooting OSDs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../troubleshooting-pg/">Troubleshooting PGs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../memory-profiling/">Memory Profiling</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../cpu-profiling/">CPU Profiling</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/">APIs</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cephfs/">Ceph File System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../rbd/">Ceph Block Device</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../radosgw/">Ceph Object Gateway</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../mgr/">Ceph Manager Daemon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../mgr/dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dev/developer_guide/">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dev/internals/">Ceph Internals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../../../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../cpu-profiling/" title="CPU Profiling"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../troubleshooting-pg/" title="Troubleshooting PGs"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../" >Ceph Storage Cluster</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../../operations/" >Cluster Operations</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Logging and Debugging</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

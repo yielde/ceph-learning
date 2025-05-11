@@ -1,0 +1,287 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Compliance Check &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/css/custom.css" />
+    <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/jquery.js"></script>
+    <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../../genindex/" />
+    <link rel="search" title="Search" href="../../../search/" />
+    <link rel="next" title="cephadm Exporter" href="../cephadm-exporter/" />
+    <link rel="prev" title="Host Maintenance" href="../host-maintenance/" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../cephadm-exporter/" title="cephadm Exporter"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../host-maintenance/" title="Host Maintenance"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../../cephadm/" >Cephadm</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../" accesskey="U">CEPHADM Developer Documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Compliance Check</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="compliance-check">
+<h1>Compliance Check<a class="headerlink" href="#compliance-check" title="Permalink to this heading">¶</a></h1>
+<p>The stability and reliability of a Ceph cluster is dependent not just upon the Ceph daemons, but
+also the OS and hardware that Ceph is installed on. This document is intended to promote a design
+discussion for providing a “compliance” feature within mgr/cephadm, which would be responsible for
+identifying common platform-related issues that could impact Ceph stability and operation.</p>
+<p>The ultimate goal of these checks is to identify issues early and raise a healthcheck WARN
+event, to alert the Administrator to the issue.</p>
+<section id="prerequisites">
+<h2>Prerequisites<a class="headerlink" href="#prerequisites" title="Permalink to this heading">¶</a></h2>
+<p>In order to effectively analyse the hosts that Ceph is deployed to, this feature requires a cache
+of host-related metadata. The metadata is already available from cephadm’s HostFacts class and the
+<code class="docutils literal notranslate"><span class="pre">gather-facts</span></code> cephadm command. For the purposes of this document, we will assume that this
+data is available within the mgr/cephadm “cache” structure.</p>
+<p>Some checks will require that the host status is also populated e.g. ONLINE, OFFLINE, MAINTENANCE</p>
+</section>
+<section id="administrator-interaction">
+<h2>Administrator Interaction<a class="headerlink" href="#administrator-interaction" title="Permalink to this heading">¶</a></h2>
+<p>Not all users will require this feature, and must be able to ‘opt out’. For this reason,
+mgr/cephadm must provide controls, such as the following;</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span> <span class="n">cephadm</span> <span class="n">compliance</span> <span class="n">enable</span> <span class="o">|</span> <span class="n">disable</span> <span class="o">|</span> <span class="n">status</span> <span class="p">[</span><span class="o">--</span><span class="nb">format</span> <span class="n">json</span><span class="p">]</span>
+<span class="n">ceph</span> <span class="n">cephadm</span> <span class="n">compliance</span> <span class="n">ls</span> <span class="p">[</span><span class="o">--</span><span class="nb">format</span> <span class="n">json</span><span class="p">]</span>
+<span class="n">ceph</span> <span class="n">cephadm</span> <span class="n">compliance</span> <span class="n">enable</span><span class="o">-</span><span class="n">check</span> <span class="o">&lt;</span><span class="n">name</span><span class="o">&gt;</span>
+<span class="n">ceph</span> <span class="n">cephadm</span> <span class="n">compliance</span> <span class="n">disable</span><span class="o">-</span><span class="n">check</span> <span class="o">&lt;</span><span class="n">name</span><span class="o">&gt;</span>
+<span class="n">ceph</span> <span class="n">cephadm</span> <span class="n">compliance</span> <span class="nb">set</span><span class="o">-</span><span class="n">check</span><span class="o">-</span><span class="n">interval</span> <span class="o">&lt;</span><span class="nb">int</span><span class="o">&gt;</span>
+<span class="n">ceph</span> <span class="n">cephadm</span> <span class="n">compliance</span> <span class="n">get</span><span class="o">-</span><span class="n">check</span><span class="o">-</span><span class="n">interval</span>
+</pre></div>
+</div>
+<p>The status option would show the enabled/disabled state of the feature, along with the
+check-interval.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">ls</span></code> subcommand would show all checks in the following format;</p>
+<p><code class="docutils literal notranslate"><span class="pre">check-name</span> <span class="pre">status</span> <span class="pre">description</span></code></p>
+</section>
+<section id="proposed-integration">
+<h2>Proposed Integration<a class="headerlink" href="#proposed-integration" title="Permalink to this heading">¶</a></h2>
+<p>The compliance checks are not required to run all the time, but instead should run at discrete
+intervals. The interval would be configurable under via the <code class="code docutils literal notranslate"><span class="pre">set-check-interval</span></code>
+subcommand (default would be every 12 hours)</p>
+<p>mgr/cephadm currently executes an event driven (time based) serve loop to act on deploy/remove and
+reconcile activity. In order to execute the compliance checks, the compliance check code would be
+called from this main serve loop - when the <code class="code docutils literal notranslate"><span class="pre">set-check-interval</span></code> is met.</p>
+</section>
+<section id="proposed-checks">
+<h2>Proposed Checks<a class="headerlink" href="#proposed-checks" title="Permalink to this heading">¶</a></h2>
+<p>All checks would push any errors to a list, so multiple issues can be escalated to the Admin at
+the same time. The list below provides a description of each check, with the text following the
+name indicating a shortname version <em>(the shortname is the reference for command Interaction
+when enabling or disabling a check)</em></p>
+<section id="os-consistency-os">
+<h3>OS Consistency (OS)<a class="headerlink" href="#os-consistency-os" title="Permalink to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>all hosts must use same vendor</p></li>
+<li><p>all hosts must be on the same major release (this check would only be applicable to distributions that
+offer a long-term-support strategy (RHEL, CentOS, SLES, Ubuntu etc)</p></li>
+</ul>
+<p><em>src: gather-facts output</em></p>
+</section>
+<section id="linux-kernel-security-mode-lsm">
+<h3>Linux Kernel Security Mode (LSM)<a class="headerlink" href="#linux-kernel-security-mode-lsm" title="Permalink to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>All hosts should have a consistent SELINUX/AppArmor configuration</p></li>
+</ul>
+<p><em>src: gather-facts output</em></p>
+</section>
+<section id="services-check-services">
+<h3>Services Check (SERVICES)<a class="headerlink" href="#services-check-services" title="Permalink to this heading">¶</a></h3>
+<p>Hosts that are in an ONLINE state should adhere to the following;</p>
+<ul class="simple">
+<li><p>all daemons (systemd units) should be enabled</p></li>
+<li><p>all daemons should be running (not dead)</p></li>
+</ul>
+<p><em>src: list_daemons output</em></p>
+</section>
+<section id="support-status-support">
+<h3>Support Status (SUPPORT)<a class="headerlink" href="#support-status-support" title="Permalink to this heading">¶</a></h3>
+<p>If support status has been detected, it should be consistent across all hosts. At this point
+support status is available only for Red Hat machines.</p>
+<p><em>src: gather-facts output</em></p>
+</section>
+<section id="network-mtu-mtu">
+<h3>Network : MTU (MTU)<a class="headerlink" href="#network-mtu-mtu" title="Permalink to this heading">¶</a></h3>
+<p>All network interfaces on the same Ceph network (public/cluster) should have the same MTU</p>
+<p><em>src: gather-facts output</em></p>
+</section>
+<section id="network-linkspeed-linkspeed">
+<h3>Network : LinkSpeed (LINKSPEED)<a class="headerlink" href="#network-linkspeed-linkspeed" title="Permalink to this heading">¶</a></h3>
+<p>All network interfaces on the same Ceph network (public/cluster) should have the same Linkspeed</p>
+<p><em>src: gather-facts output</em></p>
+</section>
+<section id="network-consistency-interface">
+<h3>Network : Consistency (INTERFACE)<a class="headerlink" href="#network-consistency-interface" title="Permalink to this heading">¶</a></h3>
+<p>All hosts with OSDs should have consistent network configuration - eg. if some hosts do
+not separate cluster/public traffic but others do, that is an anomaly that would generate a
+compliance check warning.</p>
+<p><em>src: gather-facts output</em></p>
+</section>
+</section>
+<section id="notification-strategy">
+<h2>Notification Strategy<a class="headerlink" href="#notification-strategy" title="Permalink to this heading">¶</a></h2>
+<p>If any of the checks fail, mgr/cephadm would raise a WARN level alert</p>
+</section>
+<section id="futures">
+<h2>Futures<a class="headerlink" href="#futures" title="Permalink to this heading">¶</a></h2>
+<p>The checks highlighted here serve only as a starting point, and we should expect to expand
+on the checks over time.</p>
+</section>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../../">
+              <img class="logo" src="../../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../install/">Installing Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cephadm/">Cephadm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../rados/">Ceph Storage Cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cephfs/">Ceph File System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../rbd/">Ceph Block Device</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../radosgw/">Ceph Object Gateway</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../mgr/">Ceph Manager Daemon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../mgr/dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../architecture/">Architecture</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../developer_guide/">Developer Guide</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../../developer_guide/intro/">Introduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../developer_guide/essentials/">Essentials</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../developer_guide/merging/">What is Merged and When</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../developer_guide/issue-tracker/">Issue tracker</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../developer_guide/basic-workflow/">Basic workflow</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../developer_guide/tests-unit-tests/">Tests: Unit Tests</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../developer_guide/tests-integration-tests/">Tests: Integration Tests</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../developer_guide/running-tests-locally/">Running Tests Locally</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../developer_guide/running-tests-using-teuth/">Running Integration Tests using Teuthology</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../developer_guide/running-tests-in-cloud/">Running Tests in the Cloud</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../developer_guide/dash-devel/">Ceph Dashboard Developer Documentation (formerly HACKING.rst)</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../">cephadm Developer Documentation</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../developing-cephadm/">Developing with cephadm</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../host-maintenance/">Host Maintenance</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Compliance Check</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#prerequisites">Prerequisites</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#administrator-interaction">Administrator Interaction</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#proposed-integration">Proposed Integration</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#proposed-checks">Proposed Checks</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#os-consistency-os">OS Consistency (OS)</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#linux-kernel-security-mode-lsm">Linux Kernel Security Mode (LSM)</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#services-check-services">Services Check (SERVICES)</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#support-status-support">Support Status (SUPPORT)</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#network-mtu-mtu">Network : MTU (MTU)</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#network-linkspeed-linkspeed">Network : LinkSpeed (LINKSPEED)</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#network-consistency-interface">Network : Consistency (INTERFACE)</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#notification-strategy">Notification Strategy</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#futures">Futures</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../cephadm-exporter/">cephadm Exporter</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../scalability-notes/">Notes and Thoughts on Cephadm’s scalability</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../internals/">Ceph Internals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../../../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../cephadm-exporter/" title="cephadm Exporter"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../host-maintenance/" title="Host Maintenance"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../../cephadm/" >Cephadm</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../" >CEPHADM Developer Documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Compliance Check</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

@@ -1,0 +1,445 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Log Based PG &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/css/custom.css" />
+    <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/jquery.js"></script>
+    <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../../genindex/" />
+    <link rel="search" title="Search" href="../../../search/" />
+    <link rel="next" title="Manifest" href="../manifest/" />
+    <link rel="prev" title="last_epoch_started" href="../last_epoch_started/" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../manifest/" title="Manifest"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../last_epoch_started/" title="last_epoch_started"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../internals/" >Ceph Internals</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../" accesskey="U">OSD developer documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Log Based PG</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="log-based-pg">
+<span id="id1"></span><h1>Log Based PG<a class="headerlink" href="#log-based-pg" title="Permalink to this heading">¶</a></h1>
+<section id="background">
+<h2>Background<a class="headerlink" href="#background" title="Permalink to this heading">¶</a></h2>
+<section id="why-primarylogpg">
+<h3>Why PrimaryLogPG?<a class="headerlink" href="#why-primarylogpg" title="Permalink to this heading">¶</a></h3>
+<p>Currently, consistency for all ceph pool types is ensured by primary
+log-based replication. This goes for both erasure-coded (EC) and
+replicated pools.</p>
+</section>
+<section id="primary-log-based-replication">
+<h3>Primary log-based replication<a class="headerlink" href="#primary-log-based-replication" title="Permalink to this heading">¶</a></h3>
+<p>Reads must return data written by any write which completed (where the
+client could possibly have received a commit message).  There are lots
+of ways to handle this, but Ceph’s architecture makes it easy for
+everyone at any map epoch to know who the primary is.  Thus, the easy
+answer is to route all writes for a particular PG through a single
+ordering primary and then out to the replicas.  Though we only
+actually need to serialize writes on a single RADOS object (and even then,
+the partial ordering only really needs to provide an ordering between
+writes on overlapping regions), we might as well serialize writes on
+the whole PG since it lets us represent the current state of the PG
+using two numbers: the epoch of the map on the primary in which the
+most recent write started (this is a bit stranger than it might seem
+since map distribution itself is asynchronous – see Peering and the
+concept of interval changes) and an increasing per-PG version number
+– this is referred to in the code with type <code class="docutils literal notranslate"><span class="pre">eversion_t</span></code> and stored as
+<code class="docutils literal notranslate"><span class="pre">pg_info_t::last_update</span></code>.  Furthermore, we maintain a log of “recent”
+operations extending back at least far enough to include any
+<em>unstable</em> writes (writes which have been started but not committed)
+and objects which aren’t uptodate locally (see recovery and
+backfill).  In practice, the log will extend much further
+(<code class="docutils literal notranslate"><span class="pre">osd_min_pg_log_entries</span></code> when clean and <code class="docutils literal notranslate"><span class="pre">osd_max_pg_log_entries</span></code> when not
+clean) because it’s handy for quickly performing recovery.</p>
+<p>Using this log, as long as we talk to a non-empty subset of the OSDs
+which must have accepted any completed writes from the most recent
+interval in which we accepted writes, we can determine a conservative
+log which must contain any write which has been reported to a client
+as committed.  There is some freedom here, we can choose any log entry
+between the oldest head remembered by an element of that set (any
+newer cannot have completed without that log containing it) and the
+newest head remembered (clearly, all writes in the log were started,
+so it’s fine for us to remember them) as the new head.  This is the
+main point of divergence between replicated pools and EC pools in
+<code class="docutils literal notranslate"><span class="pre">PG/PrimaryLogPG</span></code>: replicated pools try to choose the newest valid
+option to avoid the client needing to replay those operations and
+instead recover the other copies.  EC pools instead try to choose
+the <em>oldest</em> option available to them.</p>
+<p>The reason for this gets to the heart of the rest of the differences
+in implementation: one copy will not generally be enough to
+reconstruct an EC object.  Indeed, there are encodings where some log
+combinations would leave unrecoverable objects (as with a <code class="docutils literal notranslate"><span class="pre">k=4,m=2</span></code> encoding
+where 3 of the replicas remember a write, but the other 3 do not – we
+don’t have 3 copies of either version).  For this reason, log entries
+representing <em>unstable</em> writes (writes not yet committed to the
+client) must be rollbackable using only local information on EC pools.
+Log entries in general may therefore be rollbackable (and in that case,
+via a delayed application or via a set of instructions for rolling
+back an inplace update) or not.  Replicated pool log entries are
+never able to be rolled back.</p>
+<p>For more details, see <code class="docutils literal notranslate"><span class="pre">PGLog.h/cc</span></code>, <code class="docutils literal notranslate"><span class="pre">osd_types.h:pg_log_t</span></code>,
+<code class="docutils literal notranslate"><span class="pre">osd_types.h:pg_log_entry_t</span></code>, and peering in general.</p>
+</section>
+</section>
+<section id="replicatedbackend-ecbackend-unification-strategy">
+<h2>ReplicatedBackend/ECBackend unification strategy<a class="headerlink" href="#replicatedbackend-ecbackend-unification-strategy" title="Permalink to this heading">¶</a></h2>
+<section id="pgbackend">
+<h3>PGBackend<a class="headerlink" href="#pgbackend" title="Permalink to this heading">¶</a></h3>
+<p>The fundamental difference between replication and erasure coding
+is that replication can do destructive updates while erasure coding
+cannot.  It would be really annoying if we needed to have two entire
+implementations of <code class="docutils literal notranslate"><span class="pre">PrimaryLogPG</span></code> since there
+are really only a few fundamental differences:</p>
+<ol class="arabic simple">
+<li><p>How reads work – async only, requires remote reads for EC</p></li>
+<li><p>How writes work – either restricted to append, or must write aside and do a
+tpc</p></li>
+<li><p>Whether we choose the oldest or newest possible head entry during peering</p></li>
+<li><p>A bit of extra information in the log entry to enable rollback</p></li>
+</ol>
+<p>and so many similarities</p>
+<ol class="arabic simple">
+<li><p>All of the stats and metadata for objects</p></li>
+<li><p>The high level locking rules for mixing client IO with recovery and scrub</p></li>
+<li><p>The high level locking rules for mixing reads and writes without exposing
+uncommitted state (which might be rolled back or forgotten later)</p></li>
+<li><p>The process, metadata, and protocol needed to determine the set of osds
+which participated in the most recent interval in which we accepted writes</p></li>
+<li><p>etc.</p></li>
+</ol>
+<p>Instead, we choose a few abstractions (and a few kludges) to paper over the differences:</p>
+<ol class="arabic simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">PGBackend</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">PGTransaction</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">PG::choose_acting</span></code> chooses between <code class="docutils literal notranslate"><span class="pre">calc_replicated_acting</span></code> and <code class="docutils literal notranslate"><span class="pre">calc_ec_acting</span></code></p></li>
+<li><p>Various bits of the write pipeline disallow some operations based on pool
+type – like omap operations, class operation reads, and writes which are
+not aligned appends (officially, so far) for EC</p></li>
+<li><p>Misc other kludges here and there</p></li>
+</ol>
+<p><code class="docutils literal notranslate"><span class="pre">PGBackend</span></code> and <code class="docutils literal notranslate"><span class="pre">PGTransaction</span></code> enable abstraction of differences 1 and 2 above
+and the addition of 4 as needed to the log entries.</p>
+<p>The replicated implementation is in <code class="docutils literal notranslate"><span class="pre">ReplicatedBackend.h/cc</span></code> and doesn’t
+require much additional explanation.  More detail on the <code class="docutils literal notranslate"><span class="pre">ECBackend</span></code> can be
+found in <code class="docutils literal notranslate"><span class="pre">doc/dev/osd_internals/erasure_coding/ecbackend.rst</span></code>.</p>
+</section>
+</section>
+<section id="pgbackend-interface-explanation">
+<h2>PGBackend Interface Explanation<a class="headerlink" href="#pgbackend-interface-explanation" title="Permalink to this heading">¶</a></h2>
+<p>Note: this is from a design document that predated the Firefly release
+and is probably out of date w.r.t. some of the method names.</p>
+<section id="readable-vs-degraded">
+<h3>Readable vs Degraded<a class="headerlink" href="#readable-vs-degraded" title="Permalink to this heading">¶</a></h3>
+<p>For a replicated pool, an object is readable IFF it is present on
+the primary (at the right version).  For an EC pool, we need at least
+<cite>m</cite> shards present to perform a read, and we need it on the primary.  For
+this reason, <code class="docutils literal notranslate"><span class="pre">PGBackend</span></code> needs to include some interfaces for determining
+when recovery is required to serve a read vs a write.  This also
+changes the rules for when peering has enough logs to prove that it</p>
+<p>Core Changes:</p>
+<ul>
+<li><div class="line-block">
+<div class="line"><code class="docutils literal notranslate"><span class="pre">PGBackend</span></code> needs to be able to return <code class="docutils literal notranslate"><span class="pre">IsPG(Recoverable|Readable)Predicate</span></code></div>
+<div class="line">objects to allow the user to make these determinations.</div>
+</div>
+</li>
+</ul>
+</section>
+<section id="client-reads">
+<h3>Client Reads<a class="headerlink" href="#client-reads" title="Permalink to this heading">¶</a></h3>
+<p>Reads from a replicated pool can always be satisfied
+synchronously by the primary OSD.  Within an erasure coded pool,
+the primary will need to request data from some number of replicas in
+order to satisfy a read.  <code class="docutils literal notranslate"><span class="pre">PGBackend</span></code> will therefore need to provide
+separate <code class="docutils literal notranslate"><span class="pre">objects_read_sync</span></code> and <code class="docutils literal notranslate"><span class="pre">objects_read_async</span></code> interfaces where
+the former won’t be implemented by the <code class="docutils literal notranslate"><span class="pre">ECBackend</span></code>.</p>
+<p><code class="docutils literal notranslate"><span class="pre">PGBackend</span></code> interfaces:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">objects_read_sync</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">objects_read_async</span></code></p></li>
+</ul>
+</section>
+<section id="scrubs">
+<h3>Scrubs<a class="headerlink" href="#scrubs" title="Permalink to this heading">¶</a></h3>
+<p>We currently have two scrub modes with different default frequencies:</p>
+<ol class="arabic simple">
+<li><p>[shallow] scrub: compares the set of objects and metadata, but not
+the contents</p></li>
+<li><p>deep scrub: compares the set of objects, metadata, and a CRC32 of
+the object contents (including omap)</p></li>
+</ol>
+<p>The primary requests a scrubmap from each replica for a particular
+range of objects.  The replica fills out this scrubmap for the range
+of objects including, if the scrub is deep, a CRC32 of the contents of
+each object.  The primary gathers these scrubmaps from each replica
+and performs a comparison identifying inconsistent objects.</p>
+<p>Most of this can work essentially unchanged with erasure coded PG with
+the caveat that the <code class="docutils literal notranslate"><span class="pre">PGBackend</span></code> implementation must be in charge of
+actually doing the scan.</p>
+<p><code class="docutils literal notranslate"><span class="pre">PGBackend</span></code> interfaces:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">be_*</span></code></p></li>
+</ul>
+</section>
+<section id="recovery">
+<h3>Recovery<a class="headerlink" href="#recovery" title="Permalink to this heading">¶</a></h3>
+<p>The logic for recovering an object depends on the backend.  With
+the current replicated strategy, we first pull the object replica
+to the primary and then concurrently push it out to the replicas.
+With the erasure coded strategy, we probably want to read the
+minimum number of replica chunks required to reconstruct the object
+and push out the replacement chunks concurrently.</p>
+<p>Another difference is that objects in erasure coded PG may be
+unrecoverable without being unfound.  The <code class="docutils literal notranslate"><span class="pre">unfound</span></code> state
+should probably be renamed to <code class="docutils literal notranslate"><span class="pre">unrecoverable</span></code>.  Also, the
+<code class="docutils literal notranslate"><span class="pre">PGBackend</span></code> implementation will have to be able to direct the search
+for PG replicas with unrecoverable object chunks and to be able
+to determine whether a particular object is recoverable.</p>
+<p>Core changes:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">s/unfound/unrecoverable</span></code></p></li>
+</ul>
+<p>PGBackend interfaces:</p>
+<ul class="simple">
+<li><p><a class="reference external" href="https://github.com/ceph/ceph/blob/firefly/src/osd/PGBackend.h#L60">on_local_recover_start</a></p></li>
+<li><p><a class="reference external" href="https://github.com/ceph/ceph/blob/firefly/src/osd/PGBackend.h#L66">on_local_recover</a></p></li>
+<li><p><a class="reference external" href="https://github.com/ceph/ceph/blob/firefly/src/osd/PGBackend.h#L78">on_global_recover</a></p></li>
+<li><p><a class="reference external" href="https://github.com/ceph/ceph/blob/firefly/src/osd/PGBackend.h#L83">on_peer_recover</a></p></li>
+<li><p><a class="reference external" href="https://github.com/ceph/ceph/blob/firefly/src/osd/PGBackend.h#L90">begin_peer_recover</a></p></li>
+</ul>
+</section>
+</section>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../../">
+              <img class="logo" src="../../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../install/">Installing Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cephadm/">Cephadm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../rados/">Ceph Storage Cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cephfs/">Ceph File System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../rbd/">Ceph Block Device</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../radosgw/">Ceph Object Gateway</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../mgr/">Ceph Manager Daemon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../mgr/dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../developer_guide/">Developer Guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../internals/">Ceph Internals</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../../blkin/">Tracing Ceph With Blkin</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../bluestore/">BlueStore Internals</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../cache-pool/">Cache pool</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../ceph_krb_auth/">A Detailed Documentation on How to Set up Ceph Kerberos Authentication</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../cephfs-mirroring/">CephFS Mirroring</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../cephfs-reclaim/">CephFS Reclaim Interface</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../cephfs-snapshots/">CephFS Snapshots</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../cephx/">Cephx</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../cephx_protocol/">A Detailed Description of the Cephx Authentication Protocol</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../config/">Configuration Management System</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../config-key/">config-key layout</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../context/">CephContext</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../continuous-integration/">Continuous Integration Architecture</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../corpus/">Corpus structure</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../cpu-profiler/">Installing Oprofile</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../cxx/">C++17 and libstdc++ ABI</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../delayed-delete/">CephFS delayed deletion</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../dev_cluster_deployement/">Deploying a development cluster</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../dev_cluster_deployement/#deploying-multiple-development-clusters-on-the-same-machine">Deploying multiple development clusters on the same machine</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../development-workflow/">Development workflows</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../documenting/">Documenting Ceph</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../encoding/">Serialization (encode/decode)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../erasure-coded-pool/">Erasure Coded pool</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../file-striping/">File striping</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../freebsd/">FreeBSD Implementation details</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../generatedocs/">Building Ceph Documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../iana/">IANA Numbers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../kubernetes/">Hacking on Ceph in Kubernetes with Rook</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../libs/">Library architecture</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../logging/">Use of the cluster log</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../logs/">Debug logs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../macos/">build on MacOS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../messenger/">Messenger notes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../mon-bootstrap/">Monitor bootstrap</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../mon-elections/">Monitor Elections</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../mon-on-disk-formats/">ON-DISK FORMAT</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../mon-osdmap-prune/">FULL OSDMAP VERSION PRUNING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../msgr2/">msgr2 protocol (msgr2.0 and msgr2.1)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../network-encoding/">Network Encoding</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../network-protocol/">Network Protocol</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../object-store/">Object Store Architecture Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../osd-class-path/">OSD class path issues</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../peering/">Peering</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../perf/">Using perf</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../perf_counters/">Perf counters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../perf_histograms/">Perf histograms</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../placement-group/">PG (Placement Group) notes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../quick_guide/">Developer Guide (Quick)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../rados-client-protocol/">RADOS client protocol</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../rbd-diff/">RBD Incremental Backup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../rbd-export/">RBD Export &amp; Import</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../rbd-layering/">RBD Layering</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../release-checklists/">Release checklists</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../release-process/">Ceph Release Process</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../seastore/">SeaStore</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../sepia/">Sepia community test lab</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../session_authentication/">Session Authentication for the Cephx Protocol</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../testing/">Testing notes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../versions/">Public OSD Version</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../vstart-ganesha/">NFS CephFS-RGW Developer Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../wireshark/">Wireshark Dissector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../zoned-storage/">Zoned Storage Support</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../">OSD developer documentation</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../async_recovery/">Asynchronous Recovery</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../backfill_reservation/">Backfill Reservation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../erasure_coding/">Erasure Coded Placement Groups</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../last_epoch_started/">last_epoch_started</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Log Based PG</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#background">Background</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#why-primarylogpg">Why PrimaryLogPG?</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#primary-log-based-replication">Primary log-based replication</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#replicatedbackend-ecbackend-unification-strategy">ReplicatedBackend/ECBackend unification strategy</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#pgbackend">PGBackend</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#pgbackend-interface-explanation">PGBackend Interface Explanation</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#readable-vs-degraded">Readable vs Degraded</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#client-reads">Client Reads</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#scrubs">Scrubs</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#recovery">Recovery</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../manifest/">Manifest</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../map_message_handling/">Map and PG Message handling</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../osd_overview/">OSD</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../osd_throttles/">OSD Throttles</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../partial_object_recovery/">Partial Object Recovery</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../past_intervals/">PastIntervals</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../pg/">PG</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../pg_removal/">PG Removal</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../pgpool/">PGPool</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../recovery_reservation/">Recovery Reservation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../refcount/">Refcount</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../scrub/">Scrub internals and diagnostics</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../snaps/">Snaps</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../stale_read/">Preventing Stale Reads</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../watch_notify/">Watch Notify</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../wbthrottle/">Writeback Throttle</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../mds_internals/">MDS developer documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../radosgw/">RADOS Gateway developer documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../ceph-volume/">ceph-volume developer documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../crimson/">Crimson developer documentation</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../../../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../manifest/" title="Manifest"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../last_epoch_started/" title="last_epoch_started"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../internals/" >Ceph Internals</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../" >OSD developer documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Log Based PG</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

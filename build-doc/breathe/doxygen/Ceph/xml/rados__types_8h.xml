@@ -1,0 +1,82 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.1" xml:lang="en-US">
+  <compounddef id="rados__types_8h" kind="file" language="C++">
+    <compoundname>rados_types.h</compoundname>
+    <includes local="no">stdint.h</includes>
+    <includedby refid="librados_8h" local="yes">/data/ceph-learning/src/include/rados/librados.h</includedby>
+    <incdepgraph>
+      <node id="2">
+        <label>stdint.h</label>
+      </node>
+      <node id="1">
+        <label>/data/ceph-learning/src/include/rados/rados_types.h</label>
+        <link refid="rados__types_8h"/>
+        <childnode refid="2" relation="include">
+        </childnode>
+      </node>
+    </incdepgraph>
+    <invincdepgraph>
+      <node id="2">
+        <label>/data/ceph-learning/src/include/rados/librados.h</label>
+        <link refid="librados_8h_source"/>
+      </node>
+      <node id="1">
+        <label>/data/ceph-learning/src/include/rados/rados_types.h</label>
+        <link refid="rados__types_8h"/>
+        <childnode refid="2" relation="include">
+        </childnode>
+      </node>
+    </invincdepgraph>
+    <innerclass refid="structobj__watch__t" prot="public">obj_watch_t</innerclass>
+    <innerclass refid="structnotify__ack__t" prot="public">notify_ack_t</innerclass>
+    <innerclass refid="structnotify__timeout__t" prot="public">notify_timeout_t</innerclass>
+      <sectiondef kind="define">
+      <memberdef kind="define" id="rados__types_8h_1a856cbae08b44becba45c76f5da40ffa2" prot="public" static="no">
+        <name>LIBRADOS_ALL_NSPACES</name>
+        <initializer>&quot;\001&quot;</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+<para>Pass as nspace argument to rados_ioctx_set_namespace() before calling rados_nobjects_list_open() to return all objects in all namespaces. </para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/data/ceph-learning/src/include/rados/rados_types.h" line="39" column="9" bodyfile="/data/ceph-learning/src/include/rados/rados_types.h" bodystart="39" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <programlisting>
+<codeline lineno="1"><highlight class="preprocessor">#ifndef<sp/>CEPH_RADOS_TYPES_H</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="2"><highlight class="normal"></highlight><highlight class="preprocessor">#define<sp/>CEPH_RADOS_TYPES_H</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="3"><highlight class="normal"></highlight></codeline>
+<codeline lineno="4"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;stdint.h&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="5"><highlight class="normal"></highlight></codeline>
+<codeline lineno="10" refid="structobj__watch__t" refkind="compound"><highlight class="normal"></highlight><highlight class="keyword">struct<sp/></highlight><highlight class="normal"><ref refid="structobj__watch__t" kindref="compound">obj_watch_t</ref><sp/>{</highlight></codeline>
+<codeline lineno="12" refid="structobj__watch__t_1a5c521d5238d99ce7014905779cc3a2be" refkind="member"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">char</highlight><highlight class="normal"><sp/><ref refid="structobj__watch__t_1a5c521d5238d99ce7014905779cc3a2be" kindref="member">addr</ref>[256];</highlight></codeline>
+<codeline lineno="14" refid="structobj__watch__t_1a9b773ca6095b61ee6154107d59939a50" refkind="member"><highlight class="normal"><sp/><sp/>int64_t<sp/><ref refid="structobj__watch__t_1a9b773ca6095b61ee6154107d59939a50" kindref="member">watcher_id</ref>;</highlight></codeline>
+<codeline lineno="16" refid="structobj__watch__t_1a6c49bc31779a8d2511838a5e0cb5ff31" refkind="member"><highlight class="normal"><sp/><sp/>uint64_t<sp/><ref refid="structobj__watch__t_1a6c49bc31779a8d2511838a5e0cb5ff31" kindref="member">cookie</ref>;</highlight></codeline>
+<codeline lineno="18" refid="structobj__watch__t_1a5e987bcbc17814f83d559920f5aab1dd" refkind="member"><highlight class="normal"><sp/><sp/>uint32_t<sp/><ref refid="structobj__watch__t_1a5e987bcbc17814f83d559920f5aab1dd" kindref="member">timeout_seconds</ref>;</highlight></codeline>
+<codeline lineno="19"><highlight class="normal">};<sp/></highlight></codeline>
+<codeline lineno="20"><highlight class="normal"></highlight></codeline>
+<codeline lineno="21" refid="structnotify__ack__t" refkind="compound"><highlight class="normal"></highlight><highlight class="keyword">struct<sp/></highlight><highlight class="normal"><ref refid="structnotify__ack__t" kindref="compound">notify_ack_t</ref><sp/>{</highlight></codeline>
+<codeline lineno="22"><highlight class="normal"><sp/><sp/>uint64_t<sp/>notifier_id;</highlight></codeline>
+<codeline lineno="23"><highlight class="normal"><sp/><sp/>uint64_t<sp/>cookie;</highlight></codeline>
+<codeline lineno="24"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">char</highlight><highlight class="normal"><sp/>*payload;</highlight></codeline>
+<codeline lineno="25"><highlight class="normal"><sp/><sp/>uint64_t<sp/>payload_len;</highlight></codeline>
+<codeline lineno="26"><highlight class="normal">};</highlight></codeline>
+<codeline lineno="27"><highlight class="normal"></highlight></codeline>
+<codeline lineno="28" refid="structnotify__timeout__t" refkind="compound"><highlight class="normal"></highlight><highlight class="keyword">struct<sp/></highlight><highlight class="normal"><ref refid="structnotify__timeout__t" kindref="compound">notify_timeout_t</ref><sp/>{</highlight></codeline>
+<codeline lineno="29"><highlight class="normal"><sp/><sp/>uint64_t<sp/>notifier_id;</highlight></codeline>
+<codeline lineno="30"><highlight class="normal"><sp/><sp/>uint64_t<sp/>cookie;</highlight></codeline>
+<codeline lineno="31"><highlight class="normal">};</highlight></codeline>
+<codeline lineno="32"><highlight class="normal"></highlight></codeline>
+<codeline lineno="39"><highlight class="normal"></highlight><highlight class="preprocessor">#define<sp/>LIBRADOS_ALL_NSPACES<sp/>&quot;\001&quot;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="40"><highlight class="normal"></highlight></codeline>
+<codeline lineno="41"><highlight class="normal"></highlight><highlight class="preprocessor">#endif</highlight></codeline>
+    </programlisting>
+    <location file="/data/ceph-learning/src/include/rados/rados_types.h"/>
+  </compounddef>
+</doxygen>

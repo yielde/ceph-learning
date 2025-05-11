@@ -1,0 +1,395 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>cephfs-journal-tool &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css" />
+    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../genindex/" />
+    <link rel="search" title="Search" href="../../search/" />
+    <link rel="next" title="Recovering the file system after catastrophic Monitor store loss" href="../recover-fs-after-mon-store-loss/" />
+    <link rel="prev" title="Disaster recovery" href="../disaster-recovery/" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../recover-fs-after-mon-store-loss/" title="Recovering the file system after catastrophic Monitor store loss"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../disaster-recovery/" title="Disaster recovery"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../" accesskey="U">Ceph File System</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">cephfs-journal-tool</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="cephfs-journal-tool">
+<h1>cephfs-journal-tool<a class="headerlink" href="#cephfs-journal-tool" title="Permalink to this heading">¶</a></h1>
+<section id="purpose">
+<h2>Purpose<a class="headerlink" href="#purpose" title="Permalink to this heading">¶</a></h2>
+<p>If a CephFS journal has become damaged, expert intervention may be required
+to restore the file system to a working state.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">cephfs-journal-tool</span></code> utility provides functionality to aid experts in
+examining, modifying, and extracting data from journals.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>This tool is <strong>dangerous</strong> because it directly modifies internal
+data structures of the file system.  Make backups, be careful, and
+seek expert advice.  If you are unsure, do not run this tool.</p>
+</div>
+</section>
+<section id="syntax">
+<h2>Syntax<a class="headerlink" href="#syntax" title="Permalink to this heading">¶</a></h2>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">cephfs</span><span class="o">-</span><span class="n">journal</span><span class="o">-</span><span class="n">tool</span> <span class="n">journal</span> <span class="o">&lt;</span><span class="n">inspect</span><span class="o">|</span><span class="n">import</span><span class="o">|</span><span class="n">export</span><span class="o">|</span><span class="n">reset</span><span class="o">&gt;</span>
+<span class="n">cephfs</span><span class="o">-</span><span class="n">journal</span><span class="o">-</span><span class="n">tool</span> <span class="n">header</span> <span class="o">&lt;</span><span class="n">get</span><span class="o">|</span><span class="nb">set</span><span class="o">&gt;</span>
+<span class="n">cephfs</span><span class="o">-</span><span class="n">journal</span><span class="o">-</span><span class="n">tool</span> <span class="n">event</span> <span class="o">&lt;</span><span class="n">get</span><span class="o">|</span><span class="n">splice</span><span class="o">|</span><span class="n">apply</span><span class="o">&gt;</span> <span class="p">[</span><span class="nb">filter</span><span class="p">]</span> <span class="o">&lt;</span><span class="nb">list</span><span class="o">|</span><span class="n">json</span><span class="o">|</span><span class="n">summary</span><span class="o">|</span><span class="n">binary</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<p>The tool operates in three modes: <code class="docutils literal notranslate"><span class="pre">journal</span></code>, <code class="docutils literal notranslate"><span class="pre">header</span></code> and <code class="docutils literal notranslate"><span class="pre">event</span></code>,
+meaning the whole journal, the header, and the events within the journal
+respectively.</p>
+</section>
+<section id="journal-mode">
+<h2>Journal mode<a class="headerlink" href="#journal-mode" title="Permalink to this heading">¶</a></h2>
+<p>This should be your starting point to assess the state of a journal.</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">inspect</span></code> reports on the health of the journal.  This will identify any
+missing objects or corruption in the stored journal.  Note that this does
+not identify inconsistencies in the events themselves, just that events are
+present and can be decoded.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">import</span></code> and <code class="docutils literal notranslate"><span class="pre">export</span></code> read and write binary dumps of the journal
+in a sparse file format.  Pass the filename as the last argument.  The
+export operation may not work reliably for journals which are damaged (missing
+objects).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">reset</span></code> truncates a journal, discarding any information within it.</p></li>
+</ul>
+<section id="example-journal-inspect">
+<h3>Example: journal inspect<a class="headerlink" href="#example-journal-inspect" title="Permalink to this heading">¶</a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># cephfs-journal-tool journal inspect</span>
+<span class="n">Overall</span> <span class="n">journal</span> <span class="n">integrity</span><span class="p">:</span> <span class="n">DAMAGED</span>
+<span class="n">Objects</span> <span class="n">missing</span><span class="p">:</span>
+  <span class="mh">0x1</span>
+<span class="n">Corrupt</span> <span class="n">regions</span><span class="p">:</span>
+  <span class="mh">0x400000</span><span class="o">-</span><span class="n">ffffffffffffffff</span>
+</pre></div>
+</div>
+</section>
+<section id="example-journal-import-export">
+<h3>Example: Journal import/export<a class="headerlink" href="#example-journal-import-export" title="Permalink to this heading">¶</a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span># cephfs-journal-tool journal export myjournal.bin
+journal is 4194304~80643
+read 80643 bytes at offset 4194304
+wrote 80643 bytes at offset 4194304 to myjournal.bin
+NOTE: this is a _sparse_ file; you can
+    $ tar cSzf myjournal.bin.tgz myjournal.bin
+      to efficiently compress it while preserving sparseness.
+
+# cephfs-journal-tool journal import myjournal.bin
+undump myjournal.bin
+start 4194304 len 80643
+writing header 200.00000000
+ writing 4194304~80643
+done.
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>It is wise to use the <code class="docutils literal notranslate"><span class="pre">journal</span> <span class="pre">export</span> <span class="pre">&lt;backup</span> <span class="pre">file&gt;</span></code> command to make a journal backup
+before any further manipulation.</p>
+</div>
+</section>
+</section>
+<section id="header-mode">
+<h2>Header mode<a class="headerlink" href="#header-mode" title="Permalink to this heading">¶</a></h2>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">get</span></code> outputs the current content of the journal header</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">set</span></code> modifies an attribute of the header.  Allowed attributes are
+<code class="docutils literal notranslate"><span class="pre">trimmed_pos</span></code>, <code class="docutils literal notranslate"><span class="pre">expire_pos</span></code> and <code class="docutils literal notranslate"><span class="pre">write_pos</span></code>.</p></li>
+</ul>
+<section id="example-header-get-set">
+<h3>Example: header get/set<a class="headerlink" href="#example-header-get-set" title="Permalink to this heading">¶</a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># cephfs-journal-tool header get</span>
+<span class="p">{</span> <span class="s2">&quot;magic&quot;</span><span class="p">:</span> <span class="s2">&quot;ceph fs volume v011&quot;</span><span class="p">,</span>
+  <span class="s2">&quot;write_pos&quot;</span><span class="p">:</span> <span class="mi">4274947</span><span class="p">,</span>
+  <span class="s2">&quot;expire_pos&quot;</span><span class="p">:</span> <span class="mi">4194304</span><span class="p">,</span>
+  <span class="s2">&quot;trimmed_pos&quot;</span><span class="p">:</span> <span class="mi">4194303</span><span class="p">,</span>
+  <span class="s2">&quot;layout&quot;</span><span class="p">:</span> <span class="p">{</span> <span class="s2">&quot;stripe_unit&quot;</span><span class="p">:</span> <span class="mi">4194304</span><span class="p">,</span>
+      <span class="s2">&quot;stripe_count&quot;</span><span class="p">:</span> <span class="mi">4194304</span><span class="p">,</span>
+      <span class="s2">&quot;object_size&quot;</span><span class="p">:</span> <span class="mi">4194304</span><span class="p">,</span>
+      <span class="s2">&quot;cas_hash&quot;</span><span class="p">:</span> <span class="mi">4194304</span><span class="p">,</span>
+      <span class="s2">&quot;object_stripe_unit&quot;</span><span class="p">:</span> <span class="mi">4194304</span><span class="p">,</span>
+      <span class="s2">&quot;pg_pool&quot;</span><span class="p">:</span> <span class="mi">4194304</span><span class="p">}}</span>
+
+<span class="c1"># cephfs-journal-tool header set trimmed_pos 4194303</span>
+<span class="n">Updating</span> <span class="n">trimmed_pos</span> <span class="mh">0x400000</span> <span class="o">-&gt;</span> <span class="mh">0x3fffff</span>
+<span class="n">Successfully</span> <span class="n">updated</span> <span class="n">header</span><span class="o">.</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="event-mode">
+<h2>Event mode<a class="headerlink" href="#event-mode" title="Permalink to this heading">¶</a></h2>
+<p>Event mode allows detailed examination and manipulation of the contents of the journal.  Event
+mode can operate on all events in the journal, or filters may be applied.</p>
+<p>The arguments following <code class="docutils literal notranslate"><span class="pre">cephfs-journal-tool</span> <span class="pre">event</span></code> consist of an action, optional filter
+parameters, and an output mode:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">cephfs</span><span class="o">-</span><span class="n">journal</span><span class="o">-</span><span class="n">tool</span> <span class="n">event</span> <span class="o">&lt;</span><span class="n">action</span><span class="o">&gt;</span> <span class="p">[</span><span class="nb">filter</span><span class="p">]</span> <span class="o">&lt;</span><span class="n">output</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<p>Actions:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">get</span></code> read the events from the log</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">splice</span></code> erase events or regions in the journal</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">apply</span></code> extract file system metadata from events and attempt to apply it to the metadata store.</p></li>
+</ul>
+<p>Filtering:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">--range</span> <span class="pre">&lt;int</span> <span class="pre">begin&gt;..[int</span> <span class="pre">end]</span></code> only include events within the range begin (inclusive) to end (exclusive)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--path</span> <span class="pre">&lt;path</span> <span class="pre">substring&gt;</span></code> only include events referring to metadata containing the specified string</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--inode</span> <span class="pre">&lt;int&gt;</span></code> only include events referring to metadata containing the specified inode</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--type</span> <span class="pre">&lt;type</span> <span class="pre">string&gt;</span></code> only include events of this type</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--frag</span> <span class="pre">&lt;ino&gt;[.frag</span> <span class="pre">id]</span></code> only include events referring to this directory fragment</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--dname</span> <span class="pre">&lt;string&gt;</span></code> only include events referring to this named dentry within a directory
+fragment (may only be used in conjunction with <code class="docutils literal notranslate"><span class="pre">--frag</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--client</span> <span class="pre">&lt;int&gt;</span></code> only include events from this client session ID</p></li>
+</ul>
+<p>Filters may be combined on an AND basis (i.e. only the intersection of events from each filter).</p>
+<p>Output modes:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">binary</span></code>: write each event as a binary file, within a folder whose name is controlled by <code class="docutils literal notranslate"><span class="pre">--path</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">json</span></code>: write all events to a single file, as a JSON serialized list of objects</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">summary</span></code>: write a human readable summary of the events read to standard out</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">list</span></code>: write a human readable terse listing of the type of each event, and
+which file paths the event affects.</p></li>
+</ul>
+<section id="example-event-mode">
+<h3>Example: event mode<a class="headerlink" href="#example-event-mode" title="Permalink to this heading">¶</a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># cephfs-journal-tool event get json --path output.json</span>
+<span class="n">Wrote</span> <span class="n">output</span> <span class="n">to</span> <span class="n">JSON</span> <span class="n">file</span> <span class="s1">&#39;output.json&#39;</span>
+
+<span class="c1"># cephfs-journal-tool event get summary</span>
+<span class="n">Events</span> <span class="n">by</span> <span class="nb">type</span><span class="p">:</span>
+  <span class="n">NOOP</span><span class="p">:</span> <span class="mi">2</span>
+  <span class="n">OPEN</span><span class="p">:</span> <span class="mi">2</span>
+  <span class="n">SESSION</span><span class="p">:</span> <span class="mi">2</span>
+  <span class="n">SUBTREEMAP</span><span class="p">:</span> <span class="mi">1</span>
+  <span class="n">UPDATE</span><span class="p">:</span> <span class="mi">43</span>
+
+<span class="c1"># cephfs-journal-tool event get list</span>
+<span class="mh">0x400000</span> <span class="n">SUBTREEMAP</span><span class="p">:</span>  <span class="p">()</span>
+<span class="mh">0x400308</span> <span class="n">SESSION</span><span class="p">:</span>  <span class="p">()</span>
+<span class="mh">0x4003de</span> <span class="n">UPDATE</span><span class="p">:</span>  <span class="p">(</span><span class="nb">setattr</span><span class="p">)</span>
+  <span class="o">/</span>
+<span class="mh">0x40068b</span> <span class="n">UPDATE</span><span class="p">:</span>  <span class="p">(</span><span class="n">mkdir</span><span class="p">)</span>
+  <span class="n">diralpha</span>
+<span class="mh">0x400d1b</span> <span class="n">UPDATE</span><span class="p">:</span>  <span class="p">(</span><span class="n">mkdir</span><span class="p">)</span>
+  <span class="n">diralpha</span><span class="o">/</span><span class="n">filealpha1</span>
+<span class="mh">0x401666</span> <span class="n">UPDATE</span><span class="p">:</span>  <span class="p">(</span><span class="n">unlink_local</span><span class="p">)</span>
+  <span class="n">stray0</span><span class="o">/</span><span class="mi">10000000001</span>
+  <span class="n">diralpha</span><span class="o">/</span><span class="n">filealpha1</span>
+<span class="mh">0x40228d</span> <span class="n">UPDATE</span><span class="p">:</span>  <span class="p">(</span><span class="n">unlink_local</span><span class="p">)</span>
+  <span class="n">diralpha</span>
+  <span class="n">stray0</span><span class="o">/</span><span class="mi">10000000000</span>
+<span class="mh">0x402bf9</span> <span class="n">UPDATE</span><span class="p">:</span>  <span class="p">(</span><span class="n">scatter_writebehind</span><span class="p">)</span>
+  <span class="n">stray0</span>
+<span class="mh">0x403150</span> <span class="n">UPDATE</span><span class="p">:</span>  <span class="p">(</span><span class="n">mkdir</span><span class="p">)</span>
+  <span class="n">dirbravo</span>
+<span class="mh">0x4037e0</span> <span class="n">UPDATE</span><span class="p">:</span>  <span class="p">(</span><span class="n">openc</span><span class="p">)</span>
+  <span class="n">dirbravo</span><span class="o">/.</span><span class="n">filebravo1</span><span class="o">.</span><span class="n">swp</span>
+<span class="mh">0x404032</span> <span class="n">UPDATE</span><span class="p">:</span>  <span class="p">(</span><span class="n">openc</span><span class="p">)</span>
+  <span class="n">dirbravo</span><span class="o">/.</span><span class="n">filebravo1</span><span class="o">.</span><span class="n">swpx</span>
+
+<span class="c1"># cephfs-journal-tool event get --path filebravo1 list</span>
+<span class="mh">0x40785a</span> <span class="n">UPDATE</span><span class="p">:</span>  <span class="p">(</span><span class="n">openc</span><span class="p">)</span>
+  <span class="n">dirbravo</span><span class="o">/</span><span class="n">filebravo1</span>
+<span class="mh">0x4103ee</span> <span class="n">UPDATE</span><span class="p">:</span>  <span class="p">(</span><span class="n">cap</span> <span class="n">update</span><span class="p">)</span>
+  <span class="n">dirbravo</span><span class="o">/</span><span class="n">filebravo1</span>
+
+<span class="c1"># cephfs-journal-tool event splice --range 0x40f754..0x410bf1 summary</span>
+<span class="n">Events</span> <span class="n">by</span> <span class="nb">type</span><span class="p">:</span>
+  <span class="n">OPEN</span><span class="p">:</span> <span class="mi">1</span>
+  <span class="n">UPDATE</span><span class="p">:</span> <span class="mi">2</span>
+
+<span class="c1"># cephfs-journal-tool event apply --range 0x410bf1.. summary</span>
+<span class="n">Events</span> <span class="n">by</span> <span class="nb">type</span><span class="p">:</span>
+  <span class="n">NOOP</span><span class="p">:</span> <span class="mi">1</span>
+  <span class="n">SESSION</span><span class="p">:</span> <span class="mi">1</span>
+  <span class="n">UPDATE</span><span class="p">:</span> <span class="mi">9</span>
+
+<span class="c1"># cephfs-journal-tool event get --inode=1099511627776 list</span>
+<span class="mh">0x40068b</span> <span class="n">UPDATE</span><span class="p">:</span>  <span class="p">(</span><span class="n">mkdir</span><span class="p">)</span>
+  <span class="n">diralpha</span>
+<span class="mh">0x400d1b</span> <span class="n">UPDATE</span><span class="p">:</span>  <span class="p">(</span><span class="n">mkdir</span><span class="p">)</span>
+  <span class="n">diralpha</span><span class="o">/</span><span class="n">filealpha1</span>
+<span class="mh">0x401666</span> <span class="n">UPDATE</span><span class="p">:</span>  <span class="p">(</span><span class="n">unlink_local</span><span class="p">)</span>
+  <span class="n">stray0</span><span class="o">/</span><span class="mi">10000000001</span>
+  <span class="n">diralpha</span><span class="o">/</span><span class="n">filealpha1</span>
+<span class="mh">0x40228d</span> <span class="n">UPDATE</span><span class="p">:</span>  <span class="p">(</span><span class="n">unlink_local</span><span class="p">)</span>
+  <span class="n">diralpha</span>
+  <span class="n">stray0</span><span class="o">/</span><span class="mi">10000000000</span>
+
+<span class="c1"># cephfs-journal-tool event get --frag=1099511627776 --dname=filealpha1 list</span>
+<span class="mh">0x400d1b</span> <span class="n">UPDATE</span><span class="p">:</span>  <span class="p">(</span><span class="n">mkdir</span><span class="p">)</span>
+  <span class="n">diralpha</span><span class="o">/</span><span class="n">filealpha1</span>
+<span class="mh">0x401666</span> <span class="n">UPDATE</span><span class="p">:</span>  <span class="p">(</span><span class="n">unlink_local</span><span class="p">)</span>
+  <span class="n">stray0</span><span class="o">/</span><span class="mi">10000000001</span>
+  <span class="n">diralpha</span><span class="o">/</span><span class="n">filealpha1</span>
+
+<span class="c1"># cephfs-journal-tool event get binary --path bin_events</span>
+<span class="n">Wrote</span> <span class="n">output</span> <span class="n">to</span> <span class="n">binary</span> <span class="n">files</span> <span class="ow">in</span> <span class="n">directory</span> <span class="s1">&#39;bin_events&#39;</span>
+</pre></div>
+</div>
+</section>
+</section>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../">
+              <img class="logo" src="../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../install/">Installing Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cephadm/">Cephadm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rados/">Ceph Storage Cluster</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../">Ceph File System</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../#getting-started-with-cephfs">Getting Started with CephFS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../#administration">Administration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../#mounting-cephfs">Mounting CephFS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../#cephfs-concepts">CephFS Concepts</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../#troubleshooting-and-disaster-recovery">Troubleshooting and Disaster Recovery</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../eviction/"> Client eviction</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../scrub/"> Scrubbing the File System</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../full/"> Handling full file systems</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../disaster-recovery-experts/"> Metadata repair</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../troubleshooting/"> Troubleshooting</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../disaster-recovery/"> Disaster recovery</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#"> cephfs-journal-tool</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#purpose">Purpose</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#syntax">Syntax</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#journal-mode">Journal mode</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#example-journal-inspect">Example: journal inspect</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#example-journal-import-export">Example: Journal import/export</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#header-mode">Header mode</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#example-header-get-set">Example: header get/set</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#event-mode">Event mode</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#example-event-mode">Example: event mode</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../recover-fs-after-mon-store-loss/"> Recovering file system after monitor store loss</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../#developer-guides">Developer Guides</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../#additional-details">Additional Details</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../rbd/">Ceph Block Device</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../radosgw/">Ceph Object Gateway</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/">Ceph Manager Daemon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dev/developer_guide/">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dev/internals/">Ceph Internals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../recover-fs-after-mon-store-loss/" title="Recovering the file system after catastrophic Monitor store loss"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../disaster-recovery/" title="Disaster recovery"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../" >Ceph File System</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">cephfs-journal-tool</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

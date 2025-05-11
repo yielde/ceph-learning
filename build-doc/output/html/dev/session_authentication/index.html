@@ -1,0 +1,355 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Session Authentication for the Cephx Protocol &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css" />
+    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../genindex/" />
+    <link rel="search" title="Search" href="../../search/" />
+    <link rel="next" title="Testing notes" href="../testing/" />
+    <link rel="prev" title="Sepia community test lab" href="../sepia/" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../testing/" title="Testing notes"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../sepia/" title="Sepia community test lab"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../internals/" accesskey="U">Ceph Internals</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Session Authentication for the Cephx Protocol</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="session-authentication-for-the-cephx-protocol">
+<h1>Session Authentication for the Cephx Protocol<a class="headerlink" href="#session-authentication-for-the-cephx-protocol" title="Permalink to this heading">¶</a></h1>
+<p>Peter Reiher
+7/30/12</p>
+<p>The original Cephx protocol authenticated the client to the authenticator and set up a session
+key used to authenticate the client to the server it needs to talk to.  It did not, however,
+authenticate the ongoing messages between the client and server.  Based on the fact that they
+share a secret key, these ongoing session messages can be easily authenticated by using the
+key to sign the messages.</p>
+<p>This document describes changes to the code that allow such ongoing session authentication.
+The changes allow for future changes that permit other authentication protocols (and the
+existing null NONE and UNKNOWN protocols) to handle signatures, but the only protocol that
+actually does signatures, at the time of the writing, is the Cephx protocol.</p>
+<section id="introduction">
+<h2>Introduction<a class="headerlink" href="#introduction" title="Permalink to this heading">¶</a></h2>
+<p>This code comes into play after the Cephx protocol has completed.  At this point, the client and
+server share a secret key.  This key will be used for authentication.  For other protocols, there
+may or may not be such a key in place, and perhaps the actual procedures used to perform
+signing will be different, so the code is written to be general.</p>
+<p>The “session” here is represented by an established pipe.  For such pipes, there should be a
+<code class="docutils literal notranslate"><span class="pre">session\_security</span></code> structure attached to the pipe.  Whenever a message is to be sent on the
+pipe, code that handles the signature for this kind of session security will be called.  On the
+other end of the pipe, code that checks this kind of session security’s message signatures will
+be called.  Messages that fail the signature check will not be processed further.  That implies
+that the sender had better be in agreement with the receiver on the session security being used,
+since otherwise messages will be uniformly dropped between them.</p>
+<p>The code is also prepared to handle encryption and decryption of session messages, which would
+add secrecy to the integrity provided by the signatures.  No protocol currently implemented
+encrypts the ongoing session messages, though.</p>
+<p>For this functionality to work, several steps are required.  First, the sender and receiver must have
+a successful run of the cephx protocol to establish a shared key.  They must store that key somewhere
+that the pipe can get at later, to permit messages to be signed with it.  Sent messages must be
+signed, and received messages must have their signatures checked.</p>
+<p>The signature could be computed in a variety of ways, but currently its size is limited to 64 bits.
+A message’s signature is placed in its footer, in a field called <code class="docutils literal notranslate"><span class="pre">sig</span></code>.</p>
+<p>The signature code in Cephx can be turned on and off at runtime, using a Ceph boolean option called
+<code class="docutils literal notranslate"><span class="pre">cephx\_sign\_messages</span></code>.  It is currently set to false, by default, so no messages will be signed.  It
+must be changed to true to cause signatures to be calculated and checked.</p>
+</section>
+<section id="storing-the-key">
+<h2>Storing the Key<a class="headerlink" href="#storing-the-key" title="Permalink to this heading">¶</a></h2>
+<p>The key is needed to create signatures on the sending end and check signatures on the receiving end.
+In the future, if asymmetric crypto is an option, it’s possible that two keys (a private one for
+this end of the pipe and a public one for the other end) would need to be stored. At this time,
+messages going in both directions will be signed with the same key, so only that key needs to be
+saved.</p>
+<p>The key is saved when the pipe is established.  On the client side, this happens in <code class="docutils literal notranslate"><span class="pre">connect()</span></code>,
+which is located in <code class="docutils literal notranslate"><span class="pre">msg/Pipe.cc</span></code>.  The key is obtained from a run of the Cephx protocol,
+which results in a successfully checked authorizer structure.  If there is such an authorizer
+available, the code calls <code class="docutils literal notranslate"><span class="pre">get\_auth\_session\_handler()</span></code> to create a new authentication session handler
+and stores it in the pipe data structure.  On the server side, a similar thing is done in
+<code class="docutils literal notranslate"><span class="pre">accept()</span></code> after the authorizer provided by the client has been verified.</p>
+<p>Once these things are done on either end of the connection, session authentication can start.</p>
+<p>These routines (<code class="docutils literal notranslate"><span class="pre">connect()</span></code> and <code class="docutils literal notranslate"><span class="pre">accept()</span></code>) are also used to handle situations where a new
+session is being set up.  At this stage, no authorizer has been created yet, so there’s no key.
+Special cases in the code that calls the signature code skip these calls when the
+<code class="docutils literal notranslate"><span class="pre">CEPH\_AUTH\_UNKNOWN</span></code> protocol is in use.  This protocol label is on the pre-authorizer
+messages in a session, indicating that negotiation on an authentication protocol is ongoing and
+thus signature is not possible.  There will be a reliable authentication operation later in this
+session before anything sensitive should be passed, so this is not a security problem.</p>
+</section>
+<section id="signing-messages">
+<h2>Signing Messages<a class="headerlink" href="#signing-messages" title="Permalink to this heading">¶</a></h2>
+<p>Messages are signed in the <code class="docutils literal notranslate"><span class="pre">write\_message</span></code> call located in <code class="docutils literal notranslate"><span class="pre">msg/Pipe.cc</span></code>.  The actual
+signature process is to encrypt the CRCs for the message using the shared key.  Thus, we must
+defer signing until all CRCs have been computed.  The header CRC is computed last, so we
+call <code class="docutils literal notranslate"><span class="pre">sign\_message()</span></code> as soon as we’ve calculated that CRC.</p>
+<p><code class="docutils literal notranslate"><span class="pre">sign\_message()</span></code> is a virtual function defined in <code class="docutils literal notranslate"><span class="pre">auth/AuthSessionHandler.h</span></code>.  Thus,
+a specific version of it must be written for each authentication protocol supported.  Currently,
+only UNKNOWN, NONE and CEPHX are supported.  So there is a separate version of <code class="docutils literal notranslate"><span class="pre">sign\_message()</span></code> in
+<code class="docutils literal notranslate"><span class="pre">auth/unknown/AuthUnknownSessionHandler.h</span></code>, <code class="docutils literal notranslate"><span class="pre">auth/none/AuthNoneSessionHandler.h</span></code> and
+<code class="docutils literal notranslate"><span class="pre">auth/cephx/CephxSessionHandler.cc</span></code>.  The UNKNOWN and NONE versions simply return 0, indicating
+success.</p>
+<p>The CEPHX version is more extensive.  It is found in <code class="docutils literal notranslate"><span class="pre">auth/cephx/CephxSessionHandler.cc</span></code>.
+The first thing done is to determine if the run time option to handle signatures (see above) is on.
+If not, the Cephx version of <code class="docutils literal notranslate"><span class="pre">sign\_message()</span></code> simply returns success without actually calculating
+a signature or inserting it into the message.</p>
+<p>If the run time option is enabled, <code class="docutils literal notranslate"><span class="pre">sign\_message()</span></code> copies all of the message’s CRCs (one from the
+header and three from the footer) into a buffer.  It calls <code class="docutils literal notranslate"><span class="pre">encode\_encrypt()</span></code> on the buffer,
+using the key obtained from the pipe’s <code class="docutils literal notranslate"><span class="pre">session\_security</span></code> structure.  64 bits of the encrypted
+result are put into the message footer’s signature field and a footer flag is set to indicate that
+the message was signed.  (This flag is a sanity check.  It is not regarded as definitive
+evidence that the message was signed.  The presence of a <code class="docutils literal notranslate"><span class="pre">session\_security</span></code> structure at the
+receiving end requires a signature regardless of the value of this flag.)  If this all goes well,
+<code class="docutils literal notranslate"><span class="pre">sign\_message()</span></code> returns 0.  If there is a problem anywhere along the line and no signature
+was computed, it returns <code class="docutils literal notranslate"><span class="pre">SESSION\_SIGNATURE\_FAILURE</span></code>.</p>
+</section>
+<section id="checking-signatures">
+<h2>Checking Signatures<a class="headerlink" href="#checking-signatures" title="Permalink to this heading">¶</a></h2>
+<p>The signature is checked by a routine called <code class="docutils literal notranslate"><span class="pre">check\_message\_signature()</span></code>.  This is also a
+virtual function, defined in <code class="docutils literal notranslate"><span class="pre">auth/AuthSessionHandler.h</span></code>.  So again there are specific versions
+for supported authentication protocols, such as UNKNOWN, NONE and CEPHX.  Again, the UNKNOWN and
+NONE versions are stored in <code class="docutils literal notranslate"><span class="pre">auth/unknown/AuthUnknownSessionHandler.h</span></code> and
+<code class="docutils literal notranslate"><span class="pre">auth/none/AuthNoneSessionHandler.h</span></code>, respectively, and again they simply return 0, indicating
+success.</p>
+<p>The CEPHX version of <code class="docutils literal notranslate"><span class="pre">check\_message\_signature()</span></code> performs a real signature check.  This routine
+(stored in <code class="docutils literal notranslate"><span class="pre">auth/cephx/CephxSessionHandler.cc</span></code>) exits with success if the run time option has
+disabled signatures.  Otherwise, it takes the CRCs from the header and footer, encrypts the result,
+and compares it to the signature stored in the footer.  Since an earlier routine has checked that
+the CRCs actually match the contents of the message, it is unnecessary to recompute the CRCs
+on the raw data in the message.  The encryption is performed with the same <code class="docutils literal notranslate"><span class="pre">encode\_encrypt()</span></code>
+routine used on the sending end, using the key stored in the local <code class="docutils literal notranslate"><span class="pre">session\_security</span></code>
+data structure.</p>
+<p>If everything checks out, the CEPHX routine returns 0, indicating success.  If there is a
+problem, the routine returns <code class="docutils literal notranslate"><span class="pre">SESSION\_SIGNATURE\_FAILURE</span></code>.</p>
+</section>
+<section id="adding-new-session-authentication-methods">
+<h2>Adding New Session Authentication Methods<a class="headerlink" href="#adding-new-session-authentication-methods" title="Permalink to this heading">¶</a></h2>
+<p>For the purpose of session authentication only (not the basic authentication of client and
+server currently performed by the Cephx protocol), in addition to adding a new protocol, that
+protocol must have a <code class="docutils literal notranslate"><span class="pre">sign\_message()</span></code> routine and a <code class="docutils literal notranslate"><span class="pre">check\_message\_signature</span></code> routine.
+These routines will take a message pointer as a parameter and return 0 on success.  The procedure
+used to sign and check will be specific to the new method, but probably there will be a
+<code class="docutils literal notranslate"><span class="pre">session\_security</span></code> structure attached to the pipe that contains a cryptographic key.  This
+structure will be either an <code class="docutils literal notranslate"><span class="pre">AuthSessionHandler</span></code> (found in <code class="docutils literal notranslate"><span class="pre">auth/AuthSessionHandler.h</span></code>)
+or a structure derived from that type.</p>
+</section>
+<section id="adding-encryption-to-sessions">
+<h2>Adding Encryption to Sessions<a class="headerlink" href="#adding-encryption-to-sessions" title="Permalink to this heading">¶</a></h2>
+<p>The existing code is partially, but not fully, set up to allow sessions to have their packets
+encrypted.  Part of adding encryption would be similar to adding a new authentication method.
+But one would also need to add calls to the encryption and decryption routines in <code class="docutils literal notranslate"><span class="pre">write\_message()</span></code>
+and <code class="docutils literal notranslate"><span class="pre">read\_message()</span></code>.  These calls would probably go near where the current calls for
+authentication are made.  You should consider whether you want to replace the existing calls
+with something more general that does whatever the chosen form of session security requires,
+rather than explicitly saying <code class="docutils literal notranslate"><span class="pre">sign</span></code> or <code class="docutils literal notranslate"><span class="pre">encrypt</span></code>.</p>
+</section>
+<section id="session-security-statistics">
+<h2>Session Security Statistics<a class="headerlink" href="#session-security-statistics" title="Permalink to this heading">¶</a></h2>
+<p>The existing Cephx authentication code keeps statistics on how many messages were signed, how
+many message signature were checked, and how many checks succeeded and failed.  It is prepared
+to keep similar statistics on encryption and decryption.  These statistics can be accessed through
+the call <code class="docutils literal notranslate"><span class="pre">printAuthSessionHandlerStats</span></code> in <code class="docutils literal notranslate"><span class="pre">auth/AuthSessionHandler.cc</span></code>.</p>
+<p>If new authentication or encryption methods are added, they should include code that keeps these
+statistics.</p>
+</section>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../">
+              <img class="logo" src="../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../install/">Installing Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cephadm/">Cephadm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rados/">Ceph Storage Cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cephfs/">Ceph File System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rbd/">Ceph Block Device</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../radosgw/">Ceph Object Gateway</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/">Ceph Manager Daemon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../developer_guide/">Developer Guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../internals/">Ceph Internals</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../blkin/">Tracing Ceph With Blkin</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../bluestore/">BlueStore Internals</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cache-pool/">Cache pool</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../ceph_krb_auth/">A Detailed Documentation on How to Set up Ceph Kerberos Authentication</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cephfs-mirroring/">CephFS Mirroring</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cephfs-reclaim/">CephFS Reclaim Interface</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cephfs-snapshots/">CephFS Snapshots</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cephx/">Cephx</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cephx_protocol/">A Detailed Description of the Cephx Authentication Protocol</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../config/">Configuration Management System</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../config-key/">config-key layout</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../context/">CephContext</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../continuous-integration/">Continuous Integration Architecture</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../corpus/">Corpus structure</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpu-profiler/">Installing Oprofile</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cxx/">C++17 and libstdc++ ABI</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../delayed-delete/">CephFS delayed deletion</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../dev_cluster_deployement/">Deploying a development cluster</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../dev_cluster_deployement/#deploying-multiple-development-clusters-on-the-same-machine">Deploying multiple development clusters on the same machine</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../development-workflow/">Development workflows</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../documenting/">Documenting Ceph</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../encoding/">Serialization (encode/decode)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../erasure-coded-pool/">Erasure Coded pool</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../file-striping/">File striping</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../freebsd/">FreeBSD Implementation details</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../generatedocs/">Building Ceph Documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../iana/">IANA Numbers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../kubernetes/">Hacking on Ceph in Kubernetes with Rook</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../libs/">Library architecture</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../logging/">Use of the cluster log</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../logs/">Debug logs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../macos/">build on MacOS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../messenger/">Messenger notes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../mon-bootstrap/">Monitor bootstrap</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../mon-elections/">Monitor Elections</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../mon-on-disk-formats/">ON-DISK FORMAT</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../mon-osdmap-prune/">FULL OSDMAP VERSION PRUNING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../msgr2/">msgr2 protocol (msgr2.0 and msgr2.1)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../network-encoding/">Network Encoding</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../network-protocol/">Network Protocol</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../object-store/">Object Store Architecture Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../osd-class-path/">OSD class path issues</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../peering/">Peering</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../perf/">Using perf</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../perf_counters/">Perf counters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../perf_histograms/">Perf histograms</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../placement-group/">PG (Placement Group) notes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../quick_guide/">Developer Guide (Quick)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rados-client-protocol/">RADOS client protocol</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rbd-diff/">RBD Incremental Backup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rbd-export/">RBD Export &amp; Import</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rbd-layering/">RBD Layering</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../release-checklists/">Release checklists</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../release-process/">Ceph Release Process</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../seastore/">SeaStore</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../sepia/">Sepia community test lab</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Session Authentication for the Cephx Protocol</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#introduction">Introduction</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#storing-the-key">Storing the Key</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#signing-messages">Signing Messages</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#checking-signatures">Checking Signatures</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#adding-new-session-authentication-methods">Adding New Session Authentication Methods</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#adding-encryption-to-sessions">Adding Encryption to Sessions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#session-security-statistics">Session Security Statistics</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../testing/">Testing notes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../versions/">Public OSD Version</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../vstart-ganesha/">NFS CephFS-RGW Developer Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../wireshark/">Wireshark Dissector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../zoned-storage/">Zoned Storage Support</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../osd_internals/">OSD developer documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../mds_internals/">MDS developer documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../radosgw/">RADOS Gateway developer documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../ceph-volume/">ceph-volume developer documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../crimson/">Crimson developer documentation</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../testing/" title="Testing notes"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../sepia/" title="Sepia community test lab"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../internals/" >Ceph Internals</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Session Authentication for the Cephx Protocol</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

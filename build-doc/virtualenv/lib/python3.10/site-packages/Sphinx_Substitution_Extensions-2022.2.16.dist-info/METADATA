@@ -1,0 +1,169 @@
+Metadata-Version: 2.1
+Name: Sphinx-Substitution-Extensions
+Version: 2022.2.16
+Summary: Extensions for Sphinx which allow for substitutions.
+Home-page: https://github.com/adamtheturtle/sphinx-substitution-extensions
+Author: Adam Dangoor
+Author-email: adamdangoor@gmail.com
+License: Apache License, Version 2.0
+Keywords: sphinx,rst,documentation
+Platform: UNKNOWN
+Classifier: Operating System :: POSIX
+Classifier: Environment :: Web Environment
+Classifier: Programming Language :: Python :: 3.8
+Classifier: Programming Language :: Python :: 3.9
+Classifier: License :: OSI Approved :: Apache Software License
+Classifier: Development Status :: 5 - Production/Stable
+Description-Content-Type: text/x-rst
+License-File: LICENSE
+Requires-Dist: docutils (>=0.15)
+Requires-Dist: sphinx (>=4.0.0)
+Provides-Extra: dev
+Requires-Dist: autoflake (==1.4) ; extra == 'dev'
+Requires-Dist: black (==22.1.0) ; extra == 'dev'
+Requires-Dist: check-manifest (==0.47) ; extra == 'dev'
+Requires-Dist: doc8 (==0.10.1) ; extra == 'dev'
+Requires-Dist: flake8-commas (==2.1.0) ; extra == 'dev'
+Requires-Dist: flake8-quotes (==3.3.1) ; extra == 'dev'
+Requires-Dist: flake8 (==4.0.1) ; extra == 'dev'
+Requires-Dist: isort (==5.10.1) ; extra == 'dev'
+Requires-Dist: mypy (==0.931) ; extra == 'dev'
+Requires-Dist: pip-check-reqs (==2.3.2) ; extra == 'dev'
+Requires-Dist: pydocstyle (==6.1.1) ; extra == 'dev'
+Requires-Dist: pyenchant (==3.2.2) ; extra == 'dev'
+Requires-Dist: pylint (==2.12.2) ; extra == 'dev'
+Requires-Dist: pyroma (==3.2) ; extra == 'dev'
+Requires-Dist: pytest-cov (==3.0.0) ; extra == 'dev'
+Requires-Dist: pytest (==7.0.1) ; extra == 'dev'
+Requires-Dist: types-docutils (==0.17.5) ; extra == 'dev'
+Requires-Dist: vulture (==2.3) ; extra == 'dev'
+Provides-Extra: prompt
+Requires-Dist: sphinx-prompt (>=0.1) ; extra == 'prompt'
+
+|Build Status| |codecov| |PyPI|
+
+Sphinx Substitution Extensions
+==============================
+
+Extensions for Sphinx which allow substitutions within code blocks.
+
+.. contents::
+
+Installation
+------------
+
+Sphinx Substitution Extensions is compatible with Sphinx 4.0+ using Python 3.8+.
+
+.. code:: console
+
+   $ pip install Sphinx-Substitution-Extensions
+
+Setup
+~~~~~
+
+1. Add the following to ``conf.py``:
+
+.. code:: python
+
+   extensions += ['sphinx_substitution_extensions']
+
+2. Set the following variable in ``conf.py``:
+
+.. code:: python
+
+   rst_prolog = """
+   .. |release| replace:: 0.1
+   .. |author| replace:: Eleanor
+   """
+
+This will replace ``|release|`` in the new directives with ``0.1``, and ``|author|`` with ``Eleanor``.
+
+Optional: sphinx-prompt
+~~~~~~~~~~~~~~~~~~~~~~~
+
+Sphinx Substitution Extensions supports the third-party extension `sphinx-prompt`_.
+
+1. If you don't have ``sphinx-prompt`` installed, you can include the extension with the extra dependency ``prompt``:
+
+.. code:: console
+
+   $ pip install Sphinx-Substitution-Extensions[prompt]
+
+
+2. Make sure ``sphinx-prompt`` dependency is loaded before ``sphinx_substitution_extensions``.
+For example, your ``conf.py`` should look like:
+
+.. code:: python
+
+   # sphinx-prompt must be the first of these two.
+   extensions += ['sphinx-prompt', 'sphinx_substitution_extensions']
+
+Directives
+----------
+
+``code-block``
+~~~~~~~~~~~~~~
+
+This adds a ``:substitutions:`` option to Sphinx's built-in `code-block`_ directive.
+
+.. code:: rst
+
+   .. code-block:: bash
+      :substitutions:
+
+      echo "|author| released version |release|"
+
+
+``prompt``
+~~~~~~~~~~
+
+This adds a ``:substitutions:`` option to `sphinx-prompt`_.
+
+.. note:: Requires the extension `sphinx-prompt`_.
+
+.. code:: rst
+
+   .. prompt:: bash
+      :substitutions:
+
+      echo "|author| released version |release|"
+
+
+Inline ``:substitution-code:``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code:: rst
+
+   :substitution-code:`echo "|author| released version |release|"`
+
+Credits
+-------
+
+``sphinx-prompt`` authors
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Thanks to `@sbrunner`_ and other contributors for `sphinx-prompt`_.
+``substitution-prompt`` is based on `sphinx-prompt`_.
+
+ClusterHQ Developers
+~~~~~~~~~~~~~~~~~~~~
+
+This package is largely inspired by code written for Flocker by ClusterHQ.
+Developers of the relevant code include, at least, Jon Giddy and Tom Prince.
+
+Contributing
+------------
+
+See `CONTRIBUTING.rst <./CONTRIBUTING.rst>`_.
+
+.. |Build Status| image:: https://github.com/adamtheturtle/sphinx-substitution-extensions/workflows/CI/badge.svg
+   :target: https://github.com/adamtheturtle/sphinx-substitution-extensions/actions
+.. _sphinx-prompt: https://github.com/sbrunner/sphinx-prompt
+.. _code-block: http://www.sphinx-doc.org/en/master/usage/restructuredtext/directives.html#directive-code-block
+.. _@sbrunner: https://github.com/sbrunner
+.. |codecov| image:: https://codecov.io/gh/adamtheturtle/sphinx-substitution-extensions/branch/master/graph/badge.svg
+   :target: https://codecov.io/gh/adamtheturtle/sphinx-substitution-extensions
+.. |PyPI| image:: https://badge.fury.io/py/Sphinx-Substitution-Extensions.svg
+   :target: https://badge.fury.io/py/Sphinx-Substitution-Extensions
+
+

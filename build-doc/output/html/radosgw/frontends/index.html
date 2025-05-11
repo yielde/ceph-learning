@@ -1,0 +1,506 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>HTTP Frontends &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css" />
+    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../genindex/" />
+    <link rel="search" title="Search" href="../../search/" />
+    <link rel="next" title="Pool Placement and Storage Classes" href="../placement/" />
+    <link rel="prev" title="Ceph Object Gateway" href="../" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../placement/" title="Pool Placement and Storage Classes"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../" title="Ceph Object Gateway"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../" accesskey="U">Ceph Object Gateway</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">HTTP Frontends</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="http-frontends">
+<span id="rgw-frontends"></span><h1><a class="toc-backref" href="#id2">HTTP Frontends</a><a class="headerlink" href="#http-frontends" title="Permalink to this heading">¶</a></h1>
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="#http-frontends" id="id2">HTTP Frontends</a></p>
+<ul>
+<li><p><a class="reference internal" href="#beast" id="id3">Beast</a></p>
+<ul>
+<li><p><a class="reference internal" href="#options" id="id4">Options</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#civetweb" id="id5">Civetweb</a></p>
+<ul>
+<li><p><a class="reference internal" href="#id1" id="id6">Options</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#generic-options" id="id7">Generic Options</a></p></li>
+</ul>
+</li>
+</ul>
+</div>
+<p>The Ceph Object Gateway supports two embedded HTTP frontend libraries
+that can be configured with <code class="docutils literal notranslate"><span class="pre">rgw_frontends</span></code>. See <a class="reference external" href="../config-ref">Config Reference</a>
+for details about the syntax.</p>
+<section id="beast">
+<h2><a class="toc-backref" href="#id3">Beast</a><a class="headerlink" href="#beast" title="Permalink to this heading">¶</a></h2>
+<div class="versionadded">
+<p><span class="versionmodified added">New in version Mimic.</span></p>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">beast</span></code> frontend uses the Boost.Beast library for HTTP parsing
+and the Boost.Asio library for asynchronous network i/o.</p>
+<section id="options">
+<h3><a class="toc-backref" href="#id4">Options</a><a class="headerlink" href="#options" title="Permalink to this heading">¶</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">port</span></code> and <code class="docutils literal notranslate"><span class="pre">ssl_port</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Sets the ipv4 &amp; ipv6 listening port number. Can be specified multiple
+times as in <code class="docutils literal notranslate"><span class="pre">port=80</span> <span class="pre">port=8000</span></code>.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">80</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">endpoint</span></code> and <code class="docutils literal notranslate"><span class="pre">ssl_endpoint</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Sets the listening address in the form <code class="docutils literal notranslate"><span class="pre">address[:port]</span></code>, where
+the address is an IPv4 address string in dotted decimal form, or
+an IPv6 address in hexadecimal notation surrounded by square
+brackets. Specifying a IPv6 endpoint would listen to v6 only. The
+optional port defaults to 80 for <code class="docutils literal notranslate"><span class="pre">endpoint</span></code> and 443 for
+<code class="docutils literal notranslate"><span class="pre">ssl_endpoint</span></code>. Can be specified multiple times as in
+<code class="docutils literal notranslate"><span class="pre">endpoint=[::1]</span> <span class="pre">endpoint=192.168.0.100:8000</span></code>.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">ssl_certificate</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Path to the SSL certificate file used for SSL-enabled endpoints.
+If path is prefixed with <code class="docutils literal notranslate"><span class="pre">config://</span></code>, the certificate will be
+pulled from the ceph monitor <code class="docutils literal notranslate"><span class="pre">config-key</span></code> database.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">ssl_private_key</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Optional path to the private key file used for SSL-enabled
+endpoints. If one is not given, the <code class="docutils literal notranslate"><span class="pre">ssl_certificate</span></code> file
+is used as the private key.
+If path is prefixed with <code class="docutils literal notranslate"><span class="pre">config://</span></code>, the certificate will be
+pulled from the ceph monitor <code class="docutils literal notranslate"><span class="pre">config-key</span></code> database.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">ssl_options</span></code></p>
+<dl class="field-list">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Optional colon separated list of ssl context options:</p>
+<p><code class="docutils literal notranslate"><span class="pre">default_workarounds</span></code> Implement various bug workarounds.</p>
+<p><code class="docutils literal notranslate"><span class="pre">no_compression</span></code> Disable compression.</p>
+<p><code class="docutils literal notranslate"><span class="pre">no_sslv2</span></code> Disable SSL v2.</p>
+<p><code class="docutils literal notranslate"><span class="pre">no_sslv3</span></code> Disable SSL v3.</p>
+<p><code class="docutils literal notranslate"><span class="pre">no_tlsv1</span></code> Disable TLS v1.</p>
+<p><code class="docutils literal notranslate"><span class="pre">no_tlsv1_1</span></code> Disable TLS v1.1.</p>
+<p><code class="docutils literal notranslate"><span class="pre">no_tlsv1_2</span></code> Disable TLS v1.2.</p>
+<p><code class="docutils literal notranslate"><span class="pre">single_dh_use</span></code> Always create a new key when using tmp_dh parameters.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">no_sslv2:no_sslv3:no_tlsv1:no_tlsv1_1</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">ssl_ciphers</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Optional list of one or more cipher strings separated by colons.
+The format of the string is described in openssl’s ciphers(1)
+manual.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">tcp_nodelay</span></code></p>
+<dl class="field-list">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>If set the socket option will disable Nagle’s algorithm on
+the connection which means that packets will be sent as soon
+as possible instead of waiting for a full buffer or timeout to occur.</p>
+<p><code class="docutils literal notranslate"><span class="pre">1</span></code> Disable Nagel’s algorithm for all sockets.</p>
+<p><code class="docutils literal notranslate"><span class="pre">0</span></code> Keep the default: Nagel’s algorithm enabled.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Integer (0 or 1)</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p>0</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">max_connection_backlog</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Optional value to define the maximum size for the queue of
+connections waiting to be accepted. If not configured, the value
+from <code class="docutils literal notranslate"><span class="pre">boost::asio::socket_base::max_connections</span></code> will be used.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">request_timeout_ms</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The amount of time in milliseconds that Beast will wait
+for more incoming data or outgoing data before giving up.
+Setting this value to 0 will disable timeout.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">65000</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">max_header_size</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The maximum number of header bytes available for a single request.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">16384</span></code></p>
+</dd>
+<dt class="field-even">Maximum</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">65536</span></code></p>
+</dd>
+</dl>
+</section>
+</section>
+<section id="civetweb">
+<h2><a class="toc-backref" href="#id5">Civetweb</a><a class="headerlink" href="#civetweb" title="Permalink to this heading">¶</a></h2>
+<div class="versionadded">
+<p><span class="versionmodified added">New in version Firefly.</span></p>
+</div>
+<div class="deprecated">
+<p><span class="versionmodified deprecated">Deprecated since version Pacific.</span></p>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">civetweb</span></code> frontend uses the Civetweb HTTP library, which is a
+fork of Mongoose.</p>
+<section id="id1">
+<h3><a class="toc-backref" href="#id6">Options</a><a class="headerlink" href="#id1" title="Permalink to this heading">¶</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">port</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Sets the listening port number. For SSL-enabled ports, add an
+<code class="docutils literal notranslate"><span class="pre">s</span></code> suffix like <code class="docutils literal notranslate"><span class="pre">443s</span></code>. To bind a specific IPv4 or IPv6
+address, use the form <code class="docutils literal notranslate"><span class="pre">address:port</span></code>. Multiple endpoints
+can either be separated by <code class="docutils literal notranslate"><span class="pre">+</span></code> as in <code class="docutils literal notranslate"><span class="pre">127.0.0.1:8000+443s</span></code>,
+or by providing multiple options as in <code class="docutils literal notranslate"><span class="pre">port=8000</span> <span class="pre">port=443s</span></code>.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">7480</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">num_threads</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Sets the number of threads spawned by Civetweb to handle
+incoming HTTP connections. This effectively limits the number
+of concurrent connections that the frontend can service.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">rgw_thread_pool_size</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">request_timeout_ms</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The amount of time in milliseconds that Civetweb will wait
+for more incoming data before giving up.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">30000</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">ssl_certificate</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Path to the SSL certificate file used for SSL-enabled ports.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">access_log_file</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Path to a file for access logs. Either full path, or relative
+to the current working directory. If absent (default), then
+accesses are not logged.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">EMPTY</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">error_log_file</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Path to a file for error logs. Either full path, or relative
+to the current working directory. If absent (default), then
+errors are not logged.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">EMPTY</span></code></p>
+</dd>
+</dl>
+<p>The following is an example of the <code class="docutils literal notranslate"><span class="pre">/etc/ceph/ceph.conf</span></code> file with some of these options set:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[</span><span class="n">client</span><span class="o">.</span><span class="n">rgw</span><span class="o">.</span><span class="n">gateway</span><span class="o">-</span><span class="n">node1</span><span class="p">]</span>
+<span class="n">rgw_frontends</span> <span class="o">=</span> <span class="n">civetweb</span> <span class="n">request_timeout_ms</span><span class="o">=</span><span class="mi">30000</span> <span class="n">error_log_file</span><span class="o">=/</span><span class="n">var</span><span class="o">/</span><span class="n">log</span><span class="o">/</span><span class="n">radosgw</span><span class="o">/</span><span class="n">civetweb</span><span class="o">.</span><span class="n">error</span><span class="o">.</span><span class="n">log</span> <span class="n">access_log_file</span><span class="o">=/</span><span class="n">var</span><span class="o">/</span><span class="n">log</span><span class="o">/</span><span class="n">radosgw</span><span class="o">/</span><span class="n">civetweb</span><span class="o">.</span><span class="n">access</span><span class="o">.</span><span class="n">log</span>
+</pre></div>
+</div>
+<p>A complete list of supported options can be found in the <a class="reference external" href="https://civetweb.github.io/civetweb/UserManual.html">Civetweb User Manual</a>.</p>
+</section>
+</section>
+<section id="generic-options">
+<h2><a class="toc-backref" href="#id7">Generic Options</a><a class="headerlink" href="#generic-options" title="Permalink to this heading">¶</a></h2>
+<p>Some frontend options are generic and supported by all frontends:</p>
+<p><code class="docutils literal notranslate"><span class="pre">prefix</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>A prefix string that is inserted into the URI of all
+requests. For example, a swift-only frontend could supply
+a uri prefix of <code class="docutils literal notranslate"><span class="pre">/swift</span></code>.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+</section>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../">
+              <img class="logo" src="../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../install/">Installing Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cephadm/">Cephadm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rados/">Ceph Storage Cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cephfs/">Ceph File System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rbd/">Ceph Block Device</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../">Ceph Object Gateway</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">HTTP Frontends</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#beast">Beast</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#options">Options</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#civetweb">Civetweb</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#id1">Options</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#generic-options">Generic Options</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../placement/">Pool Placement and Storage Classes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../multisite/">Multisite Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../multisite-sync-policy/">Multisite Sync Policy Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pools/">Configuring Pools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../config-ref/">Config Reference</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../admin/">Admin Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../s3/">S3 API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rgw-cache/">Data caching and CDN</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../swift/">Swift API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../adminops/">Admin Ops API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/">Python binding</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../nfs/">Export over NFS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../keystone/">OpenStack Keystone Integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../barbican/">OpenStack Barbican Integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../vault/">HashiCorp Vault Integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../kmip/">KMIP Integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../opa/">Open Policy Agent Integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../multitenancy/">Multi-tenancy</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../compression/">Compression</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../ldap-auth/">LDAP Authentication</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../encryption/">Server-Side Encryption</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../bucketpolicy/">Bucket Policy</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../dynamicresharding/">Dynamic bucket index resharding</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../mfa/">Multi factor authentication</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../sync-modules/">Sync Modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../notifications/">Bucket Notifications</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../layout/">Data Layout in RADOS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../STS/">STS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../STSLite/">STS Lite</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../keycloak/">Keycloak</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../session-tags/">Session Tags</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../role/">Role</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../orphans/">Orphan List and Associated Tooling</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../oidc/">OpenID Connect Provider</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../troubleshooting/">Troubleshooting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../man/8/radosgw/">Manpage radosgw</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../man/8/radosgw-admin/">Manpage radosgw-admin</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../qat-accel/">QAT Acceleration for Encryption and Compression</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../s3select/">S3-select</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../lua-scripting/">Lua Scripting</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/">Ceph Manager Daemon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dev/developer_guide/">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dev/internals/">Ceph Internals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../placement/" title="Pool Placement and Storage Classes"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../" title="Ceph Object Gateway"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../" >Ceph Object Gateway</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">HTTP Frontends</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

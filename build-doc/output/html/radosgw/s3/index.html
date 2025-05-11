@@ -1,0 +1,371 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Ceph Object Gateway S3 API &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css" />
+    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../genindex/" />
+    <link rel="search" title="Search" href="../../search/" />
+    <link rel="next" title="Common Entities" href="commons/" />
+    <link rel="prev" title="Admin Guide" href="../admin/" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="commons/" title="Common Entities"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../admin/" title="Admin Guide"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../" accesskey="U">Ceph Object Gateway</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Ceph Object Gateway S3 API</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="ceph-object-gateway-s3-api">
+<h1>Ceph Object Gateway S3 API<a class="headerlink" href="#ceph-object-gateway-s3-api" title="Permalink to this heading">¶</a></h1>
+<p>Ceph supports a RESTful API that is compatible with the basic data access model of the <a class="reference external" href="http://docs.aws.amazon.com/AmazonS3/latest/API/APIRest.html">Amazon S3 API</a>.</p>
+<section id="api">
+<h2>API<a class="headerlink" href="#api" title="Permalink to this heading">¶</a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="commons/">Common</a></li>
+<li class="toctree-l1"><a class="reference internal" href="authentication/">Authentication</a></li>
+<li class="toctree-l1"><a class="reference internal" href="serviceops/">Service Ops</a></li>
+<li class="toctree-l1"><a class="reference internal" href="bucketops/">Bucket Ops</a></li>
+<li class="toctree-l1"><a class="reference internal" href="objectops/">Object Ops</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cpp/">C++</a></li>
+<li class="toctree-l1"><a class="reference internal" href="csharp/">C#</a></li>
+<li class="toctree-l1"><a class="reference internal" href="java/">Java</a></li>
+<li class="toctree-l1"><a class="reference internal" href="perl/">Perl</a></li>
+<li class="toctree-l1"><a class="reference internal" href="php/">PHP</a></li>
+<li class="toctree-l1"><a class="reference internal" href="python/">Python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ruby/">Ruby AWS::SDK Examples (aws-sdk gem ~&gt;2)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ruby/#ruby-aws-s3-examples-aws-s3-gem">Ruby AWS::S3 Examples (aws-s3 gem)</a></li>
+</ul>
+</div>
+</section>
+<section id="features-support">
+<h2>Features Support<a class="headerlink" href="#features-support" title="Permalink to this heading">¶</a></h2>
+<p>The following table describes the support status for current Amazon S3 functional features:</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 37%" />
+<col style="width: 19%" />
+<col style="width: 44%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Feature</p></th>
+<th class="head"><p>Status</p></th>
+<th class="head"><p>Remarks</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>List Buckets</strong></p></td>
+<td><p>Supported</p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Delete Bucket</strong></p></td>
+<td><p>Supported</p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><strong>Create Bucket</strong></p></td>
+<td><p>Supported</p></td>
+<td><p>Different set of canned ACLs</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Bucket Lifecycle</strong></p></td>
+<td><p>Supported</p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><strong>Bucket Replication</strong></p></td>
+<td><p>Partial</p></td>
+<td><p>Permitted only across zones</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Policy (Buckets, Objects)</strong></p></td>
+<td><p>Supported</p></td>
+<td><p>ACLs &amp; bucket policies are supported</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>Bucket Website</strong></p></td>
+<td><p>Supported</p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Bucket ACLs (Get, Put)</strong></p></td>
+<td><p>Supported</p></td>
+<td><p>Different set of canned ACLs</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>Bucket Location</strong></p></td>
+<td><p>Supported</p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Bucket Notification</strong></p></td>
+<td><p>Supported</p></td>
+<td><p>See <a class="reference external" href="../s3-notification-compatibility">S3 Notification Compatibility</a></p></td>
+</tr>
+<tr class="row-even"><td><p><strong>Bucket Object Versions</strong></p></td>
+<td><p>Supported</p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Get Bucket Info (HEAD)</strong></p></td>
+<td><p>Supported</p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><strong>Bucket Request Payment</strong></p></td>
+<td><p>Supported</p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Put Object</strong></p></td>
+<td><p>Supported</p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><strong>Delete Object</strong></p></td>
+<td><p>Supported</p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Get Object</strong></p></td>
+<td><p>Supported</p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><strong>Object ACLs (Get, Put)</strong></p></td>
+<td><p>Supported</p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Get Object Info (HEAD)</strong></p></td>
+<td><p>Supported</p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><strong>POST Object</strong></p></td>
+<td><p>Supported</p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Copy Object</strong></p></td>
+<td><p>Supported</p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><strong>Multipart Uploads</strong></p></td>
+<td><p>Supported</p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Object Tagging</strong></p></td>
+<td><p>Supported</p></td>
+<td><p>See <a class="reference internal" href="../bucketpolicy/#tag-policy"><span class="std std-ref">Object Related Operations</span></a> for Policy verbs</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>Bucket Tagging</strong></p></td>
+<td><p>Supported</p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Storage Class</strong></p></td>
+<td><p>Supported</p></td>
+<td><p>See <a class="reference internal" href="../placement/#storage-classes"><span class="std std-ref">Storage Classes</span></a></p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="unsupported-header-fields">
+<h2>Unsupported Header Fields<a class="headerlink" href="#unsupported-header-fields" title="Permalink to this heading">¶</a></h2>
+<p>The following common request header fields are not supported:</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 70%" />
+<col style="width: 30%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Name</p></th>
+<th class="head"><p>Type</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>Server</strong></p></td>
+<td><p>Response</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>x-amz-delete-marker</strong></p></td>
+<td><p>Response</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>x-amz-id-2</strong></p></td>
+<td><p>Response</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>x-amz-version-id</strong></p></td>
+<td><p>Response</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../">
+              <img class="logo" src="../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../install/">Installing Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cephadm/">Cephadm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rados/">Ceph Storage Cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cephfs/">Ceph File System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rbd/">Ceph Block Device</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../">Ceph Object Gateway</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../frontends/">HTTP Frontends</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../placement/">Pool Placement and Storage Classes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../multisite/">Multisite Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../multisite-sync-policy/">Multisite Sync Policy Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pools/">Configuring Pools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../config-ref/">Config Reference</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../admin/">Admin Guide</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">S3 API</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#api">API</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="commons/">Common</a></li>
+<li class="toctree-l4"><a class="reference internal" href="authentication/">Authentication</a></li>
+<li class="toctree-l4"><a class="reference internal" href="serviceops/">Service Ops</a></li>
+<li class="toctree-l4"><a class="reference internal" href="bucketops/">Bucket Ops</a></li>
+<li class="toctree-l4"><a class="reference internal" href="objectops/">Object Ops</a></li>
+<li class="toctree-l4"><a class="reference internal" href="cpp/">C++</a></li>
+<li class="toctree-l4"><a class="reference internal" href="csharp/">C#</a></li>
+<li class="toctree-l4"><a class="reference internal" href="java/">Java</a></li>
+<li class="toctree-l4"><a class="reference internal" href="perl/">Perl</a></li>
+<li class="toctree-l4"><a class="reference internal" href="php/">PHP</a></li>
+<li class="toctree-l4"><a class="reference internal" href="python/">Python</a></li>
+<li class="toctree-l4"><a class="reference internal" href="ruby/">Ruby AWS::SDK Examples (aws-sdk gem ~&gt;2)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="ruby/#ruby-aws-s3-examples-aws-s3-gem">Ruby AWS::S3 Examples (aws-s3 gem)</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#features-support">Features Support</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#unsupported-header-fields">Unsupported Header Fields</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../rgw-cache/">Data caching and CDN</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../swift/">Swift API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../adminops/">Admin Ops API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/">Python binding</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../nfs/">Export over NFS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../keystone/">OpenStack Keystone Integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../barbican/">OpenStack Barbican Integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../vault/">HashiCorp Vault Integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../kmip/">KMIP Integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../opa/">Open Policy Agent Integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../multitenancy/">Multi-tenancy</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../compression/">Compression</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../ldap-auth/">LDAP Authentication</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../encryption/">Server-Side Encryption</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../bucketpolicy/">Bucket Policy</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../dynamicresharding/">Dynamic bucket index resharding</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../mfa/">Multi factor authentication</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../sync-modules/">Sync Modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../notifications/">Bucket Notifications</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../layout/">Data Layout in RADOS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../STS/">STS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../STSLite/">STS Lite</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../keycloak/">Keycloak</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../session-tags/">Session Tags</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../role/">Role</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../orphans/">Orphan List and Associated Tooling</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../oidc/">OpenID Connect Provider</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../troubleshooting/">Troubleshooting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../man/8/radosgw/">Manpage radosgw</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../man/8/radosgw-admin/">Manpage radosgw-admin</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../qat-accel/">QAT Acceleration for Encryption and Compression</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../s3select/">S3-select</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../lua-scripting/">Lua Scripting</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/">Ceph Manager Daemon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dev/developer_guide/">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dev/internals/">Ceph Internals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="commons/" title="Common Entities"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../admin/" title="Admin Guide"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../" >Ceph Object Gateway</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Ceph Object Gateway S3 API</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

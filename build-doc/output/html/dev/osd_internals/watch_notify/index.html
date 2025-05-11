@@ -1,0 +1,314 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Watch Notify &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/css/custom.css" />
+    <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/jquery.js"></script>
+    <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../../genindex/" />
+    <link rel="search" title="Search" href="../../../search/" />
+    <link rel="next" title="Writeback Throttle" href="../wbthrottle/" />
+    <link rel="prev" title="Preventing Stale Reads" href="../stale_read/" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../wbthrottle/" title="Writeback Throttle"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../stale_read/" title="Preventing Stale Reads"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../internals/" >Ceph Internals</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../" accesskey="U">OSD developer documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Watch Notify</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="watch-notify">
+<h1>Watch Notify<a class="headerlink" href="#watch-notify" title="Permalink to this heading">¶</a></h1>
+<p>See librados for the watch/notify interface.</p>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Permalink to this heading">¶</a></h2>
+<p>The object_info (See osd/osd_types.h) tracks the set of watchers for
+a particular object persistently in the object_info_t::watchers map.
+In order to track notify progress, we also maintain some ephemeral
+structures associated with the ObjectContext.</p>
+<p>Each Watch has an associated Watch object (See osd/Watch.h).  The
+ObjectContext for a watched object will have a (strong) reference
+to one Watch object per watch, and each Watch object holds a
+reference to the corresponding ObjectContext.  This circular reference
+is deliberate and is broken when the Watch state is discarded on
+a new peering interval or removed upon timeout expiration or an
+unwatch operation.</p>
+<p>A watch tracks the associated connection via a strong
+ConnectionRef Watch::conn.  The associated connection has a
+WatchConState stashed in the OSD::Session for tracking associated
+Watches in order to be able to notify them upon ms_handle_reset()
+(via WatchConState::reset()).</p>
+<p>Each Watch object tracks the set of currently un-acked notifies.
+start_notify() on a Watch object adds a reference to a new in-progress
+Notify to the Watch and either:</p>
+<ul class="simple">
+<li><p>if the Watch is <em>connected</em>, sends a Notify message to the client</p></li>
+<li><p>if the Watch is <em>unconnected</em>, does nothing.</p></li>
+</ul>
+<p>When the Watch becomes connected (in PrimaryLogPG::do_osd_op_effects),
+Notifies are resent to all remaining tracked Notify objects.</p>
+<p>Each Notify object tracks the set of un-notified Watchers via
+calls to complete_watcher().  Once the remaining set is empty or the
+timeout expires (cb, registered in init()) a notify completion
+is sent to the client.</p>
+</section>
+<section id="watch-lifecycle">
+<h2>Watch Lifecycle<a class="headerlink" href="#watch-lifecycle" title="Permalink to this heading">¶</a></h2>
+<p>A watch may be in one of 5 states:</p>
+<ol class="arabic simple">
+<li><p>Non existent.</p></li>
+<li><p>On disk, but not registered with an object context.</p></li>
+<li><p>Connected</p></li>
+<li><p>Disconnected, callback registered with timer</p></li>
+<li><p>Disconnected, callback in queue for scrub or is_degraded</p></li>
+</ol>
+<p>Case 2 occurs between when an OSD goes active and the ObjectContext
+for an object with watchers is loaded into memory due to an access.
+During Case 2, no state is registered for the watch.  Case 2
+transitions to Case 4 in PrimaryLogPG::populate_obc_watchers() during
+PrimaryLogPG::find_object_context.  Case 1 becomes case 3 via
+OSD::do_osd_op_effects due to a watch operation.  Case 4,5 become case
+3 in the same way. Case 3 becomes case 4 when the connection resets
+on a watcher’s session.</p>
+<p>Cases 4&amp;5 can use some explanation.  Normally, when a Watch enters Case
+4, a callback is registered with the OSDService::watch_timer to be
+called at timeout expiration.  At the time that the callback is
+called, however, the pg might be in a state where it cannot write
+to the object in order to remove the watch (i.e., during a scrub
+or while the object is degraded).  In that case, we use
+Watch::get_delayed_cb() to generate another Context for use from
+the callbacks_for_degraded_object and Scrubber::callbacks lists.
+In either case, Watch::unregister_cb() does the right thing
+(SafeTimer::cancel_event() is harmless for contexts not registered
+with the timer).</p>
+</section>
+<section id="notify-lifecycle">
+<h2>Notify Lifecycle<a class="headerlink" href="#notify-lifecycle" title="Permalink to this heading">¶</a></h2>
+<p>The notify timeout is simpler: a timeout callback is registered when
+the notify is init()’d.  If all watchers ack notifies before the
+timeout occurs, the timeout is canceled and the client is notified
+of the notify completion.  Otherwise, the timeout fires, the Notify
+object pings each Watch via cancel_notify to remove itself, and
+sends the notify completion to the client early.</p>
+</section>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../../">
+              <img class="logo" src="../../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../install/">Installing Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cephadm/">Cephadm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../rados/">Ceph Storage Cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cephfs/">Ceph File System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../rbd/">Ceph Block Device</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../radosgw/">Ceph Object Gateway</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../mgr/">Ceph Manager Daemon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../mgr/dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../developer_guide/">Developer Guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../internals/">Ceph Internals</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../../blkin/">Tracing Ceph With Blkin</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../bluestore/">BlueStore Internals</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../cache-pool/">Cache pool</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../ceph_krb_auth/">A Detailed Documentation on How to Set up Ceph Kerberos Authentication</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../cephfs-mirroring/">CephFS Mirroring</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../cephfs-reclaim/">CephFS Reclaim Interface</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../cephfs-snapshots/">CephFS Snapshots</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../cephx/">Cephx</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../cephx_protocol/">A Detailed Description of the Cephx Authentication Protocol</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../config/">Configuration Management System</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../config-key/">config-key layout</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../context/">CephContext</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../continuous-integration/">Continuous Integration Architecture</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../corpus/">Corpus structure</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../cpu-profiler/">Installing Oprofile</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../cxx/">C++17 and libstdc++ ABI</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../delayed-delete/">CephFS delayed deletion</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../dev_cluster_deployement/">Deploying a development cluster</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../dev_cluster_deployement/#deploying-multiple-development-clusters-on-the-same-machine">Deploying multiple development clusters on the same machine</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../development-workflow/">Development workflows</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../documenting/">Documenting Ceph</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../encoding/">Serialization (encode/decode)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../erasure-coded-pool/">Erasure Coded pool</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../file-striping/">File striping</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../freebsd/">FreeBSD Implementation details</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../generatedocs/">Building Ceph Documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../iana/">IANA Numbers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../kubernetes/">Hacking on Ceph in Kubernetes with Rook</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../libs/">Library architecture</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../logging/">Use of the cluster log</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../logs/">Debug logs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../macos/">build on MacOS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../messenger/">Messenger notes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../mon-bootstrap/">Monitor bootstrap</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../mon-elections/">Monitor Elections</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../mon-on-disk-formats/">ON-DISK FORMAT</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../mon-osdmap-prune/">FULL OSDMAP VERSION PRUNING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../msgr2/">msgr2 protocol (msgr2.0 and msgr2.1)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../network-encoding/">Network Encoding</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../network-protocol/">Network Protocol</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../object-store/">Object Store Architecture Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../osd-class-path/">OSD class path issues</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../peering/">Peering</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../perf/">Using perf</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../perf_counters/">Perf counters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../perf_histograms/">Perf histograms</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../placement-group/">PG (Placement Group) notes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../quick_guide/">Developer Guide (Quick)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../rados-client-protocol/">RADOS client protocol</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../rbd-diff/">RBD Incremental Backup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../rbd-export/">RBD Export &amp; Import</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../rbd-layering/">RBD Layering</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../release-checklists/">Release checklists</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../release-process/">Ceph Release Process</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../seastore/">SeaStore</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../sepia/">Sepia community test lab</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../session_authentication/">Session Authentication for the Cephx Protocol</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../testing/">Testing notes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../versions/">Public OSD Version</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../vstart-ganesha/">NFS CephFS-RGW Developer Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../wireshark/">Wireshark Dissector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../zoned-storage/">Zoned Storage Support</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../">OSD developer documentation</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../async_recovery/">Asynchronous Recovery</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../backfill_reservation/">Backfill Reservation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../erasure_coding/">Erasure Coded Placement Groups</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../last_epoch_started/">last_epoch_started</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../log_based_pg/">Log Based PG</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../manifest/">Manifest</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../map_message_handling/">Map and PG Message handling</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../osd_overview/">OSD</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../osd_throttles/">OSD Throttles</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../partial_object_recovery/">Partial Object Recovery</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../past_intervals/">PastIntervals</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../pg/">PG</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../pg_removal/">PG Removal</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../pgpool/">PGPool</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../recovery_reservation/">Recovery Reservation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../refcount/">Refcount</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../scrub/">Scrub internals and diagnostics</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../snaps/">Snaps</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../stale_read/">Preventing Stale Reads</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Watch Notify</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#overview">Overview</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#watch-lifecycle">Watch Lifecycle</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#notify-lifecycle">Notify Lifecycle</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../wbthrottle/">Writeback Throttle</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../mds_internals/">MDS developer documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../radosgw/">RADOS Gateway developer documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../ceph-volume/">ceph-volume developer documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../crimson/">Crimson developer documentation</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../../../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../wbthrottle/" title="Writeback Throttle"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../stale_read/" title="Preventing Stale Reads"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../internals/" >Ceph Internals</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../" >OSD developer documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Watch Notify</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

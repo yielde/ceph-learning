@@ -1,0 +1,643 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Client Configuration &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css" />
+    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../genindex/" />
+    <link rel="search" title="Search" href="../../search/" />
+    <link rel="next" title="CephFS Client Capabilities" href="../client-auth/" />
+    <link rel="prev" title="CephFS Snapshot Mirroring" href="../cephfs-mirroring/" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../client-auth/" title="CephFS Client Capabilities"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../cephfs-mirroring/" title="CephFS Snapshot Mirroring"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../" accesskey="U">Ceph File System</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Client Configuration</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="client-configuration">
+<h1>Client Configuration<a class="headerlink" href="#client-configuration" title="Permalink to this heading">¶</a></h1>
+<section id="updating-client-configuration">
+<h2>Updating Client Configuration<a class="headerlink" href="#updating-client-configuration" title="Permalink to this heading">¶</a></h2>
+<p>Certain client configurations can be applied at runtime. To check if a configuration option can be applied (taken into affect by a client) at runtime, use the <cite>config help</cite> command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span> <span class="n">config</span> <span class="n">help</span> <span class="n">debug_client</span>
+ <span class="n">debug_client</span> <span class="o">-</span> <span class="n">Debug</span> <span class="n">level</span> <span class="k">for</span> <span class="n">client</span>
+ <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">advanced</span><span class="p">)</span>                                                                                                                      <span class="n">Default</span><span class="p">:</span> <span class="mi">0</span><span class="o">/</span><span class="mi">5</span>
+ <span class="n">Can</span> <span class="n">update</span> <span class="n">at</span> <span class="n">runtime</span><span class="p">:</span> <span class="n">true</span>
+
+ <span class="n">The</span> <span class="n">value</span> <span class="n">takes</span> <span class="n">the</span> <span class="n">form</span> <span class="s1">&#39;N&#39;</span> <span class="ow">or</span> <span class="s1">&#39;N/M&#39;</span> <span class="n">where</span> <span class="n">N</span> <span class="ow">and</span> <span class="n">M</span> <span class="n">are</span> <span class="n">values</span> <span class="n">between</span> <span class="mi">0</span> <span class="ow">and</span> <span class="mf">99.</span>  <span class="n">N</span> <span class="ow">is</span> <span class="n">the</span> <span class="n">debug</span> <span class="n">level</span> <span class="n">to</span> <span class="n">log</span> <span class="p">(</span><span class="nb">all</span> <span class="n">values</span> <span class="n">below</span> <span class="n">this</span> <span class="n">are</span> <span class="n">included</span><span class="p">),</span> <span class="ow">and</span> <span class="n">M</span> <span class="ow">is</span> <span class="n">the</span> <span class="n">level</span> <span class="n">to</span> <span class="n">gather</span> <span class="ow">and</span> <span class="n">buffer</span> <span class="ow">in</span> <span class="n">memory</span><span class="o">.</span>  <span class="n">In</span> <span class="n">the</span> <span class="n">event</span> <span class="n">of</span> <span class="n">a</span> <span class="n">crash</span><span class="p">,</span> <span class="n">the</span> <span class="n">most</span> <span class="n">recent</span> <span class="n">items</span> <span class="o">&lt;=</span> <span class="n">M</span> <span class="n">are</span> <span class="n">dumped</span> <span class="n">to</span> <span class="n">the</span> <span class="n">log</span> <span class="n">file</span><span class="o">.</span>
+</pre></div>
+</div>
+<p><cite>config help</cite> tells if a given configuration can be applied at runtime along with the defaults and a description of the configuration option.</p>
+<p>To update a configuration option at runtime, use the <cite>config set</cite> command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span> <span class="n">config</span> <span class="nb">set</span> <span class="n">client</span> <span class="n">debug_client</span> <span class="mi">20</span><span class="o">/</span><span class="mi">20</span>
+</pre></div>
+</div>
+<p>Note that this changes a given configuration for all clients.</p>
+<p>To check configured options use the <cite>config get</cite> command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span> <span class="n">config</span> <span class="n">get</span> <span class="n">client</span>
+ <span class="n">WHO</span>    <span class="n">MASK</span> <span class="n">LEVEL</span>    <span class="n">OPTION</span>                    <span class="n">VALUE</span>     <span class="n">RO</span>
+ <span class="n">client</span>      <span class="n">advanced</span> <span class="n">debug_client</span>              <span class="mi">20</span><span class="o">/</span><span class="mi">20</span>
+ <span class="k">global</span>      <span class="n">advanced</span> <span class="n">osd_pool_default_min_size</span> <span class="mi">1</span>
+ <span class="k">global</span>      <span class="n">advanced</span> <span class="n">osd_pool_default_size</span>     <span class="mi">3</span>
+</pre></div>
+</div>
+</section>
+<section id="client-config-reference">
+<h2>Client Config Reference<a class="headerlink" href="#client-config-reference" title="Permalink to this heading">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">client_acl_type</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Set the ACL type. Currently, only possible value is <code class="docutils literal notranslate"><span class="pre">&quot;posix_acl&quot;</span></code> to enable POSIX ACL, or an empty string. This option only takes effect when the <code class="docutils literal notranslate"><span class="pre">fuse_default_permissions</span></code> is set to <code class="docutils literal notranslate"><span class="pre">false</span></code>.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">&quot;&quot;</span></code> (no ACL enforcement)</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">client_cache_mid</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Set client cache midpoint. The midpoint splits the least recently used lists into a hot and warm list.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Float</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">0.75</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">client_cache_size</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Set the number of inodes that the client keeps in the metadata cache.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">16384</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">client_caps_release_delay</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Set the delay between capability releases in seconds. The delay sets how many seconds a client waits to release capabilities that it no longer needs in case the capabilities are needed for another user space operation.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">5</span></code> (seconds)</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">client_debug_force_sync_read</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>If set to <code class="docutils literal notranslate"><span class="pre">true</span></code>, clients read data directly from OSDs instead of using a local page cache.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Boolean</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">false</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">client_dirsize_rbytes</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>If set to <code class="docutils literal notranslate"><span class="pre">true</span></code>, use the recursive size of a directory (that is, total of all descendants).</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Boolean</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">true</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">client_max_inline_size</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Set the maximum size of inlined data stored in a file inode rather than in a separate data object in RADOS. This setting only applies if the <code class="docutils literal notranslate"><span class="pre">inline_data</span></code> flag is set on the MDS map.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">4096</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">client_metadata</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Comma-delimited strings for client metadata sent to each MDS, in addition to the automatically generated version, host name, and other metadata.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">&quot;&quot;</span></code> (no additional metadata)</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">client_mount_gid</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Set the group ID of CephFS mount.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">-1</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">client_mount_timeout</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Set the timeout for CephFS mount in seconds.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Float</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">300.0</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">client_mount_uid</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Set the user ID of CephFS mount.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">-1</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">client_mountpoint</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Directory to mount on the CephFS file system. An alternative to the <code class="docutils literal notranslate"><span class="pre">-r</span></code> option of the <code class="docutils literal notranslate"><span class="pre">ceph-fuse</span></code> command.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">&quot;/&quot;</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">client_oc</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Enable object caching.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Boolean</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">true</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">client_oc_max_dirty</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Set the maximum number of dirty bytes in the object cache.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">104857600</span></code> (100MB)</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">client_oc_max_dirty_age</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Set the maximum age in seconds of dirty data in the object cache before writeback.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Float</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">5.0</span></code> (seconds)</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">client_oc_max_objects</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Set the maximum number of objects in the object cache.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">1000</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">client_oc_size</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Set how many bytes of data will the client cache.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">209715200</span></code> (200 MB)</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">client_oc_target_dirty</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Set the target size of dirty data. We recommend to keep this number low.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">8388608</span></code> (8MB)</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">client_permissions</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Check client permissions on all I/O operations.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Boolean</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">true</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">client_quota</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Enable client quota checking if set to <code class="docutils literal notranslate"><span class="pre">true</span></code>.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Boolean</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">true</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">client_quota_df</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Report root directory quota for the <code class="docutils literal notranslate"><span class="pre">statfs</span></code> operation.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Boolean</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">true</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">client_readahead_max_bytes</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Set the maximum number of bytes that the client reads ahead for future read operations. Overridden by the <code class="docutils literal notranslate"><span class="pre">client_readahead_max_periods</span></code> setting.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">0</span></code> (unlimited)</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">client_readahead_max_periods</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Set the number of file layout periods (object size * number of stripes) that the client reads ahead. Overrides the <code class="docutils literal notranslate"><span class="pre">client_readahead_max_bytes</span></code> setting.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">4</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">client_readahead_min</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Set the minimum number bytes that the client reads ahead.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">131072</span></code> (128KB)</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">client_reconnect_stale</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Automatically reconnect stale session.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Boolean</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">false</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">client_snapdir</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Set the snapshot directory name.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">&quot;.snap&quot;</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">client_tick_interval</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Set the interval in seconds between capability renewal and other upkeep.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Float</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">1.0</span></code> (seconds)</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">client_use_random_mds</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Choose random MDS for each request.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Boolean</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">false</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">fuse_default_permissions</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>When set to <code class="docutils literal notranslate"><span class="pre">false</span></code>, <code class="docutils literal notranslate"><span class="pre">ceph-fuse</span></code> utility checks does its own permissions checking, instead of relying on the permissions enforcement in FUSE. Set to <code class="docutils literal notranslate"><span class="pre">false</span></code> together with the <code class="docutils literal notranslate"><span class="pre">client</span> <span class="pre">acl</span> <span class="pre">type=posix_acl</span></code> option to enable POSIX ACL.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Boolean</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">true</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">fuse_max_write</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Set the maximum number of bytes in a single write operation.
+A value of 0 indicates no change; the
+FUSE default of 128 kbytes remains in force.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">0</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">fuse_disable_pagecache</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>If set to <code class="docutils literal notranslate"><span class="pre">true</span></code>, kernel page cache is disabled for <code class="docutils literal notranslate"><span class="pre">ceph-fuse</span></code>
+mounts. When multiple clients read/write to a file at the same
+time, readers may get stale data from page cache. Due to
+limitations of FUSE, <code class="docutils literal notranslate"><span class="pre">ceph-fuse</span></code> can’t disable page cache dynamically.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Boolean</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">false</span></code></p>
+</dd>
+</dl>
+<section id="developer-options">
+<h3>Developer Options<a class="headerlink" href="#developer-options" title="Permalink to this heading">¶</a></h3>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>These options are internal. They are listed here only to complete the list of options.</p>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">client_debug_getattr_caps</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Check if the reply from the MDS contains required capabilities.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Boolean</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">false</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">client_debug_inject_tick_delay</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Add artificial delay between client ticks.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">0</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">client_inject_fixed_oldest_tid</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p></p></dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Boolean</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">false</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">client_inject_release_failure</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p></p></dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Boolean</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">false</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">client_trace</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The path to the trace file for all file operations. The output is designed to be used by the Ceph <a class="reference external" href="../../man/8/ceph-syn">synthetic client</a>.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">&quot;&quot;</span></code> (disabled)</p>
+</dd>
+</dl>
+</section>
+</section>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../">
+              <img class="logo" src="../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../install/">Installing Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cephadm/">Cephadm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rados/">Ceph Storage Cluster</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../">Ceph File System</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../#getting-started-with-cephfs">Getting Started with CephFS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../#administration">Administration</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../#mounting-cephfs">Mounting CephFS</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#"> Client Configuration Settings</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#updating-client-configuration">Updating Client Configuration</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#client-config-reference">Client Config Reference</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#developer-options">Developer Options</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../client-auth/"> Client Authentication</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../mount-prerequisites/"> Mount CephFS: Prerequisites</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../mount-using-kernel-driver/"> Mount CephFS using Kernel Driver</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../mount-using-fuse/"> Mount CephFS using FUSE</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../ceph-dokan/"> Mount CephFS on Windows</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../cephfs-shell/"> Use the CephFS Shell</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../kernel-features/"> Supported Features of Kernel Driver</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../man/8/ceph-fuse/"> Manual: ceph-fuse</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../man/8/mount.ceph/"> Manual: mount.ceph</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../man/8/mount.fuse.ceph/"> Manual: mount.fuse.ceph</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../#cephfs-concepts">CephFS Concepts</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../#troubleshooting-and-disaster-recovery">Troubleshooting and Disaster Recovery</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../#developer-guides">Developer Guides</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../#additional-details">Additional Details</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../rbd/">Ceph Block Device</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../radosgw/">Ceph Object Gateway</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/">Ceph Manager Daemon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dev/developer_guide/">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dev/internals/">Ceph Internals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../client-auth/" title="CephFS Client Capabilities"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../cephfs-mirroring/" title="CephFS Snapshot Mirroring"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../" >Ceph File System</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Client Configuration</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

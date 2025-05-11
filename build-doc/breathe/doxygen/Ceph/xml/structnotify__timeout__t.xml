@@ -1,0 +1,43 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.1" xml:lang="en-US">
+  <compounddef id="structnotify__timeout__t" kind="struct" language="C++" prot="public">
+    <compoundname>notify_timeout_t</compoundname>
+      <sectiondef kind="public-attrib">
+      <memberdef kind="variable" id="structnotify__timeout__t_1add9731c2fe018403fa3ebe4e6852271a" prot="public" static="no" mutable="no">
+        <type>uint64_t</type>
+        <definition>uint64_t notify_timeout_t::notifier_id</definition>
+        <argsstring></argsstring>
+        <name>notifier_id</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/data/ceph-learning/src/include/rados/rados_types.h" line="29" column="12" bodyfile="/data/ceph-learning/src/include/rados/rados_types.h" bodystart="29" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structnotify__timeout__t_1ae8113dfb006c8f0bf676046d198ad365" prot="public" static="no" mutable="no">
+        <type>uint64_t</type>
+        <definition>uint64_t notify_timeout_t::cookie</definition>
+        <argsstring></argsstring>
+        <name>cookie</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/data/ceph-learning/src/include/rados/rados_types.h" line="30" column="12" bodyfile="/data/ceph-learning/src/include/rados/rados_types.h" bodystart="30" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="/data/ceph-learning/src/include/rados/rados_types.h" line="28" column="1" bodyfile="/data/ceph-learning/src/include/rados/rados_types.h" bodystart="28" bodyend="31"/>
+    <listofallmembers>
+      <member refid="structnotify__timeout__t_1ae8113dfb006c8f0bf676046d198ad365" prot="public" virt="non-virtual"><scope>notify_timeout_t</scope><name>cookie</name></member>
+      <member refid="structnotify__timeout__t_1add9731c2fe018403fa3ebe4e6852271a" prot="public" virt="non-virtual"><scope>notify_timeout_t</scope><name>notifier_id</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

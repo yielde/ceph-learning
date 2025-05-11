@@ -1,0 +1,268 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Using pg-upmap &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/css/custom.css" />
+    <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/jquery.js"></script>
+    <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../../genindex/" />
+    <link rel="search" title="Search" href="../../../search/" />
+    <link rel="next" title="CRUSH Maps" href="../crush-map/" />
+    <link rel="prev" title="Balancer" href="../balancer/" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../crush-map/" title="CRUSH Maps"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../balancer/" title="Balancer"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../" >Ceph Storage Cluster</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../" accesskey="U">Cluster Operations</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Using pg-upmap</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="using-pg-upmap">
+<span id="upmap"></span><h1>Using pg-upmap<a class="headerlink" href="#using-pg-upmap" title="Permalink to this heading">¶</a></h1>
+<p>In Luminous v12.2.z and later releases, there is a <em>pg-upmap</em> exception table
+in the OSDMap that allows the cluster to explicitly map specific PGs to
+specific OSDs. This allows the cluster to fine-tune the data distribution to,
+in most cases, uniformly distribute PGs across OSDs.</p>
+<p>However, there is an important caveat when it comes to this new feature: it
+requires all clients to understand the new <em>pg-upmap</em> structure in the OSDMap.</p>
+<section id="enabling">
+<h2>Enabling<a class="headerlink" href="#enabling" title="Permalink to this heading">¶</a></h2>
+<p>In order to use <code class="docutils literal notranslate"><span class="pre">pg-upmap</span></code>, the cluster cannot have any pre-Luminous clients.
+By default, new clusters enable the <em>balancer module</em>, which makes use of
+<code class="docutils literal notranslate"><span class="pre">pg-upmap</span></code>. If you want to use a different balancer or you want to make your
+own custom <code class="docutils literal notranslate"><span class="pre">pg-upmap</span></code> entries, you might want to turn off the balancer in
+order to avoid conflict:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><style type="text/css">
+span.prompt1:before {
+  content: "$ ";
+}
+</style><span class="prompt1">ceph<span class="w"> </span>balancer<span class="w"> </span>off</span>
+</pre></div></div><p>To allow use of the new feature on an existing cluster, you must restrict the
+cluster to supporting only Luminous (and newer) clients.  To do so, run the
+following command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>set-require-min-compat-client<span class="w"> </span>luminous</span>
+</pre></div></div><p>This command will fail if any pre-Luminous clients or daemons are connected to
+the monitors. To see which client versions are in use, run the following
+command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>features</span>
+</pre></div></div></section>
+<section id="balancer-module">
+<h2>Balancer module<a class="headerlink" href="#balancer-module" title="Permalink to this heading">¶</a></h2>
+<p>The <cite>balancer</cite> module for <code class="docutils literal notranslate"><span class="pre">ceph-mgr</span></code> will automatically balance the number of
+PGs per OSD. See <a class="reference internal" href="../balancer/#balancer"><span class="std std-ref">Balancer</span></a></p>
+</section>
+<section id="offline-optimization">
+<h2>Offline optimization<a class="headerlink" href="#offline-optimization" title="Permalink to this heading">¶</a></h2>
+<p>Upmap entries are updated with an offline optimizer that is built into
+<code class="docutils literal notranslate"><span class="pre">osdmaptool</span></code>.</p>
+<ol class="arabic">
+<li><p>Grab the latest copy of your osdmap:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>getmap<span class="w"> </span>-o<span class="w"> </span>om</span>
+</pre></div></div></li>
+<li><p>Run the optimizer:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">osdmaptool<span class="w"> </span>om<span class="w"> </span>--upmap<span class="w"> </span>out.txt<span class="w"> </span><span class="o">[</span>--upmap-pool<span class="w"> </span>&lt;pool&gt;<span class="o">]</span><span class="w"> </span><span class="se">\</span>
+<span class="o">[</span>--upmap-max<span class="w"> </span>&lt;max-optimizations&gt;<span class="o">]</span><span class="w"> </span><span class="se">\</span>
+<span class="o">[</span>--upmap-deviation<span class="w"> </span>&lt;max-deviation&gt;<span class="o">]</span><span class="w"> </span><span class="se">\</span>
+<span class="o">[</span>--upmap-active<span class="o">]</span></span>
+</pre></div></div><p>It is highly recommended that optimization be done for each pool
+individually, or for sets of similarly utilized pools. You can specify the
+<code class="docutils literal notranslate"><span class="pre">--upmap-pool</span></code> option multiple times. “Similarly utilized pools” means
+pools that are mapped to the same devices and that store the same kind of
+data (for example, RBD image pools are considered to be similarly utilized;
+an RGW index pool and an RGW data pool are not considered to be similarly
+utilized).</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">max-optimizations</span></code> value determines the maximum number of upmap
+entries to identify. The default is <cite>10</cite> (as is the case with the
+<code class="docutils literal notranslate"><span class="pre">ceph-mgr</span></code> balancer module), but you should use a larger number if you are
+doing offline optimization.  If it cannot find any additional changes to
+make (that is, if the pool distribution is perfect), it will stop early.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">max-deviation</span></code> value defaults to <cite>5</cite>. If an OSD’s PG count varies
+from the computed target number by no more than this amount it will be
+considered perfect.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">--upmap-active</span></code> option simulates the behavior of the active balancer
+in upmap mode. It keeps cycling until the OSDs are balanced and reports how
+many rounds have occurred and how long each round takes. The elapsed time
+for rounds indicates the CPU load that <code class="docutils literal notranslate"><span class="pre">ceph-mgr</span></code> consumes when it computes
+the next optimization plan.</p>
+</li>
+<li><p>Apply the changes:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1"><span class="nb">source</span><span class="w"> </span>out.txt</span>
+</pre></div></div><p>In the above example, the proposed changes are written to the output file
+<code class="docutils literal notranslate"><span class="pre">out.txt</span></code>. The commands in this procedure are normal Ceph CLI commands
+that can be run in order to apply the changes to the cluster.</p>
+</li>
+</ol>
+<p>The above steps can be repeated as many times as necessary to achieve a perfect
+distribution of PGs for each set of pools.</p>
+<p>To see some (gory) details about what the tool is doing, you can pass
+<code class="docutils literal notranslate"><span class="pre">--debug-osd</span> <span class="pre">10</span></code> to <code class="docutils literal notranslate"><span class="pre">osdmaptool</span></code>. To see even more details, pass
+<code class="docutils literal notranslate"><span class="pre">--debug-crush</span> <span class="pre">10</span></code> to <code class="docutils literal notranslate"><span class="pre">osdmaptool</span></code>.</p>
+</section>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../../">
+              <img class="logo" src="../../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../install/">Installing Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cephadm/">Cephadm</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../">Ceph Storage Cluster</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../../configuration/">Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../cephadm/">Deployment</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../">Operations</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../operating/">Operating a Cluster</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../health-checks/">Health checks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../monitoring/">Monitoring a Cluster</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../monitoring-osd-pg/">Monitoring OSDs and PGs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../user-management/">User Management</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../pg-repair/">Repairing PG Inconsistencies</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../data-placement/">Data Placement Overview</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../pools/">Pools</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../erasure-code/">Erasure code</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../cache-tiering/">Cache Tiering</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../placement-groups/">Placement Groups</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../balancer/">Balancer</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Using pg-upmap</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#enabling">Enabling</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#balancer-module">Balancer module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#offline-optimization">Offline optimization</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../crush-map/">CRUSH Maps</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../crush-map-edits/">Manually editing a CRUSH Map</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../stretch-mode/">Stretch Clusters</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../change-mon-elections/">Configure Monitor Election Strategies</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../add-or-rm-osds/">Adding/Removing OSDs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../add-or-rm-mons/">Adding/Removing Monitors</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../devices/">Device Management</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../bluestore-migration/">BlueStore Migration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../control/">Command Reference</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../troubleshooting/community/">The Ceph Community</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../troubleshooting/troubleshooting-mon/">Troubleshooting Monitors</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../troubleshooting/troubleshooting-osd/">Troubleshooting OSDs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../troubleshooting/troubleshooting-pg/">Troubleshooting PGs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../troubleshooting/log-and-debug/">Logging and Debugging</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../troubleshooting/cpu-profiling/">CPU Profiling</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../troubleshooting/memory-profiling/">Memory Profiling</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../man/">Man Pages</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../troubleshooting/">Troubleshooting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/">APIs</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cephfs/">Ceph File System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../rbd/">Ceph Block Device</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../radosgw/">Ceph Object Gateway</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../mgr/">Ceph Manager Daemon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../mgr/dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dev/developer_guide/">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dev/internals/">Ceph Internals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../../../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../crush-map/" title="CRUSH Maps"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../balancer/" title="Balancer"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../" >Ceph Storage Cluster</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../" >Cluster Operations</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Using pg-upmap</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

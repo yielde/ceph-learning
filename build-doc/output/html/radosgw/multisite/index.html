@@ -1,0 +1,1601 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Multi-Site &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css" />
+    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../genindex/" />
+    <link rel="search" title="Search" href="../../search/" />
+    <link rel="next" title="Multisite Sync Policy" href="../multisite-sync-policy/" />
+    <link rel="prev" title="Pool Placement and Storage Classes" href="../placement/" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../multisite-sync-policy/" title="Multisite Sync Policy"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../placement/" title="Pool Placement and Storage Classes"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../" accesskey="U">Ceph Object Gateway</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Multi-Site</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="multi-site">
+<span id="multisite"></span><h1>Multi-Site<a class="headerlink" href="#multi-site" title="Permalink to this heading">¶</a></h1>
+<section id="single-zone-configurations-and-multi-site-configurations">
+<h2>Single-zone Configurations and Multi-site Configurations<a class="headerlink" href="#single-zone-configurations-and-multi-site-configurations" title="Permalink to this heading">¶</a></h2>
+<section id="single-zone-configurations">
+<h3>Single-zone Configurations<a class="headerlink" href="#single-zone-configurations" title="Permalink to this heading">¶</a></h3>
+<p>A single-zone configuration typically consists of two things:</p>
+<ol class="arabic simple">
+<li><p>One “zonegroup”, which contains one zone.</p></li>
+<li><p>One or more <cite>ceph-radosgw</cite> instances that have <cite>ceph-radosgw</cite> client
+requests load-balanced between them.</p></li>
+</ol>
+<p>In a typical single-zone configuration, there are multiple <cite>ceph-radosgw</cite>
+instances that make use of a single Ceph storage cluster.</p>
+</section>
+<section id="varieties-of-multi-site-configuration">
+<h3>Varieties of Multi-site Configuration<a class="headerlink" href="#varieties-of-multi-site-configuration" title="Permalink to this heading">¶</a></h3>
+<div class="versionadded">
+<p><span class="versionmodified added">New in version Jewel.</span></p>
+</div>
+<p>Beginning with the Kraken release, Ceph supports several multi-site
+configurations for the Ceph Object Gateway:</p>
+<ul>
+<li><p><strong>Multi-zone:</strong> A more advanced topology, the “multi-zone” configuration, is
+possible. A multi-zone configuration consists of one zonegroup and
+multiple zones, with each zone consisting of one or more <cite>ceph-radosgw</cite>
+instances. <strong>Each zone is backed by its own Ceph Storage Cluster.</strong></p>
+<p>The presence of multiple zones in a given zonegroup provides disaster
+recovery for that zonegroup in the event that one of the zones experiences a
+significant failure. Beginning with the Kraken release, each zone is active
+and can receive write operations. A multi-zone configuration that contains
+multiple active zones enhances disaster recovery and can also be used as a
+foundation for content delivery networks.</p>
+</li>
+<li><p><strong>Multi-zonegroups:</strong> Ceph Object Gateway supports multiple zonegroups (which
+were formerly called “regions”). Each zonegroup contains one or more zones.
+If two zones are in the same zonegroup, and if that zonegroup is in the same
+realm as a second zonegroup, then the objects stored in the two zones share
+a global object namespace. This global object namespace ensures unique
+object IDs across zonegroups and zones.</p></li>
+<li><p><strong>Multiple Realms:</strong> Beginning with the Kraken release, the Ceph Object
+Gateway supports “realms”, which are containers for zonegroups. Realms make
+it possible to set policies that apply to multiple zonegroups. Realms have a
+globally unique namespace and can contain either a single zonegroup or
+multiple zonegroups. If you choose to make use of multiple realms, you can
+define multiple namespaces and multiple configurations (this means that each
+realm can have a configuration that is distinct from the configuration of
+other realms).</p></li>
+</ul>
+</section>
+<section id="diagram-replication-of-object-data-between-zones">
+<h3>Diagram - Replication of Object Data Between Zones<a class="headerlink" href="#diagram-replication-of-object-data-between-zones" title="Permalink to this heading">¶</a></h3>
+<p>The replication of object data between zones within a zonegroup looks
+something like this:</p>
+<img alt="../../_images/zone-sync.svg" class="align-center" src="../../_images/zone-sync.svg" /><p>At the top of this diagram, we see two applications (also known as “clients”).
+The application on the right is both writing and reading data from the Ceph
+Cluster, by means of the RADOS Gateway (RGW). The application on the left is
+only <em>reading</em> data from the Ceph Cluster, by means of an instance of RADOS
+Gateway (RGW). In both cases (read-and-write and read-only), the transmssion of
+data is handled RESTfully.</p>
+<p>In the middle of this diagram, we see two zones, each of which contains an
+instance of RADOS Gateway (RGW). These instances of RGW are handling the
+movement of data from the applications to the zonegroup. The arrow from the
+master zone (US-EAST) to the secondary zone (US-WEST) represents an act of data
+synchronization.</p>
+<p>At the bottom of this diagram, we see the data distributed into the Ceph
+Storage Cluster.</p>
+<p>For additional details on setting up a cluster, see <a class="reference external" href="https://access.redhat.com/documentation/en-us/red_hat_ceph_storage/3/html/ceph_object_gateway_for_production/index/">Ceph Object Gateway for
+Production</a>.</p>
+</section>
+</section>
+<section id="functional-changes-from-infernalis">
+<h2>Functional Changes from Infernalis<a class="headerlink" href="#functional-changes-from-infernalis" title="Permalink to this heading">¶</a></h2>
+<p>Beginning with Kraken, each Ceph Object Gateway can be configured to work in an
+active-active zone mode. This makes it possible to write to non-master zones.</p>
+<p>The multi-site configuration is stored within a container called a “realm”. The
+realm stores zonegroups, zones, and a time “period” with multiple epochs (which
+(the epochs) are used for tracking changes to the configuration).</p>
+<p>Beginning with Kraken, the <code class="docutils literal notranslate"><span class="pre">ceph-radosgw</span></code> daemons handle the synchronization
+of data across zones, which eliminates the need for a separate synchronization
+agent. This new approach to synchronization allows the Ceph Object Gateway to
+operate with an “active-active” configuration instead of with an
+“active-passive” configuration.</p>
+</section>
+<section id="requirements-and-assumptions">
+<h2>Requirements and Assumptions<a class="headerlink" href="#requirements-and-assumptions" title="Permalink to this heading">¶</a></h2>
+<p>A multi-site configuration requires at least two Ceph storage clusters. The
+multi-site configuration must have at least two Ceph object gateway instances
+(one for each Ceph storage cluster).</p>
+<p>This guide assumes that at least two Ceph storage clusters are in
+geographically separate locations; however, the configuration can work on the
+same site. This guide also assumes two Ceph object gateway servers named
+<code class="docutils literal notranslate"><span class="pre">rgw1</span></code> and <code class="docutils literal notranslate"><span class="pre">rgw2</span></code>.</p>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>Running a single geographically-distributed Ceph storage cluster
+is NOT recommended unless you have low latency WAN connections.</p>
+</div>
+<p>A multi-site configuration requires a master zonegroup and a master zone. Each
+zonegroup requires a master zone. Zonegroups may have one or more secondary
+or non-master zones.</p>
+<p>In this guide, the <code class="docutils literal notranslate"><span class="pre">rgw1</span></code> host will serve as the master zone of the master
+zonegroup; and, the <code class="docutils literal notranslate"><span class="pre">rgw2</span></code> host will serve as the secondary zone of the
+master zonegroup.</p>
+<p>See <a class="reference external" href="../pools">Pools</a> for instructions on creating and tuning pools for Ceph Object
+Storage.</p>
+<p>See <a class="reference external" href="../multisite-sync-policy">Sync Policy Config</a> for instructions on defining fine-grained bucket sync
+policy rules.</p>
+</section>
+<section id="configuring-a-master-zone">
+<span id="master-zone-label"></span><h2>Configuring a Master Zone<a class="headerlink" href="#configuring-a-master-zone" title="Permalink to this heading">¶</a></h2>
+<p>All gateways in a multi-site configuration retrieve their configurations from a
+<code class="docutils literal notranslate"><span class="pre">ceph-radosgw</span></code> daemon that is on a host within both the master zonegroup and
+the master zone. To configure your gateways in a multi-site configuration,
+choose a <code class="docutils literal notranslate"><span class="pre">ceph-radosgw</span></code> instance to configure the master zonegroup and
+master zone.</p>
+<section id="create-a-realm">
+<h3>Create a Realm<a class="headerlink" href="#create-a-realm" title="Permalink to this heading">¶</a></h3>
+<p>A realm contains the multi-site configuration of zonegroups and zones. The
+realm enforces a globally unique namespace within itself.</p>
+<ol class="arabic">
+<li><p>Create a new realm for the multi-site configuration by opening a command
+line interface on a host that will serve in the master zonegroup and zone.
+Then run the following command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><style type="text/css">
+span.prompt1:before {
+  content: "# ";
+}
+</style><span class="prompt1">radosgw-admin<span class="w"> </span>realm<span class="w"> </span>create<span class="w"> </span>--rgw-realm<span class="o">={</span>realm-name<span class="o">}</span><span class="w"> </span><span class="o">[</span>--default<span class="o">]</span></span>
+</pre></div></div><p>For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">radosgw-admin<span class="w"> </span>realm<span class="w"> </span>create<span class="w"> </span>--rgw-realm<span class="o">=</span>movies<span class="w"> </span>--default</span>
+</pre></div></div><div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If you intend the cluster to have a single realm, specify the <code class="docutils literal notranslate"><span class="pre">--default</span></code> flag.</p>
+<p>If <code class="docutils literal notranslate"><span class="pre">--default</span></code> is specified, <code class="docutils literal notranslate"><span class="pre">radosgw-admin</span></code> uses this realm by default.</p>
+<p>If <code class="docutils literal notranslate"><span class="pre">--default</span></code> is not specified, you must specify either the <code class="docutils literal notranslate"><span class="pre">--rgw-realm</span></code> flag or the <code class="docutils literal notranslate"><span class="pre">--realm-id</span></code> flag to identify the realm when adding zonegroups and zones.</p>
+</div>
+</li>
+<li><p>After the realm has been created, <code class="docutils literal notranslate"><span class="pre">radosgw-admin</span></code> echoes back the realm
+configuration. For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+    <span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="s2">&quot;0956b174-fe14-4f97-8b50-bb7ec5e1cf62&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;movies&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;current_period&quot;</span><span class="p">:</span> <span class="s2">&quot;1950b710-3e63-4c41-a19e-46a715000980&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;epoch&quot;</span><span class="p">:</span> <span class="mi">1</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Ceph generates a unique ID for the realm, which can be used to rename the realm if the need arises.</p>
+</div>
+</li>
+</ol>
+</section>
+<section id="create-a-master-zonegroup">
+<h3>Create a Master Zonegroup<a class="headerlink" href="#create-a-master-zonegroup" title="Permalink to this heading">¶</a></h3>
+<p>A realm must have at least one zonegroup which serves as the master zonegroup
+for the realm.</p>
+<ol class="arabic">
+<li><p>To create a new master zonegroup for the multi-site configuration, open a
+command-line interface on a host in the master zonegroup and zone. Then
+run the following command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">radosgw-admin<span class="w"> </span>zonegroup<span class="w"> </span>create<span class="w"> </span>--rgw-zonegroup<span class="o">={</span>name<span class="o">}</span><span class="w"> </span>--endpoints<span class="o">={</span>url<span class="o">}</span><span class="w"> </span><span class="o">[</span>--rgw-realm<span class="o">={</span>realm-name<span class="o">}</span><span class="p">|</span>--realm-id<span class="o">={</span>realm-id<span class="o">}]</span><span class="w"> </span>--master<span class="w"> </span>--default</span>
+</pre></div></div><p>For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">radosgw-admin<span class="w"> </span>zonegroup<span class="w"> </span>create<span class="w"> </span>--rgw-zonegroup<span class="o">=</span>us<span class="w"> </span>--endpoints<span class="o">=</span>http://rgw1:80<span class="w"> </span>--rgw-realm<span class="o">=</span>movies<span class="w"> </span>--master<span class="w"> </span>--default</span>
+</pre></div></div><div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If the realm will have only a single zonegroup, specify the <code class="docutils literal notranslate"><span class="pre">--default</span></code> flag.</p>
+<p>If <code class="docutils literal notranslate"><span class="pre">--default</span></code> is specified, <code class="docutils literal notranslate"><span class="pre">radosgw-admin</span></code> uses this zonegroup by default when adding new zones.</p>
+<p>If <code class="docutils literal notranslate"><span class="pre">--default</span></code> is not specified, you must use either the <code class="docutils literal notranslate"><span class="pre">--rgw-zonegroup</span></code> flag or the <code class="docutils literal notranslate"><span class="pre">--zonegroup-id</span></code> flag to identify the zonegroup when adding or modifying zones.</p>
+</div>
+</li>
+<li><p>After creating the master zonegroup, <code class="docutils literal notranslate"><span class="pre">radosgw-admin</span></code> echoes back the
+zonegroup configuration. For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+    <span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="s2">&quot;f1a233f5-c354-4107-b36c-df66126475a6&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;us&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;api_name&quot;</span><span class="p">:</span> <span class="s2">&quot;us&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;is_master&quot;</span><span class="p">:</span> <span class="s2">&quot;true&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;endpoints&quot;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="s2">&quot;http:\/\/rgw1:80&quot;</span>
+    <span class="p">],</span>
+    <span class="s2">&quot;hostnames&quot;</span><span class="p">:</span> <span class="p">[],</span>
+    <span class="s2">&quot;hostnames_s3website&quot;</span><span class="p">:</span> <span class="p">[],</span>
+    <span class="s2">&quot;master_zone&quot;</span><span class="p">:</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;zones&quot;</span><span class="p">:</span> <span class="p">[],</span>
+    <span class="s2">&quot;placement_targets&quot;</span><span class="p">:</span> <span class="p">[],</span>
+    <span class="s2">&quot;default_placement&quot;</span><span class="p">:</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;realm_id&quot;</span><span class="p">:</span> <span class="s2">&quot;0956b174-fe14-4f97-8b50-bb7ec5e1cf62&quot;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</li>
+</ol>
+</section>
+<section id="create-a-master-zone">
+<h3>Create a Master Zone<a class="headerlink" href="#create-a-master-zone" title="Permalink to this heading">¶</a></h3>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>Zones must be created on a Ceph Object Gateway node that will be
+within the zone.</p>
+</div>
+<p>Create a new master zone for the multi-site configuration by opening a command
+line interface on a host that serves in the master zonegroup and zone. Then
+run the following command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">radosgw-admin<span class="w"> </span>zone<span class="w"> </span>create<span class="w"> </span>--rgw-zonegroup<span class="o">={</span>zone-group-name<span class="o">}</span><span class="w"> </span><span class="se">\</span>
+<span class="w">                            </span>--rgw-zone<span class="o">={</span>zone-name<span class="o">}</span><span class="w"> </span><span class="se">\</span>
+<span class="w">                            </span>--master<span class="w"> </span>--default<span class="w"> </span><span class="se">\</span>
+<span class="w">                            </span>--endpoints<span class="o">={</span>http://fqdn<span class="o">}[</span>,<span class="o">{</span>http://fqdn<span class="o">}]</span></span>
+</pre></div></div><p>For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">radosgw-admin<span class="w"> </span>zone<span class="w"> </span>create<span class="w"> </span>--rgw-zonegroup<span class="o">=</span>us<span class="w"> </span>--rgw-zone<span class="o">=</span>us-east<span class="w"> </span><span class="se">\</span>
+<span class="w">                            </span>--master<span class="w"> </span>--default<span class="w"> </span><span class="se">\</span>
+<span class="w">                            </span>--endpoints<span class="o">={</span>http://fqdn<span class="o">}[</span>,<span class="o">{</span>http://fqdn<span class="o">}]</span></span>
+</pre></div></div><div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">--access-key</span></code> and <code class="docutils literal notranslate"><span class="pre">--secret</span></code> aren’t specified. These
+settings will be added to the zone once the user is created in the
+next section.</p>
+</div>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>The following steps assume a multi-site configuration that uses
+newly installed systems that aren’t storing data yet. DO NOT DELETE the
+<code class="docutils literal notranslate"><span class="pre">default</span></code> zone and its pools if you are already using the zone to store
+data, or the data will be deleted and unrecoverable.</p>
+</div>
+</section>
+<section id="delete-default-zonegroup-and-zone">
+<h3>Delete Default Zonegroup and Zone<a class="headerlink" href="#delete-default-zonegroup-and-zone" title="Permalink to this heading">¶</a></h3>
+<ol class="arabic">
+<li><p>Delete the <code class="docutils literal notranslate"><span class="pre">default</span></code> zone if it exists. Remove it from the default
+zonegroup first.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">radosgw-admin<span class="w"> </span>zonegroup<span class="w"> </span>delete<span class="w"> </span>--rgw-zonegroup<span class="o">=</span>default<span class="w"> </span>--rgw-zone<span class="o">=</span>default</span>
+<span class="prompt1">radosgw-admin<span class="w"> </span>period<span class="w"> </span>update<span class="w"> </span>--commit</span>
+<span class="prompt1">radosgw-admin<span class="w"> </span>zone<span class="w"> </span>delete<span class="w"> </span>--rgw-zone<span class="o">=</span>default</span>
+<span class="prompt1">radosgw-admin<span class="w"> </span>period<span class="w"> </span>update<span class="w"> </span>--commit</span>
+<span class="prompt1">radosgw-admin<span class="w"> </span>zonegroup<span class="w"> </span>delete<span class="w"> </span>--rgw-zonegroup<span class="o">=</span>default</span>
+<span class="prompt1">radosgw-admin<span class="w"> </span>period<span class="w"> </span>update<span class="w"> </span>--commit</span>
+</pre></div></div></li>
+<li><p>Delete the <code class="docutils literal notranslate"><span class="pre">default</span></code> pools in your Ceph storage cluster if they exist.</p>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>The following step assumes a multi-site configuration that uses newly installed systems that aren’t currently storing data. DO NOT DELETE the <code class="docutils literal notranslate"><span class="pre">default</span></code> zonegroup if you are already using it to store data.</p>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>pool<span class="w"> </span>rm<span class="w"> </span>default.rgw.control<span class="w"> </span>default.rgw.control<span class="w"> </span>--yes-i-really-really-mean-it</span>
+<span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>pool<span class="w"> </span>rm<span class="w"> </span>default.rgw.data.root<span class="w"> </span>default.rgw.data.root<span class="w"> </span>--yes-i-really-really-mean-it</span>
+<span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>pool<span class="w"> </span>rm<span class="w"> </span>default.rgw.gc<span class="w"> </span>default.rgw.gc<span class="w"> </span>--yes-i-really-really-mean-it</span>
+<span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>pool<span class="w"> </span>rm<span class="w"> </span>default.rgw.log<span class="w"> </span>default.rgw.log<span class="w"> </span>--yes-i-really-really-mean-it</span>
+<span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>pool<span class="w"> </span>rm<span class="w"> </span>default.rgw.users.uid<span class="w"> </span>default.rgw.users.uid<span class="w"> </span>--yes-i-really-really-mean-it</span>
+</pre></div></div></li>
+</ol>
+</section>
+<section id="create-a-system-user">
+<h3>Create a System User<a class="headerlink" href="#create-a-system-user" title="Permalink to this heading">¶</a></h3>
+<ol class="arabic">
+<li><p>The <code class="docutils literal notranslate"><span class="pre">ceph-radosgw</span></code> daemons must authenticate before pulling realm and
+period information. In the master zone, create a “system user” to facilitate
+authentication between daemons.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">radosgw-admin<span class="w"> </span>user<span class="w"> </span>create<span class="w"> </span>--uid<span class="o">=</span><span class="s2">&quot;{user-name}&quot;</span><span class="w"> </span>--display-name<span class="o">=</span><span class="s2">&quot;{Display Name}&quot;</span><span class="w"> </span>--system</span>
+</pre></div></div><p>For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">radosgw-admin<span class="w"> </span>user<span class="w"> </span>create<span class="w"> </span>--uid<span class="o">=</span><span class="s2">&quot;synchronization-user&quot;</span><span class="w"> </span>--display-name<span class="o">=</span><span class="s2">&quot;Synchronization User&quot;</span><span class="w"> </span>--system</span>
+</pre></div></div></li>
+<li><p>Make a note of the <code class="docutils literal notranslate"><span class="pre">access_key</span></code> and <code class="docutils literal notranslate"><span class="pre">secret_key</span></code>. The secondary zones
+require them to authenticate against the master zone.</p></li>
+<li><p>Add the system user to the master zone:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">radosgw-admin<span class="w"> </span>zone<span class="w"> </span>modify<span class="w"> </span>--rgw-zone<span class="o">={</span>zone-name<span class="o">}</span><span class="w"> </span>--access-key<span class="o">={</span>access-key<span class="o">}</span><span class="w"> </span>--secret<span class="o">={</span>secret<span class="o">}</span></span>
+<span class="prompt1">radosgw-admin<span class="w"> </span>period<span class="w"> </span>update<span class="w"> </span>--commit</span>
+</pre></div></div></li>
+</ol>
+</section>
+<section id="update-the-period">
+<h3>Update the Period<a class="headerlink" href="#update-the-period" title="Permalink to this heading">¶</a></h3>
+<p>After updating the master zone configuration, update the period.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">radosgw-admin<span class="w"> </span>period<span class="w"> </span>update<span class="w"> </span>--commit</span>
+</pre></div></div><div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Updating the period changes the epoch, and ensures that other zones
+will receive the updated configuration.</p>
+</div>
+</section>
+<section id="update-the-ceph-configuration-file">
+<h3>Update the Ceph Configuration File<a class="headerlink" href="#update-the-ceph-configuration-file" title="Permalink to this heading">¶</a></h3>
+<p>Update the Ceph configuration file on master zone hosts by adding the
+<code class="docutils literal notranslate"><span class="pre">rgw_zone</span></code> configuration option and the name of the master zone to the
+instance entry.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[</span><span class="n">client</span><span class="o">.</span><span class="n">rgw</span><span class="o">.</span><span class="p">{</span><span class="n">instance</span><span class="o">-</span><span class="n">name</span><span class="p">}]</span>
+<span class="o">...</span>
+<span class="n">rgw_zone</span><span class="o">=</span><span class="p">{</span><span class="n">zone</span><span class="o">-</span><span class="n">name</span><span class="p">}</span>
+</pre></div>
+</div>
+<p>For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[</span><span class="n">client</span><span class="o">.</span><span class="n">rgw</span><span class="o">.</span><span class="n">rgw1</span><span class="p">]</span>
+<span class="n">host</span> <span class="o">=</span> <span class="n">rgw1</span>
+<span class="n">rgw</span> <span class="n">frontends</span> <span class="o">=</span> <span class="s2">&quot;civetweb port=80&quot;</span>
+<span class="n">rgw_zone</span><span class="o">=</span><span class="n">us</span><span class="o">-</span><span class="n">east</span>
+</pre></div>
+</div>
+</section>
+<section id="start-the-gateway">
+<h3>Start the Gateway<a class="headerlink" href="#start-the-gateway" title="Permalink to this heading">¶</a></h3>
+<p>On the object gateway host, start and enable the Ceph Object Gateway
+service:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">systemctl<span class="w"> </span>start<span class="w"> </span>ceph-radosgw@rgw.<span class="sb">`</span>hostname<span class="w"> </span>-s<span class="sb">`</span></span>
+<span class="prompt1">systemctl<span class="w"> </span><span class="nb">enable</span><span class="w"> </span>ceph-radosgw@rgw.<span class="sb">`</span>hostname<span class="w"> </span>-s<span class="sb">`</span></span>
+</pre></div></div></section>
+</section>
+<section id="configuring-secondary-zones">
+<span id="secondary-zone-label"></span><h2>Configuring Secondary Zones<a class="headerlink" href="#configuring-secondary-zones" title="Permalink to this heading">¶</a></h2>
+<p>Zones that are within a zonegroup replicate all data in order to ensure that
+every zone has the same data. When creating a secondary zone, run the following
+operations on a host identified to serve the secondary zone.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>To add a second secondary zone (that is, a second non-master zone
+within a zonegroup that already contains a secondary zone), follow <a class="reference internal" href="#radosgw-multisite-secondary-zone-creating"><span class="std std-ref">the
+same procedures that are used for adding a secondary
+zone</span></a>. Be sure to specify a
+different zone name than the name of the first secondary zone.</p>
+</div>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>Metadata operations (for example, user creation) must be
+run on a host within the master zone. Bucket operations can be received
+by the master zone or the secondary zone, but the secondary zone will
+redirect bucket operations to the master zone. If the master zone is down,
+bucket operations will fail.</p>
+</div>
+<section id="pulling-the-realm-configuration">
+<h3>Pulling the Realm Configuration<a class="headerlink" href="#pulling-the-realm-configuration" title="Permalink to this heading">¶</a></h3>
+<p>The URL path, access key, and secret of the master zone in the master zone
+group are used to pull the realm configuration to the host. When pulling the
+configuration of a non-default realm, specify the realm using the
+<code class="docutils literal notranslate"><span class="pre">--rgw-realm</span></code> or <code class="docutils literal notranslate"><span class="pre">--realm-id</span></code> configuration options.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">radosgw-admin<span class="w"> </span>realm<span class="w"> </span>pull<span class="w"> </span>--url<span class="o">={</span>url-to-master-zone-gateway<span class="o">}</span></span>
+<span class="prompt1">--access-key<span class="o">={</span>access-key<span class="o">}</span><span class="w"> </span>--secret<span class="o">={</span>secret<span class="o">}</span></span>
+</pre></div></div><div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Pulling the realm configuration also retrieves the remote’s current
+period configuration, and makes it the current period on this host as well.</p>
+</div>
+<p>If this realm is the only realm, run the following command to make it the
+default realm:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">radosgw-admin<span class="w"> </span>realm<span class="w"> </span>default<span class="w"> </span>--rgw-realm<span class="o">={</span>realm-name<span class="o">}</span></span>
+</pre></div></div></section>
+<section id="creating-a-secondary-zone">
+<span id="radosgw-multisite-secondary-zone-creating"></span><h3>Creating a Secondary Zone<a class="headerlink" href="#creating-a-secondary-zone" title="Permalink to this heading">¶</a></h3>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>When a zone is created, it must be on a Ceph Object Gateway node
+within the zone.</p>
+</div>
+<p>In order to create a secondary zone for the multi-site configuration, open a
+command line interface on a host identified to serve the secondary zone.
+Specify the zonegroup ID, the new zone name, and an endpoint for the zone.
+<strong>DO NOT</strong> use the <code class="docutils literal notranslate"><span class="pre">--master</span></code> or <code class="docutils literal notranslate"><span class="pre">--default</span></code> flags. Beginning in Kraken,
+all zones run in an active-active configuration by default, which means that a
+gateway client may write data to any zone and the zone will replicate the data
+to all other zones within the zonegroup.  If you want to prevent the secondary
+zone from accepting write operations, include the <code class="docutils literal notranslate"><span class="pre">--read-only</span></code> flag in the
+command in order to create an active-passive configuration between the master
+zone and the secondary zone. In any case, don’t forget to provide the
+<code class="docutils literal notranslate"><span class="pre">access_key</span></code> and <code class="docutils literal notranslate"><span class="pre">secret_key</span></code> of the generated system user that is stored
+in the master zone of the master zonegroup. Run the following command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">radosgw-admin<span class="w"> </span>zone<span class="w"> </span>create<span class="w"> </span>--rgw-zonegroup<span class="o">={</span>zone-group-name<span class="o">}</span><span class="w"> </span><span class="se">\</span>
+<span class="w">                             </span>--rgw-zone<span class="o">={</span>zone-name<span class="o">}</span><span class="w"> </span><span class="se">\</span>
+<span class="w">                             </span>--access-key<span class="o">={</span>system-key<span class="o">}</span><span class="w"> </span>--secret<span class="o">={</span>secret<span class="o">}</span><span class="w"> </span><span class="se">\</span>
+<span class="w">                             </span>--endpoints<span class="o">=</span>http://<span class="o">{</span>fqdn<span class="o">}</span>:80<span class="w"> </span><span class="se">\</span>
+<span class="w">                             </span><span class="o">[</span>--read-only<span class="o">]</span></span>
+</pre></div></div><p>For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">radosgw-admin<span class="w"> </span>zone<span class="w"> </span>create<span class="w"> </span>--rgw-zonegroup<span class="o">=</span>us<span class="w"> </span>--rgw-zone<span class="o">=</span>us-west<span class="w"> </span><span class="se">\</span>
+<span class="w">                             </span>--access-key<span class="o">={</span>system-key<span class="o">}</span><span class="w"> </span>--secret<span class="o">={</span>secret<span class="o">}</span><span class="w"> </span><span class="se">\</span>
+<span class="w">                             </span>--endpoints<span class="o">=</span>http://rgw2:80</span>
+</pre></div></div><div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>The following steps assume a multi-site configuration that uses
+newly installed systems that have not yet begun storing data. <strong>DO NOT
+DELETE the ``default`` zone or its pools</strong> if you are already using it to
+store data, or the data will be irretrievably lost.</p>
+</div>
+<p>Delete the default zone if needed:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">radosgw-admin<span class="w"> </span>zone<span class="w"> </span>delete<span class="w"> </span>--rgw-zone<span class="o">=</span>default</span>
+</pre></div></div><p>Finally, delete the default pools in your Ceph storage cluster if needed:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>pool<span class="w"> </span>rm<span class="w"> </span>default.rgw.control<span class="w"> </span>default.rgw.control<span class="w"> </span>--yes-i-really-really-mean-it</span>
+<span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>pool<span class="w"> </span>rm<span class="w"> </span>default.rgw.data.root<span class="w"> </span>default.rgw.data.root<span class="w"> </span>--yes-i-really-really-mean-it</span>
+<span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>pool<span class="w"> </span>rm<span class="w"> </span>default.rgw.gc<span class="w"> </span>default.rgw.gc<span class="w"> </span>--yes-i-really-really-mean-it</span>
+<span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>pool<span class="w"> </span>rm<span class="w"> </span>default.rgw.log<span class="w"> </span>default.rgw.log<span class="w"> </span>--yes-i-really-really-mean-it</span>
+<span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>pool<span class="w"> </span>rm<span class="w"> </span>default.rgw.users.uid<span class="w"> </span>default.rgw.users.uid<span class="w"> </span>--yes-i-really-really-mean-it</span>
+</pre></div></div></section>
+<section id="updating-the-ceph-configuration-file">
+<h3>Updating the Ceph Configuration File<a class="headerlink" href="#updating-the-ceph-configuration-file" title="Permalink to this heading">¶</a></h3>
+<p>To update the Ceph configuration file on the secondary zone hosts, add the
+<code class="docutils literal notranslate"><span class="pre">rgw_zone</span></code> configuration option and the name of the secondary zone to the
+instance entry.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[</span><span class="n">client</span><span class="o">.</span><span class="n">rgw</span><span class="o">.</span><span class="p">{</span><span class="n">instance</span><span class="o">-</span><span class="n">name</span><span class="p">}]</span>
+<span class="o">...</span>
+<span class="n">rgw_zone</span><span class="o">=</span><span class="p">{</span><span class="n">zone</span><span class="o">-</span><span class="n">name</span><span class="p">}</span>
+</pre></div>
+</div>
+<p>For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[</span><span class="n">client</span><span class="o">.</span><span class="n">rgw</span><span class="o">.</span><span class="n">rgw2</span><span class="p">]</span>
+<span class="n">host</span> <span class="o">=</span> <span class="n">rgw2</span>
+<span class="n">rgw</span> <span class="n">frontends</span> <span class="o">=</span> <span class="s2">&quot;civetweb port=80&quot;</span>
+<span class="n">rgw_zone</span><span class="o">=</span><span class="n">us</span><span class="o">-</span><span class="n">west</span>
+</pre></div>
+</div>
+</section>
+<section id="updating-the-period">
+<h3>Updating the Period<a class="headerlink" href="#updating-the-period" title="Permalink to this heading">¶</a></h3>
+<p>After updating the master zone configuration, update the period:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">radosgw-admin<span class="w"> </span>period<span class="w"> </span>update<span class="w"> </span>--commit</span>
+</pre></div></div><div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Updating the period changes the epoch, and ensures that other zones
+will receive the updated configuration.</p>
+</div>
+</section>
+<section id="starting-the-gateway">
+<h3>Starting the Gateway<a class="headerlink" href="#starting-the-gateway" title="Permalink to this heading">¶</a></h3>
+<p>To start the gateway, start and enable the Ceph Object Gateway service by
+running the following commands on the object gateway host:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">systemctl<span class="w"> </span>start<span class="w"> </span>ceph-radosgw@rgw.<span class="sb">`</span>hostname<span class="w"> </span>-s<span class="sb">`</span></span>
+<span class="prompt1">systemctl<span class="w"> </span><span class="nb">enable</span><span class="w"> </span>ceph-radosgw@rgw.<span class="sb">`</span>hostname<span class="w"> </span>-s<span class="sb">`</span></span>
+</pre></div></div></section>
+<section id="checking-synchronization-status">
+<h3>Checking Synchronization Status<a class="headerlink" href="#checking-synchronization-status" title="Permalink to this heading">¶</a></h3>
+<p>After the secondary zone is up and running, you can check the synchronization
+status. The process of synchronization will copy users and buckets that were
+created in the master zone from the master zone to the secondary zone.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">radosgw-admin<span class="w"> </span>sync<span class="w"> </span>status</span>
+</pre></div></div><p>The output reports the status of synchronization operations. For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">realm</span> <span class="n">f3239bc5</span><span class="o">-</span><span class="n">e1a8</span><span class="o">-</span><span class="mi">4206</span><span class="o">-</span><span class="n">a81d</span><span class="o">-</span><span class="n">e1576480804d</span> <span class="p">(</span><span class="n">earth</span><span class="p">)</span>
+    <span class="n">zonegroup</span> <span class="n">c50dbb7e</span><span class="o">-</span><span class="n">d9ce</span><span class="o">-</span><span class="mi">47</span><span class="n">cc</span><span class="o">-</span><span class="n">a8bb</span><span class="o">-</span><span class="mi">97</span><span class="n">d9b399d388</span> <span class="p">(</span><span class="n">us</span><span class="p">)</span>
+         <span class="n">zone</span> <span class="mi">4</span><span class="n">c453b70</span><span class="o">-</span><span class="mi">4</span><span class="n">a16</span><span class="o">-</span><span class="mi">4</span><span class="n">ce8</span><span class="o">-</span><span class="mi">8185</span><span class="o">-</span><span class="mi">1893</span><span class="n">b05d346e</span> <span class="p">(</span><span class="n">us</span><span class="o">-</span><span class="n">west</span><span class="p">)</span>
+<span class="n">metadata</span> <span class="n">sync</span> <span class="n">syncing</span>
+              <span class="n">full</span> <span class="n">sync</span><span class="p">:</span> <span class="mi">0</span><span class="o">/</span><span class="mi">64</span> <span class="n">shards</span>
+              <span class="n">metadata</span> <span class="ow">is</span> <span class="n">caught</span> <span class="n">up</span> <span class="k">with</span> <span class="n">master</span>
+              <span class="n">incremental</span> <span class="n">sync</span><span class="p">:</span> <span class="mi">64</span><span class="o">/</span><span class="mi">64</span> <span class="n">shards</span>
+    <span class="n">data</span> <span class="n">sync</span> <span class="n">source</span><span class="p">:</span> <span class="mi">1</span><span class="n">ee9da3e</span><span class="o">-</span><span class="mi">114</span><span class="n">d</span><span class="o">-</span><span class="mi">4</span><span class="n">ae3</span><span class="o">-</span><span class="n">a8a4</span><span class="o">-</span><span class="mf">056e8</span><span class="n">a17f532</span> <span class="p">(</span><span class="n">us</span><span class="o">-</span><span class="n">east</span><span class="p">)</span>
+                      <span class="n">syncing</span>
+                      <span class="n">full</span> <span class="n">sync</span><span class="p">:</span> <span class="mi">0</span><span class="o">/</span><span class="mi">128</span> <span class="n">shards</span>
+                      <span class="n">incremental</span> <span class="n">sync</span><span class="p">:</span> <span class="mi">128</span><span class="o">/</span><span class="mi">128</span> <span class="n">shards</span>
+                      <span class="n">data</span> <span class="ow">is</span> <span class="n">caught</span> <span class="n">up</span> <span class="k">with</span> <span class="n">source</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Secondary zones accept bucket operations; however, secondary zones
+redirect bucket operations to the master zone and then synchronize with the
+master zone to receive the result of the bucket operations. If the master
+zone is down, bucket operations executed on the secondary zone will fail,
+but object operations should succeed.</p>
+</div>
+</section>
+<section id="verifying-an-object">
+<h3>Verifying an Object<a class="headerlink" href="#verifying-an-object" title="Permalink to this heading">¶</a></h3>
+<p>By default, after the successful synchronization of an object there is no
+subsequent verification of the object. However, you can enable verification by
+setting <cite>rgw_sync_obj_etag_verify</cite> to <code class="docutils literal notranslate"><span class="pre">true</span></code>. After this value is
+set to true, an MD5 checksum is used to verify the integrity of the data that
+was transferred from the source to the destination. This ensures the integrity
+of any object that has been fetched from a remote server over HTTP (including
+multisite sync). This option may decrease the performance of your RGW because
+it requires more computation.</p>
+</section>
+</section>
+<section id="maintenance">
+<h2>Maintenance<a class="headerlink" href="#maintenance" title="Permalink to this heading">¶</a></h2>
+<section id="checking-the-sync-status">
+<h3>Checking the Sync Status<a class="headerlink" href="#checking-the-sync-status" title="Permalink to this heading">¶</a></h3>
+<p>Information about the replication status of a zone can be queried with:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><style type="text/css">
+span.prompt2:before {
+  content: "$ ";
+}
+</style><span class="prompt2">radosgw-admin<span class="w"> </span>sync<span class="w"> </span>status</span>
+</pre></div></div><div class="highlight-default notranslate"><div class="highlight"><pre><span></span>    <span class="n">realm</span> <span class="n">b3bc1c37</span><span class="o">-</span><span class="mi">9</span><span class="n">c44</span><span class="o">-</span><span class="mi">4</span><span class="n">b89</span><span class="o">-</span><span class="n">a03b</span><span class="o">-</span><span class="mi">04</span><span class="n">c269bea5da</span> <span class="p">(</span><span class="n">earth</span><span class="p">)</span>
+<span class="n">zonegroup</span> <span class="n">f54f9b22</span><span class="o">-</span><span class="n">b4b6</span><span class="o">-</span><span class="mi">4</span><span class="n">a0e</span><span class="o">-</span><span class="mi">9211</span><span class="o">-</span><span class="n">fa6ac1693f49</span> <span class="p">(</span><span class="n">us</span><span class="p">)</span>
+     <span class="n">zone</span> <span class="n">adce11c9</span><span class="o">-</span><span class="n">b8ed</span><span class="o">-</span><span class="mi">4</span><span class="n">a90</span><span class="o">-</span><span class="mi">8</span><span class="n">bc5</span><span class="o">-</span><span class="mi">3</span><span class="n">fc029ff0816</span> <span class="p">(</span><span class="n">us</span><span class="o">-</span><span class="mi">2</span><span class="p">)</span>
+    <span class="n">metadata</span> <span class="n">sync</span> <span class="n">syncing</span>
+          <span class="n">full</span> <span class="n">sync</span><span class="p">:</span> <span class="mi">0</span><span class="o">/</span><span class="mi">64</span> <span class="n">shards</span>
+          <span class="n">incremental</span> <span class="n">sync</span><span class="p">:</span> <span class="mi">64</span><span class="o">/</span><span class="mi">64</span> <span class="n">shards</span>
+          <span class="n">metadata</span> <span class="ow">is</span> <span class="n">behind</span> <span class="n">on</span> <span class="mi">1</span> <span class="n">shards</span>
+          <span class="n">oldest</span> <span class="n">incremental</span> <span class="n">change</span> <span class="ow">not</span> <span class="n">applied</span><span class="p">:</span> <span class="mi">2017</span><span class="o">-</span><span class="mi">03</span><span class="o">-</span><span class="mi">22</span> <span class="mi">10</span><span class="p">:</span><span class="mi">20</span><span class="p">:</span><span class="mf">00.0.881361</span><span class="n">s</span>
+<span class="n">data</span> <span class="n">sync</span> <span class="n">source</span><span class="p">:</span> <span class="mi">341</span><span class="n">c2d81</span><span class="o">-</span><span class="mi">4574</span><span class="o">-</span><span class="mi">4</span><span class="n">d08</span><span class="o">-</span><span class="n">ab0f</span><span class="o">-</span><span class="mi">5</span><span class="n">a2a7b168028</span> <span class="p">(</span><span class="n">us</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+                  <span class="n">syncing</span>
+                  <span class="n">full</span> <span class="n">sync</span><span class="p">:</span> <span class="mi">0</span><span class="o">/</span><span class="mi">128</span> <span class="n">shards</span>
+                  <span class="n">incremental</span> <span class="n">sync</span><span class="p">:</span> <span class="mi">128</span><span class="o">/</span><span class="mi">128</span> <span class="n">shards</span>
+                  <span class="n">data</span> <span class="ow">is</span> <span class="n">caught</span> <span class="n">up</span> <span class="k">with</span> <span class="n">source</span>
+          <span class="n">source</span><span class="p">:</span> <span class="mi">3</span><span class="n">b5d1a3f</span><span class="o">-</span><span class="mi">3</span><span class="n">f27</span><span class="o">-</span><span class="mf">4e4</span><span class="n">a</span><span class="o">-</span><span class="mi">8</span><span class="n">f34</span><span class="o">-</span><span class="mi">6072</span><span class="n">d4bb1275</span> <span class="p">(</span><span class="n">us</span><span class="o">-</span><span class="mi">3</span><span class="p">)</span>
+                  <span class="n">syncing</span>
+                  <span class="n">full</span> <span class="n">sync</span><span class="p">:</span> <span class="mi">0</span><span class="o">/</span><span class="mi">128</span> <span class="n">shards</span>
+                  <span class="n">incremental</span> <span class="n">sync</span><span class="p">:</span> <span class="mi">128</span><span class="o">/</span><span class="mi">128</span> <span class="n">shards</span>
+                  <span class="n">data</span> <span class="ow">is</span> <span class="n">caught</span> <span class="n">up</span> <span class="k">with</span> <span class="n">source</span>
+</pre></div>
+</div>
+<p>The output might be different, depending on the sync status. During sync, the
+shards are of two types:</p>
+<ul class="simple">
+<li><p><strong>Behind shards</strong> are shards that require a data sync (either a full data
+sync or an incremental data sync) in order to be brought up to date.</p></li>
+<li><p><strong>Recovery shards</strong> are shards that encountered an error during sync and have
+been marked for retry. The error occurs mostly on minor issues, such as
+acquiring a lock on a bucket. Errors of this kind typically resolve on their
+own.</p></li>
+</ul>
+</section>
+<section id="check-the-logs">
+<h3>Check the logs<a class="headerlink" href="#check-the-logs" title="Permalink to this heading">¶</a></h3>
+<p>For multi-site deployments only, you can examine the metadata log (<code class="docutils literal notranslate"><span class="pre">mdlog</span></code>),
+the bucket index log (<code class="docutils literal notranslate"><span class="pre">bilog</span></code>), and the data log (<code class="docutils literal notranslate"><span class="pre">datalog</span></code>).  You can list
+them and also trim them. Trimming is not needed in most cases because
+<code class="docutils literal notranslate"><span class="pre">rgw_sync_log_trim_interval</span></code> is set to 20 minutes by default. It
+should not be necessary to trim the logs unless
+<code class="docutils literal notranslate"><span class="pre">rgw_sync_log_trim_interval</span></code> has been manually set to 0.</p>
+</section>
+<section id="changing-the-metadata-master-zone">
+<h3>Changing the Metadata Master Zone<a class="headerlink" href="#changing-the-metadata-master-zone" title="Permalink to this heading">¶</a></h3>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>Care must be taken when changing the metadata master zone by
+promoting a zone to master. A zone that isn’t finished syncing metadata from
+the current master zone will be unable to serve any remaining entries if it
+is promoted to master, and those metadata changes will be lost. For this
+reason, we recommend waiting for a zone’s <code class="docutils literal notranslate"><span class="pre">radosgw-admin</span> <span class="pre">sync</span> <span class="pre">status</span></code> to
+complete the process of synchronizing the metadata before promoting the zone
+to master.</p>
+</div>
+<p>Similarly, if the current master zone is processing changes to metadata at the
+same time that another zone is being promoted to master, these changes are
+likely to be lost. To avoid losing these changes, we recommend shutting down
+any <code class="docutils literal notranslate"><span class="pre">radosgw</span></code> instances on the previous master zone. After the new master
+zone has been promoted, the previous master zone’s new period can be fetched
+with <code class="docutils literal notranslate"><span class="pre">radosgw-admin</span> <span class="pre">period</span> <span class="pre">pull</span></code> and the gateway(s) can be restarted.</p>
+<p>To promote a zone to metadata master, run the following commands on that zone
+(in this example, the zone is zone <code class="docutils literal notranslate"><span class="pre">us-2</span></code> in zonegroup <code class="docutils literal notranslate"><span class="pre">us</span></code>):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt2">radosgw-admin<span class="w"> </span>zone<span class="w"> </span>modify<span class="w"> </span>--rgw-zone<span class="o">=</span>us-2<span class="w"> </span>--master</span>
+<span class="prompt2">radosgw-admin<span class="w"> </span>zonegroup<span class="w"> </span>modify<span class="w"> </span>--rgw-zonegroup<span class="o">=</span>us<span class="w"> </span>--master</span>
+<span class="prompt2">radosgw-admin<span class="w"> </span>period<span class="w"> </span>update<span class="w"> </span>--commit</span>
+</pre></div></div><p>This generates a new period, and the radosgw instance(s) in zone <code class="docutils literal notranslate"><span class="pre">us-2</span></code> sends
+this period to other zones.</p>
+</section>
+</section>
+<section id="failover-and-disaster-recovery">
+<h2>Failover and Disaster Recovery<a class="headerlink" href="#failover-and-disaster-recovery" title="Permalink to this heading">¶</a></h2>
+<section id="setting-up-failover-to-the-secondary-zone">
+<h3>Setting Up Failover to the Secondary Zone<a class="headerlink" href="#setting-up-failover-to-the-secondary-zone" title="Permalink to this heading">¶</a></h3>
+<p>If the master zone fails, you can fail over to the secondary zone for
+disaster recovery by following these steps:</p>
+<ol class="arabic">
+<li><p>Make the secondary zone the master and default zone. For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">radosgw-admin<span class="w"> </span>zone<span class="w"> </span>modify<span class="w"> </span>--rgw-zone<span class="o">={</span>zone-name<span class="o">}</span><span class="w"> </span>--master<span class="w"> </span>--default</span>
+</pre></div></div><p>By default, Ceph Object Gateway runs in an active-active
+configuration. However, if the cluster is configured to run in an
+active-passive configuration, the secondary zone is a read-only zone.
+To allow the secondary zone to receive write
+operations, remove its <code class="docutils literal notranslate"><span class="pre">--read-only</span></code> status. For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">radosgw-admin<span class="w"> </span>zone<span class="w"> </span>modify<span class="w"> </span>--rgw-zone<span class="o">={</span>zone-name<span class="o">}</span><span class="w"> </span>--master<span class="w"> </span>--default<span class="w"> </span><span class="se">\</span>
+<span class="w">                             </span>--read-only<span class="o">=</span><span class="nb">false</span></span>
+</pre></div></div></li>
+<li><p>Update the period to make the changes take effect.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">radosgw-admin<span class="w"> </span>period<span class="w"> </span>update<span class="w"> </span>--commit</span>
+</pre></div></div></li>
+<li><p>Finally, restart the Ceph Object Gateway.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">systemctl<span class="w"> </span>restart<span class="w"> </span>ceph-radosgw@rgw.<span class="sb">`</span>hostname<span class="w"> </span>-s<span class="sb">`</span></span>
+</pre></div></div></li>
+</ol>
+</section>
+<section id="reverting-from-failover">
+<h3>Reverting from Failover<a class="headerlink" href="#reverting-from-failover" title="Permalink to this heading">¶</a></h3>
+<p>If the former master zone recovers, you can revert the failover operation by following these steps:</p>
+<ol class="arabic">
+<li><p>From within the recovered zone, pull the latest realm configuration
+from the current master zone:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">radosgw-admin<span class="w"> </span>realm<span class="w"> </span>pull<span class="w"> </span>--url<span class="o">={</span>url-to-master-zone-gateway<span class="o">}</span><span class="w"> </span><span class="se">\</span>
+<span class="w">                            </span>--access-key<span class="o">={</span>access-key<span class="o">}</span><span class="w"> </span>--secret<span class="o">={</span>secret<span class="o">}</span></span>
+</pre></div></div></li>
+<li><p>Make the recovered zone the master and default zone:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">radosgw-admin<span class="w"> </span>zone<span class="w"> </span>modify<span class="w"> </span>--rgw-zone<span class="o">={</span>zone-name<span class="o">}</span><span class="w"> </span>--master<span class="w"> </span>--default</span>
+</pre></div></div></li>
+<li><p>Update the period so that the changes take effect:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">radosgw-admin<span class="w"> </span>period<span class="w"> </span>update<span class="w"> </span>--commit</span>
+</pre></div></div></li>
+<li><p>Restart the Ceph Object Gateway in the recovered zone:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">systemctl<span class="w"> </span>restart<span class="w"> </span>ceph-radosgw@rgw.<span class="sb">`</span>hostname<span class="w"> </span>-s<span class="sb">`</span></span>
+</pre></div></div></li>
+<li><p>If the secondary zone needs to be a read-only configuration, update
+the secondary zone:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">radosgw-admin<span class="w"> </span>zone<span class="w"> </span>modify<span class="w"> </span>--rgw-zone<span class="o">={</span>zone-name<span class="o">}</span><span class="w"> </span>--read-only</span>
+</pre></div></div></li>
+<li><p>Update the period so that the changes take effect:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">radosgw-admin<span class="w"> </span>period<span class="w"> </span>update<span class="w"> </span>--commit</span>
+</pre></div></div></li>
+<li><p>Restart the Ceph Object Gateway in the secondary zone:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">systemctl<span class="w"> </span>restart<span class="w"> </span>ceph-radosgw@rgw.<span class="sb">`</span>hostname<span class="w"> </span>-s<span class="sb">`</span></span>
+</pre></div></div></li>
+</ol>
+</section>
+</section>
+<section id="migrating-a-single-site-deployment-to-multi-site">
+<span id="rgw-multisite-migrate-from-single-site"></span><h2>Migrating a Single-Site Deployment to Multi-Site<a class="headerlink" href="#migrating-a-single-site-deployment-to-multi-site" title="Permalink to this heading">¶</a></h2>
+<p>To migrate from a single-site deployment with a <code class="docutils literal notranslate"><span class="pre">default</span></code> zonegroup and zone
+to a multi-site system, follow these steps:</p>
+<ol class="arabic">
+<li><p>Create a realm. Replace <code class="docutils literal notranslate"><span class="pre">&lt;name&gt;</span></code> with the realm name:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">radosgw-admin<span class="w"> </span>realm<span class="w"> </span>create<span class="w"> </span>--rgw-realm<span class="o">=</span>&lt;name&gt;<span class="w"> </span>--default</span>
+</pre></div></div></li>
+<li><p>Rename the default zonegroup and zone. Replace <code class="docutils literal notranslate"><span class="pre">&lt;name&gt;</span></code> with the zone name
+or zonegroup name:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">radosgw-admin<span class="w"> </span>zonegroup<span class="w"> </span>rename<span class="w"> </span>--rgw-zonegroup<span class="w"> </span>default<span class="w"> </span>--zonegroup-new-name<span class="o">=</span>&lt;name&gt;</span>
+<span class="prompt1">radosgw-admin<span class="w"> </span>zone<span class="w"> </span>rename<span class="w"> </span>--rgw-zone<span class="w"> </span>default<span class="w"> </span>--zone-new-name<span class="w"> </span>us-east-1<span class="w"> </span>--rgw-zonegroup<span class="o">=</span>&lt;name&gt;</span>
+</pre></div></div></li>
+<li><p>Configure the master zonegroup. Replace <code class="docutils literal notranslate"><span class="pre">&lt;name&gt;</span></code> with the realm name or
+zonegroup name. Replace <code class="docutils literal notranslate"><span class="pre">&lt;fqdn&gt;</span></code> with the fully qualified domain name(s)
+in the zonegroup:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">radosgw-admin<span class="w"> </span>zonegroup<span class="w"> </span>modify<span class="w"> </span>--rgw-realm<span class="o">=</span>&lt;name&gt;<span class="w"> </span>--rgw-zonegroup<span class="o">=</span>&lt;name&gt;<span class="w"> </span>--endpoints<span class="w"> </span>http://&lt;fqdn&gt;:80<span class="w"> </span>--master<span class="w"> </span>--default</span>
+</pre></div></div></li>
+<li><p>Configure the master zone. Replace <code class="docutils literal notranslate"><span class="pre">&lt;name&gt;</span></code> with the realm name, zone
+name, or zonegroup name. Replace <code class="docutils literal notranslate"><span class="pre">&lt;fqdn&gt;</span></code> with the fully qualified domain
+name(s) in the zonegroup:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">radosgw-admin<span class="w"> </span>zone<span class="w"> </span>modify<span class="w"> </span>--rgw-realm<span class="o">=</span>&lt;name&gt;<span class="w"> </span>--rgw-zonegroup<span class="o">=</span>&lt;name&gt;<span class="w"> </span><span class="se">\</span>
+<span class="w">                          </span>--rgw-zone<span class="o">=</span>&lt;name&gt;<span class="w"> </span>--endpoints<span class="w"> </span>http://&lt;fqdn&gt;:80<span class="w"> </span><span class="se">\</span>
+<span class="w">                          </span>--access-key<span class="o">=</span>&lt;access-key&gt;<span class="w"> </span>--secret<span class="o">=</span>&lt;secret-key&gt;<span class="w"> </span><span class="se">\</span>
+<span class="w">                          </span>--master<span class="w"> </span>--default</span>
+</pre></div></div></li>
+<li><p>Create a system user. Replace <code class="docutils literal notranslate"><span class="pre">&lt;user-id&gt;</span></code> with the username.  Replace
+<code class="docutils literal notranslate"><span class="pre">&lt;display-name&gt;</span></code> with a display name. The display name is allowed to
+contain spaces:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">radosgw-admin<span class="w"> </span>user<span class="w"> </span>create<span class="w"> </span>--uid<span class="o">=</span>&lt;user-id&gt;<span class="w"> </span><span class="se">\</span>
+--display-name<span class="o">=</span><span class="s2">&quot;&lt;display-name&gt;&quot;</span><span class="w"> </span><span class="se">\</span>
+--access-key<span class="o">=</span>&lt;access-key&gt;<span class="w"> </span><span class="se">\</span>
+--secret<span class="o">=</span>&lt;secret-key&gt;<span class="w"> </span>--system</span>
+</pre></div></div></li>
+<li><p>Commit the updated configuration:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">radosgw-admin<span class="w"> </span>period<span class="w"> </span>update<span class="w"> </span>--commit</span>
+</pre></div></div></li>
+<li><p>Restart the Ceph Object Gateway:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">systemctl<span class="w"> </span>restart<span class="w"> </span>ceph-radosgw@rgw.<span class="sb">`</span>hostname<span class="w"> </span>-s<span class="sb">`</span></span>
+</pre></div></div></li>
+</ol>
+<p>After completing this procedure, proceed to <a class="reference external" href="#configure-secondary-zones">Configure a Secondary
+Zone</a> and create a secondary zone
+in the master zonegroup.</p>
+</section>
+<section id="multi-site-configuration-reference">
+<h2>Multi-Site Configuration Reference<a class="headerlink" href="#multi-site-configuration-reference" title="Permalink to this heading">¶</a></h2>
+<p>The following sections provide additional details and command-line
+usage for realms, periods, zonegroups and zones.</p>
+<p>For more details on every available configuration option, see
+<code class="docutils literal notranslate"><span class="pre">src/common/options/rgw.yaml.in</span></code>.</p>
+<p>Alternatively, go to the <a class="reference internal" href="../../mgr/dashboard/#mgr-dashboard"><span class="std std-ref">Ceph Dashboard</span></a> configuration page (found under
+<cite>Cluster</cite>), where you can view and set all of the options. While on the page,
+set the level to <code class="docutils literal notranslate"><span class="pre">advanced</span></code> and search for RGW to see all basic and advanced
+configuration options.</p>
+<section id="realms">
+<span id="rgw-realms"></span><h3>Realms<a class="headerlink" href="#realms" title="Permalink to this heading">¶</a></h3>
+<p>A realm is a globally unique namespace that consists of one or more zonegroups.
+Zonegroups contain one or more zones. Zones contain buckets. Buckets contain
+objects.</p>
+<p>Realms make it possible for the Ceph Object Gateway to support multiple
+namespaces and their configurations on the same hardware.</p>
+<p>Each realm is associated with a “period”. A period represents the state
+of the zonegroup and zone configuration in time. Each time you make a
+change to a zonegroup or zone, you should update and commit the period.</p>
+<p>To ensure backward compatibility with Infernalis and earlier releases, the Ceph
+Object Gateway does not by default create a realm. However, as a best practice,
+we recommend that you create realms when creating new clusters.</p>
+<section id="id1">
+<h4>Create a Realm<a class="headerlink" href="#id1" title="Permalink to this heading">¶</a></h4>
+<p>To create a realm, run <code class="docutils literal notranslate"><span class="pre">realm</span> <span class="pre">create</span></code> and specify the realm name.
+If the realm is the default, specify <code class="docutils literal notranslate"><span class="pre">--default</span></code>.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">radosgw-admin<span class="w"> </span>realm<span class="w"> </span>create<span class="w"> </span>--rgw-realm<span class="o">={</span>realm-name<span class="o">}</span><span class="w"> </span><span class="o">[</span>--default<span class="o">]</span></span>
+</pre></div></div><p>For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">radosgw-admin<span class="w"> </span>realm<span class="w"> </span>create<span class="w"> </span>--rgw-realm<span class="o">=</span>movies<span class="w"> </span>--default</span>
+</pre></div></div><p>By specifying <code class="docutils literal notranslate"><span class="pre">--default</span></code>, the realm will be called implicitly with
+each <code class="docutils literal notranslate"><span class="pre">radosgw-admin</span></code> call unless <code class="docutils literal notranslate"><span class="pre">--rgw-realm</span></code> and the realm name
+are explicitly provided.</p>
+</section>
+<section id="make-a-realm-the-default">
+<h4>Make a Realm the Default<a class="headerlink" href="#make-a-realm-the-default" title="Permalink to this heading">¶</a></h4>
+<p>One realm in the list of realms should be the default realm. There may be only
+one default realm. If there is only one realm and it wasn’t specified as the
+default realm when it was created, make it the default realm. Alternatively, to
+change which realm is the default, run the following command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">radosgw-admin<span class="w"> </span>realm<span class="w"> </span>default<span class="w"> </span>--rgw-realm<span class="o">=</span>movies</span>
+</pre></div></div><div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>When the realm is default, the command line assumes
+<code class="docutils literal notranslate"><span class="pre">--rgw-realm=&lt;realm-name&gt;</span></code> as an argument.</p>
+</div>
+</section>
+<section id="delete-a-realm">
+<h4>Delete a Realm<a class="headerlink" href="#delete-a-realm" title="Permalink to this heading">¶</a></h4>
+<p>To delete a realm, run <code class="docutils literal notranslate"><span class="pre">realm</span> <span class="pre">rm</span></code> and specify the realm name:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">radosgw-admin<span class="w"> </span>realm<span class="w"> </span>rm<span class="w"> </span>--rgw-realm<span class="o">={</span>realm-name<span class="o">}</span></span>
+</pre></div></div><p>For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">radosgw-admin<span class="w"> </span>realm<span class="w"> </span>rm<span class="w"> </span>--rgw-realm<span class="o">=</span>movies</span>
+</pre></div></div></section>
+<section id="get-a-realm">
+<h4>Get a Realm<a class="headerlink" href="#get-a-realm" title="Permalink to this heading">¶</a></h4>
+<p>To get a realm, run <code class="docutils literal notranslate"><span class="pre">realm</span> <span class="pre">get</span></code> and specify the realm name:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">radosgw-admin<span class="w"> </span>realm<span class="w"> </span>get<span class="w"> </span>--rgw-realm<span class="o">=</span>&lt;name&gt;</span>
+</pre></div></div><p>For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">radosgw-admin<span class="w"> </span>realm<span class="w"> </span>get<span class="w"> </span>--rgw-realm<span class="o">=</span>movies<span class="w"> </span><span class="o">[</span>&gt;<span class="w"> </span>filename.json<span class="o">]</span></span>
+</pre></div></div><div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+    <span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="s2">&quot;0a68d52e-a19c-4e8e-b012-a8f831cb3ebc&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;movies&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;current_period&quot;</span><span class="p">:</span> <span class="s2">&quot;b0c5bbef-4337-4edd-8184-5aeab2ec413b&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;epoch&quot;</span><span class="p">:</span> <span class="mi">1</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+<section id="set-a-realm">
+<h4>Set a Realm<a class="headerlink" href="#set-a-realm" title="Permalink to this heading">¶</a></h4>
+<p>To set a realm, run <code class="docutils literal notranslate"><span class="pre">realm</span> <span class="pre">set</span></code>, specify the realm name, and use the
+<code class="docutils literal notranslate"><span class="pre">--infile=</span></code> option (make sure that  the <code class="docutils literal notranslate"><span class="pre">--infile</span></code> option has an input file
+name as an argument):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">radosgw-admin<span class="w"> </span>realm<span class="w"> </span><span class="nb">set</span><span class="w"> </span>--rgw-realm<span class="o">=</span>&lt;name&gt;<span class="w"> </span>--infile<span class="o">=</span>&lt;infilename&gt;</span>
+</pre></div></div><p>For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">radosgw-admin<span class="w"> </span>realm<span class="w"> </span><span class="nb">set</span><span class="w"> </span>--rgw-realm<span class="o">=</span>movies<span class="w"> </span>--infile<span class="o">=</span>filename.json</span>
+</pre></div></div></section>
+<section id="list-realms">
+<h4>List Realms<a class="headerlink" href="#list-realms" title="Permalink to this heading">¶</a></h4>
+<p>To list realms, run <code class="docutils literal notranslate"><span class="pre">realm</span> <span class="pre">list</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">radosgw-admin<span class="w"> </span>realm<span class="w"> </span>list</span>
+</pre></div></div></section>
+<section id="list-realm-periods">
+<h4>List Realm Periods<a class="headerlink" href="#list-realm-periods" title="Permalink to this heading">¶</a></h4>
+<p>To list realm periods, run <code class="docutils literal notranslate"><span class="pre">realm</span> <span class="pre">list-periods</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">radosgw-admin<span class="w"> </span>realm<span class="w"> </span>list-periods</span>
+</pre></div></div></section>
+<section id="pull-a-realm">
+<h4>Pull a Realm<a class="headerlink" href="#pull-a-realm" title="Permalink to this heading">¶</a></h4>
+<p>To pull a realm from the node that contains both the master zonegroup and
+master zone to a node that contains a secondary zonegroup or zone, run <code class="docutils literal notranslate"><span class="pre">realm</span>
+<span class="pre">pull</span></code> on the node that will receive the realm configuration:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">radosgw-admin<span class="w"> </span>realm<span class="w"> </span>pull<span class="w"> </span>--url<span class="o">={</span>url-to-master-zone-gateway<span class="o">}</span><span class="w"> </span>--access-key<span class="o">={</span>access-key<span class="o">}</span><span class="w"> </span>--secret<span class="o">={</span>secret<span class="o">}</span></span>
+</pre></div></div></section>
+<section id="rename-a-realm">
+<h4>Rename a Realm<a class="headerlink" href="#rename-a-realm" title="Permalink to this heading">¶</a></h4>
+<p>A realm is not part of the period. Consequently, any renaming of the realm is
+applied only locally, and will therefore not get pulled when you run <code class="docutils literal notranslate"><span class="pre">realm</span>
+<span class="pre">pull</span></code>. If you are renaming a realm that contains multiple zones, run the
+<code class="docutils literal notranslate"><span class="pre">rename</span></code> command on each zone.</p>
+<p>To rename a realm, run the following:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">radosgw-admin<span class="w"> </span>realm<span class="w"> </span>rename<span class="w"> </span>--rgw-realm<span class="o">=</span>&lt;current-name&gt;<span class="w"> </span>--realm-new-name<span class="o">=</span>&lt;new-realm-name&gt;</span>
+</pre></div></div><div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>DO NOT use <code class="docutils literal notranslate"><span class="pre">realm</span> <span class="pre">set</span></code> to change the <code class="docutils literal notranslate"><span class="pre">name</span></code> parameter. Doing so
+changes the internal name only. If you use <code class="docutils literal notranslate"><span class="pre">realm</span> <span class="pre">set</span></code> to change the
+<code class="docutils literal notranslate"><span class="pre">name</span></code> parameter, then <code class="docutils literal notranslate"><span class="pre">--rgw-realm</span></code> still expects the realm’s old name.</p>
+</div>
+</section>
+</section>
+<section id="zonegroups">
+<h3>Zonegroups<a class="headerlink" href="#zonegroups" title="Permalink to this heading">¶</a></h3>
+<p>Zonegroups make it possible for the Ceph Object Gateway to support multi-site
+deployments and a global namespace. Zonegroups were formerly called “regions”
+(in releases prior to and including Infernalis).</p>
+<p>A zonegroup defines the geographic location of one or more Ceph Object Gateway
+instances within one or more zones.</p>
+<p>The configuration of zonegroups differs from typical configuration procedures,
+because not all of the zonegroup configuration settings are stored to a
+configuration file.</p>
+<p>You can list zonegroups, get a zonegroup configuration, and set a zonegroup
+configuration.</p>
+<section id="creating-a-zonegroup">
+<h4>Creating a Zonegroup<a class="headerlink" href="#creating-a-zonegroup" title="Permalink to this heading">¶</a></h4>
+<p>Creating a zonegroup consists of specifying the zonegroup name. Newly created
+zones reside in the default realm unless a different realm is specified by
+using the option <code class="docutils literal notranslate"><span class="pre">--rgw-realm=&lt;realm-name&gt;</span></code>.</p>
+<p>If the zonegroup is the default zonegroup, specify the <code class="docutils literal notranslate"><span class="pre">--default</span></code> flag. If
+the zonegroup is the master zonegroup, specify the <code class="docutils literal notranslate"><span class="pre">--master</span></code> flag. For
+example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">radosgw-admin<span class="w"> </span>zonegroup<span class="w"> </span>create<span class="w"> </span>--rgw-zonegroup<span class="o">=</span>&lt;name&gt;<span class="w"> </span><span class="o">[</span>--rgw-realm<span class="o">=</span>&lt;name&gt;<span class="o">][</span>--master<span class="o">]</span><span class="w"> </span><span class="o">[</span>--default<span class="o">]</span></span>
+</pre></div></div><div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Use <code class="docutils literal notranslate"><span class="pre">zonegroup</span> <span class="pre">modify</span> <span class="pre">--rgw-zonegroup=&lt;zonegroup-name&gt;</span></code> to modify
+an existing zonegroup’s settings.</p>
+</div>
+</section>
+<section id="making-a-zonegroup-the-default">
+<h4>Making a Zonegroup the Default<a class="headerlink" href="#making-a-zonegroup-the-default" title="Permalink to this heading">¶</a></h4>
+<p>One zonegroup in the list of zonegroups must be the default zonegroup.  There
+can be only one default zonegroup. In the case that there is only one zonegroup
+which was not designated the default zonegroup when it was created, use the
+following command to make it the default zonegroup. Commands of this form can
+be used to change which zonegroup is the default.</p>
+<ol class="arabic">
+<li><p>Designate a zonegroup as the default zonegroup:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">radosgw-admin<span class="w"> </span>zonegroup<span class="w"> </span>default<span class="w"> </span>--rgw-zonegroup<span class="o">=</span>comedy</span>
+</pre></div></div><div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>When the zonegroup is default, the command line assumes that the name of the zonegroup will be the argument of the <code class="docutils literal notranslate"><span class="pre">--rgw-zonegroup=&lt;zonegroup-name&gt;</span></code> option. (In this example, <code class="docutils literal notranslate"><span class="pre">&lt;zonegroup-name&gt;</span></code> has been retained for the sake of consistency and legibility.)</p>
+</div>
+</li>
+<li><p>Update the period:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">radosgw-admin<span class="w"> </span>period<span class="w"> </span>update<span class="w"> </span>--commit</span>
+</pre></div></div></li>
+</ol>
+</section>
+<section id="adding-a-zone-to-a-zonegroup">
+<h4>Adding a Zone to a Zonegroup<a class="headerlink" href="#adding-a-zone-to-a-zonegroup" title="Permalink to this heading">¶</a></h4>
+<p>This procedure explains how to add a zone to a zonegroup.</p>
+<ol class="arabic">
+<li><p>Run the following command to add a zone to a zonegroup:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">radosgw-admin<span class="w"> </span>zonegroup<span class="w"> </span>add<span class="w"> </span>--rgw-zonegroup<span class="o">=</span>&lt;name&gt;<span class="w"> </span>--rgw-zone<span class="o">=</span>&lt;name&gt;</span>
+</pre></div></div></li>
+<li><p>Update the period:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">radosgw-admin<span class="w"> </span>period<span class="w"> </span>update<span class="w"> </span>--commit</span>
+</pre></div></div></li>
+</ol>
+</section>
+<section id="removing-a-zone-from-a-zonegroup">
+<h4>Removing a Zone from a Zonegroup<a class="headerlink" href="#removing-a-zone-from-a-zonegroup" title="Permalink to this heading">¶</a></h4>
+<ol class="arabic">
+<li><p>Run this command to remove a zone from a zonegroup:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">radosgw-admin<span class="w"> </span>zonegroup<span class="w"> </span>remove<span class="w"> </span>--rgw-zonegroup<span class="o">=</span>&lt;name&gt;<span class="w"> </span>--rgw-zone<span class="o">=</span>&lt;name&gt;</span>
+</pre></div></div></li>
+<li><p>Update the period:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">radosgw-admin<span class="w"> </span>period<span class="w"> </span>update<span class="w"> </span>--commit</span>
+</pre></div></div></li>
+</ol>
+</section>
+<section id="renaming-a-zonegroup">
+<h4>Renaming a Zonegroup<a class="headerlink" href="#renaming-a-zonegroup" title="Permalink to this heading">¶</a></h4>
+<ol class="arabic">
+<li><p>Run this command to rename the zonegroup:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">radosgw-admin<span class="w"> </span>zonegroup<span class="w"> </span>rename<span class="w"> </span>--rgw-zonegroup<span class="o">=</span>&lt;name&gt;<span class="w"> </span>--zonegroup-new-name<span class="o">=</span>&lt;name&gt;</span>
+</pre></div></div></li>
+<li><p>Update the period:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">radosgw-admin<span class="w"> </span>period<span class="w"> </span>update<span class="w"> </span>--commit</span>
+</pre></div></div></li>
+</ol>
+</section>
+<section id="deleting-a-zonegroup">
+<h4>Deleting a Zonegroup<a class="headerlink" href="#deleting-a-zonegroup" title="Permalink to this heading">¶</a></h4>
+<ol class="arabic">
+<li><p>To delete a zonegroup, run the following command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">radosgw-admin<span class="w"> </span>zonegroup<span class="w"> </span>delete<span class="w"> </span>--rgw-zonegroup<span class="o">=</span>&lt;name&gt;</span>
+</pre></div></div></li>
+<li><p>Update the period:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">radosgw-admin<span class="w"> </span>period<span class="w"> </span>update<span class="w"> </span>--commit</span>
+</pre></div></div></li>
+</ol>
+</section>
+<section id="listing-zonegroups">
+<h4>Listing Zonegroups<a class="headerlink" href="#listing-zonegroups" title="Permalink to this heading">¶</a></h4>
+<p>A Ceph cluster contains a list of zonegroup. To list the zonegroups, run
+this command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">radosgw-admin<span class="w"> </span>zonegroup<span class="w"> </span>list</span>
+</pre></div></div><p>The <code class="docutils literal notranslate"><span class="pre">radosgw-admin</span></code> returns a JSON formatted list of zonegroups.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+    <span class="s2">&quot;default_info&quot;</span><span class="p">:</span> <span class="s2">&quot;90b28698-e7c3-462c-a42d-4aa780d24eda&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;zonegroups&quot;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="s2">&quot;us&quot;</span>
+    <span class="p">]</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+<section id="getting-a-zonegroup-map">
+<h4>Getting a Zonegroup Map<a class="headerlink" href="#getting-a-zonegroup-map" title="Permalink to this heading">¶</a></h4>
+<p>To list the details of each zonegroup, run this command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">radosgw-admin<span class="w"> </span>zonegroup-map<span class="w"> </span>get</span>
+</pre></div></div><div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If you receive a <code class="docutils literal notranslate"><span class="pre">failed</span> <span class="pre">to</span> <span class="pre">read</span> <span class="pre">zonegroup</span> <span class="pre">map</span></code> error, run
+<code class="docutils literal notranslate"><span class="pre">radosgw-admin</span> <span class="pre">zonegroup-map</span> <span class="pre">update</span></code> as <code class="docutils literal notranslate"><span class="pre">root</span></code> first.</p>
+</div>
+</section>
+<section id="getting-a-zonegroup">
+<h4>Getting a Zonegroup<a class="headerlink" href="#getting-a-zonegroup" title="Permalink to this heading">¶</a></h4>
+<p>To view the configuration of a zonegroup, run this command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">radosgw-admin<span class="w"> </span>zonegroup<span class="w"> </span>get<span class="w"> </span><span class="o">[</span>--rgw-zonegroup<span class="o">=</span>&lt;zonegroup&gt;<span class="o">]</span></span>
+</pre></div></div><p>The zonegroup configuration looks like this:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+    <span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="s2">&quot;90b28698-e7c3-462c-a42d-4aa780d24eda&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;us&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;api_name&quot;</span><span class="p">:</span> <span class="s2">&quot;us&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;is_master&quot;</span><span class="p">:</span> <span class="s2">&quot;true&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;endpoints&quot;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="s2">&quot;http:\/\/rgw1:80&quot;</span>
+    <span class="p">],</span>
+    <span class="s2">&quot;hostnames&quot;</span><span class="p">:</span> <span class="p">[],</span>
+    <span class="s2">&quot;hostnames_s3website&quot;</span><span class="p">:</span> <span class="p">[],</span>
+    <span class="s2">&quot;master_zone&quot;</span><span class="p">:</span> <span class="s2">&quot;9248cab2-afe7-43d8-a661-a40bf316665e&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;zones&quot;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="p">{</span>
+            <span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="s2">&quot;9248cab2-afe7-43d8-a661-a40bf316665e&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;us-east&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;endpoints&quot;</span><span class="p">:</span> <span class="p">[</span>
+                <span class="s2">&quot;http:\/\/rgw1&quot;</span>
+            <span class="p">],</span>
+            <span class="s2">&quot;log_meta&quot;</span><span class="p">:</span> <span class="s2">&quot;true&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;log_data&quot;</span><span class="p">:</span> <span class="s2">&quot;true&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;bucket_index_max_shards&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="s2">&quot;read_only&quot;</span><span class="p">:</span> <span class="s2">&quot;false&quot;</span>
+        <span class="p">},</span>
+        <span class="p">{</span>
+            <span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="s2">&quot;d1024e59-7d28-49d1-8222-af101965a939&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;us-west&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;endpoints&quot;</span><span class="p">:</span> <span class="p">[</span>
+                <span class="s2">&quot;http:\/\/rgw2:80&quot;</span>
+            <span class="p">],</span>
+            <span class="s2">&quot;log_meta&quot;</span><span class="p">:</span> <span class="s2">&quot;false&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;log_data&quot;</span><span class="p">:</span> <span class="s2">&quot;true&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;bucket_index_max_shards&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="s2">&quot;read_only&quot;</span><span class="p">:</span> <span class="s2">&quot;false&quot;</span>
+        <span class="p">}</span>
+    <span class="p">],</span>
+    <span class="s2">&quot;placement_targets&quot;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="p">{</span>
+            <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;default-placement&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;tags&quot;</span><span class="p">:</span> <span class="p">[]</span>
+        <span class="p">}</span>
+    <span class="p">],</span>
+    <span class="s2">&quot;default_placement&quot;</span><span class="p">:</span> <span class="s2">&quot;default-placement&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;realm_id&quot;</span><span class="p">:</span> <span class="s2">&quot;ae031368-8715-4e27-9a99-0c9468852cfe&quot;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+<section id="setting-a-zonegroup">
+<h4>Setting a Zonegroup<a class="headerlink" href="#setting-a-zonegroup" title="Permalink to this heading">¶</a></h4>
+<p>The process of defining a zonegroup consists of creating a JSON object and
+specifying the required settings. Here is a list of the required settings:</p>
+<ol class="arabic simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">name</span></code>: The name of the zonegroup. Required.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">api_name</span></code>: The API name for the zonegroup. Optional.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">is_master</span></code>: Determines whether the zonegroup is the master zonegroup.
+Required. <strong>note:</strong> You can only have one master zonegroup.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">endpoints</span></code>: A list of all the endpoints in the zonegroup. For example,
+you may use multiple domain names to refer to the same zonegroup. Remember
+to escape the forward slashes (<code class="docutils literal notranslate"><span class="pre">\/</span></code>). You may also specify a port
+(<code class="docutils literal notranslate"><span class="pre">fqdn:port</span></code>) for each endpoint. Optional.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">hostnames</span></code>: A list of all the hostnames in the zonegroup. For example,
+you may use multiple domain names to refer to the same zonegroup. Optional.
+The <code class="docutils literal notranslate"><span class="pre">rgw</span> <span class="pre">dns</span> <span class="pre">name</span></code> setting will be included in this list automatically.
+Restart the gateway daemon(s) after changing this setting.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">master_zone</span></code>: The master zone for the zonegroup. Optional. Uses
+the default zone if not specified. <strong>note:</strong> You can only have one
+master zone per zonegroup.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">zones</span></code>: A list of all zones within the zonegroup. Each zone has a name
+(required), a list of endpoints (optional), and a setting that determines
+whether the gateway will log metadata and data operations (false by
+default).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">placement_targets</span></code>: A list of placement targets (optional). Each
+placement target contains a name (required) for the placement target
+and a list of tags (optional) so that only users with the tag can use
+the placement target (that is, the user’s <code class="docutils literal notranslate"><span class="pre">placement_tags</span></code> field in
+the user info).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">default_placement</span></code>: The default placement target for the object index and
+object data. Set to <code class="docutils literal notranslate"><span class="pre">default-placement</span></code> by default. It is  also possible
+to set a per-user default placement in the user info for each user.</p></li>
+</ol>
+</section>
+<section id="setting-a-zonegroup-procedure">
+<h4>Setting a Zonegroup - Procedure<a class="headerlink" href="#setting-a-zonegroup-procedure" title="Permalink to this heading">¶</a></h4>
+<ol class="arabic">
+<li><p>To set a zonegroup, create a JSON object that contains the required fields,
+save the object to a file (for example, <code class="docutils literal notranslate"><span class="pre">zonegroup.json</span></code>), and run the
+following command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">radosgw-admin<span class="w"> </span>zonegroup<span class="w"> </span><span class="nb">set</span><span class="w"> </span>--infile<span class="w"> </span>zonegroup.json</span>
+</pre></div></div><p>Where <code class="docutils literal notranslate"><span class="pre">zonegroup.json</span></code> is the JSON file you created.</p>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">default</span></code> zonegroup <code class="docutils literal notranslate"><span class="pre">is_master</span></code> setting is <code class="docutils literal notranslate"><span class="pre">true</span></code> by default. If you create an additional zonegroup and want to make it the master zonegroup, you must either set the <code class="docutils literal notranslate"><span class="pre">default</span></code> zonegroup <code class="docutils literal notranslate"><span class="pre">is_master</span></code> setting to <code class="docutils literal notranslate"><span class="pre">false</span></code> or delete the <code class="docutils literal notranslate"><span class="pre">default</span></code> zonegroup.</p>
+</div>
+</li>
+<li><p>Update the period:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">radosgw-admin<span class="w"> </span>period<span class="w"> </span>update<span class="w"> </span>--commit</span>
+</pre></div></div></li>
+</ol>
+</section>
+<section id="setting-a-zonegroup-map">
+<h4>Setting a Zonegroup Map<a class="headerlink" href="#setting-a-zonegroup-map" title="Permalink to this heading">¶</a></h4>
+<p>The process of setting a zonegroup map comprises (1) creating a JSON object
+that consists of one or more zonegroups, and (2) setting the
+<code class="docutils literal notranslate"><span class="pre">master_zonegroup</span></code> for the cluster. Each zonegroup in the zonegroup map
+consists of a key/value pair where the <code class="docutils literal notranslate"><span class="pre">key</span></code> setting is equivalent to the
+<code class="docutils literal notranslate"><span class="pre">name</span></code> setting for an individual zonegroup configuration and the <code class="docutils literal notranslate"><span class="pre">val</span></code> is
+a JSON object consisting of an individual zonegroup configuration.</p>
+<p>You may only have one zonegroup with <code class="docutils literal notranslate"><span class="pre">is_master</span></code> equal to <code class="docutils literal notranslate"><span class="pre">true</span></code>, and it
+must be specified as the <code class="docutils literal notranslate"><span class="pre">master_zonegroup</span></code> at the end of the zonegroup map.
+The following JSON object is an example of a default zonegroup map:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+    <span class="s2">&quot;zonegroups&quot;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="p">{</span>
+            <span class="s2">&quot;key&quot;</span><span class="p">:</span> <span class="s2">&quot;90b28698-e7c3-462c-a42d-4aa780d24eda&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;val&quot;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="s2">&quot;90b28698-e7c3-462c-a42d-4aa780d24eda&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;us&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;api_name&quot;</span><span class="p">:</span> <span class="s2">&quot;us&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;is_master&quot;</span><span class="p">:</span> <span class="s2">&quot;true&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;endpoints&quot;</span><span class="p">:</span> <span class="p">[</span>
+                    <span class="s2">&quot;http:\/\/rgw1:80&quot;</span>
+                <span class="p">],</span>
+                <span class="s2">&quot;hostnames&quot;</span><span class="p">:</span> <span class="p">[],</span>
+                <span class="s2">&quot;hostnames_s3website&quot;</span><span class="p">:</span> <span class="p">[],</span>
+                <span class="s2">&quot;master_zone&quot;</span><span class="p">:</span> <span class="s2">&quot;9248cab2-afe7-43d8-a661-a40bf316665e&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;zones&quot;</span><span class="p">:</span> <span class="p">[</span>
+                    <span class="p">{</span>
+                        <span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="s2">&quot;9248cab2-afe7-43d8-a661-a40bf316665e&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;us-east&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;endpoints&quot;</span><span class="p">:</span> <span class="p">[</span>
+                            <span class="s2">&quot;http:\/\/rgw1&quot;</span>
+                        <span class="p">],</span>
+                        <span class="s2">&quot;log_meta&quot;</span><span class="p">:</span> <span class="s2">&quot;true&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;log_data&quot;</span><span class="p">:</span> <span class="s2">&quot;true&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;bucket_index_max_shards&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+                        <span class="s2">&quot;read_only&quot;</span><span class="p">:</span> <span class="s2">&quot;false&quot;</span>
+                    <span class="p">},</span>
+                    <span class="p">{</span>
+                        <span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="s2">&quot;d1024e59-7d28-49d1-8222-af101965a939&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;us-west&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;endpoints&quot;</span><span class="p">:</span> <span class="p">[</span>
+                            <span class="s2">&quot;http:\/\/rgw2:80&quot;</span>
+                        <span class="p">],</span>
+                        <span class="s2">&quot;log_meta&quot;</span><span class="p">:</span> <span class="s2">&quot;false&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;log_data&quot;</span><span class="p">:</span> <span class="s2">&quot;true&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;bucket_index_max_shards&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+                        <span class="s2">&quot;read_only&quot;</span><span class="p">:</span> <span class="s2">&quot;false&quot;</span>
+                    <span class="p">}</span>
+                <span class="p">],</span>
+                <span class="s2">&quot;placement_targets&quot;</span><span class="p">:</span> <span class="p">[</span>
+                    <span class="p">{</span>
+                        <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;default-placement&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;tags&quot;</span><span class="p">:</span> <span class="p">[]</span>
+                    <span class="p">}</span>
+                <span class="p">],</span>
+                <span class="s2">&quot;default_placement&quot;</span><span class="p">:</span> <span class="s2">&quot;default-placement&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;realm_id&quot;</span><span class="p">:</span> <span class="s2">&quot;ae031368-8715-4e27-9a99-0c9468852cfe&quot;</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+    <span class="p">],</span>
+    <span class="s2">&quot;master_zonegroup&quot;</span><span class="p">:</span> <span class="s2">&quot;90b28698-e7c3-462c-a42d-4aa780d24eda&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;bucket_quota&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">&quot;enabled&quot;</span><span class="p">:</span> <span class="n">false</span><span class="p">,</span>
+        <span class="s2">&quot;max_size_kb&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span>
+        <span class="s2">&quot;max_objects&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span>
+    <span class="p">},</span>
+    <span class="s2">&quot;user_quota&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">&quot;enabled&quot;</span><span class="p">:</span> <span class="n">false</span><span class="p">,</span>
+        <span class="s2">&quot;max_size_kb&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span>
+        <span class="s2">&quot;max_objects&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<ol class="arabic">
+<li><p>To set a zonegroup map, run the following command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">radosgw-admin<span class="w"> </span>zonegroup-map<span class="w"> </span><span class="nb">set</span><span class="w"> </span>--infile<span class="w"> </span>zonegroupmap.json</span>
+</pre></div></div><p>In this command, <code class="docutils literal notranslate"><span class="pre">zonegroupmap.json</span></code> is the JSON file you created. Ensure
+that you have zones created for the ones specified in the zonegroup map.</p>
+</li>
+<li><p>Update the period:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">radosgw-admin<span class="w"> </span>period<span class="w"> </span>update<span class="w"> </span>--commit</span>
+</pre></div></div></li>
+</ol>
+</section>
+</section>
+<section id="zones">
+<span id="radosgw-zones"></span><h3>Zones<a class="headerlink" href="#zones" title="Permalink to this heading">¶</a></h3>
+<p>A zone defines a logical group that consists of one or more Ceph Object Gateway
+instances. Ceph Object Gateway supports zones.</p>
+<p>The procedure for configuring zones differs from typical configuration
+procedures, because not all of the settings end up in a Ceph configuration
+file.</p>
+<p>Zones can be listed. You can “get” a zone configuration and “set” a zone
+configuration.</p>
+<section id="creating-a-zone">
+<h4>Creating a Zone<a class="headerlink" href="#creating-a-zone" title="Permalink to this heading">¶</a></h4>
+<p>To create a zone, specify a zone name. If you are creating a master zone,
+specify the <code class="docutils literal notranslate"><span class="pre">--master</span></code> flag. Only one zone in a zonegroup may be a master
+zone. To add the zone to a zonegroup, specify the <code class="docutils literal notranslate"><span class="pre">--rgw-zonegroup</span></code> option
+with the zonegroup name.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">radosgw-admin<span class="w"> </span>zone<span class="w"> </span>create<span class="w"> </span>--rgw-zone<span class="o">=</span>&lt;name&gt;<span class="w"> </span><span class="se">\</span>
+<span class="w">                 </span><span class="o">[</span>--zonegroup<span class="o">=</span>&lt;zonegroup-name<span class="o">]</span><span class="se">\</span>
+<span class="w">                 </span><span class="o">[</span>--endpoints<span class="o">=</span>&lt;endpoint&gt;<span class="o">[</span>,&lt;endpoint&gt;<span class="o">]</span><span class="w"> </span><span class="se">\</span>
+<span class="w">                 </span><span class="o">[</span>--master<span class="o">]</span><span class="w"> </span><span class="o">[</span>--default<span class="o">]</span><span class="w"> </span><span class="se">\</span>
+<span class="w">                 </span>--access-key<span class="w"> </span><span class="nv">$SYSTEM_ACCESS_KEY</span><span class="w"> </span>--secret<span class="w"> </span><span class="nv">$SYSTEM_SECRET_KEY</span></span>
+</pre></div></div><p>After you have created the zone, update the period:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">radosgw-admin<span class="w"> </span>period<span class="w"> </span>update<span class="w"> </span>--commit</span>
+</pre></div></div></section>
+<section id="deleting-a-zone">
+<h4>Deleting a Zone<a class="headerlink" href="#deleting-a-zone" title="Permalink to this heading">¶</a></h4>
+<p>To delete a zone, first remove it from the zonegroup:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">radosgw-admin<span class="w"> </span>zonegroup<span class="w"> </span>remove<span class="w"> </span>--zonegroup<span class="o">=</span>&lt;name&gt;<span class="se">\</span>
+<span class="w">                                  </span>--zone<span class="o">=</span>&lt;name&gt;</span>
+</pre></div></div><p>Then, update the period:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">radosgw-admin<span class="w"> </span>period<span class="w"> </span>update<span class="w"> </span>--commit</span>
+</pre></div></div><p>Next, delete the zone:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">radosgw-admin<span class="w"> </span>zone<span class="w"> </span>delete<span class="w"> </span>--rgw-zone&lt;name&gt;</span>
+</pre></div></div><p>Finally, update the period:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">radosgw-admin<span class="w"> </span>period<span class="w"> </span>update<span class="w"> </span>--commit</span>
+</pre></div></div><div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>Do not delete a zone without removing it from a zonegroup first.
+Otherwise, updating the period will fail.</p>
+</div>
+<p>If the pools for the deleted zone will not be used anywhere else,
+consider deleting the pools. Replace <code class="docutils literal notranslate"><span class="pre">&lt;del-zone&gt;</span></code> in the example below
+with the deleted zone’s name.</p>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>Only delete the pools with prepended zone names. Deleting the
+root pool (for example, <code class="docutils literal notranslate"><span class="pre">.rgw.root</span></code>) will remove all of the system’s
+configuration.</p>
+</div>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>When the pools are deleted, all of the data within them are
+deleted in an unrecoverable manner. Delete the pools only if the pool’s
+contents are no longer needed.</p>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>pool<span class="w"> </span>rm<span class="w"> </span>&lt;del-zone&gt;.rgw.control<span class="w"> </span>&lt;del-zone&gt;.rgw.control<span class="w"> </span>--yes-i-really-really-mean-it</span>
+<span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>pool<span class="w"> </span>rm<span class="w"> </span>&lt;del-zone&gt;.rgw.meta<span class="w"> </span>&lt;del-zone&gt;.rgw.meta<span class="w"> </span>--yes-i-really-really-mean-it</span>
+<span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>pool<span class="w"> </span>rm<span class="w"> </span>&lt;del-zone&gt;.rgw.log<span class="w"> </span>&lt;del-zone&gt;.rgw.log<span class="w"> </span>--yes-i-really-really-mean-it</span>
+<span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>pool<span class="w"> </span>rm<span class="w"> </span>&lt;del-zone&gt;.rgw.otp<span class="w"> </span>&lt;del-zone&gt;.rgw.otp<span class="w"> </span>--yes-i-really-really-mean-it</span>
+<span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>pool<span class="w"> </span>rm<span class="w"> </span>&lt;del-zone&gt;.rgw.buckets.index<span class="w"> </span>&lt;del-zone&gt;.rgw.buckets.index<span class="w"> </span>--yes-i-really-really-mean-it</span>
+<span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>pool<span class="w"> </span>rm<span class="w"> </span>&lt;del-zone&gt;.rgw.buckets.non-ec<span class="w"> </span>&lt;del-zone&gt;.rgw.buckets.non-ec<span class="w"> </span>--yes-i-really-really-mean-it</span>
+<span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>pool<span class="w"> </span>rm<span class="w"> </span>&lt;del-zone&gt;.rgw.buckets.data<span class="w"> </span>&lt;del-zone&gt;.rgw.buckets.data<span class="w"> </span>--yes-i-really-really-mean-it</span>
+</pre></div></div></section>
+<section id="modifying-a-zone">
+<h4>Modifying a Zone<a class="headerlink" href="#modifying-a-zone" title="Permalink to this heading">¶</a></h4>
+<p>To modify a zone, specify the zone name and the parameters you wish to
+modify.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">radosgw-admin<span class="w"> </span>zone<span class="w"> </span>modify<span class="w"> </span><span class="o">[</span>options<span class="o">]</span></span>
+</pre></div></div><p>Where <code class="docutils literal notranslate"><span class="pre">[options]</span></code>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">--access-key=&lt;key&gt;</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--secret/--secret-key=&lt;key&gt;</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--master</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--default</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--endpoints=&lt;list&gt;</span></code></p></li>
+</ul>
+<p>Then, update the period:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">radosgw-admin<span class="w"> </span>period<span class="w"> </span>update<span class="w"> </span>--commit</span>
+</pre></div></div></section>
+<section id="listing-zones">
+<h4>Listing Zones<a class="headerlink" href="#listing-zones" title="Permalink to this heading">¶</a></h4>
+<p>As <code class="docutils literal notranslate"><span class="pre">root</span></code>, to list the zones in a cluster, run the following command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">radosgw-admin<span class="w"> </span>zone<span class="w"> </span>list</span>
+</pre></div></div></section>
+<section id="getting-a-zone">
+<h4>Getting a Zone<a class="headerlink" href="#getting-a-zone" title="Permalink to this heading">¶</a></h4>
+<p>As <code class="docutils literal notranslate"><span class="pre">root</span></code>, to get the configuration of a zone, run the following command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">radosgw-admin<span class="w"> </span>zone<span class="w"> </span>get<span class="w"> </span><span class="o">[</span>--rgw-zone<span class="o">=</span>&lt;zone&gt;<span class="o">]</span></span>
+</pre></div></div><p>The <code class="docutils literal notranslate"><span class="pre">default</span></code> zone looks like this:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span> <span class="s2">&quot;domain_root&quot;</span><span class="p">:</span> <span class="s2">&quot;.rgw&quot;</span><span class="p">,</span>
+  <span class="s2">&quot;control_pool&quot;</span><span class="p">:</span> <span class="s2">&quot;.rgw.control&quot;</span><span class="p">,</span>
+  <span class="s2">&quot;gc_pool&quot;</span><span class="p">:</span> <span class="s2">&quot;.rgw.gc&quot;</span><span class="p">,</span>
+  <span class="s2">&quot;log_pool&quot;</span><span class="p">:</span> <span class="s2">&quot;.log&quot;</span><span class="p">,</span>
+  <span class="s2">&quot;intent_log_pool&quot;</span><span class="p">:</span> <span class="s2">&quot;.intent-log&quot;</span><span class="p">,</span>
+  <span class="s2">&quot;usage_log_pool&quot;</span><span class="p">:</span> <span class="s2">&quot;.usage&quot;</span><span class="p">,</span>
+  <span class="s2">&quot;user_keys_pool&quot;</span><span class="p">:</span> <span class="s2">&quot;.users&quot;</span><span class="p">,</span>
+  <span class="s2">&quot;user_email_pool&quot;</span><span class="p">:</span> <span class="s2">&quot;.users.email&quot;</span><span class="p">,</span>
+  <span class="s2">&quot;user_swift_pool&quot;</span><span class="p">:</span> <span class="s2">&quot;.users.swift&quot;</span><span class="p">,</span>
+  <span class="s2">&quot;user_uid_pool&quot;</span><span class="p">:</span> <span class="s2">&quot;.users.uid&quot;</span><span class="p">,</span>
+  <span class="s2">&quot;system_key&quot;</span><span class="p">:</span> <span class="p">{</span> <span class="s2">&quot;access_key&quot;</span><span class="p">:</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="s2">&quot;secret_key&quot;</span><span class="p">:</span> <span class="s2">&quot;&quot;</span><span class="p">},</span>
+  <span class="s2">&quot;placement_pools&quot;</span><span class="p">:</span> <span class="p">[</span>
+      <span class="p">{</span>  <span class="s2">&quot;key&quot;</span><span class="p">:</span> <span class="s2">&quot;default-placement&quot;</span><span class="p">,</span>
+         <span class="s2">&quot;val&quot;</span><span class="p">:</span> <span class="p">{</span> <span class="s2">&quot;index_pool&quot;</span><span class="p">:</span> <span class="s2">&quot;.rgw.buckets.index&quot;</span><span class="p">,</span>
+                  <span class="s2">&quot;data_pool&quot;</span><span class="p">:</span> <span class="s2">&quot;.rgw.buckets&quot;</span><span class="p">}</span>
+      <span class="p">}</span>
+    <span class="p">]</span>
+  <span class="p">}</span>
+</pre></div>
+</div>
+</section>
+<section id="setting-a-zone">
+<h4>Setting a Zone<a class="headerlink" href="#setting-a-zone" title="Permalink to this heading">¶</a></h4>
+<p>Configuring a zone involves specifying a series of Ceph Object Gateway
+pools. For consistency, we recommend using a pool prefix that is the
+same as the zone name. See
+<a class="reference external" href="http://docs.ceph.com/en/latest/rados/operations/pools/#pools">Pools</a>
+for details of configuring pools.</p>
+<p>To set a zone, create a JSON object consisting of the pools, save the
+object to a file (e.g., <code class="docutils literal notranslate"><span class="pre">zone.json</span></code>); then, run the following
+command, replacing <code class="docutils literal notranslate"><span class="pre">{zone-name}</span></code> with the name of the zone:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">radosgw-admin<span class="w"> </span>zone<span class="w"> </span><span class="nb">set</span><span class="w"> </span>--rgw-zone<span class="o">={</span>zone-name<span class="o">}</span><span class="w"> </span>--infile<span class="w"> </span>zone.json</span>
+</pre></div></div><p>Where <code class="docutils literal notranslate"><span class="pre">zone.json</span></code> is the JSON file you created.</p>
+<p>Then, as <code class="docutils literal notranslate"><span class="pre">root</span></code>, update the period:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">radosgw-admin<span class="w"> </span>period<span class="w"> </span>update<span class="w"> </span>--commit</span>
+</pre></div></div></section>
+<section id="renaming-a-zone">
+<h4>Renaming a Zone<a class="headerlink" href="#renaming-a-zone" title="Permalink to this heading">¶</a></h4>
+<p>To rename a zone, specify the zone name and the new zone name.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">radosgw-admin<span class="w"> </span>zone<span class="w"> </span>rename<span class="w"> </span>--rgw-zone<span class="o">=</span>&lt;name&gt;<span class="w"> </span>--zone-new-name<span class="o">=</span>&lt;name&gt;</span>
+</pre></div></div><p>Then, update the period:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">radosgw-admin<span class="w"> </span>period<span class="w"> </span>update<span class="w"> </span>--commit</span>
+</pre></div></div></section>
+</section>
+<section id="zonegroup-and-zone-settings">
+<h3>Zonegroup and Zone Settings<a class="headerlink" href="#zonegroup-and-zone-settings" title="Permalink to this heading">¶</a></h3>
+<p>When configuring a default zonegroup and zone, the pool name includes
+the zone name. For example:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">default.rgw.control</span></code></p></li>
+</ul>
+<p>To change the defaults, include the following settings in your Ceph
+configuration file under each <code class="docutils literal notranslate"><span class="pre">[client.radosgw.{instance-name}]</span></code>
+instance.</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 36%" />
+<col style="width: 34%" />
+<col style="width: 9%" />
+<col style="width: 22%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Name</p></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Default</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">rgw_zone</span></code></p></td>
+<td><p>The name of the zone for the
+gateway instance.</p></td>
+<td><p>String</p></td>
+<td><p>None</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">rgw_zonegroup</span></code></p></td>
+<td><p>The name of the zonegroup for
+the gateway instance.</p></td>
+<td><p>String</p></td>
+<td><p>None</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">rgw_zonegroup_root_pool</span></code></p></td>
+<td><p>The root pool for the zonegroup.</p></td>
+<td><p>String</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">.rgw.root</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">rgw_zone_root_pool</span></code></p></td>
+<td><p>The root pool for the zone.</p></td>
+<td><p>String</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">.rgw.root</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">rgw_default_zone_group_info_oid</span></code></p></td>
+<td><p>The OID for storing the default
+zonegroup. We do not recommend
+changing this setting.</p></td>
+<td><p>String</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">default.zonegroup</span></code></p></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="zone-features">
+<h2>Zone Features<a class="headerlink" href="#zone-features" title="Permalink to this heading">¶</a></h2>
+<p>Some multisite features require support from all zones before they can be enabled. Each zone lists its <code class="docutils literal notranslate"><span class="pre">supported_features</span></code>, and each zonegroup lists its <code class="docutils literal notranslate"><span class="pre">enabled_features</span></code>. Before a feature can be enabled in the zonegroup, it must be supported by all of its zones.</p>
+<p>On creation of new zones and zonegroups, all known features are supported/enabled. After upgrading an existing multisite configuration, however, new features must be enabled manually.</p>
+<section id="supported-features">
+<h3>Supported Features<a class="headerlink" href="#supported-features" title="Permalink to this heading">¶</a></h3>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 75%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Feature</p></th>
+<th class="head"><p>Release</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><a class="reference internal" href="#feature-resharding"><span class="std std-ref">Resharding</span></a></p></td>
+<td><p>Quincy</p></td>
+</tr>
+</tbody>
+</table>
+<section id="resharding">
+<span id="feature-resharding"></span><h4>Resharding<a class="headerlink" href="#resharding" title="Permalink to this heading">¶</a></h4>
+<p>This feature allows buckets to be resharded in a multisite configuration
+without interrupting the replication of their objects. When
+<code class="docutils literal notranslate"><span class="pre">rgw_dynamic_resharding</span></code> is enabled, it runs on each zone independently, and
+zones may choose different shard counts for the same bucket. When buckets are
+resharded manually with <code class="docutils literal notranslate"><span class="pre">radosgw-admin</span> <span class="pre">bucket</span> <span class="pre">reshard</span></code>, only that zone’s
+bucket is modified. A zone feature should only be marked as supported after all
+of its RGWs and OSDs have upgraded.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Dynamic resharding is not supported in multisite deployments prior to
+the Reef release.</p>
+</div>
+</section>
+</section>
+<section id="commands">
+<h3>Commands<a class="headerlink" href="#commands" title="Permalink to this heading">¶</a></h3>
+<section id="add-support-for-a-zone-feature">
+<h4>Add support for a zone feature<a class="headerlink" href="#add-support-for-a-zone-feature" title="Permalink to this heading">¶</a></h4>
+<p>On the cluster that contains the given zone:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt2">radosgw-admin<span class="w"> </span>zone<span class="w"> </span>modify<span class="w"> </span>--rgw-zone<span class="o">={</span>zone-name<span class="o">}</span><span class="w"> </span>--enable-feature<span class="o">={</span>feature-name<span class="o">}</span></span>
+<span class="prompt2">radosgw-admin<span class="w"> </span>period<span class="w"> </span>update<span class="w"> </span>--commit</span>
+</pre></div></div></section>
+<section id="remove-support-for-a-zone-feature">
+<h4>Remove support for a zone feature<a class="headerlink" href="#remove-support-for-a-zone-feature" title="Permalink to this heading">¶</a></h4>
+<p>On the cluster that contains the given zone:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt2">radosgw-admin<span class="w"> </span>zone<span class="w"> </span>modify<span class="w"> </span>--rgw-zone<span class="o">={</span>zone-name<span class="o">}</span><span class="w"> </span>--disable-feature<span class="o">={</span>feature-name<span class="o">}</span></span>
+<span class="prompt2">radosgw-admin<span class="w"> </span>period<span class="w"> </span>update<span class="w"> </span>--commit</span>
+</pre></div></div></section>
+<section id="enable-a-zonegroup-feature">
+<h4>Enable a zonegroup feature<a class="headerlink" href="#enable-a-zonegroup-feature" title="Permalink to this heading">¶</a></h4>
+<p>On any cluster in the realm:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt2">radosgw-admin<span class="w"> </span>zonegroup<span class="w"> </span>modify<span class="w"> </span>--rgw-zonegroup<span class="o">={</span>zonegroup-name<span class="o">}</span><span class="w"> </span>--enable-feature<span class="o">={</span>feature-name<span class="o">}</span></span>
+<span class="prompt2">radosgw-admin<span class="w"> </span>period<span class="w"> </span>update<span class="w"> </span>--commit</span>
+</pre></div></div></section>
+<section id="disable-a-zonegroup-feature">
+<h4>Disable a zonegroup feature<a class="headerlink" href="#disable-a-zonegroup-feature" title="Permalink to this heading">¶</a></h4>
+<p>On any cluster in the realm:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt2">radosgw-admin<span class="w"> </span>zonegroup<span class="w"> </span>modify<span class="w"> </span>--rgw-zonegroup<span class="o">={</span>zonegroup-name<span class="o">}</span><span class="w"> </span>--disable-feature<span class="o">={</span>feature-name<span class="o">}</span></span>
+<span class="prompt2">radosgw-admin<span class="w"> </span>period<span class="w"> </span>update<span class="w"> </span>--commit</span>
+</pre></div></div></section>
+</section>
+</section>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../">
+              <img class="logo" src="../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../install/">Installing Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cephadm/">Cephadm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rados/">Ceph Storage Cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cephfs/">Ceph File System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rbd/">Ceph Block Device</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../">Ceph Object Gateway</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../frontends/">HTTP Frontends</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../placement/">Pool Placement and Storage Classes</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Multisite Configuration</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#single-zone-configurations-and-multi-site-configurations">Single-zone Configurations and Multi-site Configurations</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#single-zone-configurations">Single-zone Configurations</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#varieties-of-multi-site-configuration">Varieties of Multi-site Configuration</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#diagram-replication-of-object-data-between-zones">Diagram - Replication of Object Data Between Zones</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#functional-changes-from-infernalis">Functional Changes from Infernalis</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#requirements-and-assumptions">Requirements and Assumptions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#configuring-a-master-zone">Configuring a Master Zone</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#create-a-realm">Create a Realm</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#create-a-master-zonegroup">Create a Master Zonegroup</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#create-a-master-zone">Create a Master Zone</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#delete-default-zonegroup-and-zone">Delete Default Zonegroup and Zone</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#create-a-system-user">Create a System User</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#update-the-period">Update the Period</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#update-the-ceph-configuration-file">Update the Ceph Configuration File</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#start-the-gateway">Start the Gateway</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#configuring-secondary-zones">Configuring Secondary Zones</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#pulling-the-realm-configuration">Pulling the Realm Configuration</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#creating-a-secondary-zone">Creating a Secondary Zone</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#updating-the-ceph-configuration-file">Updating the Ceph Configuration File</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#updating-the-period">Updating the Period</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#starting-the-gateway">Starting the Gateway</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#checking-synchronization-status">Checking Synchronization Status</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#verifying-an-object">Verifying an Object</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#maintenance">Maintenance</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#checking-the-sync-status">Checking the Sync Status</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#check-the-logs">Check the logs</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#changing-the-metadata-master-zone">Changing the Metadata Master Zone</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#failover-and-disaster-recovery">Failover and Disaster Recovery</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#setting-up-failover-to-the-secondary-zone">Setting Up Failover to the Secondary Zone</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#reverting-from-failover">Reverting from Failover</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#migrating-a-single-site-deployment-to-multi-site">Migrating a Single-Site Deployment to Multi-Site</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#multi-site-configuration-reference">Multi-Site Configuration Reference</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#realms">Realms</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#id1">Create a Realm</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#make-a-realm-the-default">Make a Realm the Default</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#delete-a-realm">Delete a Realm</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#get-a-realm">Get a Realm</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#set-a-realm">Set a Realm</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#list-realms">List Realms</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#list-realm-periods">List Realm Periods</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#pull-a-realm">Pull a Realm</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#rename-a-realm">Rename a Realm</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#zonegroups">Zonegroups</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#creating-a-zonegroup">Creating a Zonegroup</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#making-a-zonegroup-the-default">Making a Zonegroup the Default</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#adding-a-zone-to-a-zonegroup">Adding a Zone to a Zonegroup</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#removing-a-zone-from-a-zonegroup">Removing a Zone from a Zonegroup</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#renaming-a-zonegroup">Renaming a Zonegroup</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#deleting-a-zonegroup">Deleting a Zonegroup</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#listing-zonegroups">Listing Zonegroups</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#getting-a-zonegroup-map">Getting a Zonegroup Map</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#getting-a-zonegroup">Getting a Zonegroup</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#setting-a-zonegroup">Setting a Zonegroup</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#setting-a-zonegroup-procedure">Setting a Zonegroup - Procedure</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#setting-a-zonegroup-map">Setting a Zonegroup Map</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#zones">Zones</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#creating-a-zone">Creating a Zone</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#deleting-a-zone">Deleting a Zone</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#modifying-a-zone">Modifying a Zone</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#listing-zones">Listing Zones</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#getting-a-zone">Getting a Zone</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#setting-a-zone">Setting a Zone</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#renaming-a-zone">Renaming a Zone</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#zonegroup-and-zone-settings">Zonegroup and Zone Settings</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#zone-features">Zone Features</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#supported-features">Supported Features</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#resharding">Resharding</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#commands">Commands</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#add-support-for-a-zone-feature">Add support for a zone feature</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#remove-support-for-a-zone-feature">Remove support for a zone feature</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#enable-a-zonegroup-feature">Enable a zonegroup feature</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#disable-a-zonegroup-feature">Disable a zonegroup feature</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../multisite-sync-policy/">Multisite Sync Policy Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pools/">Configuring Pools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../config-ref/">Config Reference</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../admin/">Admin Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../s3/">S3 API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rgw-cache/">Data caching and CDN</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../swift/">Swift API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../adminops/">Admin Ops API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/">Python binding</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../nfs/">Export over NFS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../keystone/">OpenStack Keystone Integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../barbican/">OpenStack Barbican Integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../vault/">HashiCorp Vault Integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../kmip/">KMIP Integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../opa/">Open Policy Agent Integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../multitenancy/">Multi-tenancy</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../compression/">Compression</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../ldap-auth/">LDAP Authentication</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../encryption/">Server-Side Encryption</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../bucketpolicy/">Bucket Policy</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../dynamicresharding/">Dynamic bucket index resharding</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../mfa/">Multi factor authentication</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../sync-modules/">Sync Modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../notifications/">Bucket Notifications</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../layout/">Data Layout in RADOS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../STS/">STS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../STSLite/">STS Lite</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../keycloak/">Keycloak</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../session-tags/">Session Tags</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../role/">Role</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../orphans/">Orphan List and Associated Tooling</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../oidc/">OpenID Connect Provider</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../troubleshooting/">Troubleshooting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../man/8/radosgw/">Manpage radosgw</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../man/8/radosgw-admin/">Manpage radosgw-admin</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../qat-accel/">QAT Acceleration for Encryption and Compression</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../s3select/">S3-select</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../lua-scripting/">Lua Scripting</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/">Ceph Manager Daemon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dev/developer_guide/">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dev/internals/">Ceph Internals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../multisite-sync-policy/" title="Multisite Sync Policy"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../placement/" title="Pool Placement and Storage Classes"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../" >Ceph Object Gateway</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Multi-Site</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

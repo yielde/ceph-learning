@@ -1,0 +1,484 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Ceph Glossary &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/css/custom.css" />
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../genindex/" />
+    <link rel="search" title="Search" href="../search/" />
+    <link rel="prev" title="Vulnerability Management Process" href="../security/process/" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../security/process/" title="Vulnerability Management Process"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../">Ceph Documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Ceph Glossary</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="ceph-glossary">
+<h1>Ceph Glossary<a class="headerlink" href="#ceph-glossary" title="Permalink to this heading">¶</a></h1>
+<dl class="glossary">
+<dt id="term-Application">Application<a class="headerlink" href="#term-Application" title="Permalink to this term">¶</a></dt><dd><p>More properly called a <a class="reference internal" href="#term-Client"><span class="xref std std-term">client</span></a>, an application is any program
+external to Ceph that uses a Ceph Cluster to store and
+replicate data.</p>
+</dd>
+<dt id="term-BlueStore"><a class="reference internal" href="../rados/configuration/storage-devices/#rados-config-storage-devices-bluestore"><span class="std std-ref">BlueStore</span></a><a class="headerlink" href="#term-BlueStore" title="Permalink to this term">¶</a></dt><dd><p>OSD BlueStore is a storage back end used by OSD daemons, and
+was designed specifically for use with Ceph. BlueStore was
+introduced in the Ceph Kraken release. The Luminous release of
+Ceph promoted BlueStore to the default OSD back end,
+supplanting FileStore. As of the Reef release, FileStore is no
+longer available as a storage backend.</p>
+<p>BlueStore stores objects directly on Ceph block devices without
+a mounted file system.</p>
+</dd>
+<dt id="term-Bucket">Bucket<a class="headerlink" href="#term-Bucket" title="Permalink to this term">¶</a></dt><dd><p>In the context of <a class="reference internal" href="#term-RGW"><span class="xref std std-term">RGW</span></a>, a bucket is a group of objects.
+In a filesystem-based analogy in which objects are the
+counterpart of files, buckets are the counterpart of
+directories. <a class="reference internal" href="../radosgw/multisite-sync-policy/#radosgw-multisite-sync-policy"><span class="std std-ref">Multisite sync
+policies</span></a> can be set on buckets,
+to provide fine-grained control of data movement from one zone
+to another zone.</p>
+<p>The concept of the bucket has been taken from AWS S3. See also
+<a class="reference external" href="https://docs.aws.amazon.com/AmazonS3/latest/userguide/creating-buckets-s3.html">the AWS S3 page on creating buckets</a>
+and <a class="reference external" href="https://docs.aws.amazon.com/AmazonS3/latest/userguide/UsingBucket.html">the AWS S3 ‘Buckets Overview’ page</a>.</p>
+<p>OpenStack Swift uses the term “containers” for what RGW and AWS call “buckets”.
+See <a class="reference external" href="https://docs.openstack.org/swift/latest/api/object_api_v1_overview.html">the OpenStack Storage API overview page</a>.</p>
+</dd>
+<dt id="term-Ceph">Ceph<a class="headerlink" href="#term-Ceph" title="Permalink to this term">¶</a></dt><dd><p>Ceph is a distributed network storage and file system with
+distributed metadata management and POSIX semantics.</p>
+</dd>
+<dt id="term-Ceph-Block-Device">Ceph Block Device<a class="headerlink" href="#term-Ceph-Block-Device" title="Permalink to this term">¶</a></dt><dd><p>A software instrument that orchestrates the storage of
+block-based data in Ceph. Ceph Block Device (also called “RBD”,
+or “RADOS block device”) splits block-based application data
+into “chunks”. RADOS stores these chunks as objects. Ceph Block
+Device orchestrates the storage of those objects across the
+storage cluster. See also <a class="reference internal" href="#term-RBD"><span class="xref std std-term">RBD</span></a>.</p>
+</dd>
+<dt id="term-Ceph-Block-Storage">Ceph Block Storage<a class="headerlink" href="#term-Ceph-Block-Storage" title="Permalink to this term">¶</a></dt><dd><p>One of the three kinds of storage supported by Ceph (the other
+two are object storage and file storage). Ceph Block Storage is
+the block storage “product”, which refers to block-storage
+related services and capabilities when used in conjunction with
+the collection of (1) <code class="docutils literal notranslate"><span class="pre">librbd</span></code> (a python module that provides
+file-like access to <a class="reference internal" href="#term-RBD"><span class="xref std std-term">RBD</span></a> images), (2) a hypervisor such
+as QEMU or Xen, and (3) a hypervisor abstraction layer such as
+<code class="docutils literal notranslate"><span class="pre">libvirt</span></code>.</p>
+</dd>
+<dt id="term-Ceph-Client">Ceph Client<a class="headerlink" href="#term-Ceph-Client" title="Permalink to this term">¶</a></dt><dd><p>Any of the Ceph components that can access a Ceph Storage
+Cluster. This includes the Ceph Object Gateway, the Ceph Block
+Device, the Ceph File System, and their corresponding
+libraries. It also includes kernel modules, and FUSEs
+(Filesystems in USERspace).</p>
+</dd>
+<dt id="term-Ceph-Client-Libraries">Ceph Client Libraries<a class="headerlink" href="#term-Ceph-Client-Libraries" title="Permalink to this term">¶</a></dt><dd><p>The collection of libraries that can be used to interact with
+components of the Ceph Cluster.</p>
+</dd>
+<dt id="term-Ceph-Cluster-Map">Ceph Cluster Map<a class="headerlink" href="#term-Ceph-Cluster-Map" title="Permalink to this term">¶</a></dt><dd><p>See <a class="reference internal" href="#term-Cluster-Map"><span class="xref std std-term">Cluster Map</span></a></p>
+</dd>
+<dt id="term-Ceph-Dashboard">Ceph Dashboard<a class="headerlink" href="#term-Ceph-Dashboard" title="Permalink to this term">¶</a></dt><dd><p><a class="reference internal" href="../mgr/dashboard/#mgr-dashboard"><span class="std std-ref">The Ceph Dashboard</span></a> is a built-in
+web-based Ceph management and monitoring application through
+which you can inspect and administer various resources within
+the cluster. It is implemented as a <a class="reference internal" href="../mgr/#ceph-manager-daemon"><span class="std std-ref">Ceph Manager Daemon</span></a>
+module.</p>
+</dd>
+<dt id="term-Ceph-File-System">Ceph File System<a class="headerlink" href="#term-Ceph-File-System" title="Permalink to this term">¶</a></dt><dd><p>See <a class="reference internal" href="#term-CephFS"><span class="xref std std-term">CephFS</span></a></p>
+</dd>
+<dt id="term-CephFS"><a class="reference internal" href="../cephfs/#ceph-file-system"><span class="std std-ref">CephFS</span></a><a class="headerlink" href="#term-CephFS" title="Permalink to this term">¶</a></dt><dd><p>The <strong>Ceph F</strong>ile <strong>S</strong>ystem, or CephFS, is a
+POSIX-compliant file system built on top of Ceph’s distributed
+object store, RADOS.  See <a class="reference internal" href="../architecture/#arch-cephfs"><span class="std std-ref">CephFS Architecture</span></a> for more details.</p>
+</dd>
+<dt id="term-Ceph-Interim-Release">Ceph Interim Release<a class="headerlink" href="#term-Ceph-Interim-Release" title="Permalink to this term">¶</a></dt><dd><p>See <a class="reference internal" href="#term-Releases"><span class="xref std std-term">Releases</span></a>.</p>
+</dd>
+<dt id="term-Ceph-Kernel-Modules">Ceph Kernel Modules<a class="headerlink" href="#term-Ceph-Kernel-Modules" title="Permalink to this term">¶</a></dt><dd><p>The collection of kernel modules that can be used to interact
+with the Ceph Cluster (for example: <code class="docutils literal notranslate"><span class="pre">ceph.ko</span></code>, <code class="docutils literal notranslate"><span class="pre">rbd.ko</span></code>).</p>
+</dd>
+<dt id="term-Ceph-Manager"><a class="reference internal" href="../mgr/#ceph-manager-daemon"><span class="std std-ref">Ceph Manager</span></a><a class="headerlink" href="#term-Ceph-Manager" title="Permalink to this term">¶</a></dt><dd><p>The Ceph manager daemon (ceph-mgr) is a daemon that runs
+alongside monitor daemons to provide monitoring and interfacing
+to external monitoring and management systems. Since the
+Luminous release (12.x), no Ceph cluster functions properly
+unless it contains a running ceph-mgr daemon.</p>
+</dd>
+<dt id="term-Ceph-Manager-Dashboard">Ceph Manager Dashboard<a class="headerlink" href="#term-Ceph-Manager-Dashboard" title="Permalink to this term">¶</a></dt><dd><p>See <a class="reference internal" href="#term-Ceph-Dashboard"><span class="xref std std-term">Ceph Dashboard</span></a>.</p>
+</dd>
+<dt id="term-Ceph-Metadata-Server">Ceph Metadata Server<a class="headerlink" href="#term-Ceph-Metadata-Server" title="Permalink to this term">¶</a></dt><dd><p>See <a class="reference internal" href="#term-MDS"><span class="xref std std-term">MDS</span></a>.</p>
+</dd>
+<dt id="term-Ceph-Monitor">Ceph Monitor<a class="headerlink" href="#term-Ceph-Monitor" title="Permalink to this term">¶</a></dt><dd><p>A daemon that maintains a map of the state of the cluster. This
+“cluster state” includes the monitor map, the manager map, the
+OSD map, and the CRUSH map. A Ceph cluster must contain a
+minimum of three running monitors in order to be both redundant
+and highly-available. Ceph monitors and the nodes on which they
+run are often referred to as “mon”s. See <a class="reference internal" href="../rados/configuration/mon-config-ref/#monitor-config-reference"><span class="std std-ref">Monitor Config
+Reference</span></a>.</p>
+</dd>
+<dt id="term-Ceph-Node">Ceph Node<a class="headerlink" href="#term-Ceph-Node" title="Permalink to this term">¶</a></dt><dd><p>A Ceph node is a unit of the Ceph Cluster that communicates with
+other nodes in the Ceph Cluster in order to replicate and
+redistribute data. All of the nodes together are called the
+<a class="reference internal" href="#term-Ceph-Storage-Cluster"><span class="xref std std-term">Ceph Storage Cluster</span></a>. Ceph nodes include <a class="reference internal" href="#term-OSD"><span class="xref std std-term">OSD</span></a>s,
+<a class="reference internal" href="#term-Ceph-Monitor"><span class="xref std std-term">Ceph Monitor</span></a>s, <a class="reference internal" href="#term-Ceph-Manager"><span class="xref std std-term">Ceph Manager</span></a>s, and
+<a class="reference internal" href="#term-MDS"><span class="xref std std-term">MDS</span></a>es. The term “node” is usually equivalent to “host”
+in the Ceph documentation. If you have a running Ceph Cluster,
+you can list all of the nodes in it by running the command
+<code class="docutils literal notranslate"><span class="pre">ceph</span> <span class="pre">node</span> <span class="pre">ls</span> <span class="pre">all</span></code>.</p>
+</dd>
+<dt id="term-Ceph-Object-Gateway"><a class="reference internal" href="../radosgw/#object-gateway"><span class="std std-ref">Ceph Object Gateway</span></a><a class="headerlink" href="#term-Ceph-Object-Gateway" title="Permalink to this term">¶</a></dt><dd><p>An object storage interface built on top of librados. Ceph
+Object Gateway provides a RESTful gateway between applications
+and Ceph storage clusters.</p>
+</dd>
+<dt id="term-Ceph-Object-Storage">Ceph Object Storage<a class="headerlink" href="#term-Ceph-Object-Storage" title="Permalink to this term">¶</a></dt><dd><p>See <a class="reference internal" href="#term-Ceph-Object-Store"><span class="xref std std-term">Ceph Object Store</span></a>.</p>
+</dd>
+<dt id="term-Ceph-Object-Store">Ceph Object Store<a class="headerlink" href="#term-Ceph-Object-Store" title="Permalink to this term">¶</a></dt><dd><p>A Ceph Object Store consists of a <a class="reference internal" href="#term-Ceph-Storage-Cluster"><span class="xref std std-term">Ceph Storage Cluster</span></a>
+and a <a class="reference internal" href="#term-Ceph-Object-Gateway"><span class="xref std std-term">Ceph Object Gateway</span></a> (RGW).</p>
+</dd>
+<dt id="term-Ceph-OSD"><a class="reference internal" href="../rados/configuration/storage-devices/#rados-configuration-storage-devices-ceph-osd"><span class="std std-ref">Ceph OSD</span></a><a class="headerlink" href="#term-Ceph-OSD" title="Permalink to this term">¶</a></dt><dd><p>Ceph <strong>O</strong>bject <strong>S</strong>torage <strong>D</strong>aemon. The Ceph OSD
+software, which interacts with logical disks (<a class="reference internal" href="#term-OSD"><span class="xref std std-term">OSD</span></a>).
+Around 2013, there was an attempt by “research and industry”
+(Sage’s own words) to insist on using the term “OSD” to mean
+only “Object Storage Device”, but the Ceph community has always
+persisted in using the term to mean “Object Storage Daemon” and
+no less an authority than Sage Weil himself confirms in
+November of 2022 that “Daemon is more accurate for how Ceph is
+built” (private correspondence between Zac Dover and Sage Weil,
+07 Nov 2022).</p>
+</dd>
+<dt id="term-Ceph-OSD-Daemon">Ceph OSD Daemon<a class="headerlink" href="#term-Ceph-OSD-Daemon" title="Permalink to this term">¶</a></dt><dd><p>See <a class="reference internal" href="#term-Ceph-OSD"><span class="xref std std-term">Ceph OSD</span></a>.</p>
+</dd>
+<dt id="term-Ceph-OSD-Daemons">Ceph OSD Daemons<a class="headerlink" href="#term-Ceph-OSD-Daemons" title="Permalink to this term">¶</a></dt><dd><p>See <a class="reference internal" href="#term-Ceph-OSD"><span class="xref std std-term">Ceph OSD</span></a>.</p>
+</dd>
+<dt id="term-Ceph-Platform">Ceph Platform<a class="headerlink" href="#term-Ceph-Platform" title="Permalink to this term">¶</a></dt><dd><p>All Ceph software, which includes any piece of code hosted at
+<a class="reference external" href="https://github.com/ceph">https://github.com/ceph</a>.</p>
+</dd>
+<dt id="term-Ceph-Point-Release">Ceph Point Release<a class="headerlink" href="#term-Ceph-Point-Release" title="Permalink to this term">¶</a></dt><dd><p>See <a class="reference internal" href="#term-Releases"><span class="xref std std-term">Releases</span></a>.</p>
+</dd>
+<dt id="term-Ceph-Project">Ceph Project<a class="headerlink" href="#term-Ceph-Project" title="Permalink to this term">¶</a></dt><dd><p>The aggregate term for the people, software, mission and
+infrastructure of Ceph.</p>
+</dd>
+<dt id="term-Ceph-Release">Ceph Release<a class="headerlink" href="#term-Ceph-Release" title="Permalink to this term">¶</a></dt><dd><p>See <a class="reference internal" href="#term-Releases"><span class="xref std std-term">Releases</span></a>.</p>
+</dd>
+<dt id="term-Ceph-Release-Candidate">Ceph Release Candidate<a class="headerlink" href="#term-Ceph-Release-Candidate" title="Permalink to this term">¶</a></dt><dd><p>See <a class="reference internal" href="#term-Releases"><span class="xref std std-term">Releases</span></a>.</p>
+</dd>
+<dt id="term-Ceph-Stable-Release">Ceph Stable Release<a class="headerlink" href="#term-Ceph-Stable-Release" title="Permalink to this term">¶</a></dt><dd><p>See <a class="reference internal" href="#term-Releases"><span class="xref std std-term">Releases</span></a>.</p>
+</dd>
+<dt id="term-Ceph-Stack">Ceph Stack<a class="headerlink" href="#term-Ceph-Stack" title="Permalink to this term">¶</a></dt><dd><p>A collection of two or more components of Ceph.</p>
+</dd>
+<dt id="term-Ceph-Storage-Cluster"><a class="reference internal" href="../architecture/#arch-ceph-storage-cluster"><span class="std std-ref">Ceph Storage Cluster</span></a><a class="headerlink" href="#term-Ceph-Storage-Cluster" title="Permalink to this term">¶</a></dt><dd><p>The collection of <a class="reference internal" href="#term-Ceph-Monitor"><span class="xref std std-term">Ceph Monitor</span></a>s, <a class="reference internal" href="#term-Ceph-Manager"><span class="xref std std-term">Ceph
+Manager</span></a>s, <a class="reference internal" href="#term-Ceph-Metadata-Server"><span class="xref std std-term">Ceph Metadata Server</span></a>s, and <a class="reference internal" href="#term-OSD"><span class="xref std std-term">OSD</span></a>s
+that work together to store and replicate data for use by
+applications, Ceph Users, and <a class="reference internal" href="#term-Ceph-Client"><span class="xref std std-term">Ceph Client</span></a>s. Ceph
+Storage Clusters receive data from <a class="reference internal" href="#term-Ceph-Client"><span class="xref std std-term">Ceph Client</span></a>s.</p>
+</dd>
+<dt id="term-CephX">CephX<a class="headerlink" href="#term-CephX" title="Permalink to this term">¶</a></dt><dd><p>The Ceph authentication protocol. CephX authenticates users and
+daemons. CephX operates like Kerberos, but it has no single
+point of failure. See the <a class="reference internal" href="../architecture/#arch-high-availability-authentication"><span class="std std-ref">High-availability
+Authentication section</span></a>
+of the Architecture document and the <a class="reference internal" href="../rados/configuration/auth-config-ref/#rados-cephx-config-ref"><span class="std std-ref">CephX Configuration
+Reference</span></a>.</p>
+</dd>
+<dt id="term-Client">Client<a class="headerlink" href="#term-Client" title="Permalink to this term">¶</a></dt><dd><p>A client is any program external to Ceph that uses a Ceph
+Cluster to store and replicate data.</p>
+</dd>
+<dt id="term-Cloud-Platforms">Cloud Platforms<a class="headerlink" href="#term-Cloud-Platforms" title="Permalink to this term">¶</a></dt><dt id="term-Cloud-Stacks">Cloud Stacks<a class="headerlink" href="#term-Cloud-Stacks" title="Permalink to this term">¶</a></dt><dd><p>Third party cloud provisioning platforms such as OpenStack,
+CloudStack, OpenNebula, and Proxmox VE.</p>
+</dd>
+<dt id="term-Cluster-Map">Cluster Map<a class="headerlink" href="#term-Cluster-Map" title="Permalink to this term">¶</a></dt><dd><p>The set of maps consisting of the monitor map, OSD map, PG map,
+MDS map, and CRUSH map, which together report the state of the
+Ceph cluster. See <a class="reference internal" href="../architecture/#architecture-cluster-map"><span class="std std-ref">the “Cluster Map” section of the
+Architecture document</span></a> for details.</p>
+</dd>
+<dt id="term-CRUSH">CRUSH<a class="headerlink" href="#term-CRUSH" title="Permalink to this term">¶</a></dt><dd><p>Controlled Replication Under Scalable Hashing. It is the
+algorithm Ceph uses to compute object storage locations.</p>
+</dd>
+<dt id="term-CRUSH-rule">CRUSH rule<a class="headerlink" href="#term-CRUSH-rule" title="Permalink to this term">¶</a></dt><dd><p>The CRUSH data placement rule that applies to a particular
+pool(s).</p>
+</dd>
+<dt id="term-DAS">DAS<a class="headerlink" href="#term-DAS" title="Permalink to this term">¶</a></dt><dd><p><strong>D</strong>irect-<strong>A</strong>ttached <strong>S</strong>torage. Storage that is
+attached directly to the computer accessing it, without passing
+through a network.  Contrast with NAS and SAN.</p>
+</dd>
+<dt id="term-Dashboard"><a class="reference internal" href="../mgr/dashboard/#mgr-dashboard"><span class="std std-ref">Dashboard</span></a><a class="headerlink" href="#term-Dashboard" title="Permalink to this term">¶</a></dt><dd><p>A built-in web-based Ceph management and monitoring application
+to administer various aspects and objects of the cluster. The
+dashboard is implemented as a Ceph Manager module. See
+<a class="reference internal" href="../mgr/dashboard/#mgr-dashboard"><span class="std std-ref">Ceph Dashboard</span></a> for more details.</p>
+</dd>
+<dt id="term-Dashboard-Module">Dashboard Module<a class="headerlink" href="#term-Dashboard-Module" title="Permalink to this term">¶</a></dt><dd><p>Another name for <a class="reference internal" href="#term-Dashboard"><span class="xref std std-term">Dashboard</span></a>.</p>
+</dd>
+<dt id="term-Dashboard-Plugin">Dashboard Plugin<a class="headerlink" href="#term-Dashboard-Plugin" title="Permalink to this term">¶</a></dt><dt id="term-filestore">filestore<a class="headerlink" href="#term-filestore" title="Permalink to this term">¶</a></dt><dd><p>A back end for OSD daemons, where a Journal is needed and files
+are written to the filesystem.</p>
+</dd>
+<dt id="term-FQDN">FQDN<a class="headerlink" href="#term-FQDN" title="Permalink to this term">¶</a></dt><dd><p><strong>F</strong>ully <strong>Q</strong>ualified <strong>D</strong>omain <strong>N</strong>ame. A domain name
+that is applied to a node in a network and that specifies the
+node’s exact location in the tree hierarchy of the DNS.</p>
+<p>In the context of Ceph cluster administration, FQDNs are often
+applied to hosts. In this documentation, the term “FQDN” is
+used mostly to distinguish between FQDNs and relatively simpler
+hostnames, which do not specify the exact location of the host
+in the tree hierarchy of the DNS but merely name the host.</p>
+</dd>
+<dt id="term-Host">Host<a class="headerlink" href="#term-Host" title="Permalink to this term">¶</a></dt><dd><p>Any single machine or server in a Ceph Cluster. See <a class="reference internal" href="#term-Ceph-Node"><span class="xref std std-term">Ceph
+Node</span></a>.</p>
+</dd>
+<dt id="term-Hybrid-OSD">Hybrid OSD<a class="headerlink" href="#term-Hybrid-OSD" title="Permalink to this term">¶</a></dt><dd><p>Refers to an OSD that has both HDD and SSD drives.</p>
+</dd>
+<dt id="term-LVM-tags">LVM tags<a class="headerlink" href="#term-LVM-tags" title="Permalink to this term">¶</a></dt><dd><p>Extensible metadata for LVM volumes and groups. It is used to
+store Ceph-specific information about devices and its
+relationship with OSDs.</p>
+</dd>
+<dt id="term-MDS"><a class="reference internal" href="../cephfs/add-remove-mds/#cephfs-add-remote-mds"><span class="std std-ref">MDS</span></a><a class="headerlink" href="#term-MDS" title="Permalink to this term">¶</a></dt><dd><p>The Ceph <strong>M</strong>eta<strong>D</strong>ata <strong>S</strong>erver daemon. Also referred
+to as “ceph-mds”. The Ceph metadata server daemon must be
+running in any Ceph cluster that runs the CephFS file system.
+The MDS stores all filesystem metadata.</p>
+</dd>
+<dt id="term-MGR">MGR<a class="headerlink" href="#term-MGR" title="Permalink to this term">¶</a></dt><dd><p>The Ceph manager software, which collects all the state from
+the whole cluster in one place.</p>
+</dd>
+<dt id="term-MON">MON<a class="headerlink" href="#term-MON" title="Permalink to this term">¶</a></dt><dd><p>The Ceph monitor software.</p>
+</dd>
+<dt id="term-Node">Node<a class="headerlink" href="#term-Node" title="Permalink to this term">¶</a></dt><dd><p>See <a class="reference internal" href="#term-Ceph-Node"><span class="xref std std-term">Ceph Node</span></a>.</p>
+</dd>
+<dt id="term-Object-Storage-Device">Object Storage Device<a class="headerlink" href="#term-Object-Storage-Device" title="Permalink to this term">¶</a></dt><dd><p>See <a class="reference internal" href="#term-OSD"><span class="xref std std-term">OSD</span></a>.</p>
+</dd>
+<dt id="term-OSD">OSD<a class="headerlink" href="#term-OSD" title="Permalink to this term">¶</a></dt><dd><p>Probably <a class="reference internal" href="#term-Ceph-OSD"><span class="xref std std-term">Ceph OSD</span></a>, but not necessarily. Sometimes
+(especially in older correspondence, and especially in
+documentation that is not written specifically for Ceph), “OSD”
+means “<strong>O</strong>bject <strong>S</strong>torage <strong>D</strong>evice”, which refers to a
+physical or logical storage unit (for example: LUN). The Ceph
+community has always used the term “OSD” to refer to
+<a class="reference internal" href="#term-Ceph-OSD-Daemon"><span class="xref std std-term">Ceph OSD Daemon</span></a> despite an industry push in the
+mid-2010s to insist that “OSD” should refer to “Object Storage
+Device”, so it is important to know which meaning is intended.</p>
+</dd>
+<dt id="term-OSD-fsid">OSD fsid<a class="headerlink" href="#term-OSD-fsid" title="Permalink to this term">¶</a></dt><dd><p>This is a unique identifier used to identify an OSD. It is
+found in the OSD path in a file called <code class="docutils literal notranslate"><span class="pre">osd_fsid</span></code>. The
+term <code class="docutils literal notranslate"><span class="pre">fsid</span></code> is used interchangeably with <code class="docutils literal notranslate"><span class="pre">uuid</span></code></p>
+</dd>
+<dt id="term-OSD-id">OSD id<a class="headerlink" href="#term-OSD-id" title="Permalink to this term">¶</a></dt><dd><p>The integer that defines an OSD. It is generated by the
+monitors during the creation of each OSD.</p>
+</dd>
+<dt id="term-OSD-uuid">OSD uuid<a class="headerlink" href="#term-OSD-uuid" title="Permalink to this term">¶</a></dt><dd><p>This is the unique identifier of an OSD. This term is used
+interchangeably with <code class="docutils literal notranslate"><span class="pre">fsid</span></code></p>
+</dd>
+<dt id="term-Period">Period<a class="headerlink" href="#term-Period" title="Permalink to this term">¶</a></dt><dd><p>In the context of <a class="reference internal" href="#term-RGW"><span class="xref std std-term">RGW</span></a>, a period is the configuration
+state of the <a class="reference internal" href="#term-Realm"><span class="xref std std-term">Realm</span></a>. The period stores the configuration
+state of a multi-site configuration. When the period is updated,
+the “epoch” is said thereby to have been changed.</p>
+</dd>
+<dt id="term-Placement-Groups-PGs">Placement Groups (PGs)<a class="headerlink" href="#term-Placement-Groups-PGs" title="Permalink to this term">¶</a></dt><dd><p>Placement groups (PGs) are subsets of each logical Ceph pool.
+Placement groups perform the function of placing objects (as a
+group) into OSDs. Ceph manages data internally at
+placement-group granularity: this scales better than would
+managing individual (and therefore more numerous) RADOS
+objects. A cluster that has a larger number of placement groups
+(for example, 100 per OSD) is better balanced than an otherwise
+identical cluster with a smaller number of placement groups.</p>
+<p>Ceph’s internal RADOS objects are each mapped to a specific
+placement group, and each placement group belongs to exactly
+one Ceph pool.</p>
+</dd>
+<dt id="term-Pool"><a class="reference internal" href="../rados/operations/pools/#rados-pools"><span class="std std-ref">Pool</span></a><a class="headerlink" href="#term-Pool" title="Permalink to this term">¶</a></dt><dd><p>A pool is a logical partition used to store objects.</p>
+</dd>
+<dt id="term-Pools">Pools<a class="headerlink" href="#term-Pools" title="Permalink to this term">¶</a></dt><dd><p>See <a class="reference internal" href="#term-Pool"><span class="xref std std-term">pool</span></a>.</p>
+</dd>
+<dt id="term-RADOS">RADOS<a class="headerlink" href="#term-RADOS" title="Permalink to this term">¶</a></dt><dd><p><strong>R</strong>eliable <strong>A</strong>utonomic <strong>D</strong>istributed <strong>O</strong>bject
+<strong>S</strong>tore. RADOS is the object store that provides a scalable
+service for variably-sized objects. The RADOS object store is
+the core component of a Ceph cluster.  <a class="reference external" href="https://ceph.io/en/news/blog/2009/the-rados-distributed-object-store/">This blog post from
+2009</a>
+provides a beginner’s introduction to RADOS. Readers interested
+in a deeper understanding of RADOS are directed to <a class="reference external" href="https://ceph.io/assets/pdfs/weil-rados-pdsw07.pdf">RADOS: A
+Scalable, Reliable Storage Service for Petabyte-scale Storage
+Clusters</a>.</p>
+</dd>
+<dt id="term-RADOS-Cluster">RADOS Cluster<a class="headerlink" href="#term-RADOS-Cluster" title="Permalink to this term">¶</a></dt><dd><p>A proper subset of the Ceph Cluster consisting of
+<a class="reference internal" href="#term-OSD"><span class="xref std std-term">OSD</span></a>s, <a class="reference internal" href="#term-Ceph-Monitor"><span class="xref std std-term">Ceph Monitor</span></a>s, and <a class="reference internal" href="#term-Ceph-Manager"><span class="xref std std-term">Ceph
+Manager</span></a>s.</p>
+</dd>
+<dt id="term-RADOS-Gateway">RADOS Gateway<a class="headerlink" href="#term-RADOS-Gateway" title="Permalink to this term">¶</a></dt><dd><p>See <a class="reference internal" href="#term-RGW"><span class="xref std std-term">RGW</span></a>.</p>
+</dd>
+<dt id="term-RBD">RBD<a class="headerlink" href="#term-RBD" title="Permalink to this term">¶</a></dt><dd><p>The block storage component of Ceph. Also called “RADOS Block
+Device” or <a class="reference internal" href="#term-Ceph-Block-Device"><span class="xref std std-term">Ceph Block Device</span></a>.</p>
+</dd>
+<dt id="term-Realm"><a class="reference internal" href="../radosgw/multisite/#rgw-realms"><span class="std std-ref">Realm</span></a><a class="headerlink" href="#term-Realm" title="Permalink to this term">¶</a></dt><dd><p>In the context of RADOS Gateway (RGW), a realm is a globally
+unique namespace that consists of one or more zonegroups.</p>
+</dd>
+<dt id="term-Releases">Releases<a class="headerlink" href="#term-Releases" title="Permalink to this term">¶</a></dt><dd><dl class="simple">
+<dt>Ceph Interim Release</dt><dd><p>A version of Ceph that has not yet been put through
+quality assurance testing. May contain new features.</p>
+</dd>
+<dt>Ceph Point Release</dt><dd><p>Any ad hoc release that includes only bug fixes and
+security fixes.</p>
+</dd>
+<dt>Ceph Release</dt><dd><p>Any distinct numbered version of Ceph.</p>
+</dd>
+<dt>Ceph Release Candidate</dt><dd><p>A major version of Ceph that has undergone initial
+quality assurance testing and is ready for beta
+testers.</p>
+</dd>
+<dt>Ceph Stable Release</dt><dd><p>A major version of Ceph where all features from the
+preceding interim releases have been put through
+quality assurance testing successfully.</p>
+</dd>
+</dl>
+</dd>
+<dt id="term-Reliable-Autonomic-Distributed-Object-Store">Reliable Autonomic Distributed Object Store<a class="headerlink" href="#term-Reliable-Autonomic-Distributed-Object-Store" title="Permalink to this term">¶</a></dt><dd><p>The core set of storage software which stores the user’s data
+(MON+OSD). See also <a class="reference internal" href="#term-RADOS"><span class="xref std std-term">RADOS</span></a>.</p>
+</dd>
+<dt id="term-RGW"><a class="reference internal" href="../radosgw/#object-gateway"><span class="std std-ref">RGW</span></a><a class="headerlink" href="#term-RGW" title="Permalink to this term">¶</a></dt><dd><p><strong>R</strong>ADOS <strong>G</strong>ate <strong>W</strong>ay.</p>
+<p>The component of Ceph that provides a gateway to both the
+Amazon S3 RESTful API and the OpenStack Swift API. Also called
+“RADOS Gateway” and “Ceph Object Gateway”.</p>
+</dd>
+<dt id="term-scrubs">scrubs<a class="headerlink" href="#term-scrubs" title="Permalink to this term">¶</a></dt><dd><p>The processes by which Ceph ensures data integrity. During the
+process of scrubbing, Ceph generates a catalog of all objects
+in a placement group, then ensures that none of the objects are
+missing or mismatched by comparing each primary object against
+its replicas, which are stored across other OSDs. Any PG
+is determined to have a copy of an object that is different
+than the other copies or is missing entirely is marked
+“inconsistent” (that is, the PG is marked “inconsistent”).</p>
+<p>There are two kinds of scrubbing: light scrubbing and deep
+scrubbing (also called “normal scrubbing” and “deep scrubbing”,
+respectively). Light scrubbing is performed daily and does
+nothing more than confirm that a given object exists and that
+its metadata is correct. Deep scrubbing is performed weekly and
+reads the data and uses checksums to ensure data integrity.</p>
+<p>See <a class="reference internal" href="../rados/configuration/osd-config-ref/#rados-config-scrubbing"><span class="std std-ref">Scrubbing</span></a> in the RADOS OSD
+Configuration Reference Guide and page 141 of <em>Mastering Ceph,
+second edition</em> (Fisk, Nick. 2019).</p>
+</dd>
+<dt id="term-secrets">secrets<a class="headerlink" href="#term-secrets" title="Permalink to this term">¶</a></dt><dd><p>Secrets are credentials used to perform digital authentication
+whenever privileged users must access systems that require
+authentication. Secrets can be passwords, API keys, tokens, SSH
+keys, private certificates, or encryption keys.</p>
+</dd>
+<dt id="term-SDS">SDS<a class="headerlink" href="#term-SDS" title="Permalink to this term">¶</a></dt><dd><p>Software-defined storage.</p>
+</dd>
+<dt id="term-systemd-oneshot">systemd oneshot<a class="headerlink" href="#term-systemd-oneshot" title="Permalink to this term">¶</a></dt><dd><p>A systemd <code class="docutils literal notranslate"><span class="pre">type</span></code> where a command is defined in <code class="docutils literal notranslate"><span class="pre">ExecStart</span></code>
+which will exit upon completion (it is not intended to
+daemonize)</p>
+</dd>
+<dt id="term-Teuthology">Teuthology<a class="headerlink" href="#term-Teuthology" title="Permalink to this term">¶</a></dt><dd><p>The collection of software that performs scripted tests on Ceph.</p>
+</dd>
+<dt id="term-User">User<a class="headerlink" href="#term-User" title="Permalink to this term">¶</a></dt><dd><p>An individual or a system actor (for example, an application)
+that uses Ceph clients to interact with the <a class="reference internal" href="#term-Ceph-Storage-Cluster"><span class="xref std std-term">Ceph Storage
+Cluster</span></a>. See <a class="reference internal" href="../rados/operations/user-management/#rados-ops-user"><span class="std std-ref">User</span></a> and <a class="reference internal" href="../rados/operations/user-management/#user-management"><span class="std std-ref">User
+Management</span></a>.</p>
+</dd>
+<dt id="term-Zone">Zone<a class="headerlink" href="#term-Zone" title="Permalink to this term">¶</a></dt><dd><p>In the context of <a class="reference internal" href="#term-RGW"><span class="xref std std-term">RGW</span></a>, a zone is a logical group that
+consists of one or more <a class="reference internal" href="#term-RGW"><span class="xref std std-term">RGW</span></a> instances.  A zone’s
+configuration state is stored in the <a class="reference internal" href="#term-Period"><span class="xref std std-term">period</span></a>. See
+<a class="reference internal" href="../radosgw/multisite/#radosgw-zones"><span class="std std-ref">Zones</span></a>.</p>
+</dd>
+</dl>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../">
+              <img class="logo" src="../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../install/">Installing Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../cephadm/">Cephadm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../rados/">Ceph Storage Cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../cephfs/">Ceph File System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../rbd/">Ceph Block Device</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../radosgw/">Ceph Object Gateway</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../mgr/">Ceph Manager Daemon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../mgr/dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../dev/developer_guide/">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../dev/internals/">Ceph Internals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../security/">Security</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../security/process/" title="Vulnerability Management Process"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../">Ceph Documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Ceph Glossary</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

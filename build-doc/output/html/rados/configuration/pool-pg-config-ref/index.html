@@ -1,0 +1,633 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Pool, PG and CRUSH Config Reference &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/css/custom.css" />
+    <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/jquery.js"></script>
+    <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../../genindex/" />
+    <link rel="search" title="Search" href="../../../search/" />
+    <link rel="next" title="Messaging" href="../ms-ref/" />
+    <link rel="prev" title="Journal Config Reference" href="../journal-ref/" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../ms-ref/" title="Messaging"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../journal-ref/" title="Journal Config Reference"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../" >Ceph Storage Cluster</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../" accesskey="U">Configuration</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Pool, PG and CRUSH Config Reference</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="pool-pg-and-crush-config-reference">
+<h1>Pool, PG and CRUSH Config Reference<a class="headerlink" href="#pool-pg-and-crush-config-reference" title="Permalink to this heading">¶</a></h1>
+<p id="index-0">The number of placement groups that the CRUSH algorithm assigns to each pool is
+determined by the values of variables in the centralized configuration database
+in the monitor cluster.</p>
+<p>Both containerized deployments of Ceph (deployments made using <code class="docutils literal notranslate"><span class="pre">cephadm</span></code> or
+Rook) and non-containerized deployments of Ceph rely on the values in the
+central configuration database in the monitor cluster to assign placement
+groups to pools.</p>
+<section id="example-commands">
+<h2>Example Commands<a class="headerlink" href="#example-commands" title="Permalink to this heading">¶</a></h2>
+<p>To see the value of the variable that governs the number of placement groups in a given pool, run a command of the following form:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><style type="text/css">
+span.prompt1:before {
+  content: "$ ";
+}
+</style><span class="prompt1">ceph<span class="w"> </span>config<span class="w"> </span>get<span class="w"> </span>osd<span class="w"> </span>osd_pool_default_pg_num</span>
+</pre></div></div><p>To set the value of the variable that governs the number of placement groups in a given pool, run a command of the following form:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>config<span class="w"> </span><span class="nb">set</span><span class="w"> </span>osd<span class="w"> </span>osd_pool_default_pg_num</span>
+</pre></div></div></section>
+<section id="manual-tuning">
+<h2>Manual Tuning<a class="headerlink" href="#manual-tuning" title="Permalink to this heading">¶</a></h2>
+<p>In some cases, it might be advisable to override some of the defaults. For
+example, you might determine that it is wise to set a pool’s replica size and
+to override the default number of placement groups in the pool. You can set
+these values when running <a class="reference external" href="../../operations/pools">pool</a> commands.</p>
+</section>
+<section id="see-also">
+<h2>See Also<a class="headerlink" href="#see-also" title="Permalink to this heading">¶</a></h2>
+<p>See <a class="reference internal" href="../../operations/placement-groups/#pg-autoscaler"><span class="std std-ref">Autoscaling placement groups</span></a>.</p>
+<div class="highlight-ini notranslate"><div class="highlight"><pre><span></span><span class="k">[global]</span>
+
+<span class="w">	</span><span class="c1"># By default, Ceph makes 3 replicas of RADOS objects. If you want to maintain four</span>
+<span class="w">	</span><span class="c1"># copies of an object the default value--a primary copy and three replica</span>
+<span class="w">	</span><span class="c1"># copies--reset the default values as shown in &#39;osd_pool_default_size&#39;.</span>
+<span class="w">	</span><span class="c1"># If you want to allow Ceph to write a lesser number of copies in a degraded</span>
+<span class="w">	</span><span class="c1"># state, set &#39;osd_pool_default_min_size&#39; to a number less than the</span>
+<span class="w">	</span><span class="c1"># &#39;osd_pool_default_size&#39; value.</span>
+
+<span class="w">	</span><span class="na">osd_pool_default_size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">3</span><span class="w">  </span><span class="c1"># Write an object 3 times.</span>
+<span class="w">	</span><span class="na">osd_pool_default_min_size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">2</span><span class="w"> </span><span class="c1"># Allow writing two copies in a degraded state.</span>
+
+<span class="w">	</span><span class="c1"># Ensure you have a realistic number of placement groups. We recommend</span>
+<span class="w">	</span><span class="c1"># approximately 100 per OSD. E.g., total number of OSDs multiplied by 100</span>
+<span class="w">	</span><span class="c1"># divided by the number of replicas (i.e., osd pool default size). So for</span>
+<span class="w">	</span><span class="c1"># 10 OSDs and osd pool default size = 4, we&#39;d recommend approximately</span>
+<span class="w">	</span><span class="c1"># (100 * 10) / 4 = 250.</span>
+<span class="w">        </span><span class="c1"># always use the nearest power of 2</span>
+
+<span class="w">	</span><span class="na">osd_pool_default_pg_num</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">256</span>
+<span class="w">	</span><span class="na">osd_pool_default_pgp_num</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">256</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">mon_max_pool_pg_num</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The maximum number of placement groups per pool.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">65536</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">mon_pg_create_interval</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Number of seconds between PG creation in the same
+Ceph OSD Daemon.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Float</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">30.0</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">mon_pg_stuck_threshold</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Number of seconds after which PGs can be considered as
+being stuck.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>32-bit Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">300</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">mon_pg_min_inactive</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Raise <code class="docutils literal notranslate"><span class="pre">HEALTH_ERR</span></code> if the count of PGs that have been
+inactive longer than the <code class="docutils literal notranslate"><span class="pre">mon_pg_stuck_threshold</span></code> exceeds this
+setting. A non-positive number means disabled, never go into ERR.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">1</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">mon_pg_warn_min_per_osd</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Raise <code class="docutils literal notranslate"><span class="pre">HEALTH_WARN</span></code> if the average number
+of PGs per <code class="docutils literal notranslate"><span class="pre">in</span></code> OSD is under this number. A non-positive number
+disables this.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">30</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">mon_pg_warn_min_objects</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Do not warn if the total number of RADOS objects in cluster is below
+this number</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">1000</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">mon_pg_warn_min_pool_objects</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Do not warn on pools whose RADOS object count is below this number</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">1000</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">mon_pg_check_down_all_threshold</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Percentage threshold of <code class="docutils literal notranslate"><span class="pre">down</span></code> OSDs above which we check all PGs
+for stale ones.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Float</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">0.5</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">mon_pg_warn_max_object_skew</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Raise <code class="docutils literal notranslate"><span class="pre">HEALTH_WARN</span></code> if the average RADOS object count per PG
+of any pool is greater than <code class="docutils literal notranslate"><span class="pre">mon_pg_warn_max_object_skew</span></code> times
+the average RADOS object count per PG of all pools. Zero or a non-positive
+number disables this. Note that this option applies to <code class="docutils literal notranslate"><span class="pre">ceph-mgr</span></code> daemons.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Float</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">10</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">mon_delta_reset_interval</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Seconds of inactivity before we reset the PG delta to 0. We keep
+track of the delta of the used space of each pool, so, for
+example, it would be easier for us to understand the progress of
+recovery or the performance of cache tier. But if there’s no
+activity reported for a certain pool, we just reset the history of
+deltas of that pool.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">10</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">mon_osd_max_op_age</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Maximum op age before we get concerned (make it a power of 2).
+<code class="docutils literal notranslate"><span class="pre">HEALTH_WARN</span></code> will be raised if a request has been blocked longer
+than this limit.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Float</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">32.0</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">osd_pg_bits</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Placement group bits per Ceph OSD Daemon.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>32-bit Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">6</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">osd_pgp_bits</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The number of bits per Ceph OSD Daemon for PGPs.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>32-bit Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">6</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">osd_crush_chooseleaf_type</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The bucket type to use for <code class="docutils literal notranslate"><span class="pre">chooseleaf</span></code> in a CRUSH rule. Uses
+ordinal rank rather than name.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>32-bit Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">1</span></code>. Typically a host containing one or more Ceph OSD Daemons.</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">osd_crush_initial_weight</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The initial CRUSH weight for newly added OSDs.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Double</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">the</span> <span class="pre">size</span> <span class="pre">of</span> <span class="pre">a</span> <span class="pre">newly</span> <span class="pre">added</span> <span class="pre">OSD</span> <span class="pre">in</span> <span class="pre">TB</span></code>. By default, the initial CRUSH
+weight for a newly added OSD is set to its device size in TB.
+See <a class="reference external" href="../../operations/crush-map#weightingbucketitems">Weighting Bucket Items</a> for details.</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">osd_pool_default_crush_rule</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The default CRUSH rule to use when creating a replicated pool.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>8-bit Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">-1</span></code>, which means “pick the rule with the lowest numerical ID and
+use that”.  This is to make pool creation work in the absence of rule 0.</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">osd_pool_erasure_code_stripe_unit</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Sets the default size, in bytes, of a chunk of an object
+stripe for erasure coded pools. Every object of size S
+will be stored as N stripes, with each data chunk
+receiving <code class="docutils literal notranslate"><span class="pre">stripe</span> <span class="pre">unit</span></code> bytes. Each stripe of <code class="docutils literal notranslate"><span class="pre">N</span> <span class="pre">*</span>
+<span class="pre">stripe</span> <span class="pre">unit</span></code> bytes will be encoded/decoded
+individually. This option can is overridden by the
+<code class="docutils literal notranslate"><span class="pre">stripe_unit</span></code> setting in an erasure code profile.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Unsigned 32-bit Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">4096</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">osd_pool_default_size</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Sets the number of replicas for objects in the pool. The default
+value is the same as
+<code class="docutils literal notranslate"><span class="pre">ceph</span> <span class="pre">osd</span> <span class="pre">pool</span> <span class="pre">set</span> <span class="pre">{pool-name}</span> <span class="pre">size</span> <span class="pre">{size}</span></code>.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>32-bit Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">3</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">osd_pool_default_min_size</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Sets the minimum number of written replicas for objects in the
+pool in order to acknowledge a write operation to the client.  If
+minimum is not met, Ceph will not acknowledge the write to the
+client, <strong>which may result in data loss</strong>. This setting ensures
+a minimum number of replicas when operating in <code class="docutils literal notranslate"><span class="pre">degraded</span></code> mode.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>32-bit Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">0</span></code>, which means no particular minimum. If <code class="docutils literal notranslate"><span class="pre">0</span></code>,
+minimum is <code class="docutils literal notranslate"><span class="pre">size</span> <span class="pre">-</span> <span class="pre">(size</span> <span class="pre">/</span> <span class="pre">2)</span></code>.</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">osd_pool_default_pg_num</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The default number of placement groups for a pool. The default
+value is the same as <code class="docutils literal notranslate"><span class="pre">pg_num</span></code> with <code class="docutils literal notranslate"><span class="pre">mkpool</span></code>.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>32-bit Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">32</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">osd_pool_default_pgp_num</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The default number of placement groups for placement for a pool.
+The default value is the same as <code class="docutils literal notranslate"><span class="pre">pgp_num</span></code> with <code class="docutils literal notranslate"><span class="pre">mkpool</span></code>.
+PG and PGP should be equal (for now).</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>32-bit Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">8</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">osd_pool_default_flags</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The default flags for new pools.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>32-bit Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">0</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">osd_max_pgls</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The maximum number of placement groups to list. A client
+requesting a large number can tie up the Ceph OSD Daemon.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Unsigned 64-bit Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">1024</span></code></p>
+</dd>
+<dt class="field-even">Note</dt>
+<dd class="field-even"><p>Default should be fine.</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">osd_min_pg_log_entries</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The minimum number of placement group logs to maintain
+when trimming log files.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>32-bit Int Unsigned</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">250</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">osd_max_pg_log_entries</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The maximum number of placement group logs to maintain
+when trimming log files.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>32-bit Int Unsigned</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">10000</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">osd_default_data_pool_replay_window</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The time (in seconds) for an OSD to wait for a client to replay
+a request.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>32-bit Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">45</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">osd_max_pg_per_osd_hard_ratio</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The ratio of number of PGs per OSD allowed by the cluster before the
+OSD refuses to create new PGs. An OSD stops creating new PGs if the number
+of PGs it serves exceeds
+<code class="docutils literal notranslate"><span class="pre">osd_max_pg_per_osd_hard_ratio</span></code> * <code class="docutils literal notranslate"><span class="pre">mon_max_pg_per_osd</span></code>.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Float</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">2</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">osd_recovery_priority</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Priority of recovery in the work queue.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">5</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">osd_recovery_op_priority</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Default priority used for recovery operations if pool doesn’t override.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">3</span></code></p>
+</dd>
+</dl>
+</section>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../../">
+              <img class="logo" src="../../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../install/">Installing Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cephadm/">Cephadm</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../">Ceph Storage Cluster</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../">Configuration</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../storage-devices/">Storage devices</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../ceph-conf/">Configuring Ceph</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../common/">Common Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../common/#networks">Networks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../common/#monitors">Monitors</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../common/#authentication">Authentication</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../common/#osds">OSDs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../common/#heartbeats">Heartbeats</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../common/#logs-debugging">Logs / Debugging</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../common/#example-ceph-conf">Example ceph.conf</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../common/#running-multiple-clusters-deprecated">Running Multiple Clusters (DEPRECATED)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../network-config-ref/">Network Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../msgr2/">Messenger v2 protocol</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../auth-config-ref/">Auth Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../mon-config-ref/">Monitor Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../mon-lookup-dns/">Looking up Monitors through DNS</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../mon-osd-interaction/">Heartbeat Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../osd-config-ref/">OSD Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../mclock-config-ref/">DmClock Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../bluestore-config-ref/">BlueStore Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../filestore-config-ref/">FileStore Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../journal-ref/">Journal Settings</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Pool, PG &amp; CRUSH Settings</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#example-commands">Example Commands</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#manual-tuning">Manual Tuning</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#see-also">See Also</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../ms-ref/">Messaging Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../general-config-ref/">General Settings</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../cephadm/">Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../operations/">Operations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../man/">Man Pages</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../troubleshooting/">Troubleshooting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/">APIs</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cephfs/">Ceph File System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../rbd/">Ceph Block Device</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../radosgw/">Ceph Object Gateway</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../mgr/">Ceph Manager Daemon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../mgr/dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dev/developer_guide/">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dev/internals/">Ceph Internals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../../../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../ms-ref/" title="Messaging"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../journal-ref/" title="Journal Config Reference"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../" >Ceph Storage Cluster</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../" >Configuration</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Pool, PG and CRUSH Config Reference</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

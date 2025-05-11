@@ -1,0 +1,345 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Configuring multiple active MDS daemons &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css" />
+    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../genindex/" />
+    <link rel="search" title="Search" href="../../search/" />
+    <link rel="next" title="Ceph file system client eviction" href="../eviction/" />
+    <link rel="prev" title="Configuring Directory fragmentation" href="../dirfrags/" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../eviction/" title="Ceph file system client eviction"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../dirfrags/" title="Configuring Directory fragmentation"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../" accesskey="U">Ceph File System</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Configuring multiple active MDS daemons</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="configuring-multiple-active-mds-daemons">
+<span id="cephfs-multimds"></span><h1>Configuring multiple active MDS daemons<a class="headerlink" href="#configuring-multiple-active-mds-daemons" title="Permalink to this heading">¶</a></h1>
+<p><em>Also known as: multi-mds, active-active MDS</em></p>
+<p>Each CephFS file system is configured for a single active MDS daemon
+by default.  To scale metadata performance for large scale systems, you
+may enable multiple active MDS daemons, which will share the metadata
+workload with one another.</p>
+<section id="when-should-i-use-multiple-active-mds-daemons">
+<h2>When should I use multiple active MDS daemons?<a class="headerlink" href="#when-should-i-use-multiple-active-mds-daemons" title="Permalink to this heading">¶</a></h2>
+<p>You should configure multiple active MDS daemons when your metadata performance
+is bottlenecked on the single MDS that runs by default.</p>
+<p>Adding more daemons may not increase performance on all workloads.  Typically,
+a single application running on a single client will not benefit from an
+increased number of MDS daemons unless the application is doing a lot of
+metadata operations in parallel.</p>
+<p>Workloads that typically benefit from a larger number of active MDS daemons
+are those with many clients, perhaps working on many separate directories.</p>
+</section>
+<section id="increasing-the-mds-active-cluster-size">
+<h2>Increasing the MDS active cluster size<a class="headerlink" href="#increasing-the-mds-active-cluster-size" title="Permalink to this heading">¶</a></h2>
+<p>Each CephFS file system has a <em>max_mds</em> setting, which controls how many ranks
+will be created.  The actual number of ranks in the file system will only be
+increased if a spare daemon is available to take on the new rank. For example,
+if there is only one MDS daemon running, and max_mds is set to two, no second
+rank will be created. (Note that such a configuration is not Highly Available
+(HA) because no standby is available to take over for a failed rank. The
+cluster will complain via health warnings when configured this way.)</p>
+<p>Set <code class="docutils literal notranslate"><span class="pre">max_mds</span></code> to the desired number of ranks.  In the following examples
+the “fsmap” line of “ceph status” is shown to illustrate the expected
+result of commands.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># fsmap e5: 1/1/1 up {0=a=up:active}, 2 up:standby</span>
+
+<span class="n">ceph</span> <span class="n">fs</span> <span class="nb">set</span> <span class="o">&lt;</span><span class="n">fs_name</span><span class="o">&gt;</span> <span class="n">max_mds</span> <span class="mi">2</span>
+
+<span class="c1"># fsmap e8: 2/2/2 up {0=a=up:active,1=c=up:creating}, 1 up:standby</span>
+<span class="c1"># fsmap e9: 2/2/2 up {0=a=up:active,1=c=up:active}, 1 up:standby</span>
+</pre></div>
+</div>
+<p>The newly created rank (1) will pass through the ‘creating’ state
+and then enter this ‘active state’.</p>
+</section>
+<section id="standby-daemons">
+<h2>Standby daemons<a class="headerlink" href="#standby-daemons" title="Permalink to this heading">¶</a></h2>
+<p>Even with multiple active MDS daemons, a highly available system <strong>still
+requires standby daemons</strong> to take over if any of the servers running
+an active daemon fail.</p>
+<p>Consequently, the practical maximum of <code class="docutils literal notranslate"><span class="pre">max_mds</span></code> for highly available systems
+is at most one less than the total number of MDS servers in your system.</p>
+<p>To remain available in the event of multiple server failures, increase the
+number of standby daemons in the system to match the number of server failures
+you wish to withstand.</p>
+</section>
+<section id="decreasing-the-number-of-ranks">
+<h2>Decreasing the number of ranks<a class="headerlink" href="#decreasing-the-number-of-ranks" title="Permalink to this heading">¶</a></h2>
+<p>Reducing the number of ranks is as simple as reducing <code class="docutils literal notranslate"><span class="pre">max_mds</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># fsmap e9: 2/2/2 up {0=a=up:active,1=c=up:active}, 1 up:standby</span>
+<span class="n">ceph</span> <span class="n">fs</span> <span class="nb">set</span> <span class="o">&lt;</span><span class="n">fs_name</span><span class="o">&gt;</span> <span class="n">max_mds</span> <span class="mi">1</span>
+<span class="c1"># fsmap e10: 2/2/1 up {0=a=up:active,1=c=up:stopping}, 1 up:standby</span>
+<span class="c1"># fsmap e10: 2/2/1 up {0=a=up:active,1=c=up:stopping}, 1 up:standby</span>
+<span class="o">...</span>
+<span class="c1"># fsmap e10: 1/1/1 up {0=a=up:active}, 2 up:standby</span>
+</pre></div>
+</div>
+<p>The cluster will automatically stop extra ranks incrementally until <code class="docutils literal notranslate"><span class="pre">max_mds</span></code>
+is reached.</p>
+<p>See <a class="reference internal" href="../administration/"><span class="doc">CephFS Administrative commands</span></a> for more details which forms <code class="docutils literal notranslate"><span class="pre">&lt;role&gt;</span></code> can
+take.</p>
+<p>Note: stopped ranks will first enter the stopping state for a period of
+time while it hands off its share of the metadata to the remaining active
+daemons.  This phase can take from seconds to minutes.  If the MDS appears to
+be stuck in the stopping state then that should be investigated as a possible
+bug.</p>
+<p>If an MDS daemon crashes or is killed while in the <code class="docutils literal notranslate"><span class="pre">up:stopping</span></code> state, a
+standby will take over and the cluster monitors will against try to stop
+the daemon.</p>
+<p>When a daemon finishes stopping, it will respawn itself and go back to being a
+standby.</p>
+</section>
+<section id="manually-pinning-directory-trees-to-a-particular-rank">
+<span id="cephfs-pinning"></span><h2>Manually pinning directory trees to a particular rank<a class="headerlink" href="#manually-pinning-directory-trees-to-a-particular-rank" title="Permalink to this heading">¶</a></h2>
+<p>In multiple active metadata server configurations, a balancer runs which works
+to spread metadata load evenly across the cluster. This usually works well
+enough for most users but sometimes it is desirable to override the dynamic
+balancer with explicit mappings of metadata to particular ranks. This can allow
+the administrator or users to evenly spread application load or limit impact of
+users’ metadata requests on the entire cluster.</p>
+<p>The mechanism provided for this purpose is called an <code class="docutils literal notranslate"><span class="pre">export</span> <span class="pre">pin</span></code>, an
+extended attribute of directories. The name of this extended attribute is
+<code class="docutils literal notranslate"><span class="pre">ceph.dir.pin</span></code>.  Users can set this attribute using standard commands:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">setfattr</span> <span class="o">-</span><span class="n">n</span> <span class="n">ceph</span><span class="o">.</span><span class="n">dir</span><span class="o">.</span><span class="n">pin</span> <span class="o">-</span><span class="n">v</span> <span class="mi">2</span> <span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="nb">dir</span>
+</pre></div>
+</div>
+<p>The value of the extended attribute is the rank to assign the directory subtree
+to. A default value of <code class="docutils literal notranslate"><span class="pre">-1</span></code> indicates the directory is not pinned.</p>
+<p>A directory’s export pin is inherited from its closest parent with a set export
+pin.  In this way, setting the export pin on a directory affects all of its
+children. However, the parents pin can be overridden by setting the child
+directory’s export pin. For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">mkdir</span> <span class="o">-</span><span class="n">p</span> <span class="n">a</span><span class="o">/</span><span class="n">b</span>
+<span class="c1"># &quot;a&quot; and &quot;a/b&quot; both start without an export pin set</span>
+<span class="n">setfattr</span> <span class="o">-</span><span class="n">n</span> <span class="n">ceph</span><span class="o">.</span><span class="n">dir</span><span class="o">.</span><span class="n">pin</span> <span class="o">-</span><span class="n">v</span> <span class="mi">1</span> <span class="n">a</span><span class="o">/</span>
+<span class="c1"># a and b are now pinned to rank 1</span>
+<span class="n">setfattr</span> <span class="o">-</span><span class="n">n</span> <span class="n">ceph</span><span class="o">.</span><span class="n">dir</span><span class="o">.</span><span class="n">pin</span> <span class="o">-</span><span class="n">v</span> <span class="mi">0</span> <span class="n">a</span><span class="o">/</span><span class="n">b</span>
+<span class="c1"># a/b is now pinned to rank 0 and a/ and the rest of its children are still pinned to rank 1</span>
+</pre></div>
+</div>
+</section>
+<section id="setting-subtree-partitioning-policies">
+<span id="cephfs-ephemeral-pinning"></span><h2>Setting subtree partitioning policies<a class="headerlink" href="#setting-subtree-partitioning-policies" title="Permalink to this heading">¶</a></h2>
+<p>It is also possible to setup <strong>automatic</strong> static partitioning of subtrees via
+a set of <strong>policies</strong>. In CephFS, this automatic static partitioning is
+referred to as <strong>ephemeral pinning</strong>. Any directory (inode) which is
+ephemerally pinned will be automatically assigned to a particular rank
+according to a consistent hash of its inode number. The set of all
+ephemerally pinned directories should be uniformly distributed across all
+ranks.</p>
+<p>Ephemerally pinned directories are so named because the pin may not persist
+once the directory inode is dropped from cache. However, an MDS failover does
+not affect the ephemeral nature of the pinned directory. The MDS records what
+subtrees are ephemerally pinned in its journal so MDS failovers do not drop
+this information.</p>
+<p>A directory is either ephemerally pinned or not. Which rank it is pinned to is
+derived from its inode number and a consistent hash. This means that
+ephemerally pinned directories are somewhat evenly spread across the MDS
+cluster. The <strong>consistent hash</strong> also minimizes redistribution when the MDS
+cluster grows or shrinks. So, growing an MDS cluster may automatically increase
+your metadata throughput with no other administrative intervention.</p>
+<p>Presently, there are two types of ephemeral pinning:</p>
+<p><strong>Distributed Ephemeral Pins</strong>: This policy causes a directory to fragment
+(even well below the normal fragmentation thresholds) and distribute its
+fragments as ephemerally pinned subtrees. This has the effect of distributing
+immediate children across a range of MDS ranks.  The canonical example use-case
+would be the <code class="docutils literal notranslate"><span class="pre">/home</span></code> directory: we want every user’s home directory to be
+spread across the entire MDS cluster. This can be set via:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">setfattr</span> <span class="o">-</span><span class="n">n</span> <span class="n">ceph</span><span class="o">.</span><span class="n">dir</span><span class="o">.</span><span class="n">pin</span><span class="o">.</span><span class="n">distributed</span> <span class="o">-</span><span class="n">v</span> <span class="mi">1</span> <span class="o">/</span><span class="n">cephfs</span><span class="o">/</span><span class="n">home</span>
+</pre></div>
+</div>
+<p><strong>Random Ephemeral Pins</strong>: This policy indicates any descendent sub-directory
+may be ephemerally pinned. This is set through the extended attribute
+<code class="docutils literal notranslate"><span class="pre">ceph.dir.pin.random</span></code> with the value set to the percentage of directories
+that should be pinned. For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">setfattr</span> <span class="o">-</span><span class="n">n</span> <span class="n">ceph</span><span class="o">.</span><span class="n">dir</span><span class="o">.</span><span class="n">pin</span><span class="o">.</span><span class="n">random</span> <span class="o">-</span><span class="n">v</span> <span class="mf">0.5</span> <span class="o">/</span><span class="n">cephfs</span><span class="o">/</span><span class="n">tmp</span>
+</pre></div>
+</div>
+<p>Would cause any directory loaded into cache or created under <code class="docutils literal notranslate"><span class="pre">/tmp</span></code> to be
+ephemerally pinned 50 percent of the time.</p>
+<p>It is recommended to only set this to small values, like <code class="docutils literal notranslate"><span class="pre">.001</span></code> or <code class="docutils literal notranslate"><span class="pre">0.1%</span></code>.
+Having too many subtrees may degrade performance. For this reason, the config
+<code class="docutils literal notranslate"><span class="pre">mds_export_ephemeral_random_max</span></code> enforces a cap on the maximum of this
+percentage (default: <code class="docutils literal notranslate"><span class="pre">.01</span></code>). The MDS returns <code class="docutils literal notranslate"><span class="pre">EINVAL</span></code> when attempting to
+set a value beyond this config.</p>
+<p>Both random and distributed ephemeral pin policies are off by default in
+Octopus. The features may be enabled via the
+<code class="docutils literal notranslate"><span class="pre">mds_export_ephemeral_random</span></code> and <code class="docutils literal notranslate"><span class="pre">mds_export_ephemeral_distributed</span></code>
+configuration options.</p>
+<p>Ephemeral pins may override parent export pins and vice versa. What determines
+which policy is followed is the rule of the closest parent: if a closer parent
+directory has a conflicting policy, use that one instead. For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">mkdir</span> <span class="o">-</span><span class="n">p</span> <span class="n">foo</span><span class="o">/</span><span class="n">bar1</span><span class="o">/</span><span class="n">baz</span> <span class="n">foo</span><span class="o">/</span><span class="n">bar2</span>
+<span class="n">setfattr</span> <span class="o">-</span><span class="n">n</span> <span class="n">ceph</span><span class="o">.</span><span class="n">dir</span><span class="o">.</span><span class="n">pin</span> <span class="o">-</span><span class="n">v</span> <span class="mi">0</span> <span class="n">foo</span>
+<span class="n">setfattr</span> <span class="o">-</span><span class="n">n</span> <span class="n">ceph</span><span class="o">.</span><span class="n">dir</span><span class="o">.</span><span class="n">pin</span><span class="o">.</span><span class="n">distributed</span> <span class="o">-</span><span class="n">v</span> <span class="mi">1</span> <span class="n">foo</span><span class="o">/</span><span class="n">bar1</span>
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">foo/bar1/baz</span></code> directory will be ephemerally pinned because the
+<code class="docutils literal notranslate"><span class="pre">foo/bar1</span></code> policy overrides the export pin on <code class="docutils literal notranslate"><span class="pre">foo</span></code>. The <code class="docutils literal notranslate"><span class="pre">foo/bar2</span></code>
+directory will obey the pin on <code class="docutils literal notranslate"><span class="pre">foo</span></code> normally.</p>
+<p>For the reverse situation:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">mkdir</span> <span class="o">-</span><span class="n">p</span> <span class="n">home</span><span class="o">/</span><span class="p">{</span><span class="n">patrick</span><span class="p">,</span><span class="n">john</span><span class="p">}</span>
+<span class="n">setfattr</span> <span class="o">-</span><span class="n">n</span> <span class="n">ceph</span><span class="o">.</span><span class="n">dir</span><span class="o">.</span><span class="n">pin</span><span class="o">.</span><span class="n">distributed</span> <span class="o">-</span><span class="n">v</span> <span class="mi">1</span> <span class="n">home</span>
+<span class="n">setfattr</span> <span class="o">-</span><span class="n">n</span> <span class="n">ceph</span><span class="o">.</span><span class="n">dir</span><span class="o">.</span><span class="n">pin</span> <span class="o">-</span><span class="n">v</span> <span class="mi">2</span> <span class="n">home</span><span class="o">/</span><span class="n">patrick</span>
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">home/patrick</span></code> directory and its children will be pinned to rank 2
+because its export pin overrides the policy on <code class="docutils literal notranslate"><span class="pre">home</span></code>.</p>
+</section>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../">
+              <img class="logo" src="../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../install/">Installing Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cephadm/">Cephadm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rados/">Ceph Storage Cluster</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../">Ceph File System</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../#getting-started-with-cephfs">Getting Started with CephFS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../#administration">Administration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../#mounting-cephfs">Mounting CephFS</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../#cephfs-concepts">CephFS Concepts</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../mds-states/"> MDS States</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../posix/"> POSIX compatibility</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../mds-journaling/"> MDS Journaling</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../file-layouts/"> File layouts</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../mdcache/"> Distributed Metadata Cache</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../dynamic-metadata-management/"> Dynamic Metadata Management in CephFS</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../cephfs-io-path/"> CephFS IO Path</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../lazyio/"> LazyIO</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../dirfrags/"> Directory fragmentation</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#"> Multiple active MDS daemons</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#when-should-i-use-multiple-active-mds-daemons">When should I use multiple active MDS daemons?</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#increasing-the-mds-active-cluster-size">Increasing the MDS active cluster size</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#standby-daemons">Standby daemons</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#decreasing-the-number-of-ranks">Decreasing the number of ranks</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#manually-pinning-directory-trees-to-a-particular-rank">Manually pinning directory trees to a particular rank</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#setting-subtree-partitioning-policies">Setting subtree partitioning policies</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../#troubleshooting-and-disaster-recovery">Troubleshooting and Disaster Recovery</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../#developer-guides">Developer Guides</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../#additional-details">Additional Details</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../rbd/">Ceph Block Device</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../radosgw/">Ceph Object Gateway</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/">Ceph Manager Daemon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dev/developer_guide/">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dev/internals/">Ceph Internals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../eviction/" title="Ceph file system client eviction"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../dirfrags/" title="Configuring Directory fragmentation"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../" >Ceph File System</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Configuring multiple active MDS daemons</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

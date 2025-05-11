@@ -1,0 +1,1285 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Object Operations &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/css/custom.css" />
+    <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/jquery.js"></script>
+    <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../../genindex/" />
+    <link rel="search" title="Search" href="../../../search/" />
+    <link rel="next" title="C++ S3 Examples" href="../cpp/" />
+    <link rel="prev" title="Bucket Operations" href="../bucketops/" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../cpp/" title="C++ S3 Examples"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../bucketops/" title="Bucket Operations"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../" >Ceph Object Gateway</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../" accesskey="U">Ceph Object Gateway S3 API</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Object Operations</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="object-operations">
+<h1>Object Operations<a class="headerlink" href="#object-operations" title="Permalink to this heading">¶</a></h1>
+<section id="put-object">
+<h2>Put Object<a class="headerlink" href="#put-object" title="Permalink to this heading">¶</a></h2>
+<p>Adds an object to a bucket. You must have write permissions on the bucket to perform this operation.</p>
+<section id="syntax">
+<h3>Syntax<a class="headerlink" href="#syntax" title="Permalink to this heading">¶</a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">PUT</span> <span class="o">/</span><span class="p">{</span><span class="n">bucket</span><span class="p">}</span><span class="o">/</span><span class="p">{</span><span class="nb">object</span><span class="p">}</span> <span class="n">HTTP</span><span class="o">/</span><span class="mf">1.1</span>
+</pre></div>
+</div>
+</section>
+<section id="request-headers">
+<h3>Request Headers<a class="headerlink" href="#request-headers" title="Permalink to this heading">¶</a></h3>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 14%" />
+<col style="width: 28%" />
+<col style="width: 50%" />
+<col style="width: 8%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Name</p></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Valid Values</p></th>
+<th class="head"><p>Required</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>content-md5</strong></p></td>
+<td><p>A base64 encoded MD-5 hash of the message.</p></td>
+<td><p>A string. No defaults or constraints.</p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>content-type</strong></p></td>
+<td><p>A standard MIME type.</p></td>
+<td><p>Any MIME type. Default: <code class="docutils literal notranslate"><span class="pre">binary/octet-stream</span></code></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>x-amz-meta-&lt;…&gt;</strong></p></td>
+<td><p>User metadata.  Stored with the object.</p></td>
+<td><p>A string up to 8kb. No defaults.</p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>x-amz-acl</strong></p></td>
+<td><p>A canned ACL.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">private</span></code>, <code class="docutils literal notranslate"><span class="pre">public-read</span></code>, <code class="docutils literal notranslate"><span class="pre">public-read-write</span></code>, <code class="docutils literal notranslate"><span class="pre">authenticated-read</span></code></p></td>
+<td><p>No</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="copy-object">
+<h2>Copy Object<a class="headerlink" href="#copy-object" title="Permalink to this heading">¶</a></h2>
+<p>To copy an object, use <code class="docutils literal notranslate"><span class="pre">PUT</span></code> and specify a destination bucket and the object name.</p>
+<section id="id1">
+<h3>Syntax<a class="headerlink" href="#id1" title="Permalink to this heading">¶</a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">PUT</span> <span class="o">/</span><span class="p">{</span><span class="n">dest</span><span class="o">-</span><span class="n">bucket</span><span class="p">}</span><span class="o">/</span><span class="p">{</span><span class="n">dest</span><span class="o">-</span><span class="nb">object</span><span class="p">}</span> <span class="n">HTTP</span><span class="o">/</span><span class="mf">1.1</span>
+<span class="n">x</span><span class="o">-</span><span class="n">amz</span><span class="o">-</span><span class="n">copy</span><span class="o">-</span><span class="n">source</span><span class="p">:</span> <span class="p">{</span><span class="n">source</span><span class="o">-</span><span class="n">bucket</span><span class="p">}</span><span class="o">/</span><span class="p">{</span><span class="n">source</span><span class="o">-</span><span class="nb">object</span><span class="p">}</span>
+</pre></div>
+</div>
+</section>
+<section id="id2">
+<h3>Request Headers<a class="headerlink" href="#id2" title="Permalink to this heading">¶</a></h3>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 31%" />
+<col style="width: 40%" />
+<col style="width: 20%" />
+<col style="width: 10%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Name</p></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Valid Values</p></th>
+<th class="head"><p>Required</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>x-amz-copy-source</strong></p></td>
+<td><p>The source bucket name + object name.</p></td>
+<td><p>{bucket}/{obj}</p></td>
+<td><p>Yes</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>x-amz-acl</strong></p></td>
+<td><p>A canned ACL.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">private</span></code>,
+<code class="docutils literal notranslate"><span class="pre">public-read</span></code>,
+<code class="docutils literal notranslate"><span class="pre">public-read-write</span></code>,
+<code class="docutils literal notranslate"><span class="pre">authenticated-read</span></code></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>x-amz-copy-if-modified-since</strong></p></td>
+<td><p>Copies only if modified since the timestamp.</p></td>
+<td><p>Timestamp</p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>x-amz-copy-if-unmodified-since</strong></p></td>
+<td><p>Copies only if unmodified since the timestamp.</p></td>
+<td><p>Timestamp</p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>x-amz-copy-if-match</strong></p></td>
+<td><p>Copies only if object ETag matches ETag.</p></td>
+<td><p>Entity Tag</p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>x-amz-copy-if-none-match</strong></p></td>
+<td><p>Copies only if object ETag doesn’t match.</p></td>
+<td><p>Entity Tag</p></td>
+<td><p>No</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="response-entities">
+<h3>Response Entities<a class="headerlink" href="#response-entities" title="Permalink to this heading">¶</a></h3>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 29%" />
+<col style="width: 15%" />
+<col style="width: 56%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Name</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>CopyObjectResult</strong></p></td>
+<td><p>Container</p></td>
+<td><p>A container for the response elements.</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>LastModified</strong></p></td>
+<td><p>Date</p></td>
+<td><p>The last modified date of the source object.</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>Etag</strong></p></td>
+<td><p>String</p></td>
+<td><p>The ETag of the new object.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="remove-object">
+<h2>Remove Object<a class="headerlink" href="#remove-object" title="Permalink to this heading">¶</a></h2>
+<p>Removes an object. Requires WRITE permission set on the containing bucket.</p>
+<section id="id3">
+<h3>Syntax<a class="headerlink" href="#id3" title="Permalink to this heading">¶</a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">DELETE</span> <span class="o">/</span><span class="p">{</span><span class="n">bucket</span><span class="p">}</span><span class="o">/</span><span class="p">{</span><span class="nb">object</span><span class="p">}</span> <span class="n">HTTP</span><span class="o">/</span><span class="mf">1.1</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="get-object">
+<h2>Get Object<a class="headerlink" href="#get-object" title="Permalink to this heading">¶</a></h2>
+<p>Retrieves an object from a bucket within RADOS.</p>
+<section id="id4">
+<h3>Syntax<a class="headerlink" href="#id4" title="Permalink to this heading">¶</a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">GET</span> <span class="o">/</span><span class="p">{</span><span class="n">bucket</span><span class="p">}</span><span class="o">/</span><span class="p">{</span><span class="nb">object</span><span class="p">}</span> <span class="n">HTTP</span><span class="o">/</span><span class="mf">1.1</span>
+</pre></div>
+</div>
+</section>
+<section id="id5">
+<h3>Request Headers<a class="headerlink" href="#id5" title="Permalink to this heading">¶</a></h3>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 23%" />
+<col style="width: 40%" />
+<col style="width: 27%" />
+<col style="width: 10%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Name</p></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Valid Values</p></th>
+<th class="head"><p>Required</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>range</strong></p></td>
+<td><p>The range of the object to retrieve.</p></td>
+<td><p>Range: bytes=beginbyte-endbyte</p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>if-modified-since</strong></p></td>
+<td><p>Gets only if modified since the timestamp.</p></td>
+<td><p>Timestamp</p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>if-unmodified-since</strong></p></td>
+<td><p>Gets only if not modified since the timestamp.</p></td>
+<td><p>Timestamp</p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>if-match</strong></p></td>
+<td><p>Gets only if object ETag matches ETag.</p></td>
+<td><p>Entity Tag</p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>if-none-match</strong></p></td>
+<td><p>Gets only if object ETag matches ETag.</p></td>
+<td><p>Entity Tag</p></td>
+<td><p>No</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="response-headers">
+<h3>Response Headers<a class="headerlink" href="#response-headers" title="Permalink to this heading">¶</a></h3>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 17%" />
+<col style="width: 83%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Name</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>Content-Range</strong></p></td>
+<td><p>Data range, will only be returned if the range header field was specified in the request</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="get-object-info">
+<h2>Get Object Info<a class="headerlink" href="#get-object-info" title="Permalink to this heading">¶</a></h2>
+<p>Returns information about object. This request will return the same
+header information as with the Get Object request, but will include
+the metadata only, not the object data payload.</p>
+<section id="id6">
+<h3>Syntax<a class="headerlink" href="#id6" title="Permalink to this heading">¶</a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">HEAD</span> <span class="o">/</span><span class="p">{</span><span class="n">bucket</span><span class="p">}</span><span class="o">/</span><span class="p">{</span><span class="nb">object</span><span class="p">}</span> <span class="n">HTTP</span><span class="o">/</span><span class="mf">1.1</span>
+</pre></div>
+</div>
+</section>
+<section id="id7">
+<h3>Request Headers<a class="headerlink" href="#id7" title="Permalink to this heading">¶</a></h3>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 23%" />
+<col style="width: 40%" />
+<col style="width: 27%" />
+<col style="width: 10%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Name</p></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Valid Values</p></th>
+<th class="head"><p>Required</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>range</strong></p></td>
+<td><p>The range of the object to retrieve.</p></td>
+<td><p>Range: bytes=beginbyte-endbyte</p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>if-modified-since</strong></p></td>
+<td><p>Gets only if modified since the timestamp.</p></td>
+<td><p>Timestamp</p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>if-unmodified-since</strong></p></td>
+<td><p>Gets only if not modified since the timestamp.</p></td>
+<td><p>Timestamp</p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>if-match</strong></p></td>
+<td><p>Gets only if object ETag matches ETag.</p></td>
+<td><p>Entity Tag</p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>if-none-match</strong></p></td>
+<td><p>Gets only if object ETag matches ETag.</p></td>
+<td><p>Entity Tag</p></td>
+<td><p>No</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="get-object-acl">
+<h2>Get Object ACL<a class="headerlink" href="#get-object-acl" title="Permalink to this heading">¶</a></h2>
+<section id="id8">
+<h3>Syntax<a class="headerlink" href="#id8" title="Permalink to this heading">¶</a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>GET /{bucket}/{object}?acl HTTP/1.1
+</pre></div>
+</div>
+</section>
+<section id="id9">
+<h3>Response Entities<a class="headerlink" href="#id9" title="Permalink to this heading">¶</a></h3>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 20%" />
+<col style="width: 10%" />
+<col style="width: 70%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Name</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">AccessControlPolicy</span></code></p></td>
+<td><p>Container</p></td>
+<td><p>A container for the response.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">AccessControlList</span></code></p></td>
+<td><p>Container</p></td>
+<td><p>A container for the ACL information.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Owner</span></code></p></td>
+<td><p>Container</p></td>
+<td><p>A container for the object owner’s <code class="docutils literal notranslate"><span class="pre">ID</span></code> and <code class="docutils literal notranslate"><span class="pre">DisplayName</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ID</span></code></p></td>
+<td><p>String</p></td>
+<td><p>The object owner’s ID.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">DisplayName</span></code></p></td>
+<td><p>String</p></td>
+<td><p>The object owner’s display name.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Grant</span></code></p></td>
+<td><p>Container</p></td>
+<td><p>A container for <code class="docutils literal notranslate"><span class="pre">Grantee</span></code> and <code class="docutils literal notranslate"><span class="pre">Permission</span></code>.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Grantee</span></code></p></td>
+<td><p>Container</p></td>
+<td><p>A container for the <code class="docutils literal notranslate"><span class="pre">DisplayName</span></code> and <code class="docutils literal notranslate"><span class="pre">ID</span></code> of the user receiving a grant of permission.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Permission</span></code></p></td>
+<td><p>String</p></td>
+<td><p>The permission given to the <code class="docutils literal notranslate"><span class="pre">Grantee</span></code> object.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="set-object-acl">
+<h2>Set Object ACL<a class="headerlink" href="#set-object-acl" title="Permalink to this heading">¶</a></h2>
+<section id="id10">
+<h3>Syntax<a class="headerlink" href="#id10" title="Permalink to this heading">¶</a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>PUT /{bucket}/{object}?acl
+</pre></div>
+</div>
+</section>
+<section id="request-entities">
+<h3>Request Entities<a class="headerlink" href="#request-entities" title="Permalink to this heading">¶</a></h3>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 20%" />
+<col style="width: 10%" />
+<col style="width: 70%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Name</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">AccessControlPolicy</span></code></p></td>
+<td><p>Container</p></td>
+<td><p>A container for the response.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">AccessControlList</span></code></p></td>
+<td><p>Container</p></td>
+<td><p>A container for the ACL information.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Owner</span></code></p></td>
+<td><p>Container</p></td>
+<td><p>A container for the object owner’s <code class="docutils literal notranslate"><span class="pre">ID</span></code> and <code class="docutils literal notranslate"><span class="pre">DisplayName</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ID</span></code></p></td>
+<td><p>String</p></td>
+<td><p>The object owner’s ID.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">DisplayName</span></code></p></td>
+<td><p>String</p></td>
+<td><p>The object owner’s display name.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Grant</span></code></p></td>
+<td><p>Container</p></td>
+<td><p>A container for <code class="docutils literal notranslate"><span class="pre">Grantee</span></code> and <code class="docutils literal notranslate"><span class="pre">Permission</span></code>.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Grantee</span></code></p></td>
+<td><p>Container</p></td>
+<td><p>A container for the <code class="docutils literal notranslate"><span class="pre">DisplayName</span></code> and <code class="docutils literal notranslate"><span class="pre">ID</span></code> of the user receiving a grant of permission.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Permission</span></code></p></td>
+<td><p>String</p></td>
+<td><p>The permission given to the <code class="docutils literal notranslate"><span class="pre">Grantee</span></code> object.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="initiate-multi-part-upload">
+<h2>Initiate Multi-part Upload<a class="headerlink" href="#initiate-multi-part-upload" title="Permalink to this heading">¶</a></h2>
+<p>Initiate a multi-part upload process.</p>
+<section id="id11">
+<h3>Syntax<a class="headerlink" href="#id11" title="Permalink to this heading">¶</a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>POST /{bucket}/{object}?uploads
+</pre></div>
+</div>
+</section>
+<section id="id12">
+<h3>Request Headers<a class="headerlink" href="#id12" title="Permalink to this heading">¶</a></h3>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 14%" />
+<col style="width: 28%" />
+<col style="width: 50%" />
+<col style="width: 8%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Name</p></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Valid Values</p></th>
+<th class="head"><p>Required</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>content-md5</strong></p></td>
+<td><p>A base64 encoded MD-5 hash of the message.</p></td>
+<td><p>A string. No defaults or constraints.</p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>content-type</strong></p></td>
+<td><p>A standard MIME type.</p></td>
+<td><p>Any MIME type. Default: <code class="docutils literal notranslate"><span class="pre">binary/octet-stream</span></code></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>x-amz-meta-&lt;…&gt;</strong></p></td>
+<td><p>User metadata.  Stored with the object.</p></td>
+<td><p>A string up to 8kb. No defaults.</p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>x-amz-acl</strong></p></td>
+<td><p>A canned ACL.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">private</span></code>, <code class="docutils literal notranslate"><span class="pre">public-read</span></code>, <code class="docutils literal notranslate"><span class="pre">public-read-write</span></code>, <code class="docutils literal notranslate"><span class="pre">authenticated-read</span></code></p></td>
+<td><p>No</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="id13">
+<h3>Response Entities<a class="headerlink" href="#id13" title="Permalink to this heading">¶</a></h3>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 26%" />
+<col style="width: 8%" />
+<col style="width: 66%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Name</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">InitiatedMultipartUploadsResult</span></code></p></td>
+<td><p>Container</p></td>
+<td><p>A container for the results.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Bucket</span></code></p></td>
+<td><p>String</p></td>
+<td><p>The bucket that will receive the object contents.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Key</span></code></p></td>
+<td><p>String</p></td>
+<td><p>The key specified by the <code class="docutils literal notranslate"><span class="pre">key</span></code> request parameter (if any).</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">UploadId</span></code></p></td>
+<td><p>String</p></td>
+<td><p>The ID specified by the <code class="docutils literal notranslate"><span class="pre">upload-id</span></code> request parameter identifying the multipart upload (if any).</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="multipart-upload-part">
+<h2>Multipart Upload Part<a class="headerlink" href="#multipart-upload-part" title="Permalink to this heading">¶</a></h2>
+<section id="id14">
+<h3>Syntax<a class="headerlink" href="#id14" title="Permalink to this heading">¶</a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>PUT /{bucket}/{object}?partNumber=&amp;uploadId= HTTP/1.1
+</pre></div>
+</div>
+</section>
+<section id="http-response">
+<h3>HTTP Response<a class="headerlink" href="#http-response" title="Permalink to this heading">¶</a></h3>
+<p>The following HTTP response may be returned:</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 14%" />
+<col style="width: 15%" />
+<col style="width: 70%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>HTTP Status</p></th>
+<th class="head"><p>Status Code</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>404</strong></p></td>
+<td><p>NoSuchUpload</p></td>
+<td><p>Specified upload-id does not match any initiated upload on this object</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="list-multipart-upload-parts">
+<h2>List Multipart Upload Parts<a class="headerlink" href="#list-multipart-upload-parts" title="Permalink to this heading">¶</a></h2>
+<section id="id15">
+<h3>Syntax<a class="headerlink" href="#id15" title="Permalink to this heading">¶</a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>GET /{bucket}/{object}?uploadId=123 HTTP/1.1
+</pre></div>
+</div>
+</section>
+<section id="id16">
+<h3>Response Entities<a class="headerlink" href="#id16" title="Permalink to this heading">¶</a></h3>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 26%" />
+<col style="width: 8%" />
+<col style="width: 66%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Name</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ListPartsResult</span></code></p></td>
+<td><p>Container</p></td>
+<td><p>A container for the results.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Bucket</span></code></p></td>
+<td><p>String</p></td>
+<td><p>The bucket that will receive the object contents.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Key</span></code></p></td>
+<td><p>String</p></td>
+<td><p>The key specified by the <code class="docutils literal notranslate"><span class="pre">key</span></code> request parameter (if any).</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">UploadId</span></code></p></td>
+<td><p>String</p></td>
+<td><p>The ID specified by the <code class="docutils literal notranslate"><span class="pre">upload-id</span></code> request parameter identifying the multipart upload (if any).</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Initiator</span></code></p></td>
+<td><p>Container</p></td>
+<td><p>Contains the <code class="docutils literal notranslate"><span class="pre">ID</span></code> and <code class="docutils literal notranslate"><span class="pre">DisplayName</span></code> of the user who initiated the upload.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ID</span></code></p></td>
+<td><p>String</p></td>
+<td><p>The initiator’s ID.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">DisplayName</span></code></p></td>
+<td><p>String</p></td>
+<td><p>The initiator’s display name.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Owner</span></code></p></td>
+<td><p>Container</p></td>
+<td><p>A container for the <code class="docutils literal notranslate"><span class="pre">ID</span></code> and <code class="docutils literal notranslate"><span class="pre">DisplayName</span></code> of the user who owns the uploaded object.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">StorageClass</span></code></p></td>
+<td><p>String</p></td>
+<td><p>The method used to store the resulting object. <code class="docutils literal notranslate"><span class="pre">STANDARD</span></code> or <code class="docutils literal notranslate"><span class="pre">REDUCED_REDUNDANCY</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">PartNumberMarker</span></code></p></td>
+<td><p>String</p></td>
+<td><p>The part marker to use in a subsequent request if <code class="docutils literal notranslate"><span class="pre">IsTruncated</span></code> is <code class="docutils literal notranslate"><span class="pre">true</span></code>. Precedes the list.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">NextPartNumberMarker</span></code></p></td>
+<td><p>String</p></td>
+<td><p>The next part marker to use in a subsequent request if <code class="docutils literal notranslate"><span class="pre">IsTruncated</span></code> is <code class="docutils literal notranslate"><span class="pre">true</span></code>. The end of the list.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">MaxParts</span></code></p></td>
+<td><p>Integer</p></td>
+<td><p>The max parts allowed in the response as specified by the <code class="docutils literal notranslate"><span class="pre">max-parts</span></code> request parameter.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">IsTruncated</span></code></p></td>
+<td><p>Boolean</p></td>
+<td><p>If <code class="docutils literal notranslate"><span class="pre">true</span></code>, only a subset of the object’s upload contents were returned.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Part</span></code></p></td>
+<td><p>Container</p></td>
+<td><p>A container for <code class="docutils literal notranslate"><span class="pre">LastModified</span></code>, <code class="docutils literal notranslate"><span class="pre">PartNumber</span></code>, <code class="docutils literal notranslate"><span class="pre">ETag</span></code> and <code class="docutils literal notranslate"><span class="pre">Size</span></code> elements.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">LastModified</span></code></p></td>
+<td><p>Date</p></td>
+<td><p>Date and time at which the part was uploaded.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">PartNumber</span></code></p></td>
+<td><p>Integer</p></td>
+<td><p>The identification number of the part.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ETag</span></code></p></td>
+<td><p>String</p></td>
+<td><p>The part’s entity tag.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Size</span></code></p></td>
+<td><p>Integer</p></td>
+<td><p>The size of the uploaded part.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="complete-multipart-upload">
+<h2>Complete Multipart Upload<a class="headerlink" href="#complete-multipart-upload" title="Permalink to this heading">¶</a></h2>
+<p>Assembles uploaded parts and creates a new object, thereby completing a multipart upload.</p>
+<section id="id17">
+<h3>Syntax<a class="headerlink" href="#id17" title="Permalink to this heading">¶</a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>POST /{bucket}/{object}?uploadId= HTTP/1.1
+</pre></div>
+</div>
+</section>
+<section id="id18">
+<h3>Request Entities<a class="headerlink" href="#id18" title="Permalink to this heading">¶</a></h3>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 31%" />
+<col style="width: 12%" />
+<col style="width: 48%" />
+<col style="width: 9%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Name</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Required</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">CompleteMultipartUpload</span></code></p></td>
+<td><p>Container</p></td>
+<td><p>A container consisting of one or more parts.</p></td>
+<td><p>Yes</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Part</span></code></p></td>
+<td><p>Container</p></td>
+<td><p>A container for the <code class="docutils literal notranslate"><span class="pre">PartNumber</span></code> and <code class="docutils literal notranslate"><span class="pre">ETag</span></code>.</p></td>
+<td><p>Yes</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">PartNumber</span></code></p></td>
+<td><p>Integer</p></td>
+<td><p>The identifier of the part.</p></td>
+<td><p>Yes</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ETag</span></code></p></td>
+<td><p>String</p></td>
+<td><p>The part’s entity tag.</p></td>
+<td><p>Yes</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="id19">
+<h3>Response Entities<a class="headerlink" href="#id19" title="Permalink to this heading">¶</a></h3>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 35%" />
+<col style="width: 12%" />
+<col style="width: 52%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Name</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>CompleteMultipartUploadResult</strong></p></td>
+<td><p>Container</p></td>
+<td><p>A container for the response.</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Location</strong></p></td>
+<td><p>URI</p></td>
+<td><p>The resource identifier (path) of the new object.</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>Bucket</strong></p></td>
+<td><p>String</p></td>
+<td><p>The name of the bucket that contains the new object.</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Key</strong></p></td>
+<td><p>String</p></td>
+<td><p>The object’s key.</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>ETag</strong></p></td>
+<td><p>String</p></td>
+<td><p>The entity tag of the new object.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="abort-multipart-upload">
+<h2>Abort Multipart Upload<a class="headerlink" href="#abort-multipart-upload" title="Permalink to this heading">¶</a></h2>
+<section id="id20">
+<h3>Syntax<a class="headerlink" href="#id20" title="Permalink to this heading">¶</a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>DELETE /{bucket}/{object}?uploadId= HTTP/1.1
+</pre></div>
+</div>
+</section>
+</section>
+<section id="append-object">
+<h2>Append Object<a class="headerlink" href="#append-object" title="Permalink to this heading">¶</a></h2>
+<p>Append data to an object. You must have write permissions on the bucket to perform this operation.
+It is used to upload files in appending mode. The type of the objects created by the Append Object
+operation is Appendable Object, and the type of the objects uploaded with the Put Object operation is Normal Object.
+<strong>Append Object can’t be used if bucket versioning is enabled or suspended.</strong>
+<strong>Synced object will become normal in multisite, but you can still append to the original object.</strong>
+<strong>Compression and encryption features are disabled for Appendable objects.</strong></p>
+<section id="id21">
+<h3>Syntax<a class="headerlink" href="#id21" title="Permalink to this heading">¶</a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>PUT /{bucket}/{object}?append&amp;position= HTTP/1.1
+</pre></div>
+</div>
+</section>
+<section id="id22">
+<h3>Request Headers<a class="headerlink" href="#id22" title="Permalink to this heading">¶</a></h3>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 14%" />
+<col style="width: 28%" />
+<col style="width: 50%" />
+<col style="width: 8%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Name</p></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Valid Values</p></th>
+<th class="head"><p>Required</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>content-md5</strong></p></td>
+<td><p>A base64 encoded MD-5 hash of the message.</p></td>
+<td><p>A string. No defaults or constraints.</p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>content-type</strong></p></td>
+<td><p>A standard MIME type.</p></td>
+<td><p>Any MIME type. Default: <code class="docutils literal notranslate"><span class="pre">binary/octet-stream</span></code></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>x-amz-meta-&lt;…&gt;</strong></p></td>
+<td><p>User metadata.  Stored with the object.</p></td>
+<td><p>A string up to 8kb. No defaults.</p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>x-amz-acl</strong></p></td>
+<td><p>A canned ACL.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">private</span></code>, <code class="docutils literal notranslate"><span class="pre">public-read</span></code>, <code class="docutils literal notranslate"><span class="pre">public-read-write</span></code>, <code class="docutils literal notranslate"><span class="pre">authenticated-read</span></code></p></td>
+<td><p>No</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="id23">
+<h3>Response Headers<a class="headerlink" href="#id23" title="Permalink to this heading">¶</a></h3>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 67%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Name</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>x-rgw-next-append-position</strong></p></td>
+<td><p>Next position to append object</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="id24">
+<h3>HTTP Response<a class="headerlink" href="#id24" title="Permalink to this heading">¶</a></h3>
+<p>The following HTTP response may be returned:</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 16%" />
+<col style="width: 30%" />
+<col style="width: 54%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>HTTP Status</p></th>
+<th class="head"><p>Status Code</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>409</strong></p></td>
+<td><p>PositionNotEqualToLength</p></td>
+<td><p>Specified position does not match object length</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>409</strong></p></td>
+<td><p>ObjectNotAppendable</p></td>
+<td><p>Specified object can not be appended</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>409</strong></p></td>
+<td><p>InvalidBucketstate</p></td>
+<td><p>Bucket versioning is enabled or suspended</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="put-object-retention">
+<h2>Put Object Retention<a class="headerlink" href="#put-object-retention" title="Permalink to this heading">¶</a></h2>
+<p>Places an Object Retention configuration on an object.</p>
+<section id="id25">
+<h3>Syntax<a class="headerlink" href="#id25" title="Permalink to this heading">¶</a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>PUT /{bucket}/{object}?retention&amp;versionId= HTTP/1.1
+</pre></div>
+</div>
+</section>
+<section id="id26">
+<h3>Request Entities<a class="headerlink" href="#id26" title="Permalink to this heading">¶</a></h3>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 17%" />
+<col style="width: 10%" />
+<col style="width: 63%" />
+<col style="width: 10%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Name</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Required</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Retention</span></code></p></td>
+<td><p>Container</p></td>
+<td><p>A container for the request.</p></td>
+<td><p>Yes</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Mode</span></code></p></td>
+<td><p>String</p></td>
+<td colspan="2"><p>Retention mode for the specified object. Valid Values:  GOVERNANCE/COMPLIANCE |    Yes</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">RetainUntilDate</span></code></p></td>
+<td><p>Timestamp</p></td>
+<td colspan="2"><p>Retention date. Format: 2020-01-05T00:00:00.000Z                              |    Yes</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="get-object-retention">
+<h2>Get Object Retention<a class="headerlink" href="#get-object-retention" title="Permalink to this heading">¶</a></h2>
+<p>Gets an Object Retention configuration on an object.</p>
+<section id="id27">
+<h3>Syntax<a class="headerlink" href="#id27" title="Permalink to this heading">¶</a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>GET /{bucket}/{object}?retention&amp;versionId= HTTP/1.1
+</pre></div>
+</div>
+</section>
+<section id="id28">
+<h3>Response Entities<a class="headerlink" href="#id28" title="Permalink to this heading">¶</a></h3>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 17%" />
+<col style="width: 10%" />
+<col style="width: 63%" />
+<col style="width: 10%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Name</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Required</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Retention</span></code></p></td>
+<td><p>Container</p></td>
+<td><p>A container for the request.</p></td>
+<td><p>Yes</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Mode</span></code></p></td>
+<td><p>String</p></td>
+<td colspan="2"><p>Retention mode for the specified object. Valid Values:  GOVERNANCE/COMPLIANCE |    Yes</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">RetainUntilDate</span></code></p></td>
+<td><p>Timestamp</p></td>
+<td colspan="2"><p>Retention date. Format: 2020-01-05T00:00:00.000Z                              |    Yes</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="put-object-legal-hold">
+<h2>Put Object Legal Hold<a class="headerlink" href="#put-object-legal-hold" title="Permalink to this heading">¶</a></h2>
+<p>Applies a Legal Hold configuration to the specified object.</p>
+<section id="id29">
+<h3>Syntax<a class="headerlink" href="#id29" title="Permalink to this heading">¶</a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>PUT /{bucket}/{object}?legal-hold&amp;versionId= HTTP/1.1
+</pre></div>
+</div>
+</section>
+<section id="id30">
+<h3>Request Entities<a class="headerlink" href="#id30" title="Permalink to this heading">¶</a></h3>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 12%" />
+<col style="width: 10%" />
+<col style="width: 68%" />
+<col style="width: 9%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Name</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Required</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">LegalHold</span></code></p></td>
+<td><p>Container</p></td>
+<td><p>A container for the request.</p></td>
+<td><p>Yes</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Status</span></code></p></td>
+<td><p>String</p></td>
+<td><p>Indicates whether the specified object has a Legal Hold in place. Valid Values: ON/OFF</p></td>
+<td><p>Yes</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="get-object-legal-hold">
+<h2>Get Object Legal Hold<a class="headerlink" href="#get-object-legal-hold" title="Permalink to this heading">¶</a></h2>
+<p>Gets an object’s current Legal Hold status.</p>
+<section id="id31">
+<h3>Syntax<a class="headerlink" href="#id31" title="Permalink to this heading">¶</a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>GET /{bucket}/{object}?legal-hold&amp;versionId= HTTP/1.1
+</pre></div>
+</div>
+</section>
+<section id="id32">
+<h3>Response Entities<a class="headerlink" href="#id32" title="Permalink to this heading">¶</a></h3>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 12%" />
+<col style="width: 10%" />
+<col style="width: 68%" />
+<col style="width: 9%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Name</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Required</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">LegalHold</span></code></p></td>
+<td><p>Container</p></td>
+<td><p>A container for the request.</p></td>
+<td><p>Yes</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Status</span></code></p></td>
+<td><p>String</p></td>
+<td><p>Indicates whether the specified object has a Legal Hold in place. Valid Values: ON/OFF</p></td>
+<td><p>Yes</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../../">
+              <img class="logo" src="../../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../install/">Installing Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cephadm/">Cephadm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../rados/">Ceph Storage Cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cephfs/">Ceph File System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../rbd/">Ceph Block Device</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../">Ceph Object Gateway</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../../frontends/">HTTP Frontends</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../placement/">Pool Placement and Storage Classes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../multisite/">Multisite Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../multisite-sync-policy/">Multisite Sync Policy Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../pools/">Configuring Pools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../config-ref/">Config Reference</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../admin/">Admin Guide</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../">S3 API</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="../#api">API</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="../commons/">Common</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../authentication/">Authentication</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../serviceops/">Service Ops</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../bucketops/">Bucket Ops</a></li>
+<li class="toctree-l4 current"><a class="current reference internal" href="#">Object Ops</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#put-object">Put Object</a><ul>
+<li class="toctree-l6"><a class="reference internal" href="#syntax">Syntax</a></li>
+<li class="toctree-l6"><a class="reference internal" href="#request-headers">Request Headers</a></li>
+</ul>
+</li>
+<li class="toctree-l5"><a class="reference internal" href="#copy-object">Copy Object</a><ul>
+<li class="toctree-l6"><a class="reference internal" href="#id1">Syntax</a></li>
+<li class="toctree-l6"><a class="reference internal" href="#id2">Request Headers</a></li>
+<li class="toctree-l6"><a class="reference internal" href="#response-entities">Response Entities</a></li>
+</ul>
+</li>
+<li class="toctree-l5"><a class="reference internal" href="#remove-object">Remove Object</a><ul>
+<li class="toctree-l6"><a class="reference internal" href="#id3">Syntax</a></li>
+</ul>
+</li>
+<li class="toctree-l5"><a class="reference internal" href="#get-object">Get Object</a><ul>
+<li class="toctree-l6"><a class="reference internal" href="#id4">Syntax</a></li>
+<li class="toctree-l6"><a class="reference internal" href="#id5">Request Headers</a></li>
+<li class="toctree-l6"><a class="reference internal" href="#response-headers">Response Headers</a></li>
+</ul>
+</li>
+<li class="toctree-l5"><a class="reference internal" href="#get-object-info">Get Object Info</a><ul>
+<li class="toctree-l6"><a class="reference internal" href="#id6">Syntax</a></li>
+<li class="toctree-l6"><a class="reference internal" href="#id7">Request Headers</a></li>
+</ul>
+</li>
+<li class="toctree-l5"><a class="reference internal" href="#get-object-acl">Get Object ACL</a><ul>
+<li class="toctree-l6"><a class="reference internal" href="#id8">Syntax</a></li>
+<li class="toctree-l6"><a class="reference internal" href="#id9">Response Entities</a></li>
+</ul>
+</li>
+<li class="toctree-l5"><a class="reference internal" href="#set-object-acl">Set Object ACL</a><ul>
+<li class="toctree-l6"><a class="reference internal" href="#id10">Syntax</a></li>
+<li class="toctree-l6"><a class="reference internal" href="#request-entities">Request Entities</a></li>
+</ul>
+</li>
+<li class="toctree-l5"><a class="reference internal" href="#initiate-multi-part-upload">Initiate Multi-part Upload</a><ul>
+<li class="toctree-l6"><a class="reference internal" href="#id11">Syntax</a></li>
+<li class="toctree-l6"><a class="reference internal" href="#id12">Request Headers</a></li>
+<li class="toctree-l6"><a class="reference internal" href="#id13">Response Entities</a></li>
+</ul>
+</li>
+<li class="toctree-l5"><a class="reference internal" href="#multipart-upload-part">Multipart Upload Part</a><ul>
+<li class="toctree-l6"><a class="reference internal" href="#id14">Syntax</a></li>
+<li class="toctree-l6"><a class="reference internal" href="#http-response">HTTP Response</a></li>
+</ul>
+</li>
+<li class="toctree-l5"><a class="reference internal" href="#list-multipart-upload-parts">List Multipart Upload Parts</a><ul>
+<li class="toctree-l6"><a class="reference internal" href="#id15">Syntax</a></li>
+<li class="toctree-l6"><a class="reference internal" href="#id16">Response Entities</a></li>
+</ul>
+</li>
+<li class="toctree-l5"><a class="reference internal" href="#complete-multipart-upload">Complete Multipart Upload</a><ul>
+<li class="toctree-l6"><a class="reference internal" href="#id17">Syntax</a></li>
+<li class="toctree-l6"><a class="reference internal" href="#id18">Request Entities</a></li>
+<li class="toctree-l6"><a class="reference internal" href="#id19">Response Entities</a></li>
+</ul>
+</li>
+<li class="toctree-l5"><a class="reference internal" href="#abort-multipart-upload">Abort Multipart Upload</a><ul>
+<li class="toctree-l6"><a class="reference internal" href="#id20">Syntax</a></li>
+</ul>
+</li>
+<li class="toctree-l5"><a class="reference internal" href="#append-object">Append Object</a><ul>
+<li class="toctree-l6"><a class="reference internal" href="#id21">Syntax</a></li>
+<li class="toctree-l6"><a class="reference internal" href="#id22">Request Headers</a></li>
+<li class="toctree-l6"><a class="reference internal" href="#id23">Response Headers</a></li>
+<li class="toctree-l6"><a class="reference internal" href="#id24">HTTP Response</a></li>
+</ul>
+</li>
+<li class="toctree-l5"><a class="reference internal" href="#put-object-retention">Put Object Retention</a><ul>
+<li class="toctree-l6"><a class="reference internal" href="#id25">Syntax</a></li>
+<li class="toctree-l6"><a class="reference internal" href="#id26">Request Entities</a></li>
+</ul>
+</li>
+<li class="toctree-l5"><a class="reference internal" href="#get-object-retention">Get Object Retention</a><ul>
+<li class="toctree-l6"><a class="reference internal" href="#id27">Syntax</a></li>
+<li class="toctree-l6"><a class="reference internal" href="#id28">Response Entities</a></li>
+</ul>
+</li>
+<li class="toctree-l5"><a class="reference internal" href="#put-object-legal-hold">Put Object Legal Hold</a><ul>
+<li class="toctree-l6"><a class="reference internal" href="#id29">Syntax</a></li>
+<li class="toctree-l6"><a class="reference internal" href="#id30">Request Entities</a></li>
+</ul>
+</li>
+<li class="toctree-l5"><a class="reference internal" href="#get-object-legal-hold">Get Object Legal Hold</a><ul>
+<li class="toctree-l6"><a class="reference internal" href="#id31">Syntax</a></li>
+<li class="toctree-l6"><a class="reference internal" href="#id32">Response Entities</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="../cpp/">C++</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../csharp/">C#</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../java/">Java</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../perl/">Perl</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../php/">PHP</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../python/">Python</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../ruby/">Ruby AWS::SDK Examples (aws-sdk gem ~&gt;2)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../ruby/#ruby-aws-s3-examples-aws-s3-gem">Ruby AWS::S3 Examples (aws-s3 gem)</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../#features-support">Features Support</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../#unsupported-header-fields">Unsupported Header Fields</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../rgw-cache/">Data caching and CDN</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../swift/">Swift API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../adminops/">Admin Ops API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/">Python binding</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../nfs/">Export over NFS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../keystone/">OpenStack Keystone Integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../barbican/">OpenStack Barbican Integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../vault/">HashiCorp Vault Integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../kmip/">KMIP Integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../opa/">Open Policy Agent Integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../multitenancy/">Multi-tenancy</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../compression/">Compression</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../ldap-auth/">LDAP Authentication</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../encryption/">Server-Side Encryption</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../bucketpolicy/">Bucket Policy</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../dynamicresharding/">Dynamic bucket index resharding</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../mfa/">Multi factor authentication</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../sync-modules/">Sync Modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../notifications/">Bucket Notifications</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../layout/">Data Layout in RADOS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../STS/">STS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../STSLite/">STS Lite</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../keycloak/">Keycloak</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../session-tags/">Session Tags</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../role/">Role</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../orphans/">Orphan List and Associated Tooling</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../oidc/">OpenID Connect Provider</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../troubleshooting/">Troubleshooting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../man/8/radosgw/">Manpage radosgw</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../man/8/radosgw-admin/">Manpage radosgw-admin</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../qat-accel/">QAT Acceleration for Encryption and Compression</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../s3select/">S3-select</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../lua-scripting/">Lua Scripting</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../mgr/">Ceph Manager Daemon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../mgr/dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dev/developer_guide/">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dev/internals/">Ceph Internals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../../../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../cpp/" title="C++ S3 Examples"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../bucketops/" title="Bucket Operations"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../" >Ceph Object Gateway</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../" >Ceph Object Gateway S3 API</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Object Operations</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

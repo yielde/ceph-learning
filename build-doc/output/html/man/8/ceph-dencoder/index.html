@@ -1,0 +1,342 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>ceph-dencoder – ceph encoder/decoder utility &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/css/custom.css" />
+    <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/jquery.js"></script>
+    <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../../genindex/" />
+    <link rel="search" title="Search" href="../../../search/" />
+    <link rel="next" title="ceph-mon – ceph monitor daemon" href="../ceph-mon/" />
+    <link rel="prev" title="ceph-debugpack – ceph debug packer utility" href="../ceph-debugpack/" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../ceph-mon/" title="ceph-mon – ceph monitor daemon"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../ceph-debugpack/" title="ceph-debugpack – ceph debug packer utility"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../../rados/" >Ceph Storage Cluster</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../../../rados/man/" accesskey="U">Object Store Manpages</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">ceph-dencoder – ceph encoder/decoder utility</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="ceph-dencoder-ceph-encoder-decoder-utility">
+<h1>ceph-dencoder – ceph encoder/decoder utility<a class="headerlink" href="#ceph-dencoder-ceph-encoder-decoder-utility" title="Permalink to this heading">¶</a></h1>
+<section id="synopsis">
+<h2>Synopsis<a class="headerlink" href="#synopsis" title="Permalink to this heading">¶</a></h2>
+<div class="line-block">
+<div class="line"><strong>ceph-dencoder</strong> [commands…]</div>
+</div>
+</section>
+<section id="description">
+<h2>Description<a class="headerlink" href="#description" title="Permalink to this heading">¶</a></h2>
+<p><strong>ceph-dencoder</strong> is a utility to encode, decode, and dump ceph data
+structures.  It is used for debugging and for testing inter-version
+compatibility.</p>
+<p><strong>ceph-dencoder</strong> takes a simple list of commands and performs them
+in order.</p>
+</section>
+<section id="commands">
+<h2>Commands<a class="headerlink" href="#commands" title="Permalink to this heading">¶</a></h2>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-ceph-dencoder-arg-version">
+<span class="sig-name descname"><span class="pre">version</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-ceph-dencoder-arg-version" title="Permalink to this definition">¶</a></dt>
+<dd><p>Print the version string for the <strong>ceph-dencoder</strong> binary.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-ceph-dencoder-arg-import">
+<span class="sig-name descname"><span class="pre">import</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;file&gt;</span></span><a class="headerlink" href="#cmdoption-ceph-dencoder-arg-import" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read a binary blob of encoded data from the given file.  It will be
+placed in an in-memory buffer.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-ceph-dencoder-arg-export">
+<span class="sig-name descname"><span class="pre">export</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;file&gt;</span></span><a class="headerlink" href="#cmdoption-ceph-dencoder-arg-export" title="Permalink to this definition">¶</a></dt>
+<dd><p>Write the contents of the current in-memory buffer to the given
+file.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-ceph-dencoder-arg-list_types">
+<span id="cmdoption-ceph-dencoder-arg-list-types"></span><span class="sig-name descname"><span class="pre">list_types</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-ceph-dencoder-arg-list_types" title="Permalink to this definition">¶</a></dt>
+<dd><p>List the data types known to this build of <strong>ceph-dencoder</strong>.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-ceph-dencoder-arg-type">
+<span class="sig-name descname"><span class="pre">type</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;name&gt;</span></span><a class="headerlink" href="#cmdoption-ceph-dencoder-arg-type" title="Permalink to this definition">¶</a></dt>
+<dd><p>Select the given type for future <code class="docutils literal notranslate"><span class="pre">encode</span></code> or <code class="docutils literal notranslate"><span class="pre">decode</span></code> operations.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-ceph-dencoder-arg-skip">
+<span class="sig-name descname"><span class="pre">skip</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;bytes&gt;</span></span><a class="headerlink" href="#cmdoption-ceph-dencoder-arg-skip" title="Permalink to this definition">¶</a></dt>
+<dd><p>Seek &lt;bytes&gt; into the imported file before reading data structure, use
+this with objects that have a preamble/header before the object of interest.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-ceph-dencoder-arg-decode">
+<span class="sig-name descname"><span class="pre">decode</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-ceph-dencoder-arg-decode" title="Permalink to this definition">¶</a></dt>
+<dd><p>Decode the contents of the in-memory buffer into an instance of the
+previously selected type.  If there is an error, report it.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-ceph-dencoder-arg-encode">
+<span class="sig-name descname"><span class="pre">encode</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-ceph-dencoder-arg-encode" title="Permalink to this definition">¶</a></dt>
+<dd><p>Encode the contents of the in-memory instance of the previously
+selected type to the in-memory buffer.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-ceph-dencoder-arg-dump_json">
+<span id="cmdoption-ceph-dencoder-arg-dump-json"></span><span class="sig-name descname"><span class="pre">dump_json</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-ceph-dencoder-arg-dump_json" title="Permalink to this definition">¶</a></dt>
+<dd><p>Print a JSON-formatted description of the in-memory object.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-ceph-dencoder-arg-count_tests">
+<span id="cmdoption-ceph-dencoder-arg-count-tests"></span><span class="sig-name descname"><span class="pre">count_tests</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-ceph-dencoder-arg-count_tests" title="Permalink to this definition">¶</a></dt>
+<dd><p>Print the number of built-in test instances of the previously
+selected type that <strong>ceph-dencoder</strong> is able to generate.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-ceph-dencoder-arg-select_test">
+<span id="cmdoption-ceph-dencoder-arg-select-test"></span><span class="sig-name descname"><span class="pre">select_test</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;n&gt;</span></span><a class="headerlink" href="#cmdoption-ceph-dencoder-arg-select_test" title="Permalink to this definition">¶</a></dt>
+<dd><p>Select the given build-in test instance as a the in-memory instance
+of the type.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-ceph-dencoder-arg-get_features">
+<span id="cmdoption-ceph-dencoder-arg-get-features"></span><span class="sig-name descname"><span class="pre">get_features</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-ceph-dencoder-arg-get_features" title="Permalink to this definition">¶</a></dt>
+<dd><p>Print the decimal value of the feature set supported by this version
+of <strong>ceph-dencoder</strong>.  Each bit represents a feature.  These correspond to
+CEPH_FEATURE_* defines in src/include/ceph_features.h.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-ceph-dencoder-arg-set_features">
+<span id="cmdoption-ceph-dencoder-arg-set-features"></span><span class="sig-name descname"><span class="pre">set_features</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;f&gt;</span></span><a class="headerlink" href="#cmdoption-ceph-dencoder-arg-set_features" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the feature bits provided to <code class="docutils literal notranslate"><span class="pre">encode</span></code> to <em>f</em>.  This allows
+you to encode objects such that they can be understood by old
+versions of the software (for those types that support it).</p>
+</dd></dl>
+
+</section>
+<section id="example">
+<h2>Example<a class="headerlink" href="#example" title="Permalink to this heading">¶</a></h2>
+<p>Say you want to examine an attribute on an object stored by <code class="docutils literal notranslate"><span class="pre">ceph-osd</span></code>.  You can do this:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ cd /mnt/osd.12/current/2.b_head
+$ attr -l foo_bar_head_EFE6384B
+Attribute &quot;ceph.snapset&quot; has a 31 byte value for foo_bar_head_EFE6384B
+Attribute &quot;ceph._&quot; has a 195 byte value for foo_bar_head_EFE6384B
+$ attr foo_bar_head_EFE6384B -g ceph._ -q &gt; /tmp/a
+$ ceph-dencoder type object_info_t import /tmp/a decode dump_json
+{ &quot;oid&quot;: { &quot;oid&quot;: &quot;foo&quot;,
+      &quot;key&quot;: &quot;bar&quot;,
+      &quot;snapid&quot;: -2,
+      &quot;hash&quot;: 4024842315,
+      &quot;max&quot;: 0},
+  &quot;locator&quot;: { &quot;pool&quot;: 2,
+      &quot;preferred&quot;: -1,
+      &quot;key&quot;: &quot;bar&quot;},
+  &quot;category&quot;: &quot;&quot;,
+  &quot;version&quot;: &quot;9&#39;1&quot;,
+  &quot;prior_version&quot;: &quot;0&#39;0&quot;,
+  &quot;last_reqid&quot;: &quot;client.4116.0:1&quot;,
+  &quot;size&quot;: 1681,
+  &quot;mtime&quot;: &quot;2012-02-21 08:58:23.666639&quot;,
+  &quot;lost&quot;: 0,
+  &quot;wrlock_by&quot;: &quot;unknown.0.0:0&quot;,
+  &quot;snaps&quot;: [],
+  &quot;truncate_seq&quot;: 0,
+  &quot;truncate_size&quot;: 0,
+  &quot;watchers&quot;: {}}
+</pre></div>
+</div>
+<p>Alternatively, perhaps you wish to dump an internal CephFS metadata object, you might
+do that like this:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ rados -p metadata get mds_snaptable mds_snaptable.bin
+$ ceph-dencoder type SnapServer skip 8 import mds_snaptable.bin decode dump_json
+{ &quot;snapserver&quot;: { &quot;last_snap&quot;: 1,
+   &quot;pending_noop&quot;: [],
+   &quot;snaps&quot;: [],
+   &quot;need_to_purge&quot;: {},
+   &quot;pending_create&quot;: [],
+   &quot;pending_destroy&quot;: []}}
+</pre></div>
+</div>
+</section>
+<section id="availability">
+<h2>Availability<a class="headerlink" href="#availability" title="Permalink to this heading">¶</a></h2>
+<p><strong>ceph-dencoder</strong> is part of Ceph, a massively scalable, open-source, distributed storage system. Please
+refer to the Ceph documentation at <a class="reference external" href="http://ceph.com/docs">http://ceph.com/docs</a> for more
+information.</p>
+</section>
+<section id="see-also">
+<h2>See also<a class="headerlink" href="#see-also" title="Permalink to this heading">¶</a></h2>
+<p><a class="reference internal" href="../ceph/"><span class="doc">ceph</span></a>(8)</p>
+</section>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../../">
+              <img class="logo" src="../../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../install/">Installing Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cephadm/">Cephadm</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../../rados/">Ceph Storage Cluster</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../../../rados/configuration/">Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../cephadm/">Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../rados/operations/">Operations</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../../../rados/man/">Man Pages</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../ceph-volume/">ceph-volume – Ceph OSD deployment and inspection tool</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../ceph-volume-systemd/">ceph-volume-systemd – systemd ceph-volume helper tool</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../ceph/">ceph – ceph administration tool</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../ceph-authtool/">ceph-authtool – ceph keyring manipulation tool</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../ceph-clsinfo/">ceph-clsinfo – show class object information</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../ceph-conf/">ceph-conf – ceph conf file tool</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../ceph-debugpack/">ceph-debugpack – ceph debug packer utility</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">ceph-dencoder – ceph encoder/decoder utility</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#synopsis">Synopsis</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#description">Description</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#commands">Commands</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#example">Example</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#availability">Availability</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#see-also">See also</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../ceph-mon/">ceph-mon – ceph monitor daemon</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../ceph-osd/">ceph-osd – ceph object storage daemon</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../ceph-kvstore-tool/">ceph-kvstore-tool – ceph kvstore manipulation tool</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../ceph-run/">ceph-run – restart daemon on core dump</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../ceph-syn/">ceph-syn – ceph synthetic workload generator</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../crushtool/">crushtool – CRUSH map manipulation tool</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../librados-config/">librados-config – display information about librados</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../monmaptool/">monmaptool – ceph monitor cluster map manipulation tool</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../osdmaptool/">osdmaptool – ceph osd cluster map manipulation tool</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rados/">rados – rados object storage utility</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../ceph-post-file/">ceph-post-file – post files for ceph developers</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../rados/troubleshooting/">Troubleshooting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../rados/api/">APIs</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cephfs/">Ceph File System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../rbd/">Ceph Block Device</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../radosgw/">Ceph Object Gateway</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../mgr/">Ceph Manager Daemon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../mgr/dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dev/developer_guide/">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dev/internals/">Ceph Internals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../../../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../ceph-mon/" title="ceph-mon – ceph monitor daemon"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../ceph-debugpack/" title="ceph-debugpack – ceph debug packer utility"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../../rados/" >Ceph Storage Cluster</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../../../rados/man/" >Object Store Manpages</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">ceph-dencoder – ceph encoder/decoder utility</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

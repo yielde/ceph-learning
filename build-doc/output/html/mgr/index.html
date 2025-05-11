@@ -1,0 +1,207 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Ceph Manager Daemon &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/css/custom.css" />
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../genindex/" />
+    <link rel="search" title="Search" href="../search/" />
+    <link rel="next" title="ceph-mgr administrator’s guide" href="administrator/" />
+    <link rel="prev" title="Lua Scripting" href="../radosgw/lua-scripting/" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="administrator/" title="ceph-mgr administrator’s guide"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../radosgw/lua-scripting/" title="Lua Scripting"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../">Ceph Documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Ceph Manager Daemon</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="ceph-manager-daemon">
+<span id="id1"></span><h1>Ceph Manager Daemon<a class="headerlink" href="#ceph-manager-daemon" title="Permalink to this heading">¶</a></h1>
+<p>The <a class="reference internal" href="../glossary/#term-Ceph-Manager"><span class="xref std std-term">Ceph Manager</span></a> daemon (ceph-mgr) runs alongside monitor daemons,
+to provide additional monitoring and interfaces to external monitoring
+and management systems.</p>
+<p>Since the 12.x (<em>luminous</em>) Ceph release, the ceph-mgr daemon is required for
+normal operations.  The ceph-mgr daemon is an optional component in
+the 11.x (<em>kraken</em>) Ceph release.</p>
+<p>By default, the manager daemon requires no additional configuration, beyond
+ensuring it is running.  If there is no mgr daemon running, you will
+see a health warning to that effect, and some of the other information
+in the output of <cite>ceph status</cite> will be missing or stale until a mgr is started.</p>
+<p>Use your normal deployment tools, such as ceph-ansible or cephadm, to
+set up ceph-mgr daemons on each of your mon nodes.  It is not mandatory
+to place mgr daemons on the same nodes as mons, but it is almost always
+sensible.</p>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="administrator/">Installation and Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="modules/">Writing modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="orchestrator_modules/">Writing orchestrator plugins</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dashboard/">Dashboard module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ceph_api/">Ceph RESTful API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="alerts/">Alerts module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="diskprediction/">DiskPrediction module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="localpool/">Local pool module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="restful/">RESTful module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="zabbix/">Zabbix module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="prometheus/">Prometheus module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="influx/">Influx module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="hello/">Hello module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="telegraf/">Telegraf module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="telemetry/">Telemetry module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="iostat/">Iostat module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="crash/">Crash module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="insights/">Insights module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="orchestrator/">Orchestrator module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="rook/">Rook module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mds_autoscaler/">MDS Autoscaler module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="nfs/">NFS module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cli_api/">CLI API Commands module</a></li>
+</ul>
+</div>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../">
+              <img class="logo" src="../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../install/">Installing Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../cephadm/">Cephadm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../rados/">Ceph Storage Cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../cephfs/">Ceph File System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../rbd/">Ceph Block Device</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../radosgw/">Ceph Object Gateway</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Ceph Manager Daemon</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="administrator/">Installation and Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/">Writing modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="orchestrator_modules/">Writing orchestrator plugins</a></li>
+<li class="toctree-l2"><a class="reference internal" href="dashboard/">Dashboard module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ceph_api/">Ceph RESTful API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="alerts/">Alerts module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="diskprediction/">DiskPrediction module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="localpool/">Local pool module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="restful/">RESTful module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="zabbix/">Zabbix module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="prometheus/">Prometheus module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="influx/">Influx module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="hello/">Hello module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="telegraf/">Telegraf module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="telemetry/">Telemetry module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="iostat/">Iostat module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="crash/">Crash module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="insights/">Insights module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="orchestrator/">Orchestrator module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="rook/">Rook module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mds_autoscaler/">MDS Autoscaler module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nfs/">NFS module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="cli_api/">CLI API Commands module</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../dev/developer_guide/">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../dev/internals/">Ceph Internals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="administrator/" title="ceph-mgr administrator’s guide"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../radosgw/lua-scripting/" title="Lua Scripting"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../">Ceph Documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Ceph Manager Daemon</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

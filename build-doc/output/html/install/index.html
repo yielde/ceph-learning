@@ -1,0 +1,208 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Installing Ceph &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/css/custom.css" />
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../genindex/" />
+    <link rel="search" title="Search" href="../search/" />
+    <link rel="next" title="Installation (Manual)" href="index_manual/" />
+    <link rel="prev" title="Documenting Ceph" href="../start/documenting-ceph/" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="index_manual/" title="Installation (Manual)"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../start/documenting-ceph/" title="Documenting Ceph"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../">Ceph Documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Installing Ceph</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="installing-ceph">
+<span id="install-overview"></span><h1>Installing Ceph<a class="headerlink" href="#installing-ceph" title="Permalink to this heading">¶</a></h1>
+<p>There are multiple ways to install Ceph.</p>
+<section id="recommended-methods">
+<h2>Recommended methods<a class="headerlink" href="#recommended-methods" title="Permalink to this heading">¶</a></h2>
+<p><a class="reference internal" href="../cephadm/install/#cephadm-deploying-new-cluster"><span class="std std-ref">Cephadm</span></a> installs and manages a Ceph
+cluster that uses containers and systemd and is tightly integrated with the CLI
+and dashboard GUI.</p>
+<ul class="simple">
+<li><p>cephadm supports only Octopus and newer releases.</p></li>
+<li><p>cephadm is fully integrated with the orchestration API and fully supports the
+CLI and dashboard features that are used to manage cluster deployment.</p></li>
+<li><p>cephadm requires container support (in the form of Podman or Docker) and
+Python 3.</p></li>
+</ul>
+<p><a class="reference external" href="https://rook.io/">Rook</a> deploys and manages Ceph clusters running
+in Kubernetes, while also enabling management of storage resources and
+provisioning via Kubernetes APIs. We recommend Rook as the way to run Ceph in
+Kubernetes or to connect an existing Ceph storage cluster to Kubernetes.</p>
+<ul class="simple">
+<li><p>Rook supports only Nautilus and newer releases of Ceph.</p></li>
+<li><p>Rook is the preferred method for running Ceph on Kubernetes, or for
+connecting a Kubernetes cluster to an existing (external) Ceph
+cluster.</p></li>
+<li><p>Rook supports the orchestrator API. Management features in the CLI and
+dashboard are fully supported.</p></li>
+</ul>
+</section>
+<section id="other-methods">
+<h2>Other methods<a class="headerlink" href="#other-methods" title="Permalink to this heading">¶</a></h2>
+<p><a class="reference external" href="https://docs.ceph.com/ceph-ansible/">ceph-ansible</a> deploys and manages
+Ceph clusters using Ansible.</p>
+<ul class="simple">
+<li><p>ceph-ansible is widely deployed.</p></li>
+<li><p>ceph-ansible is not integrated with the orchestrator APIs that were
+introduced in Nautilus and Octopus, which means that the management features
+and dashboard integration introduced in Nautilus and Octopus are not
+available in Ceph clusters deployed by means of ceph-ansible.</p></li>
+</ul>
+<p><a class="reference external" href="https://docs.ceph.com/projects/ceph-deploy/en/latest/">ceph-deploy</a> is a
+tool that can be used to quickly deploy clusters. It is deprecated.</p>
+<blockquote>
+<div><div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>ceph-deploy is not actively maintained. It is not tested on versions of Ceph
+newer than Nautilus. It does not support RHEL8, CentOS 8, or newer operating
+systems.</p>
+</div>
+</div></blockquote>
+<p><a class="reference external" href="https://github.com/SUSE/DeepSea">DeepSea</a> installs Ceph using Salt.</p>
+<p><a class="reference external" href="https://jaas.ai/ceph-mon">jaas.ai/ceph-mon</a> installs Ceph using Juju.</p>
+<p><a class="reference external" href="https://github.com/openstack/puppet-ceph">github.com/openstack/puppet-ceph</a>  installs Ceph via Puppet.</p>
+<p>Ceph can also be <a class="reference internal" href="index_manual/#install-manual"><span class="std std-ref">installed manually</span></a>.</p>
+<div class="toctree-wrapper compound">
+</div>
+</section>
+<section id="windows">
+<h2>Windows<a class="headerlink" href="#windows" title="Permalink to this heading">¶</a></h2>
+<p>For Windows installations, consult this document:
+<a class="reference external" href="./windows-install">Windows installation guide</a>.</p>
+</section>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../">
+              <img class="logo" src="../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Installing Ceph</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#recommended-methods">Recommended methods</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#other-methods">Other methods</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="index_manual/">Installation (Manual)</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#windows">Windows</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../cephadm/">Cephadm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../rados/">Ceph Storage Cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../cephfs/">Ceph File System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../rbd/">Ceph Block Device</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../radosgw/">Ceph Object Gateway</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../mgr/">Ceph Manager Daemon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../mgr/dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../dev/developer_guide/">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../dev/internals/">Ceph Internals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="index_manual/" title="Installation (Manual)"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../start/documenting-ceph/" title="Documenting Ceph"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../">Ceph Documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Installing Ceph</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>
