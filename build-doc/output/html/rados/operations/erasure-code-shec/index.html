@@ -1,0 +1,421 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>SHEC erasure code plugin &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/css/custom.css" />
+    <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/jquery.js"></script>
+    <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/ceph.js"></script>
+    <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <link rel="shortcut icon" href="../../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../../genindex/" />
+    <link rel="search" title="Search" href="../../../search/" />
+    <link rel="next" title="CLAY code plugin" href="../erasure-code-clay/" />
+    <link rel="prev" title="Locally repairable erasure code plugin" href="../erasure-code-lrc/" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../erasure-code-clay/" title="CLAY code plugin"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../erasure-code-lrc/" title="Locally repairable erasure code plugin"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../" >Ceph Storage Cluster</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../" >Cluster Operations</a> &#187;</li>
+          <li class="nav-item nav-item-3"><a href="../erasure-code/" >Erasure code</a> &#187;</li>
+          <li class="nav-item nav-item-4"><a href="../erasure-code-profile/" accesskey="U">Erasure code profiles</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">SHEC erasure code plugin</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="shec-erasure-code-plugin">
+<h1>SHEC erasure code plugin<a class="headerlink" href="#shec-erasure-code-plugin" title="Permalink to this heading">¶</a></h1>
+<p>The <em>shec</em> plugin encapsulates the <a class="reference external" href="http://tracker.ceph.com/projects/ceph/wiki/Shingled_Erasure_Code_(SHEC)">multiple SHEC</a>
+library. It allows ceph to recover data more efficiently than Reed Solomon codes.</p>
+<section id="create-an-shec-profile">
+<h2>Create an SHEC profile<a class="headerlink" href="#create-an-shec-profile" title="Permalink to this heading">¶</a></h2>
+<p>To create a new <em>shec</em> erasure code profile:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><style type="text/css">
+span.prompt1:before {
+  content: "$ ";
+}
+</style><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>erasure-code-profile<span class="w"> </span><span class="nb">set</span><span class="w"> </span><span class="o">{</span>name<span class="o">}</span><span class="w"> </span><span class="se">\</span>
+<span class="w">     </span><span class="nv">plugin</span><span class="o">=</span>shec<span class="w"> </span><span class="se">\</span>
+<span class="w">     </span><span class="o">[</span><span class="nv">k</span><span class="o">={</span>data-chunks<span class="o">}]</span><span class="w"> </span><span class="se">\</span>
+<span class="w">     </span><span class="o">[</span><span class="nv">m</span><span class="o">={</span>coding-chunks<span class="o">}]</span><span class="w"> </span><span class="se">\</span>
+<span class="w">     </span><span class="o">[</span><span class="nv">c</span><span class="o">={</span>durability-estimator<span class="o">}]</span><span class="w"> </span><span class="se">\</span>
+<span class="w">     </span><span class="o">[</span>crush-root<span class="o">={</span>root<span class="o">}]</span><span class="w"> </span><span class="se">\</span>
+<span class="w">     </span><span class="o">[</span>crush-failure-domain<span class="o">={</span>bucket-type<span class="o">}]</span><span class="w"> </span><span class="se">\</span>
+<span class="w">     </span><span class="o">[</span>crush-device-class<span class="o">={</span>device-class<span class="o">}]</span><span class="w"> </span><span class="se">\</span>
+<span class="w">     </span><span class="o">[</span><span class="nv">directory</span><span class="o">={</span>directory<span class="o">}]</span><span class="w"> </span><span class="se">\</span>
+<span class="w">     </span><span class="o">[</span>--force<span class="o">]</span></span>
+</pre></div></div><p>Where:</p>
+<p><code class="docutils literal notranslate"><span class="pre">k={data-chunks}</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Each object is split in <strong>data-chunks</strong> parts,
+each stored on a different OSD.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Integer</p>
+</dd>
+<dt class="field-odd">Required</dt>
+<dd class="field-odd"><p>No.</p>
+</dd>
+<dt class="field-even">Default</dt>
+<dd class="field-even"><p>4</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">m={coding-chunks}</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Compute <strong>coding-chunks</strong> for each object and store them on
+different OSDs. The number of <strong>coding-chunks</strong> does not necessarily
+equal the number of OSDs that can be down without losing data.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Integer</p>
+</dd>
+<dt class="field-odd">Required</dt>
+<dd class="field-odd"><p>No.</p>
+</dd>
+<dt class="field-even">Default</dt>
+<dd class="field-even"><p>3</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">c={durability-estimator}</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The number of parity chunks each of which includes each data chunk in its
+calculation range. The number is used as a <strong>durability estimator</strong>.
+For instance, if c=2, 2 OSDs can be down without losing data.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Integer</p>
+</dd>
+<dt class="field-odd">Required</dt>
+<dd class="field-odd"><p>No.</p>
+</dd>
+<dt class="field-even">Default</dt>
+<dd class="field-even"><p>2</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">crush-root={root}</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The name of the crush bucket used for the first step of
+the CRUSH rule. For instance <strong>step take default</strong>.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Required</dt>
+<dd class="field-odd"><p>No.</p>
+</dd>
+<dt class="field-even">Default</dt>
+<dd class="field-even"><p>default</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">crush-failure-domain={bucket-type}</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Ensure that no two chunks are in a bucket with the same
+failure domain. For instance, if the failure domain is
+<strong>host</strong> no two chunks will be stored on the same
+host. It is used to create a CRUSH rule step such as <strong>step
+chooseleaf host</strong>.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Required</dt>
+<dd class="field-odd"><p>No.</p>
+</dd>
+<dt class="field-even">Default</dt>
+<dd class="field-even"><p>host</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">crush-device-class={device-class}</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Restrict placement to devices of a specific class (e.g.,
+<code class="docutils literal notranslate"><span class="pre">ssd</span></code> or <code class="docutils literal notranslate"><span class="pre">hdd</span></code>), using the crush device class names
+in the CRUSH map.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Required</dt>
+<dd class="field-odd"><p>No.</p>
+</dd>
+<dt class="field-even">Default</dt>
+<dd class="field-even"><p></p></dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">directory={directory}</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Set the <strong>directory</strong> name from which the erasure code
+plugin is loaded.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Required</dt>
+<dd class="field-odd"><p>No.</p>
+</dd>
+<dt class="field-even">Default</dt>
+<dd class="field-even"><p>/usr/lib/ceph/erasure-code</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">--force</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Override an existing profile by the same name.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Required</dt>
+<dd class="field-odd"><p>No.</p>
+</dd>
+</dl>
+</section>
+<section id="brief-description-of-shec-s-layouts">
+<h2>Brief description of SHEC’s layouts<a class="headerlink" href="#brief-description-of-shec-s-layouts" title="Permalink to this heading">¶</a></h2>
+<section id="space-efficiency">
+<h3>Space Efficiency<a class="headerlink" href="#space-efficiency" title="Permalink to this heading">¶</a></h3>
+<p>Space efficiency is a ratio of data chunks to all ones in a object and
+represented as k/(k+m).
+In order to improve space efficiency, you should increase k or decrease m:</p>
+<blockquote>
+<div><p>space efficiency of SHEC(4,3,2) = <span class="math notranslate nohighlight">\(\frac{4}{4+3}\)</span> = 0.57
+SHEC(5,3,2) or SHEC(4,2,2) improves SHEC(4,3,2)’s space efficiency</p>
+</div></blockquote>
+</section>
+<section id="durability">
+<h3>Durability<a class="headerlink" href="#durability" title="Permalink to this heading">¶</a></h3>
+<p>The third parameter of SHEC (=c) is a durability estimator, which approximates
+the number of OSDs that can be down without losing data.</p>
+<p><code class="docutils literal notranslate"><span class="pre">durability</span> <span class="pre">estimator</span> <span class="pre">of</span> <span class="pre">SHEC(4,3,2)</span> <span class="pre">=</span> <span class="pre">2</span></code></p>
+</section>
+<section id="recovery-efficiency">
+<h3>Recovery Efficiency<a class="headerlink" href="#recovery-efficiency" title="Permalink to this heading">¶</a></h3>
+<p>Describing calculation of recovery efficiency is beyond the scope of this document,
+but at least increasing m without increasing c achieves improvement of recovery efficiency.
+(However, we must pay attention to the sacrifice of space efficiency in this case.)</p>
+<p><code class="docutils literal notranslate"><span class="pre">SHEC(4,2,2)</span> <span class="pre">-&gt;</span> <span class="pre">SHEC(4,3,2)</span> <span class="pre">:</span> <span class="pre">achieves</span> <span class="pre">improvement</span> <span class="pre">of</span> <span class="pre">recovery</span> <span class="pre">efficiency</span></code></p>
+</section>
+</section>
+<section id="erasure-code-profile-examples">
+<h2>Erasure code profile examples<a class="headerlink" href="#erasure-code-profile-examples" title="Permalink to this heading">¶</a></h2>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>erasure-code-profile<span class="w"> </span><span class="nb">set</span><span class="w"> </span>SHECprofile<span class="w"> </span><span class="se">\</span>
+<span class="w">   </span><span class="nv">plugin</span><span class="o">=</span>shec<span class="w"> </span><span class="se">\</span>
+<span class="w">   </span><span class="nv">k</span><span class="o">=</span><span class="m">8</span><span class="w"> </span><span class="nv">m</span><span class="o">=</span><span class="m">4</span><span class="w"> </span><span class="nv">c</span><span class="o">=</span><span class="m">3</span><span class="w"> </span><span class="se">\</span>
+<span class="w">   </span>crush-failure-domain<span class="o">=</span>host</span>
+<span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>pool<span class="w"> </span>create<span class="w"> </span>shecpool<span class="w"> </span>erasure<span class="w"> </span>SHECprofile</span>
+</pre></div></div></section>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../../">
+              <img class="logo" src="../../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../install/">Installing Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cephadm/">Cephadm</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../">Ceph Storage Cluster</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../../configuration/">Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../cephadm/">Deployment</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../">Operations</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../operating/">Operating a Cluster</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../health-checks/">Health checks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../monitoring/">Monitoring a Cluster</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../monitoring-osd-pg/">Monitoring OSDs and PGs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../user-management/">User Management</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../pg-repair/">Repairing PG Inconsistencies</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../data-placement/">Data Placement Overview</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../pools/">Pools</a></li>
+<li class="toctree-l3 current"><a class="reference internal" href="../erasure-code/">Erasure code</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="../erasure-code/#creating-a-sample-erasure-coded-pool">Creating a sample erasure-coded pool</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../erasure-code/#erasure-code-profiles">Erasure-code profiles</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../erasure-code/#erasure-coding-with-overwrites">Erasure Coding with Overwrites</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../erasure-code/#erasure-coded-pools-and-cache-tiering">Erasure-coded pools and cache tiering</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../erasure-code/#erasure-coded-pool-recovery">Erasure-coded pool recovery</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../erasure-code/#glossary">Glossary</a></li>
+<li class="toctree-l4 current"><a class="reference internal" href="../erasure-code/#table-of-contents">Table of contents</a><ul class="current">
+<li class="toctree-l5 current"><a class="reference internal" href="../erasure-code-profile/">Erasure code profiles</a><ul class="current">
+<li class="toctree-l6"><a class="reference internal" href="../erasure-code-jerasure/">Jerasure erasure code plugin</a></li>
+<li class="toctree-l6"><a class="reference internal" href="../erasure-code-isa/">ISA erasure code plugin</a></li>
+<li class="toctree-l6"><a class="reference internal" href="../erasure-code-lrc/">Locally repairable erasure code plugin</a></li>
+<li class="toctree-l6 current"><a class="current reference internal" href="#">SHEC erasure code plugin</a><ul>
+<li class="toctree-l7"><a class="reference internal" href="#create-an-shec-profile">Create an SHEC profile</a></li>
+<li class="toctree-l7"><a class="reference internal" href="#brief-description-of-shec-s-layouts">Brief description of SHEC’s layouts</a><ul>
+<li class="toctree-l8"><a class="reference internal" href="#space-efficiency">Space Efficiency</a></li>
+<li class="toctree-l8"><a class="reference internal" href="#durability">Durability</a></li>
+<li class="toctree-l8"><a class="reference internal" href="#recovery-efficiency">Recovery Efficiency</a></li>
+</ul>
+</li>
+<li class="toctree-l7"><a class="reference internal" href="#erasure-code-profile-examples">Erasure code profile examples</a></li>
+</ul>
+</li>
+<li class="toctree-l6"><a class="reference internal" href="../erasure-code-clay/">CLAY code plugin</a></li>
+<li class="toctree-l6"><a class="reference internal" href="../erasure-code-profile/#osd-erasure-code-profile-set">osd erasure-code-profile set</a></li>
+<li class="toctree-l6"><a class="reference internal" href="../erasure-code-profile/#osd-erasure-code-profile-rm">osd erasure-code-profile rm</a></li>
+<li class="toctree-l6"><a class="reference internal" href="../erasure-code-profile/#osd-erasure-code-profile-get">osd erasure-code-profile get</a></li>
+<li class="toctree-l6"><a class="reference internal" href="../erasure-code-profile/#osd-erasure-code-profile-ls">osd erasure-code-profile ls</a></li>
+</ul>
+</li>
+<li class="toctree-l5"><a class="reference internal" href="../erasure-code-jerasure/">Jerasure erasure code plugin</a></li>
+<li class="toctree-l5"><a class="reference internal" href="../erasure-code-isa/">ISA erasure code plugin</a></li>
+<li class="toctree-l5"><a class="reference internal" href="../erasure-code-lrc/">Locally repairable erasure code plugin</a></li>
+<li class="toctree-l5 current"><a class="current reference internal" href="#">SHEC erasure code plugin</a><ul>
+<li class="toctree-l6"><a class="reference internal" href="#create-an-shec-profile">Create an SHEC profile</a></li>
+<li class="toctree-l6"><a class="reference internal" href="#brief-description-of-shec-s-layouts">Brief description of SHEC’s layouts</a><ul>
+<li class="toctree-l7"><a class="reference internal" href="#space-efficiency">Space Efficiency</a></li>
+<li class="toctree-l7"><a class="reference internal" href="#durability">Durability</a></li>
+<li class="toctree-l7"><a class="reference internal" href="#recovery-efficiency">Recovery Efficiency</a></li>
+</ul>
+</li>
+<li class="toctree-l6"><a class="reference internal" href="#erasure-code-profile-examples">Erasure code profile examples</a></li>
+</ul>
+</li>
+<li class="toctree-l5"><a class="reference internal" href="../erasure-code-clay/">CLAY code plugin</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../cache-tiering/">Cache Tiering</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../placement-groups/">Placement Groups</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../balancer/">Balancer</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../upmap/">Using pg-upmap</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../crush-map/">CRUSH Maps</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../crush-map-edits/">Manually editing a CRUSH Map</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../stretch-mode/">Stretch Clusters</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../change-mon-elections/">Configure Monitor Election Strategies</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../add-or-rm-osds/">Adding/Removing OSDs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../add-or-rm-mons/">Adding/Removing Monitors</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../devices/">Device Management</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../bluestore-migration/">BlueStore Migration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../control/">Command Reference</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../troubleshooting/community/">The Ceph Community</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../troubleshooting/troubleshooting-mon/">Troubleshooting Monitors</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../troubleshooting/troubleshooting-osd/">Troubleshooting OSDs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../troubleshooting/troubleshooting-pg/">Troubleshooting PGs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../troubleshooting/log-and-debug/">Logging and Debugging</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../troubleshooting/cpu-profiling/">CPU Profiling</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../troubleshooting/memory-profiling/">Memory Profiling</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../man/">Man Pages</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../troubleshooting/">Troubleshooting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/">APIs</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cephfs/">Ceph File System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../rbd/">Ceph Block Device</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../radosgw/">Ceph Object Gateway</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../mgr/">Ceph Manager Daemon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../mgr/dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dev/developer_guide/">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dev/internals/">Ceph Internals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../../../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../erasure-code-clay/" title="CLAY code plugin"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../erasure-code-lrc/" title="Locally repairable erasure code plugin"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../" >Ceph Storage Cluster</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../" >Cluster Operations</a> &#187;</li>
+          <li class="nav-item nav-item-3"><a href="../erasure-code/" >Erasure code</a> &#187;</li>
+          <li class="nav-item nav-item-4"><a href="../erasure-code-profile/" >Erasure code profiles</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">SHEC erasure code plugin</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

@@ -1,0 +1,552 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Control Commands &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/css/custom.css" />
+    <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/jquery.js"></script>
+    <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../../genindex/" />
+    <link rel="search" title="Search" href="../../../search/" />
+    <link rel="next" title="The Ceph Community" href="../../troubleshooting/community/" />
+    <link rel="prev" title="BlueStore Migration" href="../bluestore-migration/" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../../troubleshooting/community/" title="The Ceph Community"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../bluestore-migration/" title="BlueStore Migration"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../" >Ceph Storage Cluster</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../" accesskey="U">Cluster Operations</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Control Commands</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="control-commands">
+<span id="index-0"></span><h1>Control Commands<a class="headerlink" href="#control-commands" title="Permalink to this heading">¶</a></h1>
+<section id="monitor-commands">
+<h2>Monitor Commands<a class="headerlink" href="#monitor-commands" title="Permalink to this heading">¶</a></h2>
+<p>Monitor commands are issued using the <code class="docutils literal notranslate"><span class="pre">ceph</span></code> utility:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><style type="text/css">
+span.prompt1:before {
+  content: "$ ";
+}
+</style><span class="prompt1">ceph<span class="w"> </span><span class="o">[</span>-m<span class="w"> </span>monhost<span class="o">]</span><span class="w"> </span><span class="o">{</span>command<span class="o">}</span></span>
+</pre></div></div><p>The command is usually (though not always) of the form:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span><span class="o">{</span>subsystem<span class="o">}</span><span class="w"> </span><span class="o">{</span>command<span class="o">}</span></span>
+</pre></div></div></section>
+<section id="system-commands">
+<h2>System Commands<a class="headerlink" href="#system-commands" title="Permalink to this heading">¶</a></h2>
+<p>Execute the following to display the current cluster status.  :</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>-s</span>
+<span class="prompt1">ceph<span class="w"> </span>status</span>
+</pre></div></div><p>Execute the following to display a running summary of cluster status
+and major events. :</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>-w</span>
+</pre></div></div><p>Execute the following to show the monitor quorum, including which monitors are
+participating and which one is the leader. :</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>mon<span class="w"> </span>stat</span>
+<span class="prompt1">ceph<span class="w"> </span>quorum_status</span>
+</pre></div></div><p>Execute the following to query the status of a single monitor, including whether
+or not it is in the quorum. :</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>tell<span class="w"> </span>mon.<span class="o">[</span>id<span class="o">]</span><span class="w"> </span>mon_status</span>
+</pre></div></div><p>where the value of <code class="docutils literal notranslate"><span class="pre">[id]</span></code> can be determined, e.g., from <code class="docutils literal notranslate"><span class="pre">ceph</span> <span class="pre">-s</span></code>.</p>
+</section>
+<section id="authentication-subsystem">
+<h2>Authentication Subsystem<a class="headerlink" href="#authentication-subsystem" title="Permalink to this heading">¶</a></h2>
+<p>To add a keyring for an OSD, execute the following:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>auth<span class="w"> </span>add<span class="w"> </span><span class="o">{</span>osd<span class="o">}</span><span class="w"> </span><span class="o">{</span>--in-file<span class="p">|</span>-i<span class="o">}</span><span class="w"> </span><span class="o">{</span>path-to-osd-keyring<span class="o">}</span></span>
+</pre></div></div><p>To list the cluster’s keys and their capabilities, execute the following:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>auth<span class="w"> </span>ls</span>
+</pre></div></div></section>
+<section id="placement-group-subsystem">
+<h2>Placement Group Subsystem<a class="headerlink" href="#placement-group-subsystem" title="Permalink to this heading">¶</a></h2>
+<p>To display the statistics for all placement groups (PGs), execute the following:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>pg<span class="w"> </span>dump<span class="w"> </span><span class="o">[</span>--format<span class="w"> </span><span class="o">{</span>format<span class="o">}]</span></span>
+</pre></div></div><p>The valid formats are <code class="docutils literal notranslate"><span class="pre">plain</span></code> (default), <code class="docutils literal notranslate"><span class="pre">json</span></code> <code class="docutils literal notranslate"><span class="pre">json-pretty</span></code>, <code class="docutils literal notranslate"><span class="pre">xml</span></code>, and <code class="docutils literal notranslate"><span class="pre">xml-pretty</span></code>.
+When implementing monitoring and other tools, it is best to use <code class="docutils literal notranslate"><span class="pre">json</span></code> format.
+JSON parsing is more deterministic than the human-oriented <code class="docutils literal notranslate"><span class="pre">plain</span></code>, and the layout is much
+less variable from release to release.  The <code class="docutils literal notranslate"><span class="pre">jq</span></code> utility can be invaluable when extracting
+data from JSON output.</p>
+<p>To display the statistics for all placement groups stuck in a specified state,
+execute the following:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>pg<span class="w"> </span>dump_stuck<span class="w"> </span>inactive<span class="p">|</span>unclean<span class="p">|</span>stale<span class="p">|</span>undersized<span class="p">|</span>degraded<span class="w"> </span><span class="o">[</span>--format<span class="w"> </span><span class="o">{</span>format<span class="o">}]</span><span class="w"> </span><span class="o">[</span>-t<span class="p">|</span>--threshold<span class="w"> </span><span class="o">{</span>seconds<span class="o">}]</span></span>
+</pre></div></div><p><code class="docutils literal notranslate"><span class="pre">--format</span></code> may be <code class="docutils literal notranslate"><span class="pre">plain</span></code> (default), <code class="docutils literal notranslate"><span class="pre">json</span></code>, <code class="docutils literal notranslate"><span class="pre">json-pretty</span></code>, <code class="docutils literal notranslate"><span class="pre">xml</span></code>, or <code class="docutils literal notranslate"><span class="pre">xml-pretty</span></code>.</p>
+<p><code class="docutils literal notranslate"><span class="pre">--threshold</span></code> defines how many seconds “stuck” is (default: 300)</p>
+<p><strong>Inactive</strong> Placement groups cannot process reads or writes because they are waiting for an OSD
+with the most up-to-date data to come back.</p>
+<p><strong>Unclean</strong> Placement groups contain objects that are not replicated the desired number
+of times. They should be recovering.</p>
+<p><strong>Stale</strong> Placement groups are in an unknown state - the OSDs that host them have not
+reported to the monitor cluster in a while (configured by
+<code class="docutils literal notranslate"><span class="pre">mon_osd_report_timeout</span></code>).</p>
+<p>Delete “lost” objects or revert them to their prior state, either a previous version
+or delete them if they were just created. :</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>pg<span class="w"> </span><span class="o">{</span>pgid<span class="o">}</span><span class="w"> </span>mark_unfound_lost<span class="w"> </span>revert<span class="p">|</span>delete</span>
+</pre></div></div></section>
+<section id="osd-subsystem">
+<span id="id1"></span><h2>OSD Subsystem<a class="headerlink" href="#osd-subsystem" title="Permalink to this heading">¶</a></h2>
+<p>Query OSD subsystem status. :</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>stat</span>
+</pre></div></div><p>Write a copy of the most recent OSD map to a file. See
+<a class="reference internal" href="../../../man/8/osdmaptool/#osdmaptool"><span class="std std-ref">osdmaptool</span></a>. :</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>getmap<span class="w"> </span>-o<span class="w"> </span>file</span>
+</pre></div></div><p>Write a copy of the crush map from the most recent OSD map to
+file. :</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>getcrushmap<span class="w"> </span>-o<span class="w"> </span>file</span>
+</pre></div></div><p>The foregoing is functionally equivalent to :</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>getmap<span class="w"> </span>-o<span class="w"> </span>/tmp/osdmap</span>
+<span class="prompt1">osdmaptool<span class="w"> </span>/tmp/osdmap<span class="w"> </span>--export-crush<span class="w"> </span>file</span>
+</pre></div></div><p>Dump the OSD map. Valid formats for <code class="docutils literal notranslate"><span class="pre">-f</span></code> are <code class="docutils literal notranslate"><span class="pre">plain</span></code>, <code class="docutils literal notranslate"><span class="pre">json</span></code>, <code class="docutils literal notranslate"><span class="pre">json-pretty</span></code>,
+<code class="docutils literal notranslate"><span class="pre">xml</span></code>, and <code class="docutils literal notranslate"><span class="pre">xml-pretty</span></code>. If no <code class="docutils literal notranslate"><span class="pre">--format</span></code> option is given, the OSD map is
+dumped as plain text.  As above, JSON format is best for tools, scripting, and other automation. :</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>dump<span class="w"> </span><span class="o">[</span>--format<span class="w"> </span><span class="o">{</span>format<span class="o">}]</span></span>
+</pre></div></div><p>Dump the OSD map as a tree with one line per OSD containing weight
+and state. :</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>tree<span class="w"> </span><span class="o">[</span>--format<span class="w"> </span><span class="o">{</span>format<span class="o">}]</span></span>
+</pre></div></div><p>Find out where a specific object is or would be stored in the system:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>map<span class="w"> </span>&lt;pool-name&gt;<span class="w"> </span>&lt;object-name&gt;</span>
+</pre></div></div><p>Add or move a new item (OSD) with the given id/name/weight at the specified
+location. :</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>crush<span class="w"> </span><span class="nb">set</span><span class="w"> </span><span class="o">{</span>id<span class="o">}</span><span class="w"> </span><span class="o">{</span>weight<span class="o">}</span><span class="w"> </span><span class="o">[{</span>loc1<span class="o">}</span><span class="w"> </span><span class="o">[{</span>loc2<span class="o">}</span><span class="w"> </span>...<span class="o">]]</span></span>
+</pre></div></div><p>Remove an existing item (OSD) from the CRUSH map. :</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>crush<span class="w"> </span>remove<span class="w"> </span><span class="o">{</span>name<span class="o">}</span></span>
+</pre></div></div><p>Remove an existing bucket from the CRUSH map. :</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>crush<span class="w"> </span>remove<span class="w"> </span><span class="o">{</span>bucket-name<span class="o">}</span></span>
+</pre></div></div><p>Move an existing bucket from one position in the hierarchy to another.  :</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>crush<span class="w"> </span>move<span class="w"> </span><span class="o">{</span>id<span class="o">}</span><span class="w"> </span><span class="o">{</span>loc1<span class="o">}</span><span class="w"> </span><span class="o">[{</span>loc2<span class="o">}</span><span class="w"> </span>...<span class="o">]</span></span>
+</pre></div></div><p>Set the weight of the item given by <code class="docutils literal notranslate"><span class="pre">{name}</span></code> to <code class="docutils literal notranslate"><span class="pre">{weight}</span></code>. :</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>crush<span class="w"> </span>reweight<span class="w"> </span><span class="o">{</span>name<span class="o">}</span><span class="w"> </span><span class="o">{</span>weight<span class="o">}</span></span>
+</pre></div></div><p>Mark an OSD as <code class="docutils literal notranslate"><span class="pre">lost</span></code>. This may result in permanent data loss. Use with caution. :</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>lost<span class="w"> </span><span class="o">{</span>id<span class="o">}</span><span class="w"> </span><span class="o">[</span>--yes-i-really-mean-it<span class="o">]</span></span>
+</pre></div></div><p>Create a new OSD. If no UUID is given, it will be set automatically when the OSD
+starts up. :</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>create<span class="w"> </span><span class="o">[{</span>uuid<span class="o">}]</span></span>
+</pre></div></div><p>Remove the given OSD(s). :</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>rm<span class="w"> </span><span class="o">[{</span>id<span class="o">}</span>...<span class="o">]</span></span>
+</pre></div></div><p>Query the current <code class="docutils literal notranslate"><span class="pre">max_osd</span></code> parameter in the OSD map. :</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>getmaxosd</span>
+</pre></div></div><p>Import the given crush map. :</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>setcrushmap<span class="w"> </span>-i<span class="w"> </span>file</span>
+</pre></div></div><p>Set the <code class="docutils literal notranslate"><span class="pre">max_osd</span></code> parameter in the OSD map. This defaults to 10000 now so
+most admins will never need to adjust this. :</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>setmaxosd</span>
+</pre></div></div><p>Mark OSD <code class="docutils literal notranslate"><span class="pre">{osd-num}</span></code> down. :</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>down<span class="w"> </span><span class="o">{</span>osd-num<span class="o">}</span></span>
+</pre></div></div><p>Mark OSD <code class="docutils literal notranslate"><span class="pre">{osd-num}</span></code> out of the distribution (i.e. allocated no data). :</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>out<span class="w"> </span><span class="o">{</span>osd-num<span class="o">}</span></span>
+</pre></div></div><p>Mark <code class="docutils literal notranslate"><span class="pre">{osd-num}</span></code> in the distribution (i.e. allocated data). :</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="o">{</span>osd-num<span class="o">}</span></span>
+</pre></div></div><p>Set or clear the pause flags in the OSD map. If set, no IO requests
+will be sent to any OSD. Clearing the flags via unpause results in
+resending pending requests. :</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>pause</span>
+<span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>unpause</span>
+</pre></div></div><p>Set the override weight (reweight) of <code class="docutils literal notranslate"><span class="pre">{osd-num}</span></code> to <code class="docutils literal notranslate"><span class="pre">{weight}</span></code>. Two OSDs with the
+same weight will receive roughly the same number of I/O requests and
+store approximately the same amount of data. <code class="docutils literal notranslate"><span class="pre">ceph</span> <span class="pre">osd</span> <span class="pre">reweight</span></code>
+sets an override weight on the OSD. This value is in the range 0 to 1,
+and forces CRUSH to re-place (1-weight) of the data that would
+otherwise live on this drive. It does not change weights assigned
+to the buckets above the OSD in the crush map, and is a corrective
+measure in case the normal CRUSH distribution is not working out quite
+right. For instance, if one of your OSDs is at 90% and the others are
+at 50%, you could reduce this weight to compensate. :</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>reweight<span class="w"> </span><span class="o">{</span>osd-num<span class="o">}</span><span class="w"> </span><span class="o">{</span>weight<span class="o">}</span></span>
+</pre></div></div><p>Balance OSD fullness by reducing the override weight of OSDs which are
+overly utilized.  Note that these override aka <code class="docutils literal notranslate"><span class="pre">reweight</span></code> values
+default to 1.00000 and are relative only to each other; they not absolute.
+It is crucial to distinguish them from CRUSH weights, which reflect the
+absolute capacity of a bucket in TiB.  By default this command adjusts
+override weight on OSDs which have + or - 20% of the average utilization,
+but if you include a <code class="docutils literal notranslate"><span class="pre">threshold</span></code> that percentage will be used instead. :</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>reweight-by-utilization<span class="w"> </span><span class="o">[</span>threshold<span class="w"> </span><span class="o">[</span>max_change<span class="w"> </span><span class="o">[</span>max_osds<span class="o">]]]</span><span class="w"> </span><span class="o">[</span>--no-increasing<span class="o">]</span></span>
+</pre></div></div><p>To limit the step by which any OSD’s reweight will be changed, specify
+<code class="docutils literal notranslate"><span class="pre">max_change</span></code> which defaults to 0.05.  To limit the number of OSDs that will
+be adjusted, specify <code class="docutils literal notranslate"><span class="pre">max_osds</span></code> as well; the default is 4.  Increasing these
+parameters can speed leveling of OSD utilization, at the potential cost of
+greater impact on client operations due to more data moving at once.</p>
+<p>To determine which and how many PGs and OSDs will be affected by a given invocation
+you can test before executing. :</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>test-reweight-by-utilization<span class="w"> </span><span class="o">[</span>threshold<span class="w"> </span><span class="o">[</span>max_change<span class="w"> </span>max_osds<span class="o">]]</span><span class="w"> </span><span class="o">[</span>--no-increasing<span class="o">]</span></span>
+</pre></div></div><p>Adding <code class="docutils literal notranslate"><span class="pre">--no-increasing</span></code> to either command prevents increasing any
+override weights that are currently &lt; 1.00000.  This can be useful when
+you are balancing in a hurry to remedy <code class="docutils literal notranslate"><span class="pre">full</span></code> or <code class="docutils literal notranslate"><span class="pre">nearful</span></code> OSDs or
+when some OSDs are being evacuated or slowly brought into service.</p>
+<p>Deployments utilizing Nautilus (or later revisions of Luminous and Mimic)
+that have no pre-Luminous cients may instead wish to instead enable the
+<cite>balancer`</cite> module for <code class="docutils literal notranslate"><span class="pre">ceph-mgr</span></code>.</p>
+<p>Add/remove an IP address or CIDR range to/from the blocklist.
+When adding to the blocklist,
+you can specify how long it should be blocklisted in seconds; otherwise,
+it will default to 1 hour. A blocklisted address is prevented from
+connecting to any OSD. If you blocklist an IP or range containing an OSD, be aware
+that OSD will also be prevented from performing operations on its peers where it
+acts as a client. (This includes tiering and copy-from functionality.)</p>
+<p>If you want to blocklist a range (in CIDR format), you may do so by
+including the <code class="docutils literal notranslate"><span class="pre">range</span></code> keyword.</p>
+<p>These commands are mostly only useful for failure testing, as
+blocklists are normally maintained automatically and shouldn’t need
+manual intervention. :</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>blocklist<span class="w"> </span><span class="o">[</span><span class="s2">&quot;range&quot;</span><span class="o">]</span><span class="w"> </span>add<span class="w"> </span>ADDRESS<span class="o">[</span>:source_port<span class="o">][</span>/netmask_bits<span class="o">]</span><span class="w"> </span><span class="o">[</span>TIME<span class="o">]</span></span>
+<span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>blocklist<span class="w"> </span><span class="o">[</span><span class="s2">&quot;range&quot;</span><span class="o">]</span><span class="w"> </span>rm<span class="w"> </span>ADDRESS<span class="o">[</span>:source_port<span class="o">][</span>/netmask_bits<span class="o">]</span></span>
+</pre></div></div><p>Creates/deletes a snapshot of a pool. :</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>pool<span class="w"> </span>mksnap<span class="w"> </span><span class="o">{</span>pool-name<span class="o">}</span><span class="w"> </span><span class="o">{</span>snap-name<span class="o">}</span></span>
+<span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>pool<span class="w"> </span>rmsnap<span class="w"> </span><span class="o">{</span>pool-name<span class="o">}</span><span class="w"> </span><span class="o">{</span>snap-name<span class="o">}</span></span>
+</pre></div></div><p>Creates/deletes/renames a storage pool. :</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>pool<span class="w"> </span>create<span class="w"> </span><span class="o">{</span>pool-name<span class="o">}</span><span class="w"> </span><span class="o">[</span>pg_num<span class="w"> </span><span class="o">[</span>pgp_num<span class="o">]]</span></span>
+<span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>pool<span class="w"> </span>delete<span class="w"> </span><span class="o">{</span>pool-name<span class="o">}</span><span class="w"> </span><span class="o">[{</span>pool-name<span class="o">}</span><span class="w"> </span>--yes-i-really-really-mean-it<span class="o">]</span></span>
+<span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>pool<span class="w"> </span>rename<span class="w"> </span><span class="o">{</span>old-name<span class="o">}</span><span class="w"> </span><span class="o">{</span>new-name<span class="o">}</span></span>
+</pre></div></div><p>Changes a pool setting. :</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>pool<span class="w"> </span><span class="nb">set</span><span class="w"> </span><span class="o">{</span>pool-name<span class="o">}</span><span class="w"> </span><span class="o">{</span>field<span class="o">}</span><span class="w"> </span><span class="o">{</span>value<span class="o">}</span></span>
+</pre></div></div><p>Valid fields are:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">size</span></code>: Sets the number of copies of data in the pool.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">pg_num</span></code>: The placement group number.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">pgp_num</span></code>: Effective number when calculating pg placement.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">crush_rule</span></code>: rule number for mapping placement.</p></li>
+</ul>
+</div></blockquote>
+<p>Get the value of a pool setting. :</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>pool<span class="w"> </span>get<span class="w"> </span><span class="o">{</span>pool-name<span class="o">}</span><span class="w"> </span><span class="o">{</span>field<span class="o">}</span></span>
+</pre></div></div><p>Valid fields are:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">pg_num</span></code>: The placement group number.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">pgp_num</span></code>: Effective number of placement groups when calculating placement.</p></li>
+</ul>
+</div></blockquote>
+<p>Sends a scrub command to OSD <code class="docutils literal notranslate"><span class="pre">{osd-num}</span></code>. To send the command to all OSDs, use <code class="docutils literal notranslate"><span class="pre">*</span></code>. :</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>scrub<span class="w"> </span><span class="o">{</span>osd-num<span class="o">}</span></span>
+</pre></div></div><p>Sends a repair command to OSD.N. To send the command to all OSDs, use <code class="docutils literal notranslate"><span class="pre">*</span></code>. :</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>repair<span class="w"> </span>N</span>
+</pre></div></div><p>Runs a simple throughput benchmark against OSD.N, writing <code class="docutils literal notranslate"><span class="pre">TOTAL_DATA_BYTES</span></code>
+in write requests of <code class="docutils literal notranslate"><span class="pre">BYTES_PER_WRITE</span></code> each. By default, the test
+writes 1 GB in total in 4-MB increments.
+The benchmark is non-destructive and will not overwrite existing live
+OSD data, but might temporarily affect the performance of clients
+concurrently accessing the OSD. :</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>tell<span class="w"> </span>osd.N<span class="w"> </span>bench<span class="w"> </span><span class="o">[</span>TOTAL_DATA_BYTES<span class="o">]</span><span class="w"> </span><span class="o">[</span>BYTES_PER_WRITE<span class="o">]</span></span>
+</pre></div></div><p>To clear an OSD’s caches between benchmark runs, use the ‘cache drop’ command :</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>tell<span class="w"> </span>osd.N<span class="w"> </span>cache<span class="w"> </span>drop</span>
+</pre></div></div><p>To get the cache statistics of an OSD, use the ‘cache status’ command :</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>tell<span class="w"> </span>osd.N<span class="w"> </span>cache<span class="w"> </span>status</span>
+</pre></div></div></section>
+<section id="mds-subsystem">
+<h2>MDS Subsystem<a class="headerlink" href="#mds-subsystem" title="Permalink to this heading">¶</a></h2>
+<p>Change configuration parameters on a running mds. :</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>tell<span class="w"> </span>mds.<span class="o">{</span>mds-id<span class="o">}</span><span class="w"> </span>config<span class="w"> </span><span class="nb">set</span><span class="w"> </span><span class="o">{</span>setting<span class="o">}</span><span class="w"> </span><span class="o">{</span>value<span class="o">}</span></span>
+</pre></div></div><p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>tell<span class="w"> </span>mds.0<span class="w"> </span>config<span class="w"> </span><span class="nb">set</span><span class="w"> </span>debug_ms<span class="w"> </span><span class="m">1</span></span>
+</pre></div></div><p>Enables debug messages. :</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>mds<span class="w"> </span>stat</span>
+</pre></div></div><p>Displays the status of all metadata servers. :</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>mds<span class="w"> </span>fail<span class="w"> </span><span class="m">0</span></span>
+</pre></div></div><p>Marks the active MDS as failed, triggering failover to a standby if present.</p>
+<div class="admonition-todo admonition" id="id2">
+<p class="admonition-title">Todo</p>
+<p><code class="docutils literal notranslate"><span class="pre">ceph</span> <span class="pre">mds</span></code> subcommands missing docs: set, dump, getmap, stop, setmap</p>
+</div>
+</section>
+<section id="mon-subsystem">
+<h2>Mon Subsystem<a class="headerlink" href="#mon-subsystem" title="Permalink to this heading">¶</a></h2>
+<p>Show monitor stats:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>mon<span class="w"> </span>stat</span>
+</pre></div></div><div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">e2</span><span class="p">:</span> <span class="mi">3</span> <span class="n">mons</span> <span class="n">at</span> <span class="p">{</span><span class="n">a</span><span class="o">=</span><span class="mf">127.0.0.1</span><span class="p">:</span><span class="mi">40000</span><span class="o">/</span><span class="mi">0</span><span class="p">,</span><span class="n">b</span><span class="o">=</span><span class="mf">127.0.0.1</span><span class="p">:</span><span class="mi">40001</span><span class="o">/</span><span class="mi">0</span><span class="p">,</span><span class="n">c</span><span class="o">=</span><span class="mf">127.0.0.1</span><span class="p">:</span><span class="mi">40002</span><span class="o">/</span><span class="mi">0</span><span class="p">},</span> <span class="n">election</span> <span class="n">epoch</span> <span class="mi">6</span><span class="p">,</span> <span class="n">quorum</span> <span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span> <span class="n">a</span><span class="p">,</span><span class="n">b</span><span class="p">,</span><span class="n">c</span>
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">quorum</span></code> list at the end lists monitor nodes that are part of the current quorum.</p>
+<p>This is also available more directly:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>quorum_status<span class="w"> </span>-f<span class="w"> </span>json-pretty</span>
+</pre></div></div><div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<span class="w">    </span><span class="s2">&quot;election_epoch&quot;</span><span class="o">:</span><span class="w"> </span><span class="mf">6</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;quorum&quot;</span><span class="o">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">        </span><span class="mf">0</span><span class="p">,</span>
+<span class="w">        </span><span class="mf">1</span><span class="p">,</span>
+<span class="w">        </span><span class="mf">2</span>
+<span class="w">    </span><span class="p">],</span>
+<span class="w">    </span><span class="s2">&quot;quorum_names&quot;</span><span class="o">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">        </span><span class="s2">&quot;a&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;b&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;c&quot;</span>
+<span class="w">    </span><span class="p">],</span>
+<span class="w">    </span><span class="s2">&quot;quorum_leader_name&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;a&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;monmap&quot;</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="s2">&quot;epoch&quot;</span><span class="o">:</span><span class="w"> </span><span class="mf">2</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;fsid&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;ba807e74-b64f-4b72-b43f-597dfe60ddbc&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;modified&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;2016-12-26 14:42:09.288066&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;created&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;2016-12-26 14:42:03.573585&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;features&quot;</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="s2">&quot;persistent&quot;</span><span class="o">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">                </span><span class="s2">&quot;kraken&quot;</span>
+<span class="w">            </span><span class="p">],</span>
+<span class="w">            </span><span class="s2">&quot;optional&quot;</span><span class="o">:</span><span class="w"> </span><span class="p">[]</span>
+<span class="w">        </span><span class="p">},</span>
+<span class="w">        </span><span class="s2">&quot;mons&quot;</span><span class="o">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">            </span><span class="p">{</span>
+<span class="w">                </span><span class="s2">&quot;rank&quot;</span><span class="o">:</span><span class="w"> </span><span class="mf">0</span><span class="p">,</span>
+<span class="w">                </span><span class="s2">&quot;name&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;a&quot;</span><span class="p">,</span>
+<span class="w">                </span><span class="s2">&quot;addr&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;127.0.0.1:40000\/0&quot;</span><span class="p">,</span>
+<span class="w">                </span><span class="s2">&quot;public_addr&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;127.0.0.1:40000\/0&quot;</span>
+<span class="w">            </span><span class="p">},</span>
+<span class="w">            </span><span class="p">{</span>
+<span class="w">                </span><span class="s2">&quot;rank&quot;</span><span class="o">:</span><span class="w"> </span><span class="mf">1</span><span class="p">,</span>
+<span class="w">                </span><span class="s2">&quot;name&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;b&quot;</span><span class="p">,</span>
+<span class="w">                </span><span class="s2">&quot;addr&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;127.0.0.1:40001\/0&quot;</span><span class="p">,</span>
+<span class="w">                </span><span class="s2">&quot;public_addr&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;127.0.0.1:40001\/0&quot;</span>
+<span class="w">            </span><span class="p">},</span>
+<span class="w">            </span><span class="p">{</span>
+<span class="w">                </span><span class="s2">&quot;rank&quot;</span><span class="o">:</span><span class="w"> </span><span class="mf">2</span><span class="p">,</span>
+<span class="w">                </span><span class="s2">&quot;name&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;c&quot;</span><span class="p">,</span>
+<span class="w">                </span><span class="s2">&quot;addr&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;127.0.0.1:40002\/0&quot;</span><span class="p">,</span>
+<span class="w">                </span><span class="s2">&quot;public_addr&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;127.0.0.1:40002\/0&quot;</span>
+<span class="w">            </span><span class="p">}</span>
+<span class="w">        </span><span class="p">]</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>The above will block until a quorum is reached.</p>
+<p>For a status of just a single monitor:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>tell<span class="w"> </span>mon.<span class="o">[</span>name<span class="o">]</span><span class="w"> </span>mon_status</span>
+</pre></div></div><p>where the value of <code class="docutils literal notranslate"><span class="pre">[name]</span></code> can be taken from <code class="docutils literal notranslate"><span class="pre">ceph</span> <span class="pre">quorum_status</span></code>. Sample
+output:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+    <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;b&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;rank&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="s2">&quot;state&quot;</span><span class="p">:</span> <span class="s2">&quot;peon&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;election_epoch&quot;</span><span class="p">:</span> <span class="mi">6</span><span class="p">,</span>
+    <span class="s2">&quot;quorum&quot;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="mi">0</span><span class="p">,</span>
+        <span class="mi">1</span><span class="p">,</span>
+        <span class="mi">2</span>
+    <span class="p">],</span>
+    <span class="s2">&quot;features&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">&quot;required_con&quot;</span><span class="p">:</span> <span class="s2">&quot;9025616074522624&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;required_mon&quot;</span><span class="p">:</span> <span class="p">[</span>
+            <span class="s2">&quot;kraken&quot;</span>
+        <span class="p">],</span>
+        <span class="s2">&quot;quorum_con&quot;</span><span class="p">:</span> <span class="s2">&quot;1152921504336314367&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;quorum_mon&quot;</span><span class="p">:</span> <span class="p">[</span>
+            <span class="s2">&quot;kraken&quot;</span>
+        <span class="p">]</span>
+    <span class="p">},</span>
+    <span class="s2">&quot;outside_quorum&quot;</span><span class="p">:</span> <span class="p">[],</span>
+    <span class="s2">&quot;extra_probe_peers&quot;</span><span class="p">:</span> <span class="p">[],</span>
+    <span class="s2">&quot;sync_provider&quot;</span><span class="p">:</span> <span class="p">[],</span>
+    <span class="s2">&quot;monmap&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">&quot;epoch&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
+        <span class="s2">&quot;fsid&quot;</span><span class="p">:</span> <span class="s2">&quot;ba807e74-b64f-4b72-b43f-597dfe60ddbc&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;modified&quot;</span><span class="p">:</span> <span class="s2">&quot;2016-12-26 14:42:09.288066&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;created&quot;</span><span class="p">:</span> <span class="s2">&quot;2016-12-26 14:42:03.573585&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;features&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;persistent&quot;</span><span class="p">:</span> <span class="p">[</span>
+                <span class="s2">&quot;kraken&quot;</span>
+            <span class="p">],</span>
+            <span class="s2">&quot;optional&quot;</span><span class="p">:</span> <span class="p">[]</span>
+        <span class="p">},</span>
+        <span class="s2">&quot;mons&quot;</span><span class="p">:</span> <span class="p">[</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;rank&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;a&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;addr&quot;</span><span class="p">:</span> <span class="s2">&quot;127.0.0.1:40000\/0&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;public_addr&quot;</span><span class="p">:</span> <span class="s2">&quot;127.0.0.1:40000\/0&quot;</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;rank&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;b&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;addr&quot;</span><span class="p">:</span> <span class="s2">&quot;127.0.0.1:40001\/0&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;public_addr&quot;</span><span class="p">:</span> <span class="s2">&quot;127.0.0.1:40001\/0&quot;</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;rank&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;c&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;addr&quot;</span><span class="p">:</span> <span class="s2">&quot;127.0.0.1:40002\/0&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;public_addr&quot;</span><span class="p">:</span> <span class="s2">&quot;127.0.0.1:40002\/0&quot;</span>
+            <span class="p">}</span>
+        <span class="p">]</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>A dump of the monitor state:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>mon<span class="w"> </span>dump</span>
+</pre></div></div><div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">dumped</span> <span class="n">monmap</span> <span class="n">epoch</span> <span class="mi">2</span>
+<span class="n">epoch</span> <span class="mi">2</span>
+<span class="n">fsid</span> <span class="n">ba807e74</span><span class="o">-</span><span class="n">b64f</span><span class="o">-</span><span class="mi">4</span><span class="n">b72</span><span class="o">-</span><span class="n">b43f</span><span class="o">-</span><span class="mi">597</span><span class="n">dfe60ddbc</span>
+<span class="n">last_changed</span> <span class="mi">2016</span><span class="o">-</span><span class="mi">12</span><span class="o">-</span><span class="mi">26</span> <span class="mi">14</span><span class="p">:</span><span class="mi">42</span><span class="p">:</span><span class="mf">09.288066</span>
+<span class="n">created</span> <span class="mi">2016</span><span class="o">-</span><span class="mi">12</span><span class="o">-</span><span class="mi">26</span> <span class="mi">14</span><span class="p">:</span><span class="mi">42</span><span class="p">:</span><span class="mf">03.573585</span>
+<span class="mi">0</span><span class="p">:</span> <span class="mf">127.0.0.1</span><span class="p">:</span><span class="mi">40000</span><span class="o">/</span><span class="mi">0</span> <span class="n">mon</span><span class="o">.</span><span class="n">a</span>
+<span class="mi">1</span><span class="p">:</span> <span class="mf">127.0.0.1</span><span class="p">:</span><span class="mi">40001</span><span class="o">/</span><span class="mi">0</span> <span class="n">mon</span><span class="o">.</span><span class="n">b</span>
+<span class="mi">2</span><span class="p">:</span> <span class="mf">127.0.0.1</span><span class="p">:</span><span class="mi">40002</span><span class="o">/</span><span class="mi">0</span> <span class="n">mon</span><span class="o">.</span><span class="n">c</span>
+</pre></div>
+</div>
+</section>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../../">
+              <img class="logo" src="../../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../install/">Installing Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cephadm/">Cephadm</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../">Ceph Storage Cluster</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../../configuration/">Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../cephadm/">Deployment</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../">Operations</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../operating/">Operating a Cluster</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../health-checks/">Health checks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../monitoring/">Monitoring a Cluster</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../monitoring-osd-pg/">Monitoring OSDs and PGs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../user-management/">User Management</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../pg-repair/">Repairing PG Inconsistencies</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../data-placement/">Data Placement Overview</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../pools/">Pools</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../erasure-code/">Erasure code</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../cache-tiering/">Cache Tiering</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../placement-groups/">Placement Groups</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../balancer/">Balancer</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../upmap/">Using pg-upmap</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../crush-map/">CRUSH Maps</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../crush-map-edits/">Manually editing a CRUSH Map</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../stretch-mode/">Stretch Clusters</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../change-mon-elections/">Configure Monitor Election Strategies</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../add-or-rm-osds/">Adding/Removing OSDs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../add-or-rm-mons/">Adding/Removing Monitors</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../devices/">Device Management</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../bluestore-migration/">BlueStore Migration</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Command Reference</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#monitor-commands">Monitor Commands</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#system-commands">System Commands</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#authentication-subsystem">Authentication Subsystem</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#placement-group-subsystem">Placement Group Subsystem</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#osd-subsystem">OSD Subsystem</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#mds-subsystem">MDS Subsystem</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#mon-subsystem">Mon Subsystem</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../troubleshooting/community/">The Ceph Community</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../troubleshooting/troubleshooting-mon/">Troubleshooting Monitors</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../troubleshooting/troubleshooting-osd/">Troubleshooting OSDs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../troubleshooting/troubleshooting-pg/">Troubleshooting PGs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../troubleshooting/log-and-debug/">Logging and Debugging</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../troubleshooting/cpu-profiling/">CPU Profiling</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../troubleshooting/memory-profiling/">Memory Profiling</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../man/">Man Pages</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../troubleshooting/">Troubleshooting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/">APIs</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cephfs/">Ceph File System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../rbd/">Ceph Block Device</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../radosgw/">Ceph Object Gateway</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../mgr/">Ceph Manager Daemon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../mgr/dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dev/developer_guide/">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dev/internals/">Ceph Internals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../../../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../../troubleshooting/community/" title="The Ceph Community"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../bluestore-migration/" title="BlueStore Migration"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../" >Ceph Storage Cluster</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../" >Cluster Operations</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Control Commands</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

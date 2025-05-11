@@ -1,0 +1,271 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>NFS &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css" />
+    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../genindex/" />
+    <link rel="search" title="Search" href="../../search/" />
+    <link rel="next" title="Application best practices for distributed file systems" href="../app-best-practices/" />
+    <link rel="prev" title="ceph-mds – ceph metadata server daemon" href="../../man/8/ceph-mds/" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../app-best-practices/" title="Application best practices for distributed file systems"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../../man/8/ceph-mds/" title="ceph-mds – ceph metadata server daemon"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../" accesskey="U">Ceph File System</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">NFS</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="nfs">
+<span id="cephfs-nfs"></span><h1>NFS<a class="headerlink" href="#nfs" title="Permalink to this heading">¶</a></h1>
+<p>CephFS namespaces can be exported over NFS protocol using the NFS-Ganesha NFS
+server.  This document provides information on configuring NFS-Ganesha
+clusters manually.  The simplest and preferred way of managing NFS-Ganesha
+clusters and CephFS exports is using <code class="docutils literal notranslate"><span class="pre">ceph</span> <span class="pre">nfs</span> <span class="pre">...</span></code> commands. See
+<a class="reference internal" href="../../mgr/nfs/"><span class="doc">CephFS &amp; RGW Exports over NFS</span></a> for more details. As the deployment is done using cephadm or
+rook.</p>
+<section id="requirements">
+<h2>Requirements<a class="headerlink" href="#requirements" title="Permalink to this heading">¶</a></h2>
+<ul class="simple">
+<li><p>Ceph file system (preferably latest stable luminous or higher versions)</p></li>
+<li><p>In the NFS server host machine, ‘libcephfs2’ (preferably latest stable
+luminous or higher), ‘nfs-ganesha’ and ‘nfs-ganesha-ceph’ packages (latest
+ganesha v2.5 stable or higher versions)</p></li>
+<li><p>NFS-Ganesha server host connected to the Ceph public network</p></li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>It is recommended to use 3.5 or later stable version of NFS-Ganesha
+packages with pacific (16.2.x) or later stable version of Ceph packages.</p>
+</div>
+</section>
+<section id="configuring-nfs-ganesha-to-export-cephfs">
+<h2>Configuring NFS-Ganesha to export CephFS<a class="headerlink" href="#configuring-nfs-ganesha-to-export-cephfs" title="Permalink to this heading">¶</a></h2>
+<p>NFS-Ganesha provides a File System Abstraction Layer (FSAL) to plug in different
+storage backends. <a class="reference external" href="https://github.com/nfs-ganesha/nfs-ganesha/tree/next/src/FSAL/FSAL_CEPH">FSAL_CEPH</a>
+is the plugin FSAL for CephFS. For each NFS-Ganesha export, FSAL_CEPH uses a
+libcephfs client, user-space CephFS client, to mount the CephFS path that
+NFS-Ganesha exports.</p>
+<p>Setting up NFS-Ganesha with CephFS, involves setting up NFS-Ganesha’s
+configuration file, and also setting up a Ceph configuration file and cephx
+access credentials for the Ceph clients created by NFS-Ganesha to access
+CephFS.</p>
+<section id="nfs-ganesha-configuration">
+<h3>NFS-Ganesha configuration<a class="headerlink" href="#nfs-ganesha-configuration" title="Permalink to this heading">¶</a></h3>
+<p>A sample ganesha.conf configured with FSAL_CEPH can be found here,
+<a class="reference external" href="https://github.com/nfs-ganesha/nfs-ganesha/blob/next/src/config_samples/ceph.conf">https://github.com/nfs-ganesha/nfs-ganesha/blob/next/src/config_samples/ceph.conf</a>.
+It is suitable for a standalone NFS-Ganesha server, or an active/passive
+configuration of NFS-Ganesha servers managed by some sort of clustering
+software (e.g., Pacemaker). Important details about the options are
+added as comments in the sample conf. There are options to do the following:</p>
+<ul class="simple">
+<li><p>minimize Ganesha caching wherever possible since the libcephfs clients
+(of FSAL_CEPH) also cache aggressively</p></li>
+<li><p>read from Ganesha config files stored in RADOS objects</p></li>
+<li><p>store client recovery data in RADOS OMAP key-value interface</p></li>
+<li><p>mandate NFSv4.1+ access</p></li>
+<li><p>enable read delegations (need at least v13.0.1 ‘libcephfs2’ package
+and v2.6.0 stable ‘nfs-ganesha’ and ‘nfs-ganesha-ceph’ packages)</p></li>
+</ul>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>Under certain conditions, NFS access using the CephFS FSAL fails. This
+causes an error to be thrown that reads “Input/output error”. Under these
+circumstances, the application metadata must be set for the CephFS metadata
+and CephFS data pools. Do this by running the following command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><style type="text/css">
+span.prompt1:before {
+  content: "$ ";
+}
+</style><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>pool<span class="w"> </span>application<span class="w"> </span><span class="nb">set</span><span class="w"> </span>&lt;cephfs_metadata_pool&gt;<span class="w"> </span>cephfs<span class="w"> </span>&lt;cephfs_data_pool&gt;<span class="w"> </span>cephfs</span>
+</pre></div></div></div>
+</section>
+<section id="configuration-for-libcephfs-clients">
+<h3>Configuration for libcephfs clients<a class="headerlink" href="#configuration-for-libcephfs-clients" title="Permalink to this heading">¶</a></h3>
+<p>Required ceph.conf for libcephfs clients includes:</p>
+<ul>
+<li><p>a [client] section with <code class="docutils literal notranslate"><span class="pre">mon_host</span></code> option set to let the clients connect
+to the Ceph cluster’s monitors, usually generated via <code class="docutils literal notranslate"><span class="pre">ceph</span> <span class="pre">config</span> <span class="pre">generate-minimal-conf</span></code>, e.g.,</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[</span><span class="k">global</span><span class="p">]</span>
+        <span class="n">mon</span> <span class="n">host</span> <span class="o">=</span> <span class="p">[</span><span class="n">v2</span><span class="p">:</span><span class="mf">192.168.1.7</span><span class="p">:</span><span class="mi">3300</span><span class="p">,</span><span class="n">v1</span><span class="p">:</span><span class="mf">192.168.1.7</span><span class="p">:</span><span class="mi">6789</span><span class="p">],</span> <span class="p">[</span><span class="n">v2</span><span class="p">:</span><span class="mf">192.168.1.8</span><span class="p">:</span><span class="mi">3300</span><span class="p">,</span><span class="n">v1</span><span class="p">:</span><span class="mf">192.168.1.8</span><span class="p">:</span><span class="mi">6789</span><span class="p">],</span> <span class="p">[</span><span class="n">v2</span><span class="p">:</span><span class="mf">192.168.1.9</span><span class="p">:</span><span class="mi">3300</span><span class="p">,</span><span class="n">v1</span><span class="p">:</span><span class="mf">192.168.1.9</span><span class="p">:</span><span class="mi">6789</span><span class="p">]</span>
+</pre></div>
+</div>
+</li>
+</ul>
+</section>
+</section>
+<section id="mount-using-nfsv4-clients">
+<h2>Mount using NFSv4 clients<a class="headerlink" href="#mount-using-nfsv4-clients" title="Permalink to this heading">¶</a></h2>
+<p>It is preferred to mount the NFS-Ganesha exports using NFSv4.1+ protocols
+to get the benefit of sessions.</p>
+<p>Conventions for mounting NFS resources are platform-specific. The
+following conventions work on Linux and some Unix platforms:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>mount<span class="w"> </span>-t<span class="w"> </span>nfs<span class="w"> </span>-o<span class="w"> </span><span class="nv">nfsvers</span><span class="o">=</span><span class="m">4</span>.1,proto<span class="o">=</span>tcp<span class="w"> </span>&lt;ganesha-host-name&gt;:&lt;ganesha-pseudo-path&gt;<span class="w"> </span>&lt;mount-point&gt;
+</pre></div>
+</div>
+</section>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../">
+              <img class="logo" src="../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../install/">Installing Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cephadm/">Cephadm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rados/">Ceph Storage Cluster</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../">Ceph File System</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../#getting-started-with-cephfs">Getting Started with CephFS</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../#administration">Administration</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../createfs/"> Create a CephFS file system</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../administration/"> Administrative commands</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../multifs/"> Creating Multiple File Systems</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../add-remove-mds/"> Provision/Add/Remove MDS(s)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../standby/">Terminology</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../standby/#referring-to-mds-daemons">Referring to MDS daemons</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../standby/#managing-failover">Managing failover</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../standby/#configuring-standby-replay">Configuring standby-replay</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../standby/#configuring-mds-file-system-affinity">Configuring MDS file system affinity</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../cache-configuration/"> MDS Cache Configuration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../mds-config-ref/"> MDS Configuration Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../man/8/ceph-mds/"> Manual: ceph-mds</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#"> Export over NFS</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#requirements">Requirements</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#configuring-nfs-ganesha-to-export-cephfs">Configuring NFS-Ganesha to export CephFS</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#nfs-ganesha-configuration">NFS-Ganesha configuration</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#configuration-for-libcephfs-clients">Configuration for libcephfs clients</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#mount-using-nfsv4-clients">Mount using NFSv4 clients</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../app-best-practices/"> Application best practices</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../fs-volumes/"> FS volume and subvolumes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../quota/"> CephFS Quotas</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../health-messages/"> Health messages</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../upgrading/">Upgrading the MDS Cluster</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../upgrading/#upgrading-pre-firefly-file-systems-past-jewel">Upgrading pre-Firefly file systems past Jewel</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../cephfs-top/"> CephFS Top Utility</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../snap-schedule/"> Scheduled Snapshots</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../cephfs-mirroring/"> CephFS Snapshot Mirroring</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../#mounting-cephfs">Mounting CephFS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../#cephfs-concepts">CephFS Concepts</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../#troubleshooting-and-disaster-recovery">Troubleshooting and Disaster Recovery</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../#developer-guides">Developer Guides</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../#additional-details">Additional Details</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../rbd/">Ceph Block Device</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../radosgw/">Ceph Object Gateway</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/">Ceph Manager Daemon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dev/developer_guide/">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dev/internals/">Ceph Internals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../app-best-practices/" title="Application best practices for distributed file systems"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../../man/8/ceph-mds/" title="ceph-mds – ceph metadata server daemon"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../" >Ceph File System</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">NFS</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

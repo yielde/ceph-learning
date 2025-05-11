@@ -1,0 +1,320 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Cloning the Ceph Source Code Repository &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css" />
+    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../genindex/" />
+    <link rel="search" title="Search" href="../../search/" />
+    <link rel="next" title="Build Ceph" href="../build-ceph/" />
+    <link rel="prev" title="Downloading a Ceph Release Tarball" href="../get-tarballs/" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../build-ceph/" title="Build Ceph"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../get-tarballs/" title="Downloading a Ceph Release Tarball"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../" >Installing Ceph</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../index_manual/" accesskey="U">Installation (Manual)</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Cloning the Ceph Source Code Repository</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="cloning-the-ceph-source-code-repository">
+<h1>Cloning the Ceph Source Code Repository<a class="headerlink" href="#cloning-the-ceph-source-code-repository" title="Permalink to this heading">¶</a></h1>
+<p>To clone a Ceph branch of the Ceph source code, go to <a class="reference external" href="https://github.com/ceph/ceph">github Ceph
+Repository</a>, select a branch (<code class="docutils literal notranslate"><span class="pre">main</span></code> by default), and click the <strong>Download
+ZIP</strong> button.</p>
+<p>To clone the entire git repository, <a class="reference internal" href="#install-git"><span class="std std-ref">install</span></a> and configure
+<code class="docutils literal notranslate"><span class="pre">git</span></code>.</p>
+<section id="install-git">
+<span id="id1"></span><h2>Install Git<a class="headerlink" href="#install-git" title="Permalink to this heading">¶</a></h2>
+<p>To install <code class="docutils literal notranslate"><span class="pre">git</span></code> on Debian/Ubuntu, run the following command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><style type="text/css">
+span.prompt1:before {
+  content: "$ ";
+}
+</style><span class="prompt1">sudo<span class="w"> </span>apt-get<span class="w"> </span>install<span class="w"> </span>git</span>
+</pre></div></div><p>To install <code class="docutils literal notranslate"><span class="pre">git</span></code> on CentOS/RHEL, run the following command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">sudo<span class="w"> </span>yum<span class="w"> </span>install<span class="w"> </span>git</span>
+</pre></div></div><p>You must have a <code class="docutils literal notranslate"><span class="pre">github</span></code> account. If you do not have a <code class="docutils literal notranslate"><span class="pre">github</span></code>
+account, go to <a class="reference external" href="https://github.com">github.com</a> and register.  Follow the directions for setting
+up git at <a class="reference external" href="https://help.github.com/linux-set-up-git">Set Up Git</a>.</p>
+</section>
+<section id="add-ssh-keys-optional">
+<h2>Add SSH Keys (Optional)<a class="headerlink" href="#add-ssh-keys-optional" title="Permalink to this heading">¶</a></h2>
+<p>To commit code to Ceph or to clone the respository by using SSH
+(<code class="docutils literal notranslate"><span class="pre">git&#64;github.com:ceph/ceph.git</span></code>), you must generate SSH keys for github.</p>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>If you want only to clone the repository, you can
+use <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">clone</span> <span class="pre">--recursive</span> <span class="pre">https://github.com/ceph/ceph.git</span></code>
+without generating SSH keys.</p>
+</div>
+<p>To generate SSH keys for <code class="docutils literal notranslate"><span class="pre">github</span></code>, run the following command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ssh-keygen</span>
+</pre></div></div><p>To print the SSH key that you just generated and that you will add to your
+<code class="docutils literal notranslate"><span class="pre">github</span></code> account, use the <code class="docutils literal notranslate"><span class="pre">cat</span></code> command. (The following example assumes you
+used the default file path.):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">cat<span class="w"> </span>.ssh/id_rsa.pub</span>
+</pre></div></div><p>Copy the public key.</p>
+<p>Go to your <code class="docutils literal notranslate"><span class="pre">github</span></code> account, click “Account Settings” (represented by the
+‘tools’ icon), and click “SSH Keys” on the left side navbar.</p>
+<p>Click “Add SSH key” in the “SSH Keys” list, enter a name for the key, paste the
+key you generated, and press the “Add key” button.</p>
+</section>
+<section id="clone-the-source">
+<h2>Clone the Source<a class="headerlink" href="#clone-the-source" title="Permalink to this heading">¶</a></h2>
+<p>To clone the Ceph source code repository, run the following command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">git<span class="w"> </span>clone<span class="w"> </span>--recursive<span class="w"> </span>https://github.com/ceph/ceph.git</span>
+</pre></div></div><p>After <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">clone</span></code> has run, you should have a full copy of the Ceph
+repository.</p>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>Make sure you maintain the latest copies of the submodules included in
+the repository. Running <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">status</span></code> will tell you whether the submodules
+are out of date. See <a class="reference internal" href="#update-submodules"><span class="std std-ref">Updating Submodules</span></a> for more information.</p>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1"><span class="nb">cd</span><span class="w"> </span>ceph</span>
+<span class="prompt1">git<span class="w"> </span>status</span>
+</pre></div></div><section id="updating-submodules">
+<span id="update-submodules"></span><h3>Updating Submodules<a class="headerlink" href="#updating-submodules" title="Permalink to this heading">¶</a></h3>
+<ol class="arabic">
+<li><p>Determine whether your submodules are out of date:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">git<span class="w"> </span>status</span>
+</pre></div></div><ol class="upperalpha">
+<li><dl>
+<dt>If your submodules are up to date</dt><dd><p>If your submodules are up to date, the following console output will
+appear:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">On</span> <span class="n">branch</span> <span class="n">main</span>
+<span class="n">Your</span> <span class="n">branch</span> <span class="ow">is</span> <span class="n">up</span> <span class="n">to</span> <span class="n">date</span> <span class="k">with</span> <span class="s1">&#39;origin/main&#39;</span><span class="o">.</span>
+
+<span class="n">nothing</span> <span class="n">to</span> <span class="n">commit</span><span class="p">,</span> <span class="n">working</span> <span class="n">tree</span> <span class="n">clean</span>
+</pre></div>
+</div>
+<p>If you see this console output, then your submodules are up to date.
+You do not need this procedure.</p>
+</dd>
+</dl>
+</li>
+<li><dl>
+<dt>If your submodules are not up to date</dt><dd><p>If your submodules are not up to date, you will see a message that
+includes a list of “untracked files”. The example here shows such a
+list, which was generated from a real situation in which the
+submodules were no longer current. Your list of files will not be the
+same as this list of files, but this list is provided as an example.
+If in your case any untracked files are listed, then you should
+continue to the next step of this procedure.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">On</span> <span class="n">branch</span> <span class="n">main</span>
+<span class="n">Your</span> <span class="n">branch</span> <span class="ow">is</span> <span class="n">up</span> <span class="n">to</span> <span class="n">date</span> <span class="k">with</span> <span class="s1">&#39;origin/main&#39;</span><span class="o">.</span>
+
+<span class="n">Untracked</span> <span class="n">files</span><span class="p">:</span>
+  <span class="p">(</span><span class="n">use</span> <span class="s2">&quot;git add &lt;file&gt;...&quot;</span> <span class="n">to</span> <span class="n">include</span> <span class="ow">in</span> <span class="n">what</span> <span class="n">will</span> <span class="n">be</span> <span class="n">committed</span><span class="p">)</span>
+<span class="n">src</span><span class="o">/</span><span class="n">pybind</span><span class="o">/</span><span class="n">cephfs</span><span class="o">/</span><span class="n">build</span><span class="o">/</span>
+<span class="n">src</span><span class="o">/</span><span class="n">pybind</span><span class="o">/</span><span class="n">cephfs</span><span class="o">/</span><span class="n">cephfs</span><span class="o">.</span><span class="n">c</span>
+<span class="n">src</span><span class="o">/</span><span class="n">pybind</span><span class="o">/</span><span class="n">cephfs</span><span class="o">/</span><span class="n">cephfs</span><span class="o">.</span><span class="n">egg</span><span class="o">-</span><span class="n">info</span><span class="o">/</span>
+<span class="n">src</span><span class="o">/</span><span class="n">pybind</span><span class="o">/</span><span class="n">rados</span><span class="o">/</span><span class="n">build</span><span class="o">/</span>
+<span class="n">src</span><span class="o">/</span><span class="n">pybind</span><span class="o">/</span><span class="n">rados</span><span class="o">/</span><span class="n">rados</span><span class="o">.</span><span class="n">c</span>
+<span class="n">src</span><span class="o">/</span><span class="n">pybind</span><span class="o">/</span><span class="n">rados</span><span class="o">/</span><span class="n">rados</span><span class="o">.</span><span class="n">egg</span><span class="o">-</span><span class="n">info</span><span class="o">/</span>
+<span class="n">src</span><span class="o">/</span><span class="n">pybind</span><span class="o">/</span><span class="n">rbd</span><span class="o">/</span><span class="n">build</span><span class="o">/</span>
+<span class="n">src</span><span class="o">/</span><span class="n">pybind</span><span class="o">/</span><span class="n">rbd</span><span class="o">/</span><span class="n">rbd</span><span class="o">.</span><span class="n">c</span>
+<span class="n">src</span><span class="o">/</span><span class="n">pybind</span><span class="o">/</span><span class="n">rbd</span><span class="o">/</span><span class="n">rbd</span><span class="o">.</span><span class="n">egg</span><span class="o">-</span><span class="n">info</span><span class="o">/</span>
+<span class="n">src</span><span class="o">/</span><span class="n">pybind</span><span class="o">/</span><span class="n">rgw</span><span class="o">/</span><span class="n">build</span><span class="o">/</span>
+<span class="n">src</span><span class="o">/</span><span class="n">pybind</span><span class="o">/</span><span class="n">rgw</span><span class="o">/</span><span class="n">rgw</span><span class="o">.</span><span class="n">c</span>
+<span class="n">src</span><span class="o">/</span><span class="n">pybind</span><span class="o">/</span><span class="n">rgw</span><span class="o">/</span><span class="n">rgw</span><span class="o">.</span><span class="n">egg</span><span class="o">-</span><span class="n">info</span><span class="o">/</span>
+
+<span class="n">nothing</span> <span class="n">added</span> <span class="n">to</span> <span class="n">commit</span> <span class="n">but</span> <span class="n">untracked</span> <span class="n">files</span> <span class="n">present</span> <span class="p">(</span><span class="n">use</span> <span class="s2">&quot;git add&quot;</span> <span class="n">to</span> <span class="n">track</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd>
+</dl>
+</li>
+</ol>
+</li>
+<li><p>If your submodules are out of date, run the following commands:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">git<span class="w"> </span>submodule<span class="w"> </span>update<span class="w"> </span>--force<span class="w"> </span>--init<span class="w"> </span>--recursive</span>
+<span class="prompt1">git<span class="w"> </span>clean<span class="w"> </span>-fdx</span>
+<span class="prompt1">git<span class="w"> </span>submodule<span class="w"> </span>foreach<span class="w"> </span>git<span class="w"> </span>clean<span class="w"> </span>-fdx</span>
+</pre></div></div><p>If you still have problems with a submodule directory, use <code class="docutils literal notranslate"><span class="pre">rm</span> <span class="pre">-rf</span>
+<span class="pre">[directory</span> <span class="pre">name]</span></code> to remove the directory. Then run <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">submodule</span> <span class="pre">update</span>
+<span class="pre">--init</span> <span class="pre">--recursive</span></code> again.</p>
+</li>
+<li><p>Run <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">status</span></code> again:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">git<span class="w"> </span>status</span>
+</pre></div></div><p>Your submodules are up to date if you see the following message:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">On</span> <span class="n">branch</span> <span class="n">main</span>
+<span class="n">Your</span> <span class="n">branch</span> <span class="ow">is</span> <span class="n">up</span> <span class="n">to</span> <span class="n">date</span> <span class="k">with</span> <span class="s1">&#39;origin/main&#39;</span><span class="o">.</span>
+
+<span class="n">nothing</span> <span class="n">to</span> <span class="n">commit</span><span class="p">,</span> <span class="n">working</span> <span class="n">tree</span> <span class="n">clean</span>
+</pre></div>
+</div>
+</li>
+</ol>
+</section>
+</section>
+<section id="choose-a-branch">
+<h2>Choose a Branch<a class="headerlink" href="#choose-a-branch" title="Permalink to this heading">¶</a></h2>
+<p>Once you clone the source code and submodules, your Ceph repository
+will be on the <code class="docutils literal notranslate"><span class="pre">main</span></code> branch by default, which is the unstable
+development branch. You may choose other branches too.</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">main</span></code>: The unstable development branch.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">stable-release-name</span></code>: The name of the stable, <a class="reference external" href="https://docs.ceph.com/en/latest/releases/#active-releases">Active Releases</a>. e.g. <code class="docutils literal notranslate"><span class="pre">Pacific</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">next</span></code>: The release candidate branch.</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">checkout</span> <span class="n">main</span>
+</pre></div>
+</div>
+</section>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../">
+              <img class="logo" src="../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../">Installing Ceph</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../#recommended-methods">Recommended methods</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../#other-methods">Other methods</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="../index_manual/">Installation (Manual)</a><ul class="current">
+<li class="toctree-l4 current"><a class="reference internal" href="../index_manual/#get-software">Get Software</a><ul class="current">
+<li class="toctree-l5"><a class="reference internal" href="../get-packages/">     Get Packages</a></li>
+<li class="toctree-l5"><a class="reference internal" href="../get-tarballs/">     Get Tarballs</a></li>
+<li class="toctree-l5 current"><a class="current reference internal" href="#">     Clone Source</a><ul>
+<li class="toctree-l6"><a class="reference internal" href="#install-git">Install Git</a></li>
+<li class="toctree-l6"><a class="reference internal" href="#add-ssh-keys-optional">Add SSH Keys (Optional)</a></li>
+<li class="toctree-l6"><a class="reference internal" href="#clone-the-source">Clone the Source</a><ul>
+<li class="toctree-l7"><a class="reference internal" href="#updating-submodules">Updating Submodules</a></li>
+</ul>
+</li>
+<li class="toctree-l6"><a class="reference internal" href="#choose-a-branch">Choose a Branch</a></li>
+</ul>
+</li>
+<li class="toctree-l5"><a class="reference internal" href="../build-ceph/">     Build Ceph</a></li>
+<li class="toctree-l5"><a class="reference internal" href="../mirrors/">     Ceph Mirrors</a></li>
+<li class="toctree-l5"><a class="reference internal" href="../containers/">     Ceph Containers</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="../index_manual/#install-software">Install Software</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../index_manual/#deploy-a-cluster-manually">Deploy a Cluster Manually</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../index_manual/#upgrade-software">Upgrade Software</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../#windows">Windows</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../cephadm/">Cephadm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rados/">Ceph Storage Cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cephfs/">Ceph File System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rbd/">Ceph Block Device</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../radosgw/">Ceph Object Gateway</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/">Ceph Manager Daemon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dev/developer_guide/">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dev/internals/">Ceph Internals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../build-ceph/" title="Build Ceph"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../get-tarballs/" title="Downloading a Ceph Release Tarball"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../" >Installing Ceph</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../index_manual/" >Installation (Manual)</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Cloning the Ceph Source Code Repository</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

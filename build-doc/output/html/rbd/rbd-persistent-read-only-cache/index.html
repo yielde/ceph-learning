@@ -1,0 +1,431 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>RBD Persistent Read-only Cache &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css" />
+    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../genindex/" />
+    <link rel="search" title="Search" href="../../search/" />
+    <link rel="next" title="RBD Persistent Write-back Cache" href="../rbd-persistent-write-back-cache/" />
+    <link rel="prev" title="Image Live-Migration" href="../rbd-live-migration/" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../rbd-persistent-write-back-cache/" title="RBD Persistent Write-back Cache"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../rbd-live-migration/" title="Image Live-Migration"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../" >Ceph Block Device</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../rbd-operations/" accesskey="U">Ceph Block Device Operations</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">RBD Persistent Read-only Cache</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="rbd-persistent-read-only-cache">
+<h1>RBD Persistent Read-only Cache<a class="headerlink" href="#rbd-persistent-read-only-cache" title="Permalink to this heading">¶</a></h1>
+<section id="shared-read-only-parent-image-cache">
+<span id="index-0"></span><h2>Shared, Read-only Parent Image Cache<a class="headerlink" href="#shared-read-only-parent-image-cache" title="Permalink to this heading">¶</a></h2>
+<p><a class="reference external" href="../rbd-snapshot/#layering">Cloned RBD images</a> usually modify only a small fraction of the parent
+image. For example, in a VDI use-case, VMs are cloned from the same
+base image and initially differ only by hostname and IP address. During
+booting, all of these VMs read portions of the same parent
+image data. If we have a local cache of the parent
+image, this speeds up reads on the caching host.  We also achieve
+reduction of client-to-cluster network traffic.
+RBD cache must be explicitly enabled in
+<code class="docutils literal notranslate"><span class="pre">ceph.conf</span></code>. The <code class="docutils literal notranslate"><span class="pre">ceph-immutable-object-cache</span></code> daemon is responsible for
+caching the parent content on the local disk, and future reads on that data
+will be serviced from the local cache.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>RBD shared read-only parent image cache requires the Ceph Nautilus release or later.</p>
+</div>
+<p class="ditaa">
+<img src="../../_images/ditaa-a19b6c917c0ffa72d1de5e51d768032d8e96d366.png"/>
+</p>
+<section id="enable-rbd-shared-read-only-parent-image-cache">
+<h3>Enable RBD Shared Read-only Parent Image Cache<a class="headerlink" href="#enable-rbd-shared-read-only-parent-image-cache" title="Permalink to this heading">¶</a></h3>
+<p>To enable RBD shared read-only parent image cache, the following Ceph settings
+need to added in the <code class="docutils literal notranslate"><span class="pre">[client]</span></code> <a class="reference external" href="../../rados/configuration/ceph-conf/#configuration-sections">section</a> of your <code class="docutils literal notranslate"><span class="pre">ceph.conf</span></code> file:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">rbd</span> <span class="n">parent</span> <span class="n">cache</span> <span class="n">enabled</span> <span class="o">=</span> <span class="n">true</span>
+<span class="n">rbd</span> <span class="n">plugins</span> <span class="o">=</span> <span class="n">parent_cache</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="immutable-object-cache-daemon">
+<h2>Immutable Object Cache Daemon<a class="headerlink" href="#immutable-object-cache-daemon" title="Permalink to this heading">¶</a></h2>
+<section id="introduction-and-generic-settings">
+<h3>Introduction and Generic Settings<a class="headerlink" href="#introduction-and-generic-settings" title="Permalink to this heading">¶</a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">ceph-immutable-object-cache</span></code> daemon is responsible for caching parent
+image content within its local caching directory. Using SSDs as the underlying
+storage is recommended because doing so provides better performance.</p>
+<p>The key components of the daemon are:</p>
+<ol class="arabic simple">
+<li><p><strong>Domain socket based IPC:</strong> The daemon listens on a local domain socket at
+startup and waits for connections from librbd clients.</p></li>
+<li><p><strong>LRU based promotion/demotion policy:</strong> The daemon maintains in-memory
+statistics of cache hits for each cache file. It demotes the cold cache
+if capacity reaches the configured threshold.</p></li>
+<li><p><strong>File-based caching store:</strong> The daemon maintains a simple file-based cache
+store. On promotion, the RADOS objects are fetched from RADOS cluster and
+stored in the local caching directory.</p></li>
+</ol>
+<p>When each cloned RBD image is opened, <code class="docutils literal notranslate"><span class="pre">librbd</span></code> tries to connect to the cache
+daemon through its Unix domain socket. After <code class="docutils literal notranslate"><span class="pre">librbd</span></code> is successfully
+connected, it coordinates with the daemon upon every subsequent read. In the
+case of an uncached read, the daemon promotes the RADOS object to the local
+caching directory and the next read of the object is serviced from the cache.
+The daemon maintains simple LRU statistics, which are used to evict cold cache
+files when required (for example, when the cache is at capacity and under
+pressure).</p>
+<p>Here are some important cache configuration settings:</p>
+<p><code class="docutils literal notranslate"><span class="pre">immutable_object_cache_sock</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The path to the domain socket used for communication between
+librbd clients and the ceph-immutable-object-cache daemon.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Required</dt>
+<dd class="field-odd"><p>No</p>
+</dd>
+<dt class="field-even">Default</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">/var/run/ceph/immutable_object_cache_sock</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">immutable_object_cache_path</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The immutable object cache data directory.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Required</dt>
+<dd class="field-odd"><p>No</p>
+</dd>
+<dt class="field-even">Default</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">/tmp/ceph_immutable_object_cache</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">immutable_object_cache_max_size</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The max size for immutable cache.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Size</p>
+</dd>
+<dt class="field-odd">Required</dt>
+<dd class="field-odd"><p>No</p>
+</dd>
+<dt class="field-even">Default</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">1G</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">immutable_object_cache_watermark</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The high-water mark for the cache. The value is between (0, 1).
+If the cache size reaches this threshold the daemon will start
+to delete cold cache based on LRU statistics.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Float</p>
+</dd>
+<dt class="field-odd">Required</dt>
+<dd class="field-odd"><p>No</p>
+</dd>
+<dt class="field-even">Default</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">0.9</span></code></p>
+</dd>
+</dl>
+<p>The <code class="docutils literal notranslate"><span class="pre">ceph-immutable-object-cache</span></code> daemon is available within the optional
+<code class="docutils literal notranslate"><span class="pre">ceph-immutable-object-cache</span></code> distribution package.</p>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p><code class="docutils literal notranslate"><span class="pre">ceph-immutable-object-cache</span></code> daemon requires the ability to
+connect RADOS clusters.</p>
+</div>
+</section>
+<section id="running-the-immutable-object-cache-daemon">
+<h3>Running the Immutable Object Cache Daemon<a class="headerlink" href="#running-the-immutable-object-cache-daemon" title="Permalink to this heading">¶</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">ceph-immutable-object-cache</span></code> daemon should use a unique Ceph user ID.
+To <a class="reference external" href="../../rados/operations/user-management#add-a-user">create a Ceph user</a>, with <code class="docutils literal notranslate"><span class="pre">ceph</span></code> specify the <code class="docutils literal notranslate"><span class="pre">auth</span> <span class="pre">get-or-create</span></code>
+command, user name, monitor caps, and OSD caps:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span> <span class="n">auth</span> <span class="n">get</span><span class="o">-</span><span class="ow">or</span><span class="o">-</span><span class="n">create</span> <span class="n">client</span><span class="o">.</span><span class="n">ceph</span><span class="o">-</span><span class="n">immutable</span><span class="o">-</span><span class="nb">object</span><span class="o">-</span><span class="n">cache</span><span class="o">.</span><span class="p">{</span><span class="n">unique</span> <span class="nb">id</span><span class="p">}</span> <span class="n">mon</span> <span class="s1">&#39;allow r&#39;</span> <span class="n">osd</span> <span class="s1">&#39;profile rbd-read-only&#39;</span>
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">ceph-immutable-object-cache</span></code> daemon can be managed by <code class="docutils literal notranslate"><span class="pre">systemd</span></code> by specifying the user
+ID as the daemon instance:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">systemctl</span> <span class="n">enable</span> <span class="n">ceph</span><span class="o">-</span><span class="n">immutable</span><span class="o">-</span><span class="nb">object</span><span class="o">-</span><span class="n">cache</span><span class="nd">@ceph</span><span class="o">-</span><span class="n">immutable</span><span class="o">-</span><span class="nb">object</span><span class="o">-</span><span class="n">cache</span><span class="o">.</span><span class="p">{</span><span class="n">unique</span> <span class="nb">id</span><span class="p">}</span>
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">ceph-immutable-object-cache</span></code> can also be run in foreground by <code class="docutils literal notranslate"><span class="pre">ceph-immutable-object-cache</span></code> command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span><span class="o">-</span><span class="n">immutable</span><span class="o">-</span><span class="nb">object</span><span class="o">-</span><span class="n">cache</span> <span class="o">-</span><span class="n">f</span> <span class="o">--</span><span class="n">log</span><span class="o">-</span><span class="n">file</span><span class="o">=</span><span class="p">{</span><span class="n">log_path</span><span class="p">}</span>
+</pre></div>
+</div>
+</section>
+<section id="qos-settings">
+<h3>QOS Settings<a class="headerlink" href="#qos-settings" title="Permalink to this heading">¶</a></h3>
+<p>The immutable object cache supports throttling, controlled by the following settings:</p>
+<p><code class="docutils literal notranslate"><span class="pre">immutable_object_cache_qos_schedule_tick_min</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Minimum schedule tick for immutable object cache.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Milliseconds</p>
+</dd>
+<dt class="field-odd">Required</dt>
+<dd class="field-odd"><p>No</p>
+</dd>
+<dt class="field-even">Default</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">50</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">immutable_object_cache_qos_iops_limit</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The desired immutable object cache IO operations limit per second.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Unsigned Integer</p>
+</dd>
+<dt class="field-odd">Required</dt>
+<dd class="field-odd"><p>No</p>
+</dd>
+<dt class="field-even">Default</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">0</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">immutable_object_cache_qos_iops_burst</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The desired burst limit of immutable object cache IO operations.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Unsigned Integer</p>
+</dd>
+<dt class="field-odd">Required</dt>
+<dd class="field-odd"><p>No</p>
+</dd>
+<dt class="field-even">Default</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">0</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">immutable_object_cache_qos_iops_burst_seconds</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The desired burst duration in seconds of immutable object cache IO operations.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Seconds</p>
+</dd>
+<dt class="field-odd">Required</dt>
+<dd class="field-odd"><p>No</p>
+</dd>
+<dt class="field-even">Default</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">1</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">immutable_object_cache_qos_bps_limit</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The desired immutable object cache IO bytes limit per second.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Unsigned Integer</p>
+</dd>
+<dt class="field-odd">Required</dt>
+<dd class="field-odd"><p>No</p>
+</dd>
+<dt class="field-even">Default</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">0</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">immutable_object_cache_qos_bps_burst</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The desired burst limit of immutable object cache IO bytes.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Unsigned Integer</p>
+</dd>
+<dt class="field-odd">Required</dt>
+<dd class="field-odd"><p>No</p>
+</dd>
+<dt class="field-even">Default</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">0</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">immutable_object_cache_qos_bps_burst_seconds</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The desired burst duration in seconds of immutable object cache IO bytes.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Seconds</p>
+</dd>
+<dt class="field-odd">Required</dt>
+<dd class="field-odd"><p>No</p>
+</dd>
+<dt class="field-even">Default</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">1</span></code></p>
+</dd>
+</dl>
+</section>
+</section>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../">
+              <img class="logo" src="../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../install/">Installing Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cephadm/">Cephadm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rados/">Ceph Storage Cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cephfs/">Ceph File System</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../">Ceph Block Device</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../rados-rbd-cmds/">Basic Commands</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../rbd-operations/">Operations</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../rbd-snapshot/">Snapshots</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rbd-exclusive-locks/">Exclusive Locking</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rbd-mirroring/">Mirroring</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rbd-live-migration/">Live-Migration</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Persistent Read-only Cache</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#shared-read-only-parent-image-cache">Shared, Read-only Parent Image Cache</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#enable-rbd-shared-read-only-parent-image-cache">Enable RBD Shared Read-only Parent Image Cache</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#immutable-object-cache-daemon">Immutable Object Cache Daemon</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#introduction-and-generic-settings">Introduction and Generic Settings</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#running-the-immutable-object-cache-daemon">Running the Immutable Object Cache Daemon</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#qos-settings">QOS Settings</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../rbd-persistent-write-back-cache/">Persistent Write-back Cache</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rbd-encryption/">Encryption</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rbd-config-ref/">Config Settings (librbd)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rbd-replay/">RBD Replay</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../rbd-integrations/">Integrations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../man/">Manpages</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/">APIs</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../radosgw/">Ceph Object Gateway</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/">Ceph Manager Daemon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dev/developer_guide/">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dev/internals/">Ceph Internals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../rbd-persistent-write-back-cache/" title="RBD Persistent Write-back Cache"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../rbd-live-migration/" title="Image Live-Migration"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../" >Ceph Block Device</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../rbd-operations/" >Ceph Block Device Operations</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">RBD Persistent Read-only Cache</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

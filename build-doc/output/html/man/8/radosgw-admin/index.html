@@ -1,0 +1,1267 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>radosgw-admin – rados REST gateway user administration utility &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/css/custom.css" />
+    <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/jquery.js"></script>
+    <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../../genindex/" />
+    <link rel="search" title="Search" href="../../../search/" />
+    <link rel="next" title="QAT Acceleration for Encryption and Compression" href="../../../radosgw/qat-accel/" />
+    <link rel="prev" title="radosgw – rados REST gateway" href="../radosgw/" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../../../radosgw/qat-accel/" title="QAT Acceleration for Encryption and Compression"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../radosgw/" title="radosgw – rados REST gateway"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../../radosgw/" accesskey="U">Ceph Object Gateway</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">radosgw-admin – rados REST gateway user administration utility</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="radosgw-admin-rados-rest-gateway-user-administration-utility">
+<h1>radosgw-admin – rados REST gateway user administration utility<a class="headerlink" href="#radosgw-admin-rados-rest-gateway-user-administration-utility" title="Permalink to this heading">¶</a></h1>
+<section id="synopsis">
+<h2>Synopsis<a class="headerlink" href="#synopsis" title="Permalink to this heading">¶</a></h2>
+<div class="line-block">
+<div class="line"><strong>radosgw-admin</strong> <em>command</em> [ <em>options</em> <em>…</em> ]</div>
+</div>
+</section>
+<section id="description">
+<h2>Description<a class="headerlink" href="#description" title="Permalink to this heading">¶</a></h2>
+<p><strong class="program">radosgw-admin</strong> is a RADOS gateway user administration utility. It
+allows creating and modifying users.</p>
+</section>
+<section id="commands">
+<h2>Commands<a class="headerlink" href="#commands" title="Permalink to this heading">¶</a></h2>
+<p><strong class="program">radosgw-admin</strong> utility uses many commands for administration purpose
+which are as follows:</p>
+<dl class="simple">
+<dt><strong class="command">user create</strong></dt><dd><p>Create a new user.</p>
+</dd>
+<dt><strong class="command">user modify</strong></dt><dd><p>Modify a user.</p>
+</dd>
+<dt><strong class="command">user info</strong></dt><dd><p>Display information of a user, and any potentially available
+subusers and keys.</p>
+</dd>
+<dt><strong class="command">user rename</strong></dt><dd><p>Renames a user.</p>
+</dd>
+<dt><strong class="command">user rm</strong></dt><dd><p>Remove a user.</p>
+</dd>
+<dt><strong class="command">user suspend</strong></dt><dd><p>Suspend a user.</p>
+</dd>
+<dt><strong class="command">user enable</strong></dt><dd><p>Re-enable user after suspension.</p>
+</dd>
+<dt><strong class="command">user check</strong></dt><dd><p>Check user info.</p>
+</dd>
+<dt><strong class="command">user stats</strong></dt><dd><p>Show user stats as accounted by quota subsystem.</p>
+</dd>
+<dt><strong class="command">user list</strong></dt><dd><p>List all users.</p>
+</dd>
+<dt><strong class="command">caps add</strong></dt><dd><p>Add user capabilities.</p>
+</dd>
+<dt><strong class="command">caps rm</strong></dt><dd><p>Remove user capabilities.</p>
+</dd>
+<dt><strong class="command">subuser create</strong></dt><dd><p>Create a new subuser (primarily useful for clients using the Swift API).</p>
+</dd>
+<dt><strong class="command">subuser modify</strong></dt><dd><p>Modify a subuser.</p>
+</dd>
+<dt><strong class="command">subuser rm</strong></dt><dd><p>Remove a subuser.</p>
+</dd>
+<dt><strong class="command">key create</strong></dt><dd><p>Create access key.</p>
+</dd>
+<dt><strong class="command">key rm</strong></dt><dd><p>Remove access key.</p>
+</dd>
+<dt><strong class="command">bucket list</strong></dt><dd><p>List buckets, or, if bucket specified with –bucket=&lt;bucket&gt;,
+list its objects. If bucket specified adding –allow-unordered
+removes ordering requirement, possibly generating results more
+quickly in buckets with large number of objects.</p>
+</dd>
+<dt><strong class="command">bucket limit check</strong></dt><dd><p>Show bucket sharding stats.</p>
+</dd>
+<dt><strong class="command">bucket link</strong></dt><dd><p>Link bucket to specified user.</p>
+</dd>
+<dt><strong class="command">bucket unlink</strong></dt><dd><p>Unlink bucket from specified user.</p>
+</dd>
+<dt><strong class="command">bucket chown</strong></dt><dd><p>Link bucket to specified user and update object ACLs.
+Use –marker to resume if command gets interrupted.</p>
+</dd>
+<dt><strong class="command">bucket stats</strong></dt><dd><p>Returns bucket statistics.</p>
+</dd>
+<dt><strong class="command">bucket rm</strong></dt><dd><p>Remove a bucket.</p>
+</dd>
+<dt><strong class="command">bucket check</strong></dt><dd><p>Check bucket index.</p>
+</dd>
+<dt><strong class="command">bucket rewrite</strong></dt><dd><p>Rewrite all objects in the specified bucket.</p>
+</dd>
+<dt><strong class="command">bucket radoslist</strong></dt><dd><p>List the rados objects that contain the data for all objects is
+the designated bucket, if –bucket=&lt;bucket&gt; is specified, or
+otherwise all buckets.</p>
+</dd>
+<dt><strong class="command">bucket reshard</strong></dt><dd><p>Reshard a bucket.</p>
+</dd>
+<dt><strong class="command">bucket sync disable</strong></dt><dd><p>Disable bucket sync.</p>
+</dd>
+<dt><strong class="command">bucket sync enable</strong></dt><dd><p>Enable bucket sync.</p>
+</dd>
+<dt><strong class="command">bi get</strong></dt><dd><p>Retrieve bucket index object entries.</p>
+</dd>
+<dt><strong class="command">bi put</strong></dt><dd><p>Store bucket index object entries.</p>
+</dd>
+<dt><strong class="command">bi list</strong></dt><dd><p>List raw bucket index entries.</p>
+</dd>
+<dt><strong class="command">bi purge</strong></dt><dd><p>Purge bucket index entries.</p>
+</dd>
+<dt><strong class="command">object rm</strong></dt><dd><p>Remove an object.</p>
+</dd>
+<dt><strong class="command">object stat</strong></dt><dd><p>Stat an object for its metadata.</p>
+</dd>
+<dt><strong class="command">object unlink</strong></dt><dd><p>Unlink object from bucket index.</p>
+</dd>
+<dt><strong class="command">object rewrite</strong></dt><dd><p>Rewrite the specified object.</p>
+</dd>
+<dt><strong class="command">objects expire</strong></dt><dd><p>Run expired objects cleanup.</p>
+</dd>
+<dt><strong class="command">period rm</strong></dt><dd><p>Remove a period.</p>
+</dd>
+<dt><strong class="command">period get</strong></dt><dd><p>Get the period info.</p>
+</dd>
+<dt><strong class="command">period get-current</strong></dt><dd><p>Get the current period info.</p>
+</dd>
+<dt><strong class="command">period pull</strong></dt><dd><p>Pull a period.</p>
+</dd>
+<dt><strong class="command">period push</strong></dt><dd><p>Push a period.</p>
+</dd>
+<dt><strong class="command">period list</strong></dt><dd><p>List all periods.</p>
+</dd>
+<dt><strong class="command">period update</strong></dt><dd><p>Update the staging period.</p>
+</dd>
+<dt><strong class="command">period commit</strong></dt><dd><p>Commit the staging period.</p>
+</dd>
+<dt><strong class="command">quota set</strong></dt><dd><p>Set quota params.</p>
+</dd>
+<dt><strong class="command">quota enable</strong></dt><dd><p>Enable quota.</p>
+</dd>
+<dt><strong class="command">quota disable</strong></dt><dd><p>Disable quota.</p>
+</dd>
+<dt><strong class="command">global quota get</strong></dt><dd><p>View global quota parameters.</p>
+</dd>
+<dt><strong class="command">global quota set</strong></dt><dd><p>Set global quota parameters.</p>
+</dd>
+<dt><strong class="command">global quota enable</strong></dt><dd><p>Enable a global quota.</p>
+</dd>
+<dt><strong class="command">global quota disable</strong></dt><dd><p>Disable a global quota.</p>
+</dd>
+<dt><strong class="command">realm create</strong></dt><dd><p>Create a new realm.</p>
+</dd>
+<dt><strong class="command">realm rm</strong></dt><dd><p>Remove a realm.</p>
+</dd>
+<dt><strong class="command">realm get</strong></dt><dd><p>Show the realm info.</p>
+</dd>
+<dt><strong class="command">realm get-default</strong></dt><dd><p>Get the default realm name.</p>
+</dd>
+<dt><strong class="command">realm list</strong></dt><dd><p>List all realms.</p>
+</dd>
+<dt><strong class="command">realm list-periods</strong></dt><dd><p>List all realm periods.</p>
+</dd>
+<dt><strong class="command">realm rename</strong></dt><dd><p>Rename a realm.</p>
+</dd>
+<dt><strong class="command">realm set</strong></dt><dd><p>Set the realm info (requires infile).</p>
+</dd>
+<dt><strong class="command">realm default</strong></dt><dd><p>Set the realm as default.</p>
+</dd>
+<dt><strong class="command">realm pull</strong></dt><dd><p>Pull a realm and its current period.</p>
+</dd>
+<dt><strong class="command">zonegroup add</strong></dt><dd><p>Add a zone to a zonegroup.</p>
+</dd>
+<dt><strong class="command">zonegroup create</strong></dt><dd><p>Create a new zone group info.</p>
+</dd>
+<dt><strong class="command">zonegroup default</strong></dt><dd><p>Set the default zone group.</p>
+</dd>
+<dt><strong class="command">zonegroup rm</strong></dt><dd><p>Remove a zone group info.</p>
+</dd>
+<dt><strong class="command">zonegroup get</strong></dt><dd><p>Show the zone group info.</p>
+</dd>
+<dt><strong class="command">zonegroup modify</strong></dt><dd><p>Modify an existing zonegroup.</p>
+</dd>
+<dt><strong class="command">zonegroup set</strong></dt><dd><p>Set the zone group info (requires infile).</p>
+</dd>
+<dt><strong class="command">zonegroup remove</strong></dt><dd><p>Remove a zone from a zonegroup.</p>
+</dd>
+<dt><strong class="command">zonegroup rename</strong></dt><dd><p>Rename a zone group.</p>
+</dd>
+<dt><strong class="command">zonegroup list</strong></dt><dd><p>List all zone groups set on this cluster.</p>
+</dd>
+<dt><strong class="command">zonegroup placement list</strong></dt><dd><p>List zonegroup’s placement targets.</p>
+</dd>
+<dt><strong class="command">zonegroup placement add</strong></dt><dd><p>Add a placement target id to a zonegroup.</p>
+</dd>
+<dt><strong class="command">zonegroup placement modify</strong></dt><dd><p>Modify a placement target of a specific zonegroup.</p>
+</dd>
+<dt><strong class="command">zonegroup placement rm</strong></dt><dd><p>Remove a placement target from a zonegroup.</p>
+</dd>
+<dt><strong class="command">zonegroup placement default</strong></dt><dd><p>Set a zonegroup’s default placement target.</p>
+</dd>
+<dt><strong class="command">zone create</strong></dt><dd><p>Create a new zone.</p>
+</dd>
+<dt><strong class="command">zone rm</strong></dt><dd><p>Remove a zone.</p>
+</dd>
+<dt><strong class="command">zone get</strong></dt><dd><p>Show zone cluster params.</p>
+</dd>
+<dt><strong class="command">zone set</strong></dt><dd><p>Set zone cluster params (requires infile).</p>
+</dd>
+<dt><strong class="command">zone modify</strong></dt><dd><p>Modify an existing zone.</p>
+</dd>
+<dt><strong class="command">zone list</strong></dt><dd><p>List all zones set on this cluster.</p>
+</dd>
+<dt><strong class="command">metadata sync status</strong></dt><dd><p>Get metadata sync status.</p>
+</dd>
+<dt><strong class="command">metadata sync init</strong></dt><dd><p>Init metadata sync.</p>
+</dd>
+<dt><strong class="command">metadata sync run</strong></dt><dd><p>Run metadata sync.</p>
+</dd>
+<dt><strong class="command">data sync status</strong></dt><dd><p>Get data sync status of the specified source zone.</p>
+</dd>
+<dt><strong class="command">data sync init</strong></dt><dd><p>Init data sync for the specified source zone.</p>
+</dd>
+<dt><strong class="command">data sync run</strong></dt><dd><p>Run data sync for the specified source zone.</p>
+</dd>
+<dt><strong class="command">sync error list</strong></dt><dd><p>list sync error.</p>
+</dd>
+<dt><strong class="command">sync error trim</strong></dt><dd><p>trim sync error.</p>
+</dd>
+<dt><strong class="command">zone rename</strong></dt><dd><p>Rename a zone.</p>
+</dd>
+<dt><strong class="command">zone placement list</strong></dt><dd><p>List zone’s placement targets.</p>
+</dd>
+<dt><strong class="command">zone placement add</strong></dt><dd><p>Add a zone placement target.</p>
+</dd>
+<dt><strong class="command">zone placement modify</strong></dt><dd><p>Modify a zone placement target.</p>
+</dd>
+<dt><strong class="command">zone placement rm</strong></dt><dd><p>Remove a zone placement target.</p>
+</dd>
+<dt><strong class="command">pool add</strong></dt><dd><p>Add an existing pool for data placement.</p>
+</dd>
+<dt><strong class="command">pool rm</strong></dt><dd><p>Remove an existing pool from data placement set.</p>
+</dd>
+<dt><strong class="command">pools list</strong></dt><dd><p>List placement active set.</p>
+</dd>
+<dt><strong class="command">policy</strong></dt><dd><p>Display bucket/object policy.</p>
+</dd>
+<dt><strong class="command">log list</strong></dt><dd><p>List log objects.</p>
+</dd>
+<dt><strong class="command">log show</strong></dt><dd><p>Dump a log from specific object or (bucket + date + bucket-id).
+(NOTE: required to specify formatting of date to “YYYY-MM-DD-hh”)</p>
+</dd>
+<dt><strong class="command">log rm</strong></dt><dd><p>Remove log object.</p>
+</dd>
+<dt><strong class="command">usage show</strong></dt><dd><p>Show the usage information (with optional user and date range).</p>
+</dd>
+<dt><strong class="command">usage trim</strong></dt><dd><p>Trim usage information (with optional user and date range).</p>
+</dd>
+<dt><strong class="command">gc list</strong></dt><dd><p>Dump expired garbage collection objects (specify –include-all to list all
+entries, including unexpired).</p>
+</dd>
+<dt><strong class="command">gc process</strong></dt><dd><p>Manually process garbage.</p>
+</dd>
+<dt><strong class="command">lc list</strong></dt><dd><p>List all bucket lifecycle progress.</p>
+</dd>
+<dt><strong class="command">lc process</strong></dt><dd><p>Manually process lifecycle.</p>
+</dd>
+<dt><strong class="command">metadata get</strong></dt><dd><p>Get metadata info.</p>
+</dd>
+<dt><strong class="command">metadata put</strong></dt><dd><p>Put metadata info.</p>
+</dd>
+<dt><strong class="command">metadata rm</strong></dt><dd><p>Remove metadata info.</p>
+</dd>
+<dt><strong class="command">metadata list</strong></dt><dd><p>List metadata info.</p>
+</dd>
+<dt><strong class="command">mdlog list</strong></dt><dd><p>List metadata log.</p>
+</dd>
+<dt><strong class="command">mdlog trim</strong></dt><dd><p>Trim metadata log.</p>
+</dd>
+<dt><strong class="command">mdlog status</strong></dt><dd><p>Read metadata log status.</p>
+</dd>
+<dt><strong class="command">bilog list</strong></dt><dd><p>List bucket index log.</p>
+</dd>
+<dt><strong class="command">bilog trim</strong></dt><dd><p>Trim bucket index log (use start-marker, end-marker).</p>
+</dd>
+<dt><strong class="command">datalog list</strong></dt><dd><p>List data log.</p>
+</dd>
+<dt><strong class="command">datalog trim</strong></dt><dd><p>Trim data log.</p>
+</dd>
+<dt><strong class="command">datalog status</strong></dt><dd><p>Read data log status.</p>
+</dd>
+<dt><strong class="command">orphans find</strong></dt><dd><p>Init and run search for leaked rados objects.
+DEPRECATED. See the “rgw-orphan-list” tool.</p>
+</dd>
+<dt><strong class="command">orphans finish</strong></dt><dd><p>Clean up search for leaked rados objects.
+DEPRECATED. See the “rgw-orphan-list” tool.</p>
+</dd>
+<dt><strong class="command">orphans list-jobs</strong></dt><dd><p>List the current job-ids for the orphans search.
+DEPRECATED. See the “rgw-orphan-list” tool.</p>
+</dd>
+<dt><strong class="command">role create</strong></dt><dd><p>create a new AWS role for use with STS.</p>
+</dd>
+<dt><strong class="command">role rm</strong></dt><dd><p>Remove a role.</p>
+</dd>
+<dt><strong class="command">role get</strong></dt><dd><p>Get a role.</p>
+</dd>
+<dt><strong class="command">role list</strong></dt><dd><p>List the roles with specified path prefix.</p>
+</dd>
+<dt><strong class="command">role modify</strong></dt><dd><p>Modify the assume role policy of an existing role.</p>
+</dd>
+<dt><strong class="command">role-policy put</strong></dt><dd><p>Add/update permission policy to role.</p>
+</dd>
+<dt><strong class="command">role-policy list</strong></dt><dd><p>List the policies attached to a role.</p>
+</dd>
+<dt><strong class="command">role-policy get</strong></dt><dd><p>Get the specified inline policy document embedded with the given role.</p>
+</dd>
+<dt><strong class="command">role-policy rm</strong></dt><dd><p>Remove the policy attached to a role</p>
+</dd>
+<dt><strong class="command">reshard add</strong></dt><dd><p>Schedule a resharding of a bucket</p>
+</dd>
+<dt><strong class="command">reshard list</strong></dt><dd><p>List all bucket resharding or scheduled to be resharded</p>
+</dd>
+<dt><strong class="command">reshard process</strong></dt><dd><p>Process of scheduled reshard jobs</p>
+</dd>
+<dt><strong class="command">reshard status</strong></dt><dd><p>Resharding status of a bucket</p>
+</dd>
+<dt><strong class="command">reshard cancel</strong></dt><dd><p>Cancel resharding a bucket</p>
+</dd>
+<dt><strong class="command">topic list</strong></dt><dd><p>List bucket notifications/pubsub topics</p>
+</dd>
+<dt><strong class="command">topic get</strong></dt><dd><p>Get a bucket notifications/pubsub topic</p>
+</dd>
+<dt><strong class="command">topic rm</strong></dt><dd><p>Remove a bucket notifications/pubsub topic</p>
+</dd>
+<dt><strong class="command">subscription get</strong></dt><dd><p>Get a pubsub subscription definition</p>
+</dd>
+<dt><strong class="command">subscription rm</strong></dt><dd><p>Remove a pubsub subscription</p>
+</dd>
+<dt><strong class="command">subscription pull</strong></dt><dd><p>Show events in a pubsub subscription</p>
+</dd>
+<dt><strong class="command">subscription ack</strong></dt><dd><p>Ack (remove) an events in a pubsub subscription</p>
+</dd>
+</dl>
+</section>
+<section id="options">
+<h2>Options<a class="headerlink" href="#options" title="Permalink to this heading">¶</a></h2>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-radosgw-admin-c">
+<span id="cmdoption-radosgw-admin-conf"></span><span class="sig-name descname"><span class="pre">-c</span></span><span class="sig-prename descclassname"> <span class="pre">ceph.conf</span></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--conf</span></span><span class="sig-prename descclassname"><span class="pre">=ceph.conf</span></span><a class="headerlink" href="#cmdoption-radosgw-admin-c" title="Permalink to this definition">¶</a></dt>
+<dd><p>Use <code class="docutils literal notranslate"><span class="pre">ceph.conf</span></code> configuration file instead of the default
+<code class="docutils literal notranslate"><span class="pre">/etc/ceph/ceph.conf</span></code> to determine monitor addresses during
+startup.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-radosgw-admin-m">
+<span class="sig-name descname"><span class="pre">-m</span></span><span class="sig-prename descclassname"> <span class="pre">monaddress[:port]</span></span><a class="headerlink" href="#cmdoption-radosgw-admin-m" title="Permalink to this definition">¶</a></dt>
+<dd><p>Connect to specified monitor (instead of looking through ceph.conf).</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-radosgw-admin-tenant">
+<span class="sig-name descname"><span class="pre">--tenant</span></span><span class="sig-prename descclassname"><span class="pre">=&lt;tenant&gt;</span></span><a class="headerlink" href="#cmdoption-radosgw-admin-tenant" title="Permalink to this definition">¶</a></dt>
+<dd><p>Name of the tenant.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-radosgw-admin-uid">
+<span class="sig-name descname"><span class="pre">--uid</span></span><span class="sig-prename descclassname"><span class="pre">=uid</span></span><a class="headerlink" href="#cmdoption-radosgw-admin-uid" title="Permalink to this definition">¶</a></dt>
+<dd><p>The radosgw user ID.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-radosgw-admin-new-uid">
+<span class="sig-name descname"><span class="pre">--new-uid</span></span><span class="sig-prename descclassname"><span class="pre">=uid</span></span><a class="headerlink" href="#cmdoption-radosgw-admin-new-uid" title="Permalink to this definition">¶</a></dt>
+<dd><p>ID of the new user. Used with ‘user rename’ command.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-radosgw-admin-subuser">
+<span class="sig-name descname"><span class="pre">--subuser</span></span><span class="sig-prename descclassname"><span class="pre">=&lt;name&gt;</span></span><a class="headerlink" href="#cmdoption-radosgw-admin-subuser" title="Permalink to this definition">¶</a></dt>
+<dd><p>Name of the subuser.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-radosgw-admin-access-key">
+<span class="sig-name descname"><span class="pre">--access-key</span></span><span class="sig-prename descclassname"><span class="pre">=&lt;key&gt;</span></span><a class="headerlink" href="#cmdoption-radosgw-admin-access-key" title="Permalink to this definition">¶</a></dt>
+<dd><p>S3 access key.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-radosgw-admin-email">
+<span class="sig-name descname"><span class="pre">--email</span></span><span class="sig-prename descclassname"><span class="pre">=email</span></span><a class="headerlink" href="#cmdoption-radosgw-admin-email" title="Permalink to this definition">¶</a></dt>
+<dd><p>The e-mail address of the user.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-radosgw-admin-secret-secret-key">
+<span class="sig-name descname"><span class="pre">--secret/--secret-key</span></span><span class="sig-prename descclassname"><span class="pre">=&lt;key&gt;</span></span><a class="headerlink" href="#cmdoption-radosgw-admin-secret-secret-key" title="Permalink to this definition">¶</a></dt>
+<dd><p>The secret key.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-radosgw-admin-gen-access-key">
+<span class="sig-name descname"><span class="pre">--gen-access-key</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-radosgw-admin-gen-access-key" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate random access key (for S3).</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-radosgw-admin-gen-secret">
+<span class="sig-name descname"><span class="pre">--gen-secret</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-radosgw-admin-gen-secret" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate random secret key.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-radosgw-admin-key-type">
+<span class="sig-name descname"><span class="pre">--key-type</span></span><span class="sig-prename descclassname"><span class="pre">=&lt;type&gt;</span></span><a class="headerlink" href="#cmdoption-radosgw-admin-key-type" title="Permalink to this definition">¶</a></dt>
+<dd><p>key type, options are: swift, s3.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-radosgw-admin-temp-url-key-2">
+<span class="sig-name descname"><span class="pre">--temp-url-key[-2]</span></span><span class="sig-prename descclassname"><span class="pre">=&lt;key&gt;</span></span><a class="headerlink" href="#cmdoption-radosgw-admin-temp-url-key-2" title="Permalink to this definition">¶</a></dt>
+<dd><p>Temporary url key.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-radosgw-admin-max-buckets">
+<span class="sig-name descname"><span class="pre">--max-buckets</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-radosgw-admin-max-buckets" title="Permalink to this definition">¶</a></dt>
+<dd><p>max number of buckets for a user (0 for no limit, negative value to disable bucket creation).
+Default is 1000.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-radosgw-admin-access">
+<span class="sig-name descname"><span class="pre">--access</span></span><span class="sig-prename descclassname"><span class="pre">=&lt;access&gt;</span></span><a class="headerlink" href="#cmdoption-radosgw-admin-access" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the access permissions for the sub-user.
+Available access permissions are read, write, readwrite and full.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-radosgw-admin-display-name">
+<span class="sig-name descname"><span class="pre">--display-name</span></span><span class="sig-prename descclassname"><span class="pre">=&lt;name&gt;</span></span><a class="headerlink" href="#cmdoption-radosgw-admin-display-name" title="Permalink to this definition">¶</a></dt>
+<dd><p>The display name of the user.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-radosgw-admin-admin">
+<span class="sig-name descname"><span class="pre">--admin</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-radosgw-admin-admin" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the admin flag on the user.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-radosgw-admin-system">
+<span class="sig-name descname"><span class="pre">--system</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-radosgw-admin-system" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the system flag on the user.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-radosgw-admin-bucket">
+<span class="sig-name descname"><span class="pre">--bucket</span></span><span class="sig-prename descclassname"><span class="pre">=[tenant-id/]bucket</span></span><a class="headerlink" href="#cmdoption-radosgw-admin-bucket" title="Permalink to this definition">¶</a></dt>
+<dd><p>Specify the bucket name.  If tenant-id is not specified, the tenant-id
+of the user (–uid) is used.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-radosgw-admin-pool">
+<span class="sig-name descname"><span class="pre">--pool</span></span><span class="sig-prename descclassname"><span class="pre">=&lt;pool&gt;</span></span><a class="headerlink" href="#cmdoption-radosgw-admin-pool" title="Permalink to this definition">¶</a></dt>
+<dd><p>Specify the pool name.
+Also used with <cite>orphans find</cite> as data pool to scan for leaked rados objects.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-radosgw-admin-object">
+<span class="sig-name descname"><span class="pre">--object</span></span><span class="sig-prename descclassname"><span class="pre">=object</span></span><a class="headerlink" href="#cmdoption-radosgw-admin-object" title="Permalink to this definition">¶</a></dt>
+<dd><p>Specify the object name.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-radosgw-admin-date">
+<span class="sig-name descname"><span class="pre">--date</span></span><span class="sig-prename descclassname"><span class="pre">=yyyy-mm-dd</span></span><a class="headerlink" href="#cmdoption-radosgw-admin-date" title="Permalink to this definition">¶</a></dt>
+<dd><p>The date in the format yyyy-mm-dd.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-radosgw-admin-start-date">
+<span class="sig-name descname"><span class="pre">--start-date</span></span><span class="sig-prename descclassname"><span class="pre">=yyyy-mm-dd</span></span><a class="headerlink" href="#cmdoption-radosgw-admin-start-date" title="Permalink to this definition">¶</a></dt>
+<dd><p>The start date in the format yyyy-mm-dd.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-radosgw-admin-end-date">
+<span class="sig-name descname"><span class="pre">--end-date</span></span><span class="sig-prename descclassname"><span class="pre">=yyyy-mm-dd</span></span><a class="headerlink" href="#cmdoption-radosgw-admin-end-date" title="Permalink to this definition">¶</a></dt>
+<dd><p>The end date in the format yyyy-mm-dd.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-radosgw-admin-bucket-id">
+<span class="sig-name descname"><span class="pre">--bucket-id</span></span><span class="sig-prename descclassname"><span class="pre">=&lt;bucket-id&gt;</span></span><a class="headerlink" href="#cmdoption-radosgw-admin-bucket-id" title="Permalink to this definition">¶</a></dt>
+<dd><p>Specify the bucket id.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-radosgw-admin-bucket-new-name">
+<span class="sig-name descname"><span class="pre">--bucket-new-name</span></span><span class="sig-prename descclassname"><span class="pre">=[tenant-id/]&lt;bucket&gt;</span></span><a class="headerlink" href="#cmdoption-radosgw-admin-bucket-new-name" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>Optional for <cite>bucket link</cite>; use to rename a bucket.</dt><dd><p>While tenant-id/ can be specified, this is never
+necessary for normal operation.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-radosgw-admin-shard-id">
+<span class="sig-name descname"><span class="pre">--shard-id</span></span><span class="sig-prename descclassname"><span class="pre">=&lt;shard-id&gt;</span></span><a class="headerlink" href="#cmdoption-radosgw-admin-shard-id" title="Permalink to this definition">¶</a></dt>
+<dd><p>Optional for mdlog list, bi list, data sync status. Required for <code class="docutils literal notranslate"><span class="pre">mdlog</span> <span class="pre">trim</span></code>.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-radosgw-admin-max-entries">
+<span class="sig-name descname"><span class="pre">--max-entries</span></span><span class="sig-prename descclassname"><span class="pre">=&lt;entries&gt;</span></span><a class="headerlink" href="#cmdoption-radosgw-admin-max-entries" title="Permalink to this definition">¶</a></dt>
+<dd><p>Optional for listing operations to specify the max entires</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-radosgw-admin-purge-data">
+<span class="sig-name descname"><span class="pre">--purge-data</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-radosgw-admin-purge-data" title="Permalink to this definition">¶</a></dt>
+<dd><p>When specified, user removal will also purge all the user data.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-radosgw-admin-purge-keys">
+<span class="sig-name descname"><span class="pre">--purge-keys</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-radosgw-admin-purge-keys" title="Permalink to this definition">¶</a></dt>
+<dd><p>When specified, subuser removal will also purge all the subuser keys.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-radosgw-admin-purge-objects">
+<span class="sig-name descname"><span class="pre">--purge-objects</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-radosgw-admin-purge-objects" title="Permalink to this definition">¶</a></dt>
+<dd><p>When specified, the bucket removal will also purge all objects in it.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-radosgw-admin-metadata-key">
+<span class="sig-name descname"><span class="pre">--metadata-key</span></span><span class="sig-prename descclassname"><span class="pre">=&lt;key&gt;</span></span><a class="headerlink" href="#cmdoption-radosgw-admin-metadata-key" title="Permalink to this definition">¶</a></dt>
+<dd><p>Key to retrieve metadata from with <code class="docutils literal notranslate"><span class="pre">metadata</span> <span class="pre">get</span></code>.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-radosgw-admin-remote">
+<span class="sig-name descname"><span class="pre">--remote</span></span><span class="sig-prename descclassname"><span class="pre">=&lt;remote&gt;</span></span><a class="headerlink" href="#cmdoption-radosgw-admin-remote" title="Permalink to this definition">¶</a></dt>
+<dd><p>Zone or zonegroup id of remote gateway.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-radosgw-admin-period">
+<span class="sig-name descname"><span class="pre">--period</span></span><span class="sig-prename descclassname"><span class="pre">=&lt;id&gt;</span></span><a class="headerlink" href="#cmdoption-radosgw-admin-period" title="Permalink to this definition">¶</a></dt>
+<dd><p>Period id.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-radosgw-admin-url">
+<span class="sig-name descname"><span class="pre">--url</span></span><span class="sig-prename descclassname"><span class="pre">=&lt;url&gt;</span></span><a class="headerlink" href="#cmdoption-radosgw-admin-url" title="Permalink to this definition">¶</a></dt>
+<dd><p>url for pushing/pulling period or realm.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-radosgw-admin-epoch">
+<span class="sig-name descname"><span class="pre">--epoch</span></span><span class="sig-prename descclassname"><span class="pre">=&lt;number&gt;</span></span><a class="headerlink" href="#cmdoption-radosgw-admin-epoch" title="Permalink to this definition">¶</a></dt>
+<dd><p>Period epoch.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-radosgw-admin-commit">
+<span class="sig-name descname"><span class="pre">--commit</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-radosgw-admin-commit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Commit the period during ‘period update’.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-radosgw-admin-staging">
+<span class="sig-name descname"><span class="pre">--staging</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-radosgw-admin-staging" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the staging period info.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-radosgw-admin-master">
+<span class="sig-name descname"><span class="pre">--master</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-radosgw-admin-master" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set as master.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-radosgw-admin-master-zone">
+<span class="sig-name descname"><span class="pre">--master-zone</span></span><span class="sig-prename descclassname"><span class="pre">=&lt;id&gt;</span></span><a class="headerlink" href="#cmdoption-radosgw-admin-master-zone" title="Permalink to this definition">¶</a></dt>
+<dd><p>Master zone id.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-radosgw-admin-rgw-realm">
+<span class="sig-name descname"><span class="pre">--rgw-realm</span></span><span class="sig-prename descclassname"><span class="pre">=&lt;name&gt;</span></span><a class="headerlink" href="#cmdoption-radosgw-admin-rgw-realm" title="Permalink to this definition">¶</a></dt>
+<dd><p>The realm name.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-radosgw-admin-realm-id">
+<span class="sig-name descname"><span class="pre">--realm-id</span></span><span class="sig-prename descclassname"><span class="pre">=&lt;id&gt;</span></span><a class="headerlink" href="#cmdoption-radosgw-admin-realm-id" title="Permalink to this definition">¶</a></dt>
+<dd><p>The realm id.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-radosgw-admin-realm-new-name">
+<span class="sig-name descname"><span class="pre">--realm-new-name</span></span><span class="sig-prename descclassname"><span class="pre">=&lt;name&gt;</span></span><a class="headerlink" href="#cmdoption-radosgw-admin-realm-new-name" title="Permalink to this definition">¶</a></dt>
+<dd><p>New name of realm.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-radosgw-admin-rgw-zonegroup">
+<span class="sig-name descname"><span class="pre">--rgw-zonegroup</span></span><span class="sig-prename descclassname"><span class="pre">=&lt;name&gt;</span></span><a class="headerlink" href="#cmdoption-radosgw-admin-rgw-zonegroup" title="Permalink to this definition">¶</a></dt>
+<dd><p>The zonegroup name.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-radosgw-admin-zonegroup-id">
+<span class="sig-name descname"><span class="pre">--zonegroup-id</span></span><span class="sig-prename descclassname"><span class="pre">=&lt;id&gt;</span></span><a class="headerlink" href="#cmdoption-radosgw-admin-zonegroup-id" title="Permalink to this definition">¶</a></dt>
+<dd><p>The zonegroup id.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-radosgw-admin-zonegroup-new-name">
+<span class="sig-name descname"><span class="pre">--zonegroup-new-name</span></span><span class="sig-prename descclassname"><span class="pre">=&lt;name&gt;</span></span><a class="headerlink" href="#cmdoption-radosgw-admin-zonegroup-new-name" title="Permalink to this definition">¶</a></dt>
+<dd><p>The new name of the zonegroup.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-radosgw-admin-rgw-zone">
+<span class="sig-name descname"><span class="pre">--rgw-zone</span></span><span class="sig-prename descclassname"><span class="pre">=&lt;zone&gt;</span></span><a class="headerlink" href="#cmdoption-radosgw-admin-rgw-zone" title="Permalink to this definition">¶</a></dt>
+<dd><p>Zone in which radosgw is running.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-radosgw-admin-zone-id">
+<span class="sig-name descname"><span class="pre">--zone-id</span></span><span class="sig-prename descclassname"><span class="pre">=&lt;id&gt;</span></span><a class="headerlink" href="#cmdoption-radosgw-admin-zone-id" title="Permalink to this definition">¶</a></dt>
+<dd><p>The zone id.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-radosgw-admin-zone-new-name">
+<span class="sig-name descname"><span class="pre">--zone-new-name</span></span><span class="sig-prename descclassname"><span class="pre">=&lt;name&gt;</span></span><a class="headerlink" href="#cmdoption-radosgw-admin-zone-new-name" title="Permalink to this definition">¶</a></dt>
+<dd><p>The new name of the zone.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-radosgw-admin-source-zone">
+<span class="sig-name descname"><span class="pre">--source-zone</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-radosgw-admin-source-zone" title="Permalink to this definition">¶</a></dt>
+<dd><p>The source zone for data sync.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-radosgw-admin-default">
+<span class="sig-name descname"><span class="pre">--default</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-radosgw-admin-default" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the entity (realm, zonegroup, zone) as default.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-radosgw-admin-read-only">
+<span class="sig-name descname"><span class="pre">--read-only</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-radosgw-admin-read-only" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the zone as read-only when adding to the zonegroup.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-radosgw-admin-placement-id">
+<span class="sig-name descname"><span class="pre">--placement-id</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-radosgw-admin-placement-id" title="Permalink to this definition">¶</a></dt>
+<dd><p>Placement id for the zonegroup placement commands.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-radosgw-admin-tags">
+<span class="sig-name descname"><span class="pre">--tags</span></span><span class="sig-prename descclassname"><span class="pre">=&lt;list&gt;</span></span><a class="headerlink" href="#cmdoption-radosgw-admin-tags" title="Permalink to this definition">¶</a></dt>
+<dd><p>The list of tags for zonegroup placement add and modify commands.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-radosgw-admin-tags-add">
+<span class="sig-name descname"><span class="pre">--tags-add</span></span><span class="sig-prename descclassname"><span class="pre">=&lt;list&gt;</span></span><a class="headerlink" href="#cmdoption-radosgw-admin-tags-add" title="Permalink to this definition">¶</a></dt>
+<dd><p>The list of tags to add for zonegroup placement modify command.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-radosgw-admin-tags-rm">
+<span class="sig-name descname"><span class="pre">--tags-rm</span></span><span class="sig-prename descclassname"><span class="pre">=&lt;list&gt;</span></span><a class="headerlink" href="#cmdoption-radosgw-admin-tags-rm" title="Permalink to this definition">¶</a></dt>
+<dd><p>The list of tags to remove for zonegroup placement modify command.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-radosgw-admin-endpoints">
+<span class="sig-name descname"><span class="pre">--endpoints</span></span><span class="sig-prename descclassname"><span class="pre">=&lt;list&gt;</span></span><a class="headerlink" href="#cmdoption-radosgw-admin-endpoints" title="Permalink to this definition">¶</a></dt>
+<dd><p>The zone endpoints.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-radosgw-admin-index-pool">
+<span class="sig-name descname"><span class="pre">--index-pool</span></span><span class="sig-prename descclassname"><span class="pre">=&lt;pool&gt;</span></span><a class="headerlink" href="#cmdoption-radosgw-admin-index-pool" title="Permalink to this definition">¶</a></dt>
+<dd><p>The placement target index pool.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-radosgw-admin-data-pool">
+<span class="sig-name descname"><span class="pre">--data-pool</span></span><span class="sig-prename descclassname"><span class="pre">=&lt;pool&gt;</span></span><a class="headerlink" href="#cmdoption-radosgw-admin-data-pool" title="Permalink to this definition">¶</a></dt>
+<dd><p>The placement target data pool.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-radosgw-admin-data-extra-pool">
+<span class="sig-name descname"><span class="pre">--data-extra-pool</span></span><span class="sig-prename descclassname"><span class="pre">=&lt;pool&gt;</span></span><a class="headerlink" href="#cmdoption-radosgw-admin-data-extra-pool" title="Permalink to this definition">¶</a></dt>
+<dd><p>The placement target data extra (non-ec) pool.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-radosgw-admin-placement-index-type">
+<span class="sig-name descname"><span class="pre">--placement-index-type</span></span><span class="sig-prename descclassname"><span class="pre">=&lt;type&gt;</span></span><a class="headerlink" href="#cmdoption-radosgw-admin-placement-index-type" title="Permalink to this definition">¶</a></dt>
+<dd><p>The placement target index type (normal, indexless, or #id).</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-radosgw-admin-tier-type">
+<span class="sig-name descname"><span class="pre">--tier-type</span></span><span class="sig-prename descclassname"><span class="pre">=&lt;type&gt;</span></span><a class="headerlink" href="#cmdoption-radosgw-admin-tier-type" title="Permalink to this definition">¶</a></dt>
+<dd><p>The zone tier type.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-radosgw-admin-tier-config">
+<span class="sig-name descname"><span class="pre">--tier-config</span></span><span class="sig-prename descclassname"><span class="pre">=&lt;k&gt;=&lt;v&gt;[,...]</span></span><a class="headerlink" href="#cmdoption-radosgw-admin-tier-config" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set zone tier config keys, values.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-radosgw-admin-tier-config-rm">
+<span class="sig-name descname"><span class="pre">--tier-config-rm</span></span><span class="sig-prename descclassname"><span class="pre">=&lt;k&gt;[,...]</span></span><a class="headerlink" href="#cmdoption-radosgw-admin-tier-config-rm" title="Permalink to this definition">¶</a></dt>
+<dd><p>Unset zone tier config keys.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-radosgw-admin-sync-from-all">
+<span class="sig-name descname"><span class="pre">--sync-from-all</span></span><span class="sig-prename descclassname"><span class="pre">[=false]</span></span><a class="headerlink" href="#cmdoption-radosgw-admin-sync-from-all" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set/reset whether zone syncs from all zonegroup peers.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-radosgw-admin-sync-from">
+<span class="sig-name descname"><span class="pre">--sync-from</span></span><span class="sig-prename descclassname"><span class="pre">=[zone-name][,...]</span></span><a class="headerlink" href="#cmdoption-radosgw-admin-sync-from" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the list of zones to sync from.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-radosgw-admin-sync-from-rm">
+<span class="sig-name descname"><span class="pre">--sync-from-rm</span></span><span class="sig-prename descclassname"><span class="pre">=[zone-name][,...]</span></span><a class="headerlink" href="#cmdoption-radosgw-admin-sync-from-rm" title="Permalink to this definition">¶</a></dt>
+<dd><p>Remove the zones from list of zones to sync from.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-radosgw-admin-bucket-index-max-shards">
+<span class="sig-name descname"><span class="pre">--bucket-index-max-shards</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-radosgw-admin-bucket-index-max-shards" title="Permalink to this definition">¶</a></dt>
+<dd><p>Override a zone’s or zonegroup’s default number of bucket index shards. This
+option is accepted by the ‘zone create’, ‘zone modify’, ‘zonegroup add’,
+and ‘zonegroup modify’ commands, and applies to buckets that are created
+after the zone/zonegroup changes take effect.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-radosgw-admin-fix">
+<span class="sig-name descname"><span class="pre">--fix</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-radosgw-admin-fix" title="Permalink to this definition">¶</a></dt>
+<dd><p>Besides checking bucket index, will also fix it.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-radosgw-admin-check-objects">
+<span class="sig-name descname"><span class="pre">--check-objects</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-radosgw-admin-check-objects" title="Permalink to this definition">¶</a></dt>
+<dd><p>bucket check: Rebuilds bucket index according to actual objects state.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-radosgw-admin-format">
+<span class="sig-name descname"><span class="pre">--format</span></span><span class="sig-prename descclassname"><span class="pre">=&lt;format&gt;</span></span><a class="headerlink" href="#cmdoption-radosgw-admin-format" title="Permalink to this definition">¶</a></dt>
+<dd><p>Specify output format for certain operations. Supported formats: xml, json.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-radosgw-admin-sync-stats">
+<span class="sig-name descname"><span class="pre">--sync-stats</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-radosgw-admin-sync-stats" title="Permalink to this definition">¶</a></dt>
+<dd><p>Option for ‘user stats’ command. When specified, it will update user stats with
+the current stats reported by user’s buckets indexes.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-radosgw-admin-show-log-entries">
+<span class="sig-name descname"><span class="pre">--show-log-entries</span></span><span class="sig-prename descclassname"><span class="pre">=&lt;flag&gt;</span></span><a class="headerlink" href="#cmdoption-radosgw-admin-show-log-entries" title="Permalink to this definition">¶</a></dt>
+<dd><p>Enable/disable dump of log entries on log show.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-radosgw-admin-show-log-sum">
+<span class="sig-name descname"><span class="pre">--show-log-sum</span></span><span class="sig-prename descclassname"><span class="pre">=&lt;flag&gt;</span></span><a class="headerlink" href="#cmdoption-radosgw-admin-show-log-sum" title="Permalink to this definition">¶</a></dt>
+<dd><p>Enable/disable dump of log summation on log show.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-radosgw-admin-skip-zero-entries">
+<span class="sig-name descname"><span class="pre">--skip-zero-entries</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-radosgw-admin-skip-zero-entries" title="Permalink to this definition">¶</a></dt>
+<dd><p>Log show only dumps entries that don’t have zero value in one of the numeric
+field.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-radosgw-admin-infile">
+<span class="sig-name descname"><span class="pre">--infile</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-radosgw-admin-infile" title="Permalink to this definition">¶</a></dt>
+<dd><p>Specify a file to read in when setting data.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-radosgw-admin-categories">
+<span class="sig-name descname"><span class="pre">--categories</span></span><span class="sig-prename descclassname"><span class="pre">=&lt;list&gt;</span></span><a class="headerlink" href="#cmdoption-radosgw-admin-categories" title="Permalink to this definition">¶</a></dt>
+<dd><p>Comma separated list of categories, used in usage show.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-radosgw-admin-caps">
+<span class="sig-name descname"><span class="pre">--caps</span></span><span class="sig-prename descclassname"><span class="pre">=&lt;caps&gt;</span></span><a class="headerlink" href="#cmdoption-radosgw-admin-caps" title="Permalink to this definition">¶</a></dt>
+<dd><p>List of caps (e.g., “usage=read, write; user=read”.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-radosgw-admin-compression">
+<span class="sig-name descname"><span class="pre">--compression</span></span><span class="sig-prename descclassname"><span class="pre">=&lt;compression-algorithm&gt;</span></span><a class="headerlink" href="#cmdoption-radosgw-admin-compression" title="Permalink to this definition">¶</a></dt>
+<dd><p>Placement target compression algorithm (lz4|snappy|zlib|zstd)</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-radosgw-admin-yes-i-really-mean-it">
+<span class="sig-name descname"><span class="pre">--yes-i-really-mean-it</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-radosgw-admin-yes-i-really-mean-it" title="Permalink to this definition">¶</a></dt>
+<dd><p>Required for certain operations.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-radosgw-admin-min-rewrite-size">
+<span class="sig-name descname"><span class="pre">--min-rewrite-size</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-radosgw-admin-min-rewrite-size" title="Permalink to this definition">¶</a></dt>
+<dd><p>Specify the min object size for bucket rewrite (default 4M).</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-radosgw-admin-max-rewrite-size">
+<span class="sig-name descname"><span class="pre">--max-rewrite-size</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-radosgw-admin-max-rewrite-size" title="Permalink to this definition">¶</a></dt>
+<dd><p>Specify the max object size for bucket rewrite (default ULLONG_MAX).</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-radosgw-admin-min-rewrite-stripe-size">
+<span class="sig-name descname"><span class="pre">--min-rewrite-stripe-size</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-radosgw-admin-min-rewrite-stripe-size" title="Permalink to this definition">¶</a></dt>
+<dd><p>Specify the min stripe size for object rewrite (default 0). If the value
+is set to 0, then the specified object will always be
+rewritten for restriping.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-radosgw-admin-warnings-only">
+<span class="sig-name descname"><span class="pre">--warnings-only</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-radosgw-admin-warnings-only" title="Permalink to this definition">¶</a></dt>
+<dd><p>When specified with bucket limit check,
+list only buckets nearing or over the current max objects per shard value.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-radosgw-admin-bypass-gc">
+<span class="sig-name descname"><span class="pre">--bypass-gc</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-radosgw-admin-bypass-gc" title="Permalink to this definition">¶</a></dt>
+<dd><p>When specified with bucket deletion,
+triggers object deletions by not involving GC.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-radosgw-admin-inconsistent-index">
+<span class="sig-name descname"><span class="pre">--inconsistent-index</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-radosgw-admin-inconsistent-index" title="Permalink to this definition">¶</a></dt>
+<dd><p>When specified with bucket deletion and bypass-gc set to true,
+ignores bucket index consistency.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-radosgw-admin-max-concurrent-ios">
+<span class="sig-name descname"><span class="pre">--max-concurrent-ios</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-radosgw-admin-max-concurrent-ios" title="Permalink to this definition">¶</a></dt>
+<dd><p>Maximum concurrent ios for bucket operations. Affects operations that
+scan the bucket index, e.g., listing, deletion, and all scan/search
+operations such as finding orphans or checking the bucket index.
+Default is 32.</p>
+</dd></dl>
+
+</section>
+<section id="quota-options">
+<h2>Quota Options<a class="headerlink" href="#quota-options" title="Permalink to this heading">¶</a></h2>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-radosgw-admin-max-objects">
+<span class="sig-name descname"><span class="pre">--max-objects</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-radosgw-admin-max-objects" title="Permalink to this definition">¶</a></dt>
+<dd><p>Specify max objects (negative value to disable).</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-radosgw-admin-max-size">
+<span class="sig-name descname"><span class="pre">--max-size</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-radosgw-admin-max-size" title="Permalink to this definition">¶</a></dt>
+<dd><p>Specify max size (in B/K/M/G/T, negative value to disable).</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-radosgw-admin-quota-scope">
+<span class="sig-name descname"><span class="pre">--quota-scope</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-radosgw-admin-quota-scope" title="Permalink to this definition">¶</a></dt>
+<dd><p>The scope of quota (bucket, user).</p>
+</dd></dl>
+
+</section>
+<section id="orphans-search-options">
+<h2>Orphans Search Options<a class="headerlink" href="#orphans-search-options" title="Permalink to this heading">¶</a></h2>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-radosgw-admin-num-shards">
+<span class="sig-name descname"><span class="pre">--num-shards</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-radosgw-admin-num-shards" title="Permalink to this definition">¶</a></dt>
+<dd><p>Number of shards to use for keeping the temporary scan info</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-radosgw-admin-orphan-stale-secs">
+<span class="sig-name descname"><span class="pre">--orphan-stale-secs</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-radosgw-admin-orphan-stale-secs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Number of seconds to wait before declaring an object to be an orphan.
+Default is 86400 (24 hours).</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-radosgw-admin-job-id">
+<span class="sig-name descname"><span class="pre">--job-id</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-radosgw-admin-job-id" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the job id (for orphans find)</p>
+</dd></dl>
+
+</section>
+<section id="orphans-list-jobs-options">
+<h2>Orphans list-jobs options<a class="headerlink" href="#orphans-list-jobs-options" title="Permalink to this heading">¶</a></h2>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-radosgw-admin-extra-info">
+<span class="sig-name descname"><span class="pre">--extra-info</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-radosgw-admin-extra-info" title="Permalink to this definition">¶</a></dt>
+<dd><p>Provide extra info in the job list.</p>
+</dd></dl>
+
+</section>
+<section id="role-options">
+<h2>Role Options<a class="headerlink" href="#role-options" title="Permalink to this heading">¶</a></h2>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-radosgw-admin-role-name">
+<span class="sig-name descname"><span class="pre">--role-name</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-radosgw-admin-role-name" title="Permalink to this definition">¶</a></dt>
+<dd><p>The name of the role to create.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-radosgw-admin-path">
+<span class="sig-name descname"><span class="pre">--path</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-radosgw-admin-path" title="Permalink to this definition">¶</a></dt>
+<dd><p>The path to the role.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-radosgw-admin-assume-role-policy-doc">
+<span class="sig-name descname"><span class="pre">--assume-role-policy-doc</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-radosgw-admin-assume-role-policy-doc" title="Permalink to this definition">¶</a></dt>
+<dd><p>The trust relationship policy document that grants an entity permission to
+assume the role.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-radosgw-admin-policy-name">
+<span class="sig-name descname"><span class="pre">--policy-name</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-radosgw-admin-policy-name" title="Permalink to this definition">¶</a></dt>
+<dd><p>The name of the policy document.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-radosgw-admin-policy-doc">
+<span class="sig-name descname"><span class="pre">--policy-doc</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-radosgw-admin-policy-doc" title="Permalink to this definition">¶</a></dt>
+<dd><p>The permission policy document.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-radosgw-admin-path-prefix">
+<span class="sig-name descname"><span class="pre">--path-prefix</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-radosgw-admin-path-prefix" title="Permalink to this definition">¶</a></dt>
+<dd><p>The path prefix for filtering the roles.</p>
+</dd></dl>
+
+</section>
+<section id="bucket-notifications-pubsub-options">
+<h2>Bucket Notifications/PubSub Options<a class="headerlink" href="#bucket-notifications-pubsub-options" title="Permalink to this heading">¶</a></h2>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-radosgw-admin-topic">
+<span class="sig-name descname"><span class="pre">--topic</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-radosgw-admin-topic" title="Permalink to this definition">¶</a></dt>
+<dd><p>The bucket notifications/pubsub topic name.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-radosgw-admin-subscription">
+<span class="sig-name descname"><span class="pre">--subscription</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-radosgw-admin-subscription" title="Permalink to this definition">¶</a></dt>
+<dd><p>The pubsub subscription name.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-radosgw-admin-event-id">
+<span class="sig-name descname"><span class="pre">--event-id</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-radosgw-admin-event-id" title="Permalink to this definition">¶</a></dt>
+<dd><p>The event id in a pubsub subscription.</p>
+</dd></dl>
+
+</section>
+<section id="examples">
+<h2>Examples<a class="headerlink" href="#examples" title="Permalink to this heading">¶</a></h2>
+<p>Generate a new user:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ radosgw-admin user create --display-name=&quot;johnny rotten&quot; --uid=johnny
+{ &quot;user_id&quot;: &quot;johnny&quot;,
+  &quot;rados_uid&quot;: 0,
+  &quot;display_name&quot;: &quot;johnny rotten&quot;,
+  &quot;email&quot;: &quot;&quot;,
+  &quot;suspended&quot;: 0,
+  &quot;subusers&quot;: [],
+  &quot;keys&quot;: [
+        { &quot;user&quot;: &quot;johnny&quot;,
+          &quot;access_key&quot;: &quot;TCICW53D9BQ2VGC46I44&quot;,
+          &quot;secret_key&quot;: &quot;tfm9aHMI8X76L3UdgE+ZQaJag1vJQmE6HDb5Lbrz&quot;}],
+  &quot;swift_keys&quot;: []}
+</pre></div>
+</div>
+<p>Remove a user:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ radosgw-admin user rm --uid=johnny
+</pre></div>
+</div>
+<p>Rename a user:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ radosgw-admin user rename --uid=johny --new-uid=joe
+</pre></div>
+</div>
+<p>Remove a user and all associated buckets with their contents:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ radosgw-admin user rm --uid=johnny --purge-data
+</pre></div>
+</div>
+<p>Remove a bucket:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ radosgw-admin bucket rm --bucket=foo
+</pre></div>
+</div>
+<p>Link bucket to specified user:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ radosgw-admin bucket link --bucket=foo --bucket_id=&lt;bucket id&gt; --uid=johnny
+</pre></div>
+</div>
+<p>Unlink bucket from specified user:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ radosgw-admin bucket unlink --bucket=foo --uid=johnny
+</pre></div>
+</div>
+<p>Rename a bucket:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ radosgw-admin bucket link --bucket=foo --bucket-new-name=bar --uid=johnny
+</pre></div>
+</div>
+<p>Move a bucket from the old global tenant space to a specified tenant:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ radosgw-admin bucket link --bucket=/foo --uid=12345678$12345678&#39;
+</pre></div>
+</div>
+<p>Link bucket to specified user and change object ACLs:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ radosgw-admin bucket chown --bucket=/foo --uid=12345678$12345678&#39;
+</pre></div>
+</div>
+<p>Show the logs of a bucket from April 1st, 2012:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ radosgw-admin log show --bucket=foo --date=2012-04-01-01 --bucket-id=default.14193.1
+</pre></div>
+</div>
+<p>Show usage information for user from March 1st to (but not including) April 1st, 2012:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ radosgw-admin usage show --uid=johnny \
+                --start-date=2012-03-01 --end-date=2012-04-01
+</pre></div>
+</div>
+<p>Show only summary of usage information for all users:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ radosgw-admin usage show --show-log-entries=false
+</pre></div>
+</div>
+<p>Trim usage information for user until March 1st, 2012:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ radosgw-admin usage trim --uid=johnny --end-date=2012-04-01
+</pre></div>
+</div>
+</section>
+<section id="availability">
+<h2>Availability<a class="headerlink" href="#availability" title="Permalink to this heading">¶</a></h2>
+<p><strong class="program">radosgw-admin</strong> is part of Ceph, a massively scalable, open-source,
+distributed storage system.  Please refer to the Ceph documentation at
+<a class="reference external" href="http://ceph.com/docs">http://ceph.com/docs</a> for more information.</p>
+</section>
+<section id="see-also">
+<h2>See also<a class="headerlink" href="#see-also" title="Permalink to this heading">¶</a></h2>
+<p><a class="reference internal" href="../ceph/"><span class="doc">ceph</span></a>(8)
+<a class="reference internal" href="../radosgw/"><span class="doc">radosgw</span></a>(8)</p>
+</section>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../../">
+              <img class="logo" src="../../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../install/">Installing Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cephadm/">Cephadm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../rados/">Ceph Storage Cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cephfs/">Ceph File System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../rbd/">Ceph Block Device</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../../radosgw/">Ceph Object Gateway</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../../../radosgw/frontends/">HTTP Frontends</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../radosgw/placement/">Pool Placement and Storage Classes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../radosgw/multisite/">Multisite Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../radosgw/multisite-sync-policy/">Multisite Sync Policy Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../radosgw/pools/">Configuring Pools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../radosgw/config-ref/">Config Reference</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../radosgw/admin/">Admin Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../radosgw/s3/">S3 API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../radosgw/rgw-cache/">Data caching and CDN</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../radosgw/swift/">Swift API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../radosgw/adminops/">Admin Ops API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../radosgw/api/">Python binding</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../radosgw/nfs/">Export over NFS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../radosgw/keystone/">OpenStack Keystone Integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../radosgw/barbican/">OpenStack Barbican Integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../radosgw/vault/">HashiCorp Vault Integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../radosgw/kmip/">KMIP Integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../radosgw/opa/">Open Policy Agent Integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../radosgw/multitenancy/">Multi-tenancy</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../radosgw/compression/">Compression</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../radosgw/ldap-auth/">LDAP Authentication</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../radosgw/encryption/">Server-Side Encryption</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../radosgw/bucketpolicy/">Bucket Policy</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../radosgw/dynamicresharding/">Dynamic bucket index resharding</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../radosgw/mfa/">Multi factor authentication</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../radosgw/sync-modules/">Sync Modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../radosgw/notifications/">Bucket Notifications</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../radosgw/layout/">Data Layout in RADOS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../radosgw/STS/">STS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../radosgw/STSLite/">STS Lite</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../radosgw/keycloak/">Keycloak</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../radosgw/session-tags/">Session Tags</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../radosgw/role/">Role</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../radosgw/orphans/">Orphan List and Associated Tooling</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../radosgw/oidc/">OpenID Connect Provider</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../radosgw/troubleshooting/">Troubleshooting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../radosgw/">Manpage radosgw</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Manpage radosgw-admin</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#synopsis">Synopsis</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#description">Description</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#commands">Commands</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#options">Options</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#quota-options">Quota Options</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#orphans-search-options">Orphans Search Options</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#orphans-list-jobs-options">Orphans list-jobs options</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#role-options">Role Options</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#bucket-notifications-pubsub-options">Bucket Notifications/PubSub Options</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#examples">Examples</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#availability">Availability</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#see-also">See also</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../radosgw/qat-accel/">QAT Acceleration for Encryption and Compression</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../radosgw/s3select/">S3-select</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../radosgw/lua-scripting/">Lua Scripting</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../mgr/">Ceph Manager Daemon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../mgr/dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dev/developer_guide/">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dev/internals/">Ceph Internals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../../../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../../../radosgw/qat-accel/" title="QAT Acceleration for Encryption and Compression"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../radosgw/" title="radosgw – rados REST gateway"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../../radosgw/" >Ceph Object Gateway</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">radosgw-admin – rados REST gateway user administration utility</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

@@ -1,0 +1,228 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>ceph-volume &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/css/custom.css" />
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../genindex/" />
+    <link rel="search" title="Search" href="../search/" />
+    <link rel="next" title="Overview" href="intro/" />
+    <link rel="prev" title="Ceph Foundation" href="../foundation/" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="intro/" title="Overview"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../foundation/" title="Ceph Foundation"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../">Ceph Documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">ceph-volume</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="ceph-volume">
+<span id="id1"></span><h1>ceph-volume<a class="headerlink" href="#ceph-volume" title="Permalink to this heading">¶</a></h1>
+<p>Deploy OSDs with different device technologies like lvm or physical disks using
+pluggable tools (<a class="reference internal" href="lvm/"><span class="doc">lvm</span></a> itself is treated like a plugin) and trying to
+follow a predictable, and robust way of preparing, activating, and starting OSDs.</p>
+<p><a class="reference internal" href="intro/#ceph-volume-overview"><span class="std std-ref">Overview</span></a> |
+<a class="reference internal" href="../dev/ceph-volume/plugins/#ceph-volume-plugins"><span class="std std-ref">Plugin Guide</span></a> |</p>
+<p><strong>Command Line Subcommands</strong></p>
+<p>There is currently support for <code class="docutils literal notranslate"><span class="pre">lvm</span></code>, and plain disks (with GPT partitions)
+that may have been deployed with <code class="docutils literal notranslate"><span class="pre">ceph-disk</span></code>.</p>
+<p><code class="docutils literal notranslate"><span class="pre">zfs</span></code> support is available for running a FreeBSD cluster.</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="lvm/#ceph-volume-lvm"><span class="std std-ref">lvm</span></a></p></li>
+<li><p><a class="reference internal" href="simple/#ceph-volume-simple"><span class="std std-ref">simple</span></a></p></li>
+<li><p><a class="reference internal" href="zfs/#ceph-volume-zfs"><span class="std std-ref">zfs</span></a></p></li>
+</ul>
+<p><strong>Node inventory</strong></p>
+<p>The <a class="reference internal" href="inventory/#ceph-volume-inventory"><span class="std std-ref">inventory</span></a> subcommand provides information and metadata
+about a nodes physical disk inventory.</p>
+<section id="migrating">
+<h2>Migrating<a class="headerlink" href="#migrating" title="Permalink to this heading">¶</a></h2>
+<p>Starting on Ceph version 13.0.0, <code class="docutils literal notranslate"><span class="pre">ceph-disk</span></code> is deprecated. Deprecation
+warnings will show up that will link to this page. It is strongly suggested
+that users start consuming <code class="docutils literal notranslate"><span class="pre">ceph-volume</span></code>. There are two paths for migrating:</p>
+<ol class="arabic simple">
+<li><p>Keep OSDs deployed with <code class="docutils literal notranslate"><span class="pre">ceph-disk</span></code>: The <a class="reference internal" href="simple/#ceph-volume-simple"><span class="std std-ref">simple</span></a> command
+provides a way to take over the management while disabling <code class="docutils literal notranslate"><span class="pre">ceph-disk</span></code>
+triggers.</p></li>
+<li><p>Redeploy existing OSDs with <code class="docutils literal notranslate"><span class="pre">ceph-volume</span></code>: This is covered in depth on
+<a class="reference internal" href="../rados/operations/add-or-rm-osds/#rados-replacing-an-osd"><span class="std std-ref">Replacing an OSD</span></a></p></li>
+</ol>
+<p>For details on why <code class="docutils literal notranslate"><span class="pre">ceph-disk</span></code> was removed please see the <a class="reference internal" href="intro/#ceph-disk-replaced"><span class="std std-ref">Why was
+ceph-disk replaced?</span></a> section.</p>
+<section id="new-deployments">
+<h3>New deployments<a class="headerlink" href="#new-deployments" title="Permalink to this heading">¶</a></h3>
+<p>For new deployments, <a class="reference internal" href="lvm/#ceph-volume-lvm"><span class="std std-ref">lvm</span></a> is recommended, it can use any
+logical volume as input for data OSDs, or it can setup a minimal/naive logical
+volume from a device.</p>
+</section>
+<section id="existing-osds">
+<h3>Existing OSDs<a class="headerlink" href="#existing-osds" title="Permalink to this heading">¶</a></h3>
+<p>If the cluster has OSDs that were provisioned with <code class="docutils literal notranslate"><span class="pre">ceph-disk</span></code>, then
+<code class="docutils literal notranslate"><span class="pre">ceph-volume</span></code> can take over the management of these with
+<a class="reference internal" href="simple/#ceph-volume-simple"><span class="std std-ref">simple</span></a>. A scan is done on the data device or OSD directory,
+and <code class="docutils literal notranslate"><span class="pre">ceph-disk</span></code> is fully disabled. Encryption is fully supported.</p>
+<div class="toctree-wrapper compound">
+</div>
+</section>
+</section>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../">
+              <img class="logo" src="../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../install/">Installing Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../cephadm/">Cephadm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../rados/">Ceph Storage Cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../cephfs/">Ceph File System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../rbd/">Ceph Block Device</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../radosgw/">Ceph Object Gateway</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../mgr/">Ceph Manager Daemon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../mgr/dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../dev/developer_guide/">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../dev/internals/">Ceph Internals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">ceph-volume</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#migrating">Migrating</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#new-deployments">New deployments</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#existing-osds">Existing OSDs</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="intro/">Overview</a></li>
+<li class="toctree-l4"><a class="reference internal" href="intro/#replacing-ceph-disk">Replacing <code class="docutils literal notranslate"><span class="pre">ceph-disk</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="intro/#gpt-partitions-are-simple">GPT partitions are simple?</a></li>
+<li class="toctree-l4"><a class="reference internal" href="intro/#modularity">Modularity</a></li>
+<li class="toctree-l4"><a class="reference internal" href="intro/#ceph-volume-lvm"><code class="docutils literal notranslate"><span class="pre">ceph-volume</span> <span class="pre">lvm</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="intro/#lvm-performance-penalty">LVM performance penalty</a></li>
+<li class="toctree-l4"><a class="reference internal" href="systemd/">systemd</a></li>
+<li class="toctree-l4"><a class="reference internal" href="inventory/"><code class="docutils literal notranslate"><span class="pre">inventory</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="drive-group/"><code class="docutils literal notranslate"><span class="pre">drive-group</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lvm/"><code class="docutils literal notranslate"><span class="pre">lvm</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lvm/activate/"><code class="docutils literal notranslate"><span class="pre">activate</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lvm/batch/"><code class="docutils literal notranslate"><span class="pre">batch</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lvm/batch/#reporting">Reporting</a></li>
+<li class="toctree-l4"><a class="reference internal" href="lvm/batch/#sizing">Sizing</a></li>
+<li class="toctree-l4"><a class="reference internal" href="lvm/batch/#idempotency-and-disk-replacements">Idempotency and disk replacements</a></li>
+<li class="toctree-l4"><a class="reference internal" href="lvm/encryption/">Encryption</a></li>
+<li class="toctree-l4"><a class="reference internal" href="lvm/prepare/"><code class="docutils literal notranslate"><span class="pre">prepare</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lvm/create/"><code class="docutils literal notranslate"><span class="pre">create</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lvm/scan/">scan</a></li>
+<li class="toctree-l4"><a class="reference internal" href="lvm/systemd/">systemd</a></li>
+<li class="toctree-l4"><a class="reference internal" href="lvm/list/"><code class="docutils literal notranslate"><span class="pre">list</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lvm/zap/"><code class="docutils literal notranslate"><span class="pre">zap</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lvm/migrate/"><code class="docutils literal notranslate"><span class="pre">migrate</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lvm/newdb/"><code class="docutils literal notranslate"><span class="pre">new-db</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lvm/newwal/"><code class="docutils literal notranslate"><span class="pre">new-wal</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="simple/"><code class="docutils literal notranslate"><span class="pre">simple</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="simple/activate/"><code class="docutils literal notranslate"><span class="pre">activate</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="simple/scan/"><code class="docutils literal notranslate"><span class="pre">scan</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="simple/systemd/">systemd</a></li>
+<li class="toctree-l4"><a class="reference internal" href="zfs/"><code class="docutils literal notranslate"><span class="pre">zfs</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="zfs/inventory/"><code class="docutils literal notranslate"><span class="pre">inventory</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="intro/" title="Overview"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../foundation/" title="Ceph Foundation"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../">Ceph Documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">ceph-volume</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

@@ -1,0 +1,951 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Admin Operations &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/css/custom.css" />
+    <script data-url_root="../../../../" id="documentation_options" src="../../../../_static/documentation_options.js"></script>
+    <script src="../../../../_static/jquery.js"></script>
+    <script src="../../../../_static/underscore.js"></script>
+    <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../../../_static/doctools.js"></script>
+    <script src="../../../../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../../../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../../../genindex/" />
+    <link rel="search" title="Search" href="../../../../search/" />
+    <link rel="next" title="Rados Gateway S3 API Compliance" href="../../s3_compliance/" />
+    <link rel="prev" title="Usage Design Overview" href="../../usage/" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../../s3_compliance/" title="Rados Gateway S3 API Compliance"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../../usage/" title="Usage Design Overview"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../../internals/" >Ceph Internals</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../../" accesskey="U">RADOS Gateway developer documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Admin Operations</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="admin-operations">
+<h1>Admin Operations<a class="headerlink" href="#admin-operations" title="Permalink to this heading">¶</a></h1>
+<p>An admin API request will be done on a URI that starts with the configurable ‘admin’
+resource entry point. Authorization for the admin API duplicates the S3 authorization
+mechanism. Some operations require that the user holds special administrative capabilities.
+The response entity type (XML or JSON) may be specified as the ‘format’ option in the
+request and defaults to JSON if not specified.</p>
+<section id="get-object">
+<h2>Get Object<a class="headerlink" href="#get-object" title="Permalink to this heading">¶</a></h2>
+<p>Get an existing object. NOTE: Does not require owner to be non-suspended.</p>
+<section id="syntax">
+<h3>Syntax<a class="headerlink" href="#syntax" title="Permalink to this heading">¶</a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>GET /{admin}/bucket?object&amp;format=json HTTP/1.1
+Host {fqdn}
+</pre></div>
+</div>
+</section>
+<section id="request-parameters">
+<h3>Request Parameters<a class="headerlink" href="#request-parameters" title="Permalink to this heading">¶</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">bucket</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The bucket containing the object to be retrieved.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Example</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">foo_bucket</span></code></p>
+</dd>
+<dt class="field-even">Required</dt>
+<dd class="field-even"><p>Yes</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The object to be retrieved.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Example</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">foo.txt</span></code></p>
+</dd>
+<dt class="field-even">Required</dt>
+<dd class="field-even"><p>Yes</p>
+</dd>
+</dl>
+</section>
+<section id="response-entities">
+<h3>Response Entities<a class="headerlink" href="#response-entities" title="Permalink to this heading">¶</a></h3>
+<p>If successful, returns the desired object.</p>
+<p><code class="docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The desired object.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Object</p>
+</dd>
+</dl>
+</section>
+<section id="special-error-responses">
+<h3>Special Error Responses<a class="headerlink" href="#special-error-responses" title="Permalink to this heading">¶</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">NoSuchObject</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Specified object does not exist.</p>
+</dd>
+<dt class="field-even">Code</dt>
+<dd class="field-even"><p>404 Not Found</p>
+</dd>
+</dl>
+</section>
+</section>
+<section id="head-object">
+<h2>Head Object<a class="headerlink" href="#head-object" title="Permalink to this heading">¶</a></h2>
+<p>Verify the existence of an object. If the object exists,
+metadata headers for the object will be returned.</p>
+<section id="id1">
+<h3>Syntax<a class="headerlink" href="#id1" title="Permalink to this heading">¶</a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>HEAD /{admin}/bucket?object HTTP/1.1
+Host {fqdn}
+</pre></div>
+</div>
+</section>
+<section id="id2">
+<h3>Request Parameters<a class="headerlink" href="#id2" title="Permalink to this heading">¶</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">bucket</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The bucket containing the object to be retrieved.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Example</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">foo_bucket</span></code></p>
+</dd>
+<dt class="field-even">Required</dt>
+<dd class="field-even"><p>Yes</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The object to be retrieved.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Example</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">foo.txt</span></code></p>
+</dd>
+<dt class="field-even">Required</dt>
+<dd class="field-even"><p>Yes</p>
+</dd>
+</dl>
+</section>
+<section id="id3">
+<h3>Response Entities<a class="headerlink" href="#id3" title="Permalink to this heading">¶</a></h3>
+<p>None.</p>
+</section>
+<section id="id4">
+<h3>Special Error Responses<a class="headerlink" href="#id4" title="Permalink to this heading">¶</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">NoSuchObject</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Specified object does not exist.</p>
+</dd>
+<dt class="field-even">Code</dt>
+<dd class="field-even"><p>404 Not Found</p>
+</dd>
+</dl>
+</section>
+</section>
+<section id="get-zone-info">
+<h2>Get Zone Info<a class="headerlink" href="#get-zone-info" title="Permalink to this heading">¶</a></h2>
+<p>Get cluster information.</p>
+<section id="id5">
+<h3>Syntax<a class="headerlink" href="#id5" title="Permalink to this heading">¶</a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">GET</span> <span class="o">/</span><span class="p">{</span><span class="n">admin</span><span class="p">}</span><span class="o">/</span><span class="n">zone</span><span class="o">&amp;</span><span class="nb">format</span><span class="o">=</span><span class="n">json</span> <span class="n">HTTP</span><span class="o">/</span><span class="mf">1.1</span>
+<span class="n">Host</span> <span class="p">{</span><span class="n">fqdn</span><span class="p">}</span>
+</pre></div>
+</div>
+</section>
+<section id="id6">
+<h3>Response Entities<a class="headerlink" href="#id6" title="Permalink to this heading">¶</a></h3>
+<p>If successful, returns cluster pool configuration.</p>
+<p><code class="docutils literal notranslate"><span class="pre">zone</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Contains current cluster pool configuration.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Container</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">domain_root</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>root of all buckets.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Parent</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">cluster</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">control_pool</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p></p></dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Parent</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">cluster</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">gc_pool</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Garbage collection pool.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Parent</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">cluster</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">log_pool</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Log pool.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Parent</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">cluster</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">intent_log_pool</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Intent log pool.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Parent</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">cluster</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">usage_log_pool</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Usage log pool.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Parent</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">cluster</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">user_keys_pool</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>User key pool.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Parent</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">cluster</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">user_email_pool</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>User email pool.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Parent</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">cluster</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">user_swift_pool</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Pool of swift users.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Parent</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">cluster</span></code></p>
+</dd>
+</dl>
+</section>
+<section id="id7">
+<h3>Special Error Responses<a class="headerlink" href="#id7" title="Permalink to this heading">¶</a></h3>
+<p>None.</p>
+</section>
+<section id="example-response">
+<h3>Example Response<a class="headerlink" href="#example-response" title="Permalink to this heading">¶</a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">HTTP</span><span class="o">/</span><span class="mf">1.1</span> <span class="mi">200</span>
+<span class="n">Content</span><span class="o">-</span><span class="n">Type</span><span class="p">:</span> <span class="n">application</span><span class="o">/</span><span class="n">json</span>
+
+<span class="p">{</span>
+  <span class="s2">&quot;domain_root&quot;</span><span class="p">:</span> <span class="s2">&quot;.rgw&quot;</span><span class="p">,</span>
+  <span class="s2">&quot;control_pool&quot;</span><span class="p">:</span> <span class="s2">&quot;.rgw.control&quot;</span><span class="p">,</span>
+  <span class="s2">&quot;gc_pool&quot;</span><span class="p">:</span> <span class="s2">&quot;.rgw.gc&quot;</span><span class="p">,</span>
+  <span class="s2">&quot;log_pool&quot;</span><span class="p">:</span> <span class="s2">&quot;.log&quot;</span><span class="p">,</span>
+  <span class="s2">&quot;intent_log_pool&quot;</span><span class="p">:</span> <span class="s2">&quot;.intent-log&quot;</span><span class="p">,</span>
+  <span class="s2">&quot;usage_log_pool&quot;</span><span class="p">:</span> <span class="s2">&quot;.usage&quot;</span><span class="p">,</span>
+  <span class="s2">&quot;user_keys_pool&quot;</span><span class="p">:</span> <span class="s2">&quot;.users&quot;</span><span class="p">,</span>
+  <span class="s2">&quot;user_email_pool&quot;</span><span class="p">:</span> <span class="s2">&quot;.users.email&quot;</span><span class="p">,</span>
+  <span class="s2">&quot;user_swift_pool&quot;</span><span class="p">:</span> <span class="s2">&quot;.users.swift&quot;</span><span class="p">,</span>
+  <span class="s2">&quot;user_uid_pool &quot;</span><span class="p">:</span> <span class="s2">&quot;.users.uid&quot;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="add-placement-pool">
+<h2>Add Placement Pool<a class="headerlink" href="#add-placement-pool" title="Permalink to this heading">¶</a></h2>
+<p>Make a pool available for data placement.</p>
+<section id="id8">
+<h3>Syntax<a class="headerlink" href="#id8" title="Permalink to this heading">¶</a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>PUT /{admin}/pool?format=json HTTP/1.1
+Host {fqdn}
+</pre></div>
+</div>
+</section>
+<section id="id9">
+<h3>Request Parameters<a class="headerlink" href="#id9" title="Permalink to this heading">¶</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">pool</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The pool to be made available for data placement.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Example</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">foo_pool</span></code></p>
+</dd>
+<dt class="field-even">Required</dt>
+<dd class="field-even"><p>Yes</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">create</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Creates the data pool if it does not exist.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Boolean</p>
+</dd>
+<dt class="field-odd">Example</dt>
+<dd class="field-odd"><p>False [False]</p>
+</dd>
+<dt class="field-even">Required</dt>
+<dd class="field-even"><p>No</p>
+</dd>
+</dl>
+</section>
+<section id="id10">
+<h3>Response Entities<a class="headerlink" href="#id10" title="Permalink to this heading">¶</a></h3>
+<p>TBD.</p>
+</section>
+<section id="id11">
+<h3>Special Error Responses<a class="headerlink" href="#id11" title="Permalink to this heading">¶</a></h3>
+<p>TBD.</p>
+</section>
+</section>
+<section id="remove-placement-pool">
+<h2>Remove Placement Pool<a class="headerlink" href="#remove-placement-pool" title="Permalink to this heading">¶</a></h2>
+<p>Make a pool unavailable for data placement.</p>
+<section id="id12">
+<h3>Syntax<a class="headerlink" href="#id12" title="Permalink to this heading">¶</a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>DELETE /{admin}/pool?format=json HTTP/1.1
+Host {fqdn}
+</pre></div>
+</div>
+</section>
+<section id="id13">
+<h3>Request Parameters<a class="headerlink" href="#id13" title="Permalink to this heading">¶</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">pool</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The existing pool to be made available for data placement.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Example</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">foo_pool</span></code></p>
+</dd>
+<dt class="field-even">Required</dt>
+<dd class="field-even"><p>Yes</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">destroy</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Destroys the pool after removing it from the active set.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Boolean</p>
+</dd>
+<dt class="field-odd">Example</dt>
+<dd class="field-odd"><p>False [False]</p>
+</dd>
+<dt class="field-even">Required</dt>
+<dd class="field-even"><p>No</p>
+</dd>
+</dl>
+</section>
+<section id="id14">
+<h3>Response Entities<a class="headerlink" href="#id14" title="Permalink to this heading">¶</a></h3>
+<p>TBD.</p>
+</section>
+<section id="id15">
+<h3>Special Error Responses<a class="headerlink" href="#id15" title="Permalink to this heading">¶</a></h3>
+<p>TBD.</p>
+</section>
+</section>
+<section id="list-available-data-placement-pools">
+<h2>List Available Data Placement Pools<a class="headerlink" href="#list-available-data-placement-pools" title="Permalink to this heading">¶</a></h2>
+<p>List current pools available for data placement.</p>
+<section id="id16">
+<h3>Syntax<a class="headerlink" href="#id16" title="Permalink to this heading">¶</a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>GET /{admin}/pool?format=json HTTP/1.1
+Host {fqdn}
+</pre></div>
+</div>
+</section>
+<section id="id17">
+<h3>Response Entities<a class="headerlink" href="#id17" title="Permalink to this heading">¶</a></h3>
+<p>If successful, returns a list of pools available for data placement.</p>
+<p><code class="docutils literal notranslate"><span class="pre">pools</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Contains currently available pools for data placement.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Container</p>
+</dd>
+</dl>
+</section>
+</section>
+<section id="list-expired-garbage-collection-items">
+<h2>List Expired Garbage Collection Items<a class="headerlink" href="#list-expired-garbage-collection-items" title="Permalink to this heading">¶</a></h2>
+<p>List objects scheduled for garbage collection.</p>
+<section id="id18">
+<h3>Syntax<a class="headerlink" href="#id18" title="Permalink to this heading">¶</a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>GET /{admin}/garbage?format=json HTTP/1.1
+Host {fqdn}
+</pre></div>
+</div>
+</section>
+<section id="id19">
+<h3>Request Parameters<a class="headerlink" href="#id19" title="Permalink to this heading">¶</a></h3>
+<p>None.</p>
+</section>
+<section id="id20">
+<h3>Response Entities<a class="headerlink" href="#id20" title="Permalink to this heading">¶</a></h3>
+<p>If expired garbage collection items exist, a list of such objects
+will be returned.</p>
+<p><code class="docutils literal notranslate"><span class="pre">garbage</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Expired garbage collection items.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Container</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>A container garbage collection object information.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Container</p>
+</dd>
+<dt class="field-odd">Parent</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">garbage</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">name</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The name of the object.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Parent</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">object</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">expired</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The date at which the object expired.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Parent</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">object</span></code></p>
+</dd>
+</dl>
+</section>
+<section id="id21">
+<h3>Special Error Responses<a class="headerlink" href="#id21" title="Permalink to this heading">¶</a></h3>
+<p>TBD.</p>
+</section>
+</section>
+<section id="manually-processes-garbage-collection-items">
+<h2>Manually Processes Garbage Collection Items<a class="headerlink" href="#manually-processes-garbage-collection-items" title="Permalink to this heading">¶</a></h2>
+<p>List objects scheduled for garbage collection.</p>
+<section id="id22">
+<h3>Syntax<a class="headerlink" href="#id22" title="Permalink to this heading">¶</a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>DELETE /{admin}/garbage?format=json HTTP/1.1
+Host {fqdn}
+</pre></div>
+</div>
+</section>
+<section id="id23">
+<h3>Request Parameters<a class="headerlink" href="#id23" title="Permalink to this heading">¶</a></h3>
+<p>None.</p>
+</section>
+<section id="id24">
+<h3>Response Entities<a class="headerlink" href="#id24" title="Permalink to this heading">¶</a></h3>
+<p>If expired garbage collection items exist, a list of removed objects
+will be returned.</p>
+<p><code class="docutils literal notranslate"><span class="pre">garbage</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Expired garbage collection items.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Container</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>A container garbage collection object information.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Container</p>
+</dd>
+<dt class="field-odd">Parent</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">garbage</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">name</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The name of the object.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Parent</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">object</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">expired</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The date at which the object expired.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Parent</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">object</span></code></p>
+</dd>
+</dl>
+</section>
+<section id="id25">
+<h3>Special Error Responses<a class="headerlink" href="#id25" title="Permalink to this heading">¶</a></h3>
+<p>TBD.</p>
+</section>
+</section>
+<section id="show-log-objects">
+<h2>Show Log Objects<a class="headerlink" href="#show-log-objects" title="Permalink to this heading">¶</a></h2>
+<p>Show log objects</p>
+<section id="id26">
+<h3>Syntax<a class="headerlink" href="#id26" title="Permalink to this heading">¶</a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>GET /{admin}/log?format=json HTTP/1.1
+Host {fqdn}
+</pre></div>
+</div>
+</section>
+<section id="id27">
+<h3>Request Parameters<a class="headerlink" href="#id27" title="Permalink to this heading">¶</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The log object to return.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String:</p>
+</dd>
+<dt class="field-odd">Example</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">2012-10-11-09-4165.2-foo_bucket</span></code></p>
+</dd>
+<dt class="field-even">Required</dt>
+<dd class="field-even"><p>No</p>
+</dd>
+</dl>
+</section>
+<section id="id28">
+<h3>Response Entities<a class="headerlink" href="#id28" title="Permalink to this heading">¶</a></h3>
+<p>If no object is specified, returns the full list of log objects.</p>
+<p><code class="docutils literal notranslate"><span class="pre">log-objects</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>A list of log objects.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Container</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The name of the log object.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">log</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The contents of the log object.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Container</p>
+</dd>
+</dl>
+</section>
+<section id="id29">
+<h3>Special Error Responses<a class="headerlink" href="#id29" title="Permalink to this heading">¶</a></h3>
+<p>None.</p>
+</section>
+</section>
+<section id="standard-error-responses">
+<h2>Standard Error Responses<a class="headerlink" href="#standard-error-responses" title="Permalink to this heading">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">AccessDenied</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Access denied.</p>
+</dd>
+<dt class="field-even">Code</dt>
+<dd class="field-even"><p>403 Forbidden</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">InternalError</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Internal server error.</p>
+</dd>
+<dt class="field-even">Code</dt>
+<dd class="field-even"><p>500 Internal Server Error</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">NoSuchUser</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>User does not exist.</p>
+</dd>
+<dt class="field-even">Code</dt>
+<dd class="field-even"><p>404 Not Found</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">NoSuchBucket</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Bucket does not exist.</p>
+</dd>
+<dt class="field-even">Code</dt>
+<dd class="field-even"><p>404 Not Found</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">NoSuchKey</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>No such access key.</p>
+</dd>
+<dt class="field-even">Code</dt>
+<dd class="field-even"><p>404 Not Found</p>
+</dd>
+</dl>
+</section>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../../../">
+              <img class="logo" src="../../../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../../../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../../../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../install/">Installing Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../cephadm/">Cephadm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../rados/">Ceph Storage Cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../cephfs/">Ceph File System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../rbd/">Ceph Block Device</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../radosgw/">Ceph Object Gateway</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../mgr/">Ceph Manager Daemon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../mgr/dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../developer_guide/">Developer Guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../../internals/">Ceph Internals</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../../../blkin/">Tracing Ceph With Blkin</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../bluestore/">BlueStore Internals</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../cache-pool/">Cache pool</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../ceph_krb_auth/">A Detailed Documentation on How to Set up Ceph Kerberos Authentication</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../cephfs-mirroring/">CephFS Mirroring</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../cephfs-reclaim/">CephFS Reclaim Interface</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../cephfs-snapshots/">CephFS Snapshots</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../cephx/">Cephx</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../cephx_protocol/">A Detailed Description of the Cephx Authentication Protocol</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../config/">Configuration Management System</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../config-key/">config-key layout</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../context/">CephContext</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../continuous-integration/">Continuous Integration Architecture</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../corpus/">Corpus structure</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../cpu-profiler/">Installing Oprofile</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../cxx/">C++17 and libstdc++ ABI</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../delayed-delete/">CephFS delayed deletion</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../dev_cluster_deployement/">Deploying a development cluster</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../dev_cluster_deployement/#deploying-multiple-development-clusters-on-the-same-machine">Deploying multiple development clusters on the same machine</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../development-workflow/">Development workflows</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../documenting/">Documenting Ceph</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../encoding/">Serialization (encode/decode)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../erasure-coded-pool/">Erasure Coded pool</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../file-striping/">File striping</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../freebsd/">FreeBSD Implementation details</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../generatedocs/">Building Ceph Documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../iana/">IANA Numbers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../kubernetes/">Hacking on Ceph in Kubernetes with Rook</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../libs/">Library architecture</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../logging/">Use of the cluster log</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../logs/">Debug logs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../macos/">build on MacOS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../messenger/">Messenger notes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../mon-bootstrap/">Monitor bootstrap</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../mon-elections/">Monitor Elections</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../mon-on-disk-formats/">ON-DISK FORMAT</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../mon-osdmap-prune/">FULL OSDMAP VERSION PRUNING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../msgr2/">msgr2 protocol (msgr2.0 and msgr2.1)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../network-encoding/">Network Encoding</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../network-protocol/">Network Protocol</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../object-store/">Object Store Architecture Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../osd-class-path/">OSD class path issues</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../peering/">Peering</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../perf/">Using perf</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../perf_counters/">Perf counters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../perf_histograms/">Perf histograms</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../placement-group/">PG (Placement Group) notes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../quick_guide/">Developer Guide (Quick)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../rados-client-protocol/">RADOS client protocol</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../rbd-diff/">RBD Incremental Backup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../rbd-export/">RBD Export &amp; Import</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../rbd-layering/">RBD Layering</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../release-checklists/">Release checklists</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../release-process/">Ceph Release Process</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../seastore/">SeaStore</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../sepia/">Sepia community test lab</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../session_authentication/">Session Authentication for the Cephx Protocol</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../testing/">Testing notes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../versions/">Public OSD Version</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../vstart-ganesha/">NFS CephFS-RGW Developer Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../wireshark/">Wireshark Dissector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../zoned-storage/">Zoned Storage Support</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../osd_internals/">OSD developer documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../mds_internals/">MDS developer documentation</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../../">RADOS Gateway developer documentation</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../../usage/">Usage Design Overview</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Admin Ops Nonimplemented</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#get-object">Get Object</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#syntax">Syntax</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#request-parameters">Request Parameters</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#response-entities">Response Entities</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#special-error-responses">Special Error Responses</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#head-object">Head Object</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#id1">Syntax</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#id2">Request Parameters</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#id3">Response Entities</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#id4">Special Error Responses</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#get-zone-info">Get Zone Info</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#id5">Syntax</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#id6">Response Entities</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#id7">Special Error Responses</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#example-response">Example Response</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#add-placement-pool">Add Placement Pool</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#id8">Syntax</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#id9">Request Parameters</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#id10">Response Entities</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#id11">Special Error Responses</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#remove-placement-pool">Remove Placement Pool</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#id12">Syntax</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#id13">Request Parameters</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#id14">Response Entities</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#id15">Special Error Responses</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#list-available-data-placement-pools">List Available Data Placement Pools</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#id16">Syntax</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#id17">Response Entities</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#list-expired-garbage-collection-items">List Expired Garbage Collection Items</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#id18">Syntax</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#id19">Request Parameters</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#id20">Response Entities</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#id21">Special Error Responses</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#manually-processes-garbage-collection-items">Manually Processes Garbage Collection Items</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#id22">Syntax</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#id23">Request Parameters</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#id24">Response Entities</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#id25">Special Error Responses</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#show-log-objects">Show Log Objects</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#id26">Syntax</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#id27">Request Parameters</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#id28">Response Entities</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#id29">Special Error Responses</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#standard-error-responses">Standard Error Responses</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../s3_compliance/">Rados Gateway S3 API Compliance</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../ceph-volume/">ceph-volume developer documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../crimson/">Crimson developer documentation</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../../../../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../../s3_compliance/" title="Rados Gateway S3 API Compliance"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../../usage/" title="Usage Design Overview"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../../internals/" >Ceph Internals</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../../" >RADOS Gateway developer documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Admin Operations</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

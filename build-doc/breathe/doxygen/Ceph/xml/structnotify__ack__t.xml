@@ -1,0 +1,71 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.1" xml:lang="en-US">
+  <compounddef id="structnotify__ack__t" kind="struct" language="C++" prot="public">
+    <compoundname>notify_ack_t</compoundname>
+      <sectiondef kind="public-attrib">
+      <memberdef kind="variable" id="structnotify__ack__t_1aa23b42bae9d3f84bebc0932bb15a2fe9" prot="public" static="no" mutable="no">
+        <type>uint64_t</type>
+        <definition>uint64_t notify_ack_t::notifier_id</definition>
+        <argsstring></argsstring>
+        <name>notifier_id</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/data/ceph-learning/src/include/rados/rados_types.h" line="22" column="12" bodyfile="/data/ceph-learning/src/include/rados/rados_types.h" bodystart="22" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structnotify__ack__t_1a469763474ba0010bc4d39e38086447d2" prot="public" static="no" mutable="no">
+        <type>uint64_t</type>
+        <definition>uint64_t notify_ack_t::cookie</definition>
+        <argsstring></argsstring>
+        <name>cookie</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/data/ceph-learning/src/include/rados/rados_types.h" line="23" column="12" bodyfile="/data/ceph-learning/src/include/rados/rados_types.h" bodystart="23" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structnotify__ack__t_1a47976f3c2e253616b83e69813d095f72" prot="public" static="no" mutable="no">
+        <type>char *</type>
+        <definition>char* notify_ack_t::payload</definition>
+        <argsstring></argsstring>
+        <name>payload</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/data/ceph-learning/src/include/rados/rados_types.h" line="24" column="8" bodyfile="/data/ceph-learning/src/include/rados/rados_types.h" bodystart="24" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structnotify__ack__t_1a291218985121bca811a97223d4bdb265" prot="public" static="no" mutable="no">
+        <type>uint64_t</type>
+        <definition>uint64_t notify_ack_t::payload_len</definition>
+        <argsstring></argsstring>
+        <name>payload_len</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/data/ceph-learning/src/include/rados/rados_types.h" line="25" column="12" bodyfile="/data/ceph-learning/src/include/rados/rados_types.h" bodystart="25" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="/data/ceph-learning/src/include/rados/rados_types.h" line="21" column="1" bodyfile="/data/ceph-learning/src/include/rados/rados_types.h" bodystart="21" bodyend="26"/>
+    <listofallmembers>
+      <member refid="structnotify__ack__t_1a469763474ba0010bc4d39e38086447d2" prot="public" virt="non-virtual"><scope>notify_ack_t</scope><name>cookie</name></member>
+      <member refid="structnotify__ack__t_1aa23b42bae9d3f84bebc0932bb15a2fe9" prot="public" virt="non-virtual"><scope>notify_ack_t</scope><name>notifier_id</name></member>
+      <member refid="structnotify__ack__t_1a47976f3c2e253616b83e69813d095f72" prot="public" virt="non-virtual"><scope>notify_ack_t</scope><name>payload</name></member>
+      <member refid="structnotify__ack__t_1a291218985121bca811a97223d4bdb265" prot="public" virt="non-virtual"><scope>notify_ack_t</scope><name>payload_len</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

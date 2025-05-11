@@ -1,0 +1,305 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>CephFS Top Utility &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css" />
+    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../genindex/" />
+    <link rel="search" title="Search" href="../../search/" />
+    <link rel="next" title="Snapshot Scheduling Module" href="../snap-schedule/" />
+    <link rel="prev" title="Upgrading the MDS Cluster" href="../upgrading/" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../snap-schedule/" title="Snapshot Scheduling Module"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../upgrading/" title="Upgrading the MDS Cluster"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../" accesskey="U">Ceph File System</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">CephFS Top Utility</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="cephfs-top-utility">
+<span id="cephfs-top"></span><h1>CephFS Top Utility<a class="headerlink" href="#cephfs-top-utility" title="Permalink to this heading">¶</a></h1>
+<p>CephFS provides <cite>top(1)</cite> like utility to display various Ceph Filesystem metrics
+in realtime. <cite>cephfs-top</cite> is a curses based python script which makes use of <cite>stats</cite>
+plugin in Ceph Manager to fetch (and display) metrics.</p>
+<section id="manager-plugin">
+<h2>Manager Plugin<a class="headerlink" href="#manager-plugin" title="Permalink to this heading">¶</a></h2>
+<p>Ceph Filesystem clients periodically forward various metrics to Ceph Metadata Servers (MDS)
+which in turn get forwarded to Ceph Manager by MDS rank zero. Each active MDS forward its
+respective set of metrics to MDS rank zero. Metrics are aggergated and forwarded to Ceph
+Manager.</p>
+<p>Metrics are divided into two categories - global and per-mds. Global metrics represent
+set of metrics for the filesystem as a whole (e.g., client read latency) whereas per-mds
+metrics are for a particular MDS rank (e.g., number of subtrees handled by an MDS).</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Currently, only global metrics are tracked.</p>
+</div>
+<p><cite>stats</cite> plugin is disabled by default and should be enabled via:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ ceph mgr module enable stats
+</pre></div>
+</div>
+<p>Once enabled, Ceph Filesystem metrics can be fetched via:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ ceph fs perf stats
+</pre></div>
+</div>
+<p>The output format is JSON and contains fields as follows:</p>
+<ul class="simple">
+<li><p><cite>version</cite>: Version of stats output</p></li>
+<li><p><cite>global_counters</cite>: List of global performance metrics</p></li>
+<li><p><cite>counters</cite>: List of per-mds performance metrics</p></li>
+<li><p><cite>client_metadata</cite>: Ceph Filesystem client metadata</p></li>
+<li><p><cite>global_metrics</cite>: Global performance counters</p></li>
+<li><p><cite>metrics</cite>: Per-MDS performance counters (currently, empty) and delayed ranks</p></li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><cite>delayed_ranks</cite> is the set of active MDS ranks that are reporting stale metrics.
+This can happen in cases such as (temporary) network issue between MDS rank zero
+and other active MDSs.</p>
+</div>
+<p>Metrics can be fetched for a partcilar client and/or for a set of active MDSs. To fetch metrics
+for a particular client (e.g., for client-id: 1234):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ ceph fs perf stats --client_id=1234
+</pre></div>
+</div>
+<p>To fetch metrics only for a subset of active MDSs (e.g., MDS rank 1 and 2):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ ceph fs perf stats --mds_rank=1,2
+</pre></div>
+</div>
+</section>
+<section id="id1">
+<h2><cite>cephfs-top</cite><a class="headerlink" href="#id1" title="Permalink to this heading">¶</a></h2>
+<p><cite>cephfs-top</cite> utility relies on <cite>stats</cite> plugin to fetch performance metrics and display in
+<cite>top(1)</cite> like format. <cite>cephfs-top</cite> is available as part of <cite>cephfs-top</cite> package.</p>
+<p>By default, <cite>cephfs-top</cite> uses <cite>client.fstop</cite> user to connect to a Ceph cluster:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ ceph auth get-or-create client.fstop mon &#39;allow r&#39; mds &#39;allow r&#39; osd &#39;allow r&#39; mgr &#39;allow r&#39;
+$ cephfs-top
+</pre></div>
+</div>
+<section id="command-line-options">
+<h3>Command-Line Options<a class="headerlink" href="#command-line-options" title="Permalink to this heading">¶</a></h3>
+<p>To use a non-default user (other than <cite>client.fstop</cite>) use:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ cephfs-top --id &lt;name&gt;
+</pre></div>
+</div>
+<p>By default, <cite>cephfs-top</cite> connects to cluster name <cite>ceph</cite>. To use a non-default cluster name:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ cephfs-top --cluster &lt;cluster&gt;
+</pre></div>
+</div>
+<p><cite>cephfs-top</cite> refreshes stats every second by default. To chose a different refresh interval use:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ cephfs-top -d &lt;seconds&gt;
+</pre></div>
+</div>
+<p>Refresh interval should be a positive integer.</p>
+<p>To dump the metrics to stdout without creating a curses display use:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ cephfs-top --dump
+</pre></div>
+</div>
+<p>To dump the metrics of the given filesystem to stdout without creating a curses display use:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ cephfs-top --dumpfs &lt;fs_name&gt;
+</pre></div>
+</div>
+</section>
+<section id="interactive-commands">
+<h3>Interactive Commands<a class="headerlink" href="#interactive-commands" title="Permalink to this heading">¶</a></h3>
+<ol class="arabic simple">
+<li><dl class="simple">
+<dt>m<span class="classifier">Filesystem selection</span></dt><dd><p>Displays a menu of filesystems for selection.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>s<span class="classifier">Sort field selection</span></dt><dd><p>Designates the sort field.  ‘cap_hit’ is the default.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>l<span class="classifier">Client limit</span></dt><dd><p>Sets the limit on the number of clients to be displayed.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>r<span class="classifier">Reset</span></dt><dd><p>Resets the sort field and limit value to the default.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>q<span class="classifier">Quit</span></dt><dd><p>Exit the utility if you are at the home screen (all filesystem info),
+otherwise escape back to the home screen.</p>
+</dd>
+</dl>
+</li>
+</ol>
+<p>The metrics display can be scrolled using the Arrow Keys, PgUp/PgDn, Home/End and mouse.</p>
+<p>Sample screenshot running <cite>cephfs-top</cite> with 2 filesystems:</p>
+<img alt="../../_images/cephfs-top.png" src="../../_images/cephfs-top.png" />
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Minimum compatible python version for cephfs-top is 3.6.0. cephfs-top is supported on distros RHEL 8, Ubuntu 18.04, CentOS 8 and above.</p>
+</div>
+</section>
+</section>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../">
+              <img class="logo" src="../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../install/">Installing Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cephadm/">Cephadm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rados/">Ceph Storage Cluster</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../">Ceph File System</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../#getting-started-with-cephfs">Getting Started with CephFS</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../#administration">Administration</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../createfs/"> Create a CephFS file system</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../administration/"> Administrative commands</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../multifs/"> Creating Multiple File Systems</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../add-remove-mds/"> Provision/Add/Remove MDS(s)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../standby/">Terminology</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../standby/#referring-to-mds-daemons">Referring to MDS daemons</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../standby/#managing-failover">Managing failover</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../standby/#configuring-standby-replay">Configuring standby-replay</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../standby/#configuring-mds-file-system-affinity">Configuring MDS file system affinity</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../cache-configuration/"> MDS Cache Configuration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../mds-config-ref/"> MDS Configuration Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../man/8/ceph-mds/"> Manual: ceph-mds</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../nfs/"> Export over NFS</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../app-best-practices/"> Application best practices</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../fs-volumes/"> FS volume and subvolumes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../quota/"> CephFS Quotas</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../health-messages/"> Health messages</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../upgrading/">Upgrading the MDS Cluster</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../upgrading/#upgrading-pre-firefly-file-systems-past-jewel">Upgrading pre-Firefly file systems past Jewel</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#"> CephFS Top Utility</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#manager-plugin">Manager Plugin</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id1"><cite>cephfs-top</cite></a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#command-line-options">Command-Line Options</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#interactive-commands">Interactive Commands</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../snap-schedule/"> Scheduled Snapshots</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../cephfs-mirroring/"> CephFS Snapshot Mirroring</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../#mounting-cephfs">Mounting CephFS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../#cephfs-concepts">CephFS Concepts</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../#troubleshooting-and-disaster-recovery">Troubleshooting and Disaster Recovery</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../#developer-guides">Developer Guides</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../#additional-details">Additional Details</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../rbd/">Ceph Block Device</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../radosgw/">Ceph Object Gateway</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/">Ceph Manager Daemon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dev/developer_guide/">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dev/internals/">Ceph Internals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../snap-schedule/" title="Snapshot Scheduling Module"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../upgrading/" title="Upgrading the MDS Cluster"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../" >Ceph File System</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">CephFS Top Utility</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

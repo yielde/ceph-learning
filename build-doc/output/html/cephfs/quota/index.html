@@ -1,0 +1,327 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Quotas &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css" />
+    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../genindex/" />
+    <link rel="search" title="Search" href="../../search/" />
+    <link rel="next" title="CephFS health messages" href="../health-messages/" />
+    <link rel="prev" title="FS volumes and subvolumes" href="../fs-volumes/" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../health-messages/" title="CephFS health messages"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../fs-volumes/" title="FS volumes and subvolumes"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../" accesskey="U">Ceph File System</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Quotas</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="quotas">
+<h1>Quotas<a class="headerlink" href="#quotas" title="Permalink to this heading">¶</a></h1>
+<p>CephFS allows quotas to be set on any directory in the system.  The
+quota can restrict the number of <em>bytes</em> or the number of <em>files</em>
+stored beneath that point in the directory hierarchy.</p>
+<p>Like most other things in CephFS, quotas are configured using virtual
+extended attributes:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">ceph.quota.max_files</span></code> – file limit</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ceph.quota.max_bytes</span></code> – byte limit</p></li>
+</ul>
+</div></blockquote>
+<p>If the extended attributes appear on a directory that means a quota is
+configured there. If they are not present then no quota is set on that
+directory (although one may still be configured on a parent directory).</p>
+<p>To set a quota, set the extended attribute on a CephFS directory with a
+value:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">setfattr</span> <span class="o">-</span><span class="n">n</span> <span class="n">ceph</span><span class="o">.</span><span class="n">quota</span><span class="o">.</span><span class="n">max_bytes</span> <span class="o">-</span><span class="n">v</span> <span class="mi">100000000</span> <span class="o">/</span><span class="n">some</span><span class="o">/</span><span class="nb">dir</span>     <span class="c1"># 100 MB</span>
+<span class="n">setfattr</span> <span class="o">-</span><span class="n">n</span> <span class="n">ceph</span><span class="o">.</span><span class="n">quota</span><span class="o">.</span><span class="n">max_files</span> <span class="o">-</span><span class="n">v</span> <span class="mi">10000</span> <span class="o">/</span><span class="n">some</span><span class="o">/</span><span class="nb">dir</span>         <span class="c1"># 10,000 files</span>
+</pre></div>
+</div>
+<p>To view quota limit:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ getfattr -n ceph.quota.max_bytes /some/dir
+# file: dir1/
+ceph.quota.max_bytes=&quot;100000000&quot;
+$
+$ getfattr -n ceph.quota.max_files /some/dir
+# file: dir1/
+ceph.quota.max_files=&quot;10000&quot;
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Running <code class="docutils literal notranslate"><span class="pre">getfattr</span> <span class="pre">/some/dir</span> <span class="pre">-d</span> <span class="pre">-m</span> <span class="pre">-</span></code> for a CephFS directory will
+print none of the CephFS extended attributes. This is because the CephFS
+kernel and FUSE clients hide this information from the <code class="docutils literal notranslate"><span class="pre">listxattr(2)</span></code>
+system call. Instead, a specific CephFS extended attribute can be viewed by
+running <code class="docutils literal notranslate"><span class="pre">getfattr</span> <span class="pre">/some/dir</span> <span class="pre">-n</span> <span class="pre">ceph.&lt;some-xattr&gt;</span></code>.</p>
+</div>
+<p>To remove a quota, set the value of extended attribute to <code class="docutils literal notranslate"><span class="pre">0</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ setfattr -n ceph.quota.max_bytes -v 0 /some/dir
+$ getfattr /some/dir -n ceph.quota.max_bytes
+dir1/: ceph.quota.max_bytes: No such attribute
+$
+$ setfattr -n ceph.quota.max_files -v 0 /some/dir
+$ getfattr dir1/ -n ceph.quota.max_files
+dir1/: ceph.quota.max_files: No such attribute
+</pre></div>
+</div>
+<section id="space-usage-reporting-and-cephfs-quotas">
+<h2>Space Usage Reporting and CephFS Quotas<a class="headerlink" href="#space-usage-reporting-and-cephfs-quotas" title="Permalink to this heading">¶</a></h2>
+<p>When the root directory of the CephFS mount has quota set on it, the available
+space on the CephFS reported by space usage report tools (like <code class="docutils literal notranslate"><span class="pre">df</span></code>) is
+based on quota limit. That is, <code class="docutils literal notranslate"><span class="pre">available</span> <span class="pre">space</span> <span class="pre">=</span> <span class="pre">quota</span> <span class="pre">limit</span> <span class="pre">-</span> <span class="pre">used</span> <span class="pre">space</span></code>
+instead of <code class="docutils literal notranslate"><span class="pre">available</span> <span class="pre">space</span> <span class="pre">=</span> <span class="pre">total</span> <span class="pre">space</span> <span class="pre">-</span> <span class="pre">used</span> <span class="pre">space</span></code>.</p>
+<p>This behaviour can be disabled by setting following option in client section
+of <code class="docutils literal notranslate"><span class="pre">ceph.conf</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">client</span> <span class="n">quota</span> <span class="n">df</span> <span class="o">=</span> <span class="n">false</span>
+</pre></div>
+</div>
+</section>
+<section id="limitations">
+<h2>Limitations<a class="headerlink" href="#limitations" title="Permalink to this heading">¶</a></h2>
+<ol class="arabic">
+<li><p><em>Quotas are cooperative and non-adversarial.</em> CephFS quotas rely on
+the cooperation of the client who is mounting the file system to
+stop writers when a limit is reached.  A modified or adversarial
+client cannot be prevented from writing as much data as it needs.
+Quotas should not be relied on to prevent filling the system in
+environments where the clients are fully untrusted.</p></li>
+<li><p><em>Quotas are imprecise.</em> Processes that are writing to the file
+system will be stopped a short time after the quota limit is
+reached.  They will inevitably be allowed to write some amount of
+data over the configured limit.  How far over the quota they are
+able to go depends primarily on the amount of time, not the amount
+of data.  Generally speaking writers will be stopped within 10s of
+seconds of crossing the configured limit.</p></li>
+<li><p><em>Quotas are implemented in the kernel client 4.17 and higher.</em>
+Quotas are supported by the userspace client (libcephfs, ceph-fuse).
+Linux kernel clients &gt;= 4.17 support CephFS quotas but only on
+mimic+ clusters.  Kernel clients (even recent versions) will fail
+to handle quotas on older clusters, even if they may be able to set
+the quotas extended attributes.</p></li>
+<li><p><em>Quotas must be configured carefully when used with path-based
+mount restrictions.</em> The client needs to have access to the
+directory inode on which quotas are configured in order to enforce
+them.  If the client has restricted access to a specific path
+(e.g., <code class="docutils literal notranslate"><span class="pre">/home/user</span></code>) based on the MDS capability, and a quota is
+configured on an ancestor directory they do not have access to
+(e.g., <code class="docutils literal notranslate"><span class="pre">/home</span></code>), the client will not enforce it.  When using
+path-based access restrictions be sure to configure the quota on
+the directory the client is restricted too (e.g., <code class="docutils literal notranslate"><span class="pre">/home/user</span></code>)
+or something nested beneath it.</p>
+<p>Kernel clients need access to the parent of the directory inode on
+which quotas are configured in order to enforce them. If quota is
+configured on a directory path (e.g., <code class="docutils literal notranslate"><span class="pre">/home/volumes/group</span></code>), the
+kclient needs to have access to the parent (e.g., <code class="docutils literal notranslate"><span class="pre">/home/volumes</span></code>).</p>
+<p>An example command to create such an user is as below:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ ceph auth get-or-create client.guest mds &#39;allow r path=/home/volumes, allow rw path=/home/volumes/group&#39; mgr &#39;allow rw&#39; osd &#39;allow rw tag cephfs metadata=*&#39; mon &#39;allow r&#39;
+</pre></div>
+</div>
+<p>See also: <a class="reference external" href="https://tracker.ceph.com/issues/55090">https://tracker.ceph.com/issues/55090</a></p>
+</li>
+<li><p><em>Snapshot file data which has since been deleted or changed does not count
+towards the quota.</em> See also: <a class="reference external" href="http://tracker.ceph.com/issues/24284">http://tracker.ceph.com/issues/24284</a></p></li>
+</ol>
+</section>
+<section id="configuration">
+<h2>Configuration<a class="headerlink" href="#configuration" title="Permalink to this heading">¶</a></h2>
+<p>Like most other things in CephFS, quotas are configured using virtual
+extended attributes:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">ceph.quota.max_files</span></code> – file limit</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ceph.quota.max_bytes</span></code> – byte limit</p></li>
+</ul>
+</div></blockquote>
+<p>If the attributes appear on a directory inode that means a quota is
+configured there.  If they are not present then no quota is set on
+that directory (although one may still be configured on a parent directory).</p>
+<p>To set a quota:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">setfattr</span> <span class="o">-</span><span class="n">n</span> <span class="n">ceph</span><span class="o">.</span><span class="n">quota</span><span class="o">.</span><span class="n">max_bytes</span> <span class="o">-</span><span class="n">v</span> <span class="mi">100000000</span> <span class="o">/</span><span class="n">some</span><span class="o">/</span><span class="nb">dir</span>     <span class="c1"># 100 MB</span>
+<span class="n">setfattr</span> <span class="o">-</span><span class="n">n</span> <span class="n">ceph</span><span class="o">.</span><span class="n">quota</span><span class="o">.</span><span class="n">max_files</span> <span class="o">-</span><span class="n">v</span> <span class="mi">10000</span> <span class="o">/</span><span class="n">some</span><span class="o">/</span><span class="nb">dir</span>         <span class="c1"># 10,000 files</span>
+</pre></div>
+</div>
+<p>To view quota settings:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">getfattr</span> <span class="o">-</span><span class="n">n</span> <span class="n">ceph</span><span class="o">.</span><span class="n">quota</span><span class="o">.</span><span class="n">max_bytes</span> <span class="o">/</span><span class="n">some</span><span class="o">/</span><span class="nb">dir</span>
+<span class="n">getfattr</span> <span class="o">-</span><span class="n">n</span> <span class="n">ceph</span><span class="o">.</span><span class="n">quota</span><span class="o">.</span><span class="n">max_files</span> <span class="o">/</span><span class="n">some</span><span class="o">/</span><span class="nb">dir</span>
+</pre></div>
+</div>
+<p>Note that if the value of the extended attribute is <code class="docutils literal notranslate"><span class="pre">0</span></code> that means
+the quota is not set.</p>
+<p>To remove a quota:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">setfattr</span> <span class="o">-</span><span class="n">n</span> <span class="n">ceph</span><span class="o">.</span><span class="n">quota</span><span class="o">.</span><span class="n">max_bytes</span> <span class="o">-</span><span class="n">v</span> <span class="mi">0</span> <span class="o">/</span><span class="n">some</span><span class="o">/</span><span class="nb">dir</span>
+<span class="n">setfattr</span> <span class="o">-</span><span class="n">n</span> <span class="n">ceph</span><span class="o">.</span><span class="n">quota</span><span class="o">.</span><span class="n">max_files</span> <span class="o">-</span><span class="n">v</span> <span class="mi">0</span> <span class="o">/</span><span class="n">some</span><span class="o">/</span><span class="nb">dir</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>In cases where CephFS extended attributes are set on a CephFS
+directory (for example, <code class="docutils literal notranslate"><span class="pre">/some/dir</span></code>), running <code class="docutils literal notranslate"><span class="pre">getfattr</span> <span class="pre">/some/dir</span> <span class="pre">-d</span> <span class="pre">-m</span>
+<span class="pre">-</span></code> will not print those CephFS extended attributes. This is because CephFS
+kernel and FUSE clients hide this information from the <code class="docutils literal notranslate"><span class="pre">listxattr(2)</span></code>
+system call. You can access a specific CephFS extended attribute by running
+<code class="docutils literal notranslate"><span class="pre">getfattr</span> <span class="pre">/some/dir</span> <span class="pre">-n</span> <span class="pre">ceph.&lt;some-xattr&gt;</span></code> instead.</p>
+</div>
+</section>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../">
+              <img class="logo" src="../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../install/">Installing Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cephadm/">Cephadm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rados/">Ceph Storage Cluster</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../">Ceph File System</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../#getting-started-with-cephfs">Getting Started with CephFS</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../#administration">Administration</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../createfs/"> Create a CephFS file system</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../administration/"> Administrative commands</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../multifs/"> Creating Multiple File Systems</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../add-remove-mds/"> Provision/Add/Remove MDS(s)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../standby/">Terminology</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../standby/#referring-to-mds-daemons">Referring to MDS daemons</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../standby/#managing-failover">Managing failover</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../standby/#configuring-standby-replay">Configuring standby-replay</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../standby/#configuring-mds-file-system-affinity">Configuring MDS file system affinity</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../cache-configuration/"> MDS Cache Configuration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../mds-config-ref/"> MDS Configuration Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../man/8/ceph-mds/"> Manual: ceph-mds</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../nfs/"> Export over NFS</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../app-best-practices/"> Application best practices</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../fs-volumes/"> FS volume and subvolumes</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#"> CephFS Quotas</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#space-usage-reporting-and-cephfs-quotas">Space Usage Reporting and CephFS Quotas</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#limitations">Limitations</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#configuration">Configuration</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../health-messages/"> Health messages</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../upgrading/">Upgrading the MDS Cluster</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../upgrading/#upgrading-pre-firefly-file-systems-past-jewel">Upgrading pre-Firefly file systems past Jewel</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../cephfs-top/"> CephFS Top Utility</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../snap-schedule/"> Scheduled Snapshots</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../cephfs-mirroring/"> CephFS Snapshot Mirroring</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../#mounting-cephfs">Mounting CephFS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../#cephfs-concepts">CephFS Concepts</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../#troubleshooting-and-disaster-recovery">Troubleshooting and Disaster Recovery</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../#developer-guides">Developer Guides</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../#additional-details">Additional Details</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../rbd/">Ceph Block Device</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../radosgw/">Ceph Object Gateway</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/">Ceph Manager Daemon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dev/developer_guide/">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dev/internals/">Ceph Internals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../health-messages/" title="CephFS health messages"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../fs-volumes/" title="FS volumes and subvolumes"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../" >Ceph File System</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Quotas</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

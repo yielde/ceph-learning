@@ -1,0 +1,377 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Basic Block Device Commands &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css" />
+    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../genindex/" />
+    <link rel="search" title="Search" href="../../search/" />
+    <link rel="next" title="Ceph Block Device Operations" href="../rbd-operations/" />
+    <link rel="prev" title="Ceph Block Device" href="../" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../rbd-operations/" title="Ceph Block Device Operations"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../" title="Ceph Block Device"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../" accesskey="U">Ceph Block Device</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Basic Block Device Commands</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="basic-block-device-commands">
+<h1>Basic Block Device Commands<a class="headerlink" href="#basic-block-device-commands" title="Permalink to this heading">¶</a></h1>
+<p id="index-0">The <code class="docutils literal notranslate"><span class="pre">rbd</span></code> command enables you to create, list, introspect and remove block
+device images. You can also use it to clone images, create snapshots,
+rollback an image to a snapshot, view a snapshot, etc. For details on using
+the <code class="docutils literal notranslate"><span class="pre">rbd</span></code> command, see <a class="reference external" href="../../man/8/rbd/">RBD – Manage RADOS Block Device (RBD) Images</a> for
+details.</p>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>To use Ceph Block Device commands, you must have access to
+a running Ceph cluster.</p>
+</div>
+<section id="create-a-block-device-pool">
+<h2>Create a Block Device Pool<a class="headerlink" href="#create-a-block-device-pool" title="Permalink to this heading">¶</a></h2>
+<ol class="arabic">
+<li><p>Use the <code class="docutils literal notranslate"><span class="pre">ceph</span></code> tool to <a class="reference external" href="../../rados/operations/pools/#create-a-pool">create a pool</a>.</p></li>
+<li><p>Use the <code class="docutils literal notranslate"><span class="pre">rbd</span></code> tool to initialize the pool for use by RBD:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><style type="text/css">
+span.prompt1:before {
+  content: "$ ";
+}
+</style><span class="prompt1">rbd<span class="w"> </span>pool<span class="w"> </span>init<span class="w"> </span>&lt;pool-name&gt;</span>
+</pre></div></div><div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">rbd</span></code> tool assumes a default pool name of ‘rbd’ if no pool
+name is specified in the command.</p>
+</div>
+</li>
+</ol>
+</section>
+<section id="create-a-block-device-user">
+<h2>Create a Block Device User<a class="headerlink" href="#create-a-block-device-user" title="Permalink to this heading">¶</a></h2>
+<p>Unless otherwise specified, the <code class="docutils literal notranslate"><span class="pre">rbd</span></code> command uses the Ceph user ID <code class="docutils literal notranslate"><span class="pre">admin</span></code>
+to access the Ceph cluster. The <code class="docutils literal notranslate"><span class="pre">admin</span></code> Ceph user ID allows full
+administrative access to the cluster. We recommend that you acess the Ceph
+cluster with a Ceph user ID that has fewer permissions than the <code class="docutils literal notranslate"><span class="pre">admin</span></code> Ceph
+user ID does. We call this non-<code class="docutils literal notranslate"><span class="pre">admin</span></code> Ceph user ID a “block device user” or
+“Ceph user”.</p>
+<p>To <a class="reference external" href="../../rados/operations/user-management#add-a-user">create a Ceph user</a>, use the <code class="docutils literal notranslate"><span class="pre">ceph</span> <span class="pre">auth</span> <span class="pre">get-or-create</span></code> command to
+specify the Ceph user ID name, monitor caps (capabilities), and OSD caps
+(capabilities):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>auth<span class="w"> </span>get-or-create<span class="w"> </span>client.<span class="o">{</span>ID<span class="o">}</span><span class="w"> </span>mon<span class="w"> </span><span class="s1">&#39;profile rbd&#39;</span><span class="w"> </span>osd<span class="w"> </span><span class="s1">&#39;profile {profile name} [pool={pool-name}][, profile ...]&#39;</span><span class="w"> </span>mgr<span class="w"> </span><span class="s1">&#39;profile rbd [pool={pool-name}]&#39;</span></span>
+</pre></div></div><p>For example: to create a Ceph user ID named <code class="docutils literal notranslate"><span class="pre">qemu</span></code> that has read-write access
+to the pool <code class="docutils literal notranslate"><span class="pre">vms</span></code> and read-only access to the pool <code class="docutils literal notranslate"><span class="pre">images</span></code>, run the
+following command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>auth<span class="w"> </span>get-or-create<span class="w"> </span>client.qemu<span class="w"> </span>mon<span class="w"> </span><span class="s1">&#39;profile rbd&#39;</span><span class="w"> </span>osd<span class="w"> </span><span class="s1">&#39;profile rbd pool=vms, profile rbd-read-only pool=images&#39;</span><span class="w"> </span>mgr<span class="w"> </span><span class="s1">&#39;profile rbd pool=images&#39;</span></span>
+</pre></div></div><p>The output from the <code class="docutils literal notranslate"><span class="pre">ceph</span> <span class="pre">auth</span> <span class="pre">get-or-create</span></code> command is the keyring for the
+specified Ceph user ID, which can be written to
+<code class="docutils literal notranslate"><span class="pre">/etc/ceph/ceph.client.{ID}.keyring</span></code>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Specify the Ceph user ID by providing the <code class="docutils literal notranslate"><span class="pre">--id</span> <span class="pre">{id}</span> <span class="pre">argument</span> <span class="pre">when</span>
+<span class="pre">using</span> <span class="pre">the</span> <span class="pre">``rbd</span></code> command. This argument is optional.</p>
+</div>
+</section>
+<section id="creating-a-block-device-image">
+<h2>Creating a Block Device Image<a class="headerlink" href="#creating-a-block-device-image" title="Permalink to this heading">¶</a></h2>
+<p>Before you can add a block device to a node, you must create an image for it in
+the <a class="reference internal" href="../../glossary/#term-Ceph-Storage-Cluster"><span class="xref std std-term">Ceph Storage Cluster</span></a>. To create a block device image, run a command of this form:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">rbd<span class="w"> </span>create<span class="w"> </span>--size<span class="w"> </span><span class="o">{</span>megabytes<span class="o">}</span><span class="w"> </span><span class="o">{</span>pool-name<span class="o">}</span>/<span class="o">{</span>image-name<span class="o">}</span></span>
+</pre></div></div><p>For example, to create a 1GB image named <code class="docutils literal notranslate"><span class="pre">bar</span></code> that stores information in a
+pool named <code class="docutils literal notranslate"><span class="pre">swimmingpool</span></code>, run this command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">rbd<span class="w"> </span>create<span class="w"> </span>--size<span class="w"> </span><span class="m">1024</span><span class="w"> </span>swimmingpool/bar</span>
+</pre></div></div><p>If you don’t specify a pool when you create an image, then the image will be
+stored in the default pool <code class="docutils literal notranslate"><span class="pre">rbd</span></code>. For example, if you ran this command, you
+would create a 1GB image named <code class="docutils literal notranslate"><span class="pre">foo</span></code> that is stored in the default pool
+<code class="docutils literal notranslate"><span class="pre">rbd</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">rbd<span class="w"> </span>create<span class="w"> </span>--size<span class="w"> </span><span class="m">1024</span><span class="w"> </span>foo</span>
+</pre></div></div><div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>You must create a pool before you can specify it as a source. See
+<a class="reference external" href="../../rados/operations/pools">Storage Pools</a> for details.</p>
+</div>
+</section>
+<section id="listing-block-device-images">
+<h2>Listing Block Device Images<a class="headerlink" href="#listing-block-device-images" title="Permalink to this heading">¶</a></h2>
+<p>To list block devices in the <code class="docutils literal notranslate"><span class="pre">rbd</span></code> pool, run the following command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">rbd<span class="w"> </span>ls</span>
+</pre></div></div><div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><code class="docutils literal notranslate"><span class="pre">rbd</span></code> is the default pool name, and <code class="docutils literal notranslate"><span class="pre">rbd</span> <span class="pre">ls</span></code> lists the commands
+in the default pool.</p>
+</div>
+<p>To list block devices in a particular pool, run the following command, but
+replace <code class="docutils literal notranslate"><span class="pre">{poolname}</span></code> with the name of the pool:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">rbd<span class="w"> </span>ls<span class="w"> </span><span class="o">{</span>poolname<span class="o">}</span></span>
+</pre></div></div><p>For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">rbd<span class="w"> </span>ls<span class="w"> </span>swimmingpool</span>
+</pre></div></div><p>To list “deferred delete” block devices in the <code class="docutils literal notranslate"><span class="pre">rbd</span></code> pool, run the
+following command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">rbd<span class="w"> </span>trash<span class="w"> </span>ls</span>
+</pre></div></div><p>To list “deferred delete” block devices in a particular pool, run the
+following command, but replace <code class="docutils literal notranslate"><span class="pre">{poolname}</span></code> with the name of the pool:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">rbd<span class="w"> </span>trash<span class="w"> </span>ls<span class="w"> </span><span class="o">{</span>poolname<span class="o">}</span></span>
+</pre></div></div><p>For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">rbd<span class="w"> </span>trash<span class="w"> </span>ls<span class="w"> </span>swimmingpool</span>
+</pre></div></div></section>
+<section id="retrieving-image-information">
+<h2>Retrieving Image Information<a class="headerlink" href="#retrieving-image-information" title="Permalink to this heading">¶</a></h2>
+<p>To retrieve information from a particular image, run the following command, but
+replace <code class="docutils literal notranslate"><span class="pre">{image-name}</span></code> with the name for the image:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">rbd<span class="w"> </span>info<span class="w"> </span><span class="o">{</span>image-name<span class="o">}</span></span>
+</pre></div></div><p>For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">rbd<span class="w"> </span>info<span class="w"> </span>foo</span>
+</pre></div></div><p>To retrieve information from an image within a pool, run the following command,
+but replace <code class="docutils literal notranslate"><span class="pre">{image-name}</span></code> with the name of the image and replace
+<code class="docutils literal notranslate"><span class="pre">{pool-name}</span></code> with the name of the pool:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">rbd<span class="w"> </span>info<span class="w"> </span><span class="o">{</span>pool-name<span class="o">}</span>/<span class="o">{</span>image-name<span class="o">}</span></span>
+</pre></div></div><p>For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">rbd<span class="w"> </span>info<span class="w"> </span>swimmingpool/bar</span>
+</pre></div></div><div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Other naming conventions are possible, and might conflict with the
+naming convention described here. For example, <code class="docutils literal notranslate"><span class="pre">userid/&lt;uuid&gt;</span></code> is a
+possible name for an RBD image, and such a name might (at the least) be
+confusing.</p>
+</div>
+</section>
+<section id="resizing-a-block-device-image">
+<h2>Resizing a Block Device Image<a class="headerlink" href="#resizing-a-block-device-image" title="Permalink to this heading">¶</a></h2>
+<p><a class="reference internal" href="../../glossary/#term-Ceph-Block-Device"><span class="xref std std-term">Ceph Block Device</span></a> images are thin provisioned. They don’t actually use
+any physical storage until you begin saving data to them. However, they do have
+a maximum capacity that you set with the <code class="docutils literal notranslate"><span class="pre">--size</span></code> option. If you want to
+increase (or decrease) the maximum size of a Ceph Block Device image, run one
+of the following commands:</p>
+<section id="increasing-the-size-of-a-block-device-image">
+<h3>Increasing the Size of a Block Device Image<a class="headerlink" href="#increasing-the-size-of-a-block-device-image" title="Permalink to this heading">¶</a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">rbd<span class="w"> </span>resize<span class="w"> </span>--size<span class="w"> </span><span class="m">2048</span><span class="w"> </span>foo</span>
+</pre></div></div></section>
+<section id="decreasing-the-size-of-a-block-device-image">
+<h3>Decreasing the Size of a Block Device Image<a class="headerlink" href="#decreasing-the-size-of-a-block-device-image" title="Permalink to this heading">¶</a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">rbd<span class="w"> </span>resize<span class="w"> </span>--size<span class="w"> </span><span class="m">2048</span><span class="w"> </span>foo<span class="w"> </span>--allow-shrink</span>
+</pre></div></div></section>
+</section>
+<section id="removing-a-block-device-image">
+<h2>Removing a Block Device Image<a class="headerlink" href="#removing-a-block-device-image" title="Permalink to this heading">¶</a></h2>
+<p>To remove a block device, run the following command, but replace
+<code class="docutils literal notranslate"><span class="pre">{image-name}</span></code> with the name of the image you want to remove:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">rbd<span class="w"> </span>rm<span class="w"> </span><span class="o">{</span>image-name<span class="o">}</span></span>
+</pre></div></div><p>For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">rbd<span class="w"> </span>rm<span class="w"> </span>foo</span>
+</pre></div></div><section id="removing-a-block-device-from-a-pool">
+<h3>Removing a Block Device from a Pool<a class="headerlink" href="#removing-a-block-device-from-a-pool" title="Permalink to this heading">¶</a></h3>
+<p>To remove a block device from a pool, run the following command but replace
+<code class="docutils literal notranslate"><span class="pre">{image-name}</span></code> with the name of the image to be removed, and replace
+<code class="docutils literal notranslate"><span class="pre">{pool-name}</span></code> with the name of the pool from which the image is to be
+removed:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">rbd<span class="w"> </span>rm<span class="w"> </span><span class="o">{</span>pool-name<span class="o">}</span>/<span class="o">{</span>image-name<span class="o">}</span></span>
+</pre></div></div><p>For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">rbd<span class="w"> </span>rm<span class="w"> </span>swimmingpool/bar</span>
+</pre></div></div></section>
+<section id="defer-deleting-a-block-device-from-a-pool">
+<h3>“Defer Deleting” a Block Device from a Pool<a class="headerlink" href="#defer-deleting-a-block-device-from-a-pool" title="Permalink to this heading">¶</a></h3>
+<p>To defer delete a block device from a pool (which entails moving it to the
+“trash” and deleting it later), run the following command but replace
+<code class="docutils literal notranslate"><span class="pre">{image-name}</span></code> with the name of the image to be moved to the trash and
+replace <code class="docutils literal notranslate"><span class="pre">{pool-name}</span></code> with the name of the pool:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">rbd<span class="w"> </span>trash<span class="w"> </span>mv<span class="w"> </span><span class="o">{</span>pool-name<span class="o">}</span>/<span class="o">{</span>image-name<span class="o">}</span></span>
+</pre></div></div><p>For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">rbd<span class="w"> </span>trash<span class="w"> </span>mv<span class="w"> </span>swimmingpool/bar</span>
+</pre></div></div></section>
+<section id="removing-a-deferred-block-device-from-a-pool">
+<h3>Removing a Deferred Block Device from a Pool<a class="headerlink" href="#removing-a-deferred-block-device-from-a-pool" title="Permalink to this heading">¶</a></h3>
+<p>To remove a deferred block device from a pool, run the following command but
+replace <code class="docutils literal notranslate"><span class="pre">{image-}</span></code> with the ID of the image to be removed, and replace
+<code class="docutils literal notranslate"><span class="pre">{pool-name}</span></code> with the name of the pool from which the image is to be
+removed:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">rbd<span class="w"> </span>trash<span class="w"> </span>rm<span class="w"> </span><span class="o">{</span>pool-name<span class="o">}</span>/<span class="o">{</span>image-<span class="o">}</span></span>
+</pre></div></div><p>For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">rbd<span class="w"> </span>trash<span class="w"> </span>rm<span class="w"> </span>swimmingpool/2bf4474b0dc51</span>
+</pre></div></div><div class="admonition note">
+<p class="admonition-title">Note</p>
+<ul class="simple">
+<li><p>You can move an image to the trash even if it has snapshot(s) or is
+actively in use by clones. However, you cannot remove it from the trash
+under those conditions.</p></li>
+<li><p>You can use <code class="docutils literal notranslate"><span class="pre">--expires-at</span></code> to set the deferment time (default is
+<code class="docutils literal notranslate"><span class="pre">now</span></code>). If the deferment time has not yet arrived, you cannot remove the
+image unless you use <code class="docutils literal notranslate"><span class="pre">--force</span></code>.</p></li>
+</ul>
+</div>
+</section>
+</section>
+<section id="restoring-a-block-device-image">
+<h2>Restoring a Block Device Image<a class="headerlink" href="#restoring-a-block-device-image" title="Permalink to this heading">¶</a></h2>
+<p>To restore a deferred delete block device in the rbd pool, run the
+following command but replace <code class="docutils literal notranslate"><span class="pre">{image-id}</span></code> with the ID of the image:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">rbd<span class="w"> </span>trash<span class="w"> </span>restore<span class="w"> </span><span class="o">{</span>image-id<span class="o">}</span></span>
+</pre></div></div><p>For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">rbd<span class="w"> </span>trash<span class="w"> </span>restore<span class="w"> </span>2bf4474b0dc51</span>
+</pre></div></div><section id="restoring-a-block-device-image-in-a-specific-pool">
+<h3>Restoring a Block Device Image in a Specific Pool<a class="headerlink" href="#restoring-a-block-device-image-in-a-specific-pool" title="Permalink to this heading">¶</a></h3>
+<p>To restore a deferred delete block device in a particular pool, run the
+following command but replace <code class="docutils literal notranslate"><span class="pre">{image-id}</span></code> with the ID of the image and
+replace <code class="docutils literal notranslate"><span class="pre">{pool-name}</span></code> with the name of the pool:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">rbd<span class="w"> </span>trash<span class="w"> </span>restore<span class="w"> </span><span class="o">{</span>pool-name<span class="o">}</span>/<span class="o">{</span>image-id<span class="o">}</span></span>
+</pre></div></div><p>For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">rbd<span class="w"> </span>trash<span class="w"> </span>restore<span class="w"> </span>swimmingpool/2bf4474b0dc51</span>
+</pre></div></div></section>
+<section id="renaming-an-image-while-restoring-it">
+<h3>Renaming an Image While Restoring It<a class="headerlink" href="#renaming-an-image-while-restoring-it" title="Permalink to this heading">¶</a></h3>
+<p>You can also use <code class="docutils literal notranslate"><span class="pre">--image</span></code> to rename the image while restoring it.</p>
+<p>For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">rbd<span class="w"> </span>trash<span class="w"> </span>restore<span class="w"> </span>swimmingpool/2bf4474b0dc51<span class="w"> </span>--image<span class="w"> </span>new-name</span>
+</pre></div></div></section>
+</section>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../">
+              <img class="logo" src="../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../install/">Installing Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cephadm/">Cephadm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rados/">Ceph Storage Cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cephfs/">Ceph File System</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../">Ceph Block Device</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Basic Commands</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#create-a-block-device-pool">Create a Block Device Pool</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#create-a-block-device-user">Create a Block Device User</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#creating-a-block-device-image">Creating a Block Device Image</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#listing-block-device-images">Listing Block Device Images</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#retrieving-image-information">Retrieving Image Information</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#resizing-a-block-device-image">Resizing a Block Device Image</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#increasing-the-size-of-a-block-device-image">Increasing the Size of a Block Device Image</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#decreasing-the-size-of-a-block-device-image">Decreasing the Size of a Block Device Image</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#removing-a-block-device-image">Removing a Block Device Image</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#removing-a-block-device-from-a-pool">Removing a Block Device from a Pool</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#defer-deleting-a-block-device-from-a-pool">“Defer Deleting” a Block Device from a Pool</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#removing-a-deferred-block-device-from-a-pool">Removing a Deferred Block Device from a Pool</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#restoring-a-block-device-image">Restoring a Block Device Image</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#restoring-a-block-device-image-in-a-specific-pool">Restoring a Block Device Image in a Specific Pool</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#renaming-an-image-while-restoring-it">Renaming an Image While Restoring It</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../rbd-operations/">Operations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rbd-integrations/">Integrations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../man/">Manpages</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/">APIs</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../radosgw/">Ceph Object Gateway</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/">Ceph Manager Daemon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dev/developer_guide/">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dev/internals/">Ceph Internals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../rbd-operations/" title="Ceph Block Device Operations"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../" title="Ceph Block Device"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../" >Ceph Block Device</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Basic Block Device Commands</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

@@ -1,0 +1,315 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>RGW Data caching and CDN &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css" />
+    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../genindex/" />
+    <link rel="search" title="Search" href="../../search/" />
+    <link rel="next" title="Ceph Object Gateway Swift API" href="../swift/" />
+    <link rel="prev" title="Ruby AWS::SDK Examples (aws-sdk gem ~&gt;2)" href="../s3/ruby/" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../swift/" title="Ceph Object Gateway Swift API"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../s3/ruby/" title="Ruby AWS::SDK Examples (aws-sdk gem ~&gt;2)"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../" accesskey="U">Ceph Object Gateway</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">RGW Data caching and CDN</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="rgw-data-caching-and-cdn">
+<h1><a class="toc-backref" href="#id1">RGW Data caching and CDN</a><a class="headerlink" href="#rgw-data-caching-and-cdn" title="Permalink to this heading">¶</a></h1>
+<div class="versionadded">
+<p><span class="versionmodified added">New in version Octopus.</span></p>
+</div>
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="#rgw-data-caching-and-cdn" id="id1">RGW Data caching and CDN</a></p>
+<ul>
+<li><p><a class="reference internal" href="#new-apis" id="id2">New APIs</a></p>
+<ul>
+<li><p><a class="reference internal" href="#auth-api" id="id3">Auth API</a></p></li>
+<li><p><a class="reference internal" href="#cache-api" id="id4">Cache API</a></p></li>
+<li><p><a class="reference internal" href="#using-nginx-with-rgw" id="id5">Using Nginx with RGW</a></p></li>
+<li><p><a class="reference internal" href="#appendix" id="id6">Appendix</a></p></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+<p>This feature adds to RGW the ability to securely cache objects and offload the workload from the cluster, using Nginx.
+After an object is accessed the first time it will be stored in the Nginx cache directory.
+When data is already cached, it need not be fetched from RGW. A permission check will be made against RGW to ensure the requesting user has access.
+This feature is based on some Nginx modules, ngx_http_auth_request_module, <a class="reference external" href="https://github.com/kaltura/nginx-aws-auth-module">https://github.com/kaltura/nginx-aws-auth-module</a>, Openresty for Lua capabilities.</p>
+<p>Currently, this feature will cache only AWSv4 requests (only s3 requests), caching-in the output of the 1st GET request
+and caching-out on subsequent GET requests, passing thru transparently PUT,POST,HEAD,DELETE and COPY requests.</p>
+<p>The feature introduces 2 new APIs: Auth and Cache.</p>
+<section id="new-apis">
+<h2><a class="toc-backref" href="#id2">New APIs</a><a class="headerlink" href="#new-apis" title="Permalink to this heading">¶</a></h2>
+<p>There are 2 new APIs for this feature:</p>
+<p>Auth API - The cache uses this to validate that a user can access the cached data</p>
+<p>Cache API - Adds the ability to override securely Range header, that way Nginx can use it is own smart cache on top of S3:
+<a class="reference external" href="https://www.nginx.com/blog/smart-efficient-byte-range-caching-nginx/">https://www.nginx.com/blog/smart-efficient-byte-range-caching-nginx/</a>
+Using this API gives the ability to read ahead objects when clients asking a specific range from the object.
+On subsequent accesses to the cached object, Nginx will satisfy requests for already-cached ranges from the cache. Uncached ranges will be read from RGW (and cached).</p>
+<section id="auth-api">
+<h3><a class="toc-backref" href="#id3">Auth API</a><a class="headerlink" href="#auth-api" title="Permalink to this heading">¶</a></h3>
+<p>This API Validates a specific authenticated access being made to the cache, using RGW’s knowledge of the client credentials and stored access policy.
+Returns success if the encapsulated request would be granted.</p>
+</section>
+<section id="cache-api">
+<h3><a class="toc-backref" href="#id4">Cache API</a><a class="headerlink" href="#cache-api" title="Permalink to this heading">¶</a></h3>
+<p>This API is meant to allow changing signed Range headers using a privileged user, cache user.</p>
+<p>Creating cache user</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ radosgw-admin user create --uid=&lt;uid for cache user&gt; --display-name=&quot;cache user&quot; --caps=&quot;amz-cache=read&quot;
+</pre></div>
+</div>
+<p>This user can send to the RGW the Cache API header <code class="docutils literal notranslate"><span class="pre">X-Amz-Cache</span></code>, this header contains the headers from the original request(before changing the Range header).
+It means that <code class="docutils literal notranslate"><span class="pre">X-Amz-Cache</span></code> built from several headers.
+The headers that are building the <code class="docutils literal notranslate"><span class="pre">X-Amz-Cache</span></code> header are separated by char with ASCII code 177 and the header name and value are separated by char ASCII code 178.
+The RGW will check that the cache user is an authorized user and if it is a cache user,
+if yes it will use the <code class="docutils literal notranslate"><span class="pre">X-Amz-Cache</span></code> to revalidate that the user has permissions, using the headers from the X-Amz-Cache.
+During this flow, the RGW will override the Range header.</p>
+</section>
+<section id="using-nginx-with-rgw">
+<h3><a class="toc-backref" href="#id5">Using Nginx with RGW</a><a class="headerlink" href="#using-nginx-with-rgw" title="Permalink to this heading">¶</a></h3>
+<p>Download the source of Openresty:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ wget https://openresty.org/download/openresty-1.15.8.3.tar.gz
+</pre></div>
+</div>
+<p>git clone the AWS auth Nginx module:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ git clone https://github.com/kaltura/nginx-aws-auth-module
+</pre></div>
+</div>
+<p>untar the openresty package:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ tar xvzf openresty-1.15.8.3.tar.gz
+$ cd openresty-1.15.8.3
+</pre></div>
+</div>
+<p>Compile openresty, Make sure that you have pcre lib and openssl lib:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ sudo yum install pcre-devel openssl-devel gcc curl zlib-devel nginx
+$ ./configure --add-module=&lt;the nginx-aws-auth-module dir&gt; --with-http_auth_request_module --with-http_slice_module --conf-path=/etc/nginx/nginx.conf
+$ gmake -j $(nproc)
+$ sudo gmake install
+$ sudo ln -sf /usr/local/openresty/bin/openresty /usr/bin/nginx
+</pre></div>
+</div>
+<p>Put in-place your Nginx configuration files and edit them according to your environment:</p>
+<p>All Nginx conf files are under: <a class="reference external" href="https://github.com/ceph/ceph/tree/master/examples/rgw-cache">https://github.com/ceph/ceph/tree/master/examples/rgw-cache</a></p>
+<p><cite>nginx.conf</cite> should go to <cite>/etc/nginx/nginx.conf</cite></p>
+<p><cite>nginx-lua-file.lua</cite> should go to <cite>/etc/nginx/nginx-lua-file.lua</cite></p>
+<p><cite>nginx-default.conf</cite> should go to <cite>/etc/nginx/conf.d/nginx-default.conf</cite></p>
+<p>The parameters that are most likely to require adjustment according to the environment are located in the file <cite>nginx-default.conf</cite></p>
+<p>Modify the example values of <em>proxy_cache_path</em> and <em>max_size</em> at:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">proxy_cache_path</span> <span class="o">/</span><span class="n">data</span><span class="o">/</span><span class="n">cache</span> <span class="n">levels</span><span class="o">=</span><span class="mi">2</span><span class="p">:</span><span class="mi">2</span><span class="p">:</span><span class="mi">2</span> <span class="n">keys_zone</span><span class="o">=</span><span class="n">mycache</span><span class="p">:</span><span class="mi">999</span><span class="n">m</span> <span class="n">max_size</span><span class="o">=</span><span class="mi">20</span><span class="n">G</span> <span class="n">inactive</span><span class="o">=</span><span class="mi">1</span><span class="n">d</span> <span class="n">use_temp_path</span><span class="o">=</span><span class="n">off</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>And modify the example <em>server</em> values to point to the RGWs URIs:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">server</span> <span class="n">rgw1</span><span class="p">:</span><span class="mi">8000</span> <span class="n">max_fails</span><span class="o">=</span><span class="mi">2</span> <span class="n">fail_timeout</span><span class="o">=</span><span class="mi">5</span><span class="n">s</span><span class="p">;</span>
+<span class="n">server</span> <span class="n">rgw2</span><span class="p">:</span><span class="mi">8000</span> <span class="n">max_fails</span><span class="o">=</span><span class="mi">2</span> <span class="n">fail_timeout</span><span class="o">=</span><span class="mi">5</span><span class="n">s</span><span class="p">;</span>
+<span class="n">server</span> <span class="n">rgw3</span><span class="p">:</span><span class="mi">8000</span> <span class="n">max_fails</span><span class="o">=</span><span class="mi">2</span> <span class="n">fail_timeout</span><span class="o">=</span><span class="mi">5</span><span class="n">s</span><span class="p">;</span>
+</pre></div>
+</div>
+<div class="line-block">
+<div class="line">It is important to substitute the <em>access key</em> and <em>secret key</em> located in the <cite>nginx.conf</cite> with those belong to the user with the <cite>amz-cache</cite> caps</div>
+<div class="line">for example, create the <cite>cache</cite> user as following:</div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">radosgw</span><span class="o">-</span><span class="n">admin</span> <span class="n">user</span> <span class="n">create</span> <span class="o">--</span><span class="n">uid</span><span class="o">=</span><span class="n">cacheuser</span> <span class="o">--</span><span class="n">display</span><span class="o">-</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;cache user&quot;</span> <span class="o">--</span><span class="n">caps</span><span class="o">=</span><span class="s2">&quot;amz-cache=read&quot;</span> <span class="o">--</span><span class="n">access</span><span class="o">-</span><span class="n">key</span> <span class="o">&lt;</span><span class="n">access</span><span class="o">&gt;</span> <span class="o">--</span><span class="n">secret</span> <span class="o">&lt;</span><span class="n">secret</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<p>It is possible to use Nginx slicing which is a better method for streaming purposes.</p>
+<p>For using slice you should use <cite>nginx-slicing.conf</cite> and not <cite>nginx-default.conf</cite></p>
+<p>Further information about Nginx slicing:</p>
+<p><a class="reference external" href="https://docs.nginx.com/nginx/admin-guide/content-cache/content-caching/#byte-range-caching">https://docs.nginx.com/nginx/admin-guide/content-cache/content-caching/#byte-range-caching</a></p>
+<p>If you do not want to use the prefetch caching, It is possible to replace <cite>nginx-default.conf</cite> with <cite>nginx-noprefetch.conf</cite>
+Using <cite>noprefetch</cite> means that if the client is sending range request of 0-4095 and then 0-4096 Nginx will cache those requests separately, So it will need to fetch those requests twice.</p>
+<p>Run Nginx(openresty):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ sudo systemctl restart nginx
+</pre></div>
+</div>
+</section>
+<section id="appendix">
+<h3><a class="toc-backref" href="#id6">Appendix</a><a class="headerlink" href="#appendix" title="Permalink to this heading">¶</a></h3>
+<p><strong>A note about performance:</strong> In certain instances like development environment, disabling the authentication by commenting the following line in <cite>nginx-default.conf</cite>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1">#auth_request /authentication;</span>
+</pre></div>
+</div>
+<p>may (depending on the hardware) increases the performance significantly as it forgoes the auth API calls to radosgw.</p>
+</section>
+</section>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../">
+              <img class="logo" src="../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../install/">Installing Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cephadm/">Cephadm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rados/">Ceph Storage Cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cephfs/">Ceph File System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rbd/">Ceph Block Device</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../">Ceph Object Gateway</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../frontends/">HTTP Frontends</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../placement/">Pool Placement and Storage Classes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../multisite/">Multisite Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../multisite-sync-policy/">Multisite Sync Policy Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pools/">Configuring Pools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../config-ref/">Config Reference</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../admin/">Admin Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../s3/">S3 API</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Data caching and CDN</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#new-apis">New APIs</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#auth-api">Auth API</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#cache-api">Cache API</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#using-nginx-with-rgw">Using Nginx with RGW</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#appendix">Appendix</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../swift/">Swift API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../adminops/">Admin Ops API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/">Python binding</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../nfs/">Export over NFS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../keystone/">OpenStack Keystone Integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../barbican/">OpenStack Barbican Integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../vault/">HashiCorp Vault Integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../kmip/">KMIP Integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../opa/">Open Policy Agent Integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../multitenancy/">Multi-tenancy</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../compression/">Compression</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../ldap-auth/">LDAP Authentication</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../encryption/">Server-Side Encryption</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../bucketpolicy/">Bucket Policy</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../dynamicresharding/">Dynamic bucket index resharding</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../mfa/">Multi factor authentication</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../sync-modules/">Sync Modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../notifications/">Bucket Notifications</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../layout/">Data Layout in RADOS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../STS/">STS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../STSLite/">STS Lite</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../keycloak/">Keycloak</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../session-tags/">Session Tags</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../role/">Role</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../orphans/">Orphan List and Associated Tooling</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../oidc/">OpenID Connect Provider</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../troubleshooting/">Troubleshooting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../man/8/radosgw/">Manpage radosgw</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../man/8/radosgw-admin/">Manpage radosgw-admin</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../qat-accel/">QAT Acceleration for Encryption and Compression</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../s3select/">S3-select</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../lua-scripting/">Lua Scripting</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/">Ceph Manager Daemon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dev/developer_guide/">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dev/internals/">Ceph Internals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../swift/" title="Ceph Object Gateway Swift API"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../s3/ruby/" title="Ruby AWS::SDK Examples (aws-sdk gem ~&gt;2)"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../" >Ceph Object Gateway</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">RGW Data caching and CDN</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

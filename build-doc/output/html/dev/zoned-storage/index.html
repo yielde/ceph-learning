@@ -1,0 +1,335 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Zoned Storage Support &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css" />
+    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../genindex/" />
+    <link rel="search" title="Search" href="../../search/" />
+    <link rel="next" title="OSD developer documentation" href="../osd_internals/" />
+    <link rel="prev" title="Wireshark Dissector" href="../wireshark/" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../osd_internals/" title="OSD developer documentation"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../wireshark/" title="Wireshark Dissector"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../internals/" accesskey="U">Ceph Internals</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Zoned Storage Support</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="zoned-storage-support">
+<h1>Zoned Storage Support<a class="headerlink" href="#zoned-storage-support" title="Permalink to this heading">¶</a></h1>
+<p><a class="reference external" href="http://zonedstorage.io">http://zonedstorage.io</a></p>
+<p>Zoned Storage is a class of storage devices that enables host and storage
+devices to cooperate to achieve higher storage capacities, increased throughput,
+and lower latencies. The zoned storage interface is available through the SCSI
+Zoned Block Commands (ZBC) and Zoned Device ATA Command Set (ZAC) standards on
+Shingled Magnetic Recording (SMR) hard disks today and is also being adopted for
+NVMe Solid State Disks with the upcoming NVMe Zoned Namespaces (ZNS) standard.</p>
+<p>This project aims to enable Ceph to work on zoned storage drives and at the same
+time explore research problems related to adopting this new interface.  The
+first target is to enable non-ovewrite workloads (e.g. RGW) on host-managed SMR
+(HM-SMR) drives and explore cleaning (garbage collection) policies.  HM-SMR
+drives are high capacity hard drives with the ZBC/ZAC interface.  The longer
+term goal is to support ZNS SSDs, as they become available, as well as overwrite
+workloads.</p>
+<p>The first patch in these series enabled writing data to HM-SMR drives.  This
+patch introduces ZonedFreelistManger, a FreelistManager implementation that
+passes enough information to ZonedAllocator to correctly initialize state of
+zones by tracking the write pointer and the number of dead bytes per zone.  We
+have to introduce a new FreelistManager implementation because with zoned
+devices a region of disk can be in three states (empty, used, and dead), whereas
+current BitmapFreelistManager tracks only two states (empty and used).  It is
+not possible to accurately initialize the state of zones in ZonedAllocator by
+tracking only two states.  The third planned patch will introduce a rudimentary
+cleaner to form a baseline for further research.</p>
+<p>Currently we can perform basic RADOS benchmarks on an OSD running on an HM-SMR
+drives, restart the OSD, and read the written data, and write new data, as can
+be seen below.</p>
+<p>Please contact Abutalib Aghayev &lt;<a class="reference external" href="mailto:agayev&#37;&#52;&#48;psu&#46;edu">agayev<span>&#64;</span>psu<span>&#46;</span>edu</a>&gt; for questions.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ sudo zbd report -i -n /dev/sdc
+Device /dev/sdc:
+    Vendor ID: ATA HGST HSH721414AL T240
+    Zone model: host-managed
+    Capacity: 14000.520 GB (27344764928 512-bytes sectors)
+    Logical blocks: 3418095616 blocks of 4096 B
+    Physical blocks: 3418095616 blocks of 4096 B
+    Zones: 52156 zones of 256.0 MB
+    Maximum number of open zones: no limit
+    Maximum number of active zones: no limit
+52156 / 52156 zones
+$ MON=1 OSD=1 MDS=0 sudo ../src/vstart.sh --new --localhost --bluestore --bluestore-devs /dev/sdc --bluestore-zoned
+&lt;snipped verbose output&gt;
+$ sudo ./bin/ceph osd pool create bench 32 32
+pool &#39;bench&#39; created
+$ sudo ./bin/rados bench -p bench 10 write --no-cleanup
+hints = 1
+Maintaining 16 concurrent writes of 4194304 bytes to objects of size 4194304 for up to 10 seconds or 0 objects
+Object prefix: benchmark_data_h0.cc.journaling712.narwhal.p_29846
+  sec Cur ops   started  finished  avg MB/s  cur MB/s last lat(s)  avg lat(s)
+    0       0         0         0         0         0           -           0
+    1      16        45        29   115.943       116    0.384175    0.407806
+    2      16        86        70   139.949       164    0.259845    0.391488
+    3      16       125       109   145.286       156     0.31727    0.404727
+    4      16       162       146   145.953       148    0.826671    0.409003
+    5      16       203       187   149.553       164     0.44815    0.404303
+    6      16       242       226   150.621       156    0.227488    0.409872
+    7      16       281       265   151.384       156    0.411896    0.408686
+    8      16       320       304   151.956       156    0.435135    0.411473
+    9      16       359       343   152.401       156    0.463699    0.408658
+   10      15       396       381   152.356       152    0.409554    0.410851
+Total time run:         10.3305
+Total writes made:      396
+Write size:             4194304
+Object size:            4194304
+Bandwidth (MB/sec):     153.333
+Stddev Bandwidth:       13.6561
+Max bandwidth (MB/sec): 164
+Min bandwidth (MB/sec): 116
+Average IOPS:           38
+Stddev IOPS:            3.41402
+Max IOPS:               41
+Min IOPS:               29
+Average Latency(s):     0.411226
+Stddev Latency(s):      0.180238
+Max latency(s):         1.00844
+Min latency(s):         0.108616
+$ sudo ../src/stop.sh
+$ # Notice the lack of &quot;--new&quot; parameter to vstart.sh
+$ MON=1 OSD=1 MDS=0 sudo ../src/vstart.sh --localhost --bluestore --bluestore-devs /dev/sdc --bluestore-zoned
+&lt;snipped verbose output&gt;
+$ sudo ./bin/rados bench -p bench 10 rand
+hints = 1
+  sec Cur ops   started  finished  avg MB/s  cur MB/s last lat(s)  avg lat(s)
+    0       0         0         0         0         0           -           0
+    1      16        61        45   179.903       180    0.117329    0.244067
+    2      16       116       100   199.918       220    0.144162    0.292305
+    3      16       174       158   210.589       232    0.170941    0.285481
+    4      16       251       235   234.918       308    0.241175    0.256543
+    5      16       316       300   239.914       260    0.206044    0.255882
+    6      15       392       377   251.206       308    0.137972    0.247426
+    7      15       458       443   252.984       264   0.0800146    0.245138
+    8      16       529       513   256.346       280    0.103529    0.239888
+    9      16       587       571   253.634       232    0.145535      0.2453
+   10      15       646       631   252.254       240    0.837727    0.246019
+Total time run:       10.272
+Total reads made:     646
+Read size:            4194304
+Object size:          4194304
+Bandwidth (MB/sec):   251.558
+Average IOPS:         62
+Stddev IOPS:          10.005
+Max IOPS:             77
+Min IOPS:             45
+Average Latency(s):   0.249385
+Max latency(s):       0.888654
+Min latency(s):       0.0103208
+$ sudo ./bin/rados bench -p bench 10 write --no-cleanup
+hints = 1
+Maintaining 16 concurrent writes of 4194304 bytes to objects of size 4194304 for up to 10 seconds or 0 objects
+Object prefix: benchmark_data_h0.aa.journaling712.narwhal.p_64416
+  sec Cur ops   started  finished  avg MB/s  cur MB/s last lat(s)  avg lat(s)
+    0       0         0         0         0         0           -           0
+    1      16        46        30   119.949       120     0.52627    0.396166
+    2      16        82        66   131.955       144     0.48087    0.427311
+    3      16       123       107   142.627       164      0.3287    0.420614
+    4      16       158       142   141.964       140    0.405177    0.425993
+    5      16       192       176   140.766       136    0.514565    0.425175
+    6      16       224       208   138.635       128     0.69184    0.436672
+    7      16       261       245   139.967       148    0.459929    0.439502
+    8      16       301       285   142.468       160    0.250846    0.434799
+    9      16       336       320   142.189       140    0.621686    0.435457
+   10      16       374       358   143.166       152    0.460593    0.436384
+</pre></div>
+</div>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../">
+              <img class="logo" src="../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../install/">Installing Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cephadm/">Cephadm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rados/">Ceph Storage Cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cephfs/">Ceph File System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rbd/">Ceph Block Device</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../radosgw/">Ceph Object Gateway</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/">Ceph Manager Daemon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../developer_guide/">Developer Guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../internals/">Ceph Internals</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../blkin/">Tracing Ceph With Blkin</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../bluestore/">BlueStore Internals</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cache-pool/">Cache pool</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../ceph_krb_auth/">A Detailed Documentation on How to Set up Ceph Kerberos Authentication</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cephfs-mirroring/">CephFS Mirroring</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cephfs-reclaim/">CephFS Reclaim Interface</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cephfs-snapshots/">CephFS Snapshots</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cephx/">Cephx</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cephx_protocol/">A Detailed Description of the Cephx Authentication Protocol</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../config/">Configuration Management System</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../config-key/">config-key layout</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../context/">CephContext</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../continuous-integration/">Continuous Integration Architecture</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../corpus/">Corpus structure</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpu-profiler/">Installing Oprofile</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cxx/">C++17 and libstdc++ ABI</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../delayed-delete/">CephFS delayed deletion</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../dev_cluster_deployement/">Deploying a development cluster</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../dev_cluster_deployement/#deploying-multiple-development-clusters-on-the-same-machine">Deploying multiple development clusters on the same machine</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../development-workflow/">Development workflows</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../documenting/">Documenting Ceph</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../encoding/">Serialization (encode/decode)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../erasure-coded-pool/">Erasure Coded pool</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../file-striping/">File striping</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../freebsd/">FreeBSD Implementation details</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../generatedocs/">Building Ceph Documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../iana/">IANA Numbers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../kubernetes/">Hacking on Ceph in Kubernetes with Rook</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../libs/">Library architecture</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../logging/">Use of the cluster log</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../logs/">Debug logs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../macos/">build on MacOS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../messenger/">Messenger notes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../mon-bootstrap/">Monitor bootstrap</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../mon-elections/">Monitor Elections</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../mon-on-disk-formats/">ON-DISK FORMAT</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../mon-osdmap-prune/">FULL OSDMAP VERSION PRUNING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../msgr2/">msgr2 protocol (msgr2.0 and msgr2.1)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../network-encoding/">Network Encoding</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../network-protocol/">Network Protocol</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../object-store/">Object Store Architecture Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../osd-class-path/">OSD class path issues</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../peering/">Peering</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../perf/">Using perf</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../perf_counters/">Perf counters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../perf_histograms/">Perf histograms</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../placement-group/">PG (Placement Group) notes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../quick_guide/">Developer Guide (Quick)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rados-client-protocol/">RADOS client protocol</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rbd-diff/">RBD Incremental Backup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rbd-export/">RBD Export &amp; Import</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rbd-layering/">RBD Layering</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../release-checklists/">Release checklists</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../release-process/">Ceph Release Process</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../seastore/">SeaStore</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../sepia/">Sepia community test lab</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../session_authentication/">Session Authentication for the Cephx Protocol</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../testing/">Testing notes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../versions/">Public OSD Version</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../vstart-ganesha/">NFS CephFS-RGW Developer Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../wireshark/">Wireshark Dissector</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Zoned Storage Support</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../osd_internals/">OSD developer documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../mds_internals/">MDS developer documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../radosgw/">RADOS Gateway developer documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../ceph-volume/">ceph-volume developer documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../crimson/">Crimson developer documentation</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../osd_internals/" title="OSD developer documentation"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../wireshark/" title="Wireshark Dissector"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../internals/" >Ceph Internals</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Zoned Storage Support</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

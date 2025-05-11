@@ -1,0 +1,907 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>msgr2 protocol (msgr2.0 and msgr2.1) &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css" />
+    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../genindex/" />
+    <link rel="search" title="Search" href="../../search/" />
+    <link rel="next" title="Network Encoding" href="../network-encoding/" />
+    <link rel="prev" title="FULL OSDMAP VERSION PRUNING" href="../mon-osdmap-prune/" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../network-encoding/" title="Network Encoding"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../mon-osdmap-prune/" title="FULL OSDMAP VERSION PRUNING"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../internals/" accesskey="U">Ceph Internals</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">msgr2 protocol (msgr2.0 and msgr2.1)</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="msgr2-protocol-msgr2-0-and-msgr2-1">
+<span id="msgr2-protocol"></span><h1>msgr2 protocol (msgr2.0 and msgr2.1)<a class="headerlink" href="#msgr2-protocol-msgr2-0-and-msgr2-1" title="Permalink to this heading">¶</a></h1>
+<p>This is a revision of the legacy Ceph on-wire protocol that was
+implemented by the SimpleMessenger.  It addresses performance and
+security issues.</p>
+<section id="goals">
+<h2>Goals<a class="headerlink" href="#goals" title="Permalink to this heading">¶</a></h2>
+<p>This protocol revision has several goals relative to the original protocol:</p>
+<ul class="simple">
+<li><p><em>Flexible handshaking</em>.  The original protocol did not have a
+sufficiently flexible protocol negotiation that allows for features
+that were not required.</p></li>
+<li><p><em>Encryption</em>.  We will incorporate encryption over the wire.</p></li>
+<li><p><em>Performance</em>.  We would like to provide for protocol features
+(e.g., padding) that keep computation and memory copies out of the
+fast path where possible.</p></li>
+<li><p><em>Signing</em>.  We will allow for traffic to be signed (but not
+necessarily encrypted).  This is not implemented.</p></li>
+</ul>
+</section>
+<section id="definitions">
+<h2>Definitions<a class="headerlink" href="#definitions" title="Permalink to this heading">¶</a></h2>
+<ul class="simple">
+<li><p><em>client</em> (C): the party initiating a (TCP) connection</p></li>
+<li><p><em>server</em> (S): the party accepting a (TCP) connection</p></li>
+<li><p><em>connection</em>: an instance of a (TCP) connection between two processes.</p></li>
+<li><p><em>entity</em>: a ceph entity instantiation, e.g. ‘osd.0’.  each entity
+has one or more unique entity_addr_t’s by virtue of the ‘nonce’
+field, which is typically a pid or random value.</p></li>
+<li><p><em>session</em>: a stateful session between two entities in which message
+exchange is ordered and lossless.  A session might span multiple
+connections if there is an interruption (TCP connection disconnect).</p></li>
+<li><p><em>frame</em>: a discrete message sent between the peers.  Each frame
+consists of a tag (type code), payload, and (if signing
+or encryption is enabled) some other fields.  See below for the
+structure.</p></li>
+<li><p><em>tag</em>: a type code associated with a frame.  The tag
+determines the structure of the payload.</p></li>
+</ul>
+</section>
+<section id="phases">
+<h2>Phases<a class="headerlink" href="#phases" title="Permalink to this heading">¶</a></h2>
+<p>A connection has four distinct phases:</p>
+<ol class="arabic simple">
+<li><p>banner</p></li>
+<li><p>authentication frame exchange</p></li>
+<li><p>message flow handshake frame exchange</p></li>
+<li><p>message frame exchange</p></li>
+</ol>
+</section>
+<section id="banner">
+<h2>Banner<a class="headerlink" href="#banner" title="Permalink to this heading">¶</a></h2>
+<p>Both the client and server, upon connecting, send a banner:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="s2">&quot;ceph v2</span><span class="se">\n</span><span class="s2">&quot;</span>
+<span class="n">__le16</span> <span class="n">banner</span> <span class="n">payload</span> <span class="n">length</span>
+<span class="n">banner</span> <span class="n">payload</span>
+</pre></div>
+</div>
+<p>A banner payload has the form:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">__le64</span> <span class="n">peer_supported_features</span>
+<span class="n">__le64</span> <span class="n">peer_required_features</span>
+</pre></div>
+</div>
+<p>This is a new, distinct feature bit namespace (CEPH_MSGR2_*).
+Currently, only CEPH_MSGR2_FEATURE_REVISION_1 is defined. It is
+supported but not required, so that msgr2.0 and msgr2.1 peers
+can talk to each other.</p>
+<p>If the remote party advertises required features we don’t support, we
+can disconnect.</p>
+<p class="ditaa">
+<img src="../../_images/ditaa-9df821373df33ce5c3706e203462d5c5fbca1c8d.png"/>
+</p>
+</section>
+<section id="frame-format">
+<h2>Frame format<a class="headerlink" href="#frame-format" title="Permalink to this heading">¶</a></h2>
+<p>After the banners are exchanged, all further communication happens
+in frames.  The exact format of the frame depends on the connection
+mode (msgr2.0-crc, msgr2.0-secure, msgr2.1-crc or msgr2.1-secure).
+All connections start in crc mode (either msgr2.0-crc or msgr2.1-crc,
+depending on peer_supported_features from the banner).</p>
+<p>Each frame has a 32-byte preamble:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">__u8</span> <span class="n">tag</span>
+<span class="n">__u8</span> <span class="n">number</span> <span class="n">of</span> <span class="n">segments</span>
+<span class="p">{</span>
+  <span class="n">__le32</span> <span class="n">segment</span> <span class="n">length</span>
+  <span class="n">__le16</span> <span class="n">segment</span> <span class="n">alignment</span>
+<span class="p">}</span> <span class="o">*</span> <span class="mi">4</span>
+<span class="n">reserved</span> <span class="p">(</span><span class="mi">2</span> <span class="nb">bytes</span><span class="p">)</span>
+<span class="n">__le32</span> <span class="n">preamble</span> <span class="n">crc</span>
+</pre></div>
+</div>
+<p>An empty frame has one empty segment.  A non-empty frame can have
+between one and four segments, all segments except the last may be
+empty.</p>
+<p>If there are less than four segments, unused (trailing) segment
+length and segment alignment fields are zeroed.</p>
+<p>The reserved bytes are zeroed.</p>
+<p>The preamble checksum is CRC32-C.  It covers everything up to
+itself (28 bytes) and is calculated and verified irrespective of
+the connection mode (i.e. even if the frame is encrypted).</p>
+<p>### msgr2.0-crc mode</p>
+<p>A msgr2.0-crc frame has the form:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">preamble</span> <span class="p">(</span><span class="mi">32</span> <span class="nb">bytes</span><span class="p">)</span>
+<span class="p">{</span>
+  <span class="n">segment</span> <span class="n">payload</span>
+<span class="p">}</span> <span class="o">*</span> <span class="n">number</span> <span class="n">of</span> <span class="n">segments</span>
+<span class="n">epilogue</span> <span class="p">(</span><span class="mi">17</span> <span class="nb">bytes</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>where epilogue is:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">__u8</span> <span class="n">late_flags</span>
+<span class="p">{</span>
+  <span class="n">__le32</span> <span class="n">segment</span> <span class="n">crc</span>
+<span class="p">}</span> <span class="o">*</span> <span class="mi">4</span>
+</pre></div>
+</div>
+<p>late_flags is used for frame abortion.  After transmitting the
+preamble and the first segment, the sender can fill the remaining
+segments with zeros and set a flag to indicate that the receiver must
+drop the frame.  This allows the sender to avoid extra buffering
+when a frame that is being put on the wire is revoked (i.e. yanked
+out of the messenger): payload buffers can be unpinned and handed
+back to the user immediately, without making a copy or blocking
+until the whole frame is transmitted.  Currently this is used only
+by the kernel client, see ceph_msg_revoke().</p>
+<p>The segment checksum is CRC32-C.  For “used” empty segments, it is
+set to (__le32)-1.  For unused (trailing) segments, it is zeroed.</p>
+<p>The crcs are calculated just to protect against bit errors.
+No authenticity guarantees are provided, unlike in msgr1 which
+attempted to provide some authenticity guarantee by optionally
+signing segment lengths and crcs with the session key.</p>
+<p>Issues:</p>
+<ol class="arabic">
+<li><p>As part of introducing a structure for a generic frame with
+variable number of segments suitable for both control and
+message frames, msgr2.0 moved the crc of the first segment of
+the message frame (ceph_msg_header2) into the epilogue.</p>
+<p>As a result, ceph_msg_header2 can no longer be safely
+interpreted before the whole frame is read off the wire.
+This is a regression from msgr1, because in order to scatter
+the payload directly into user-provided buffers and thus avoid
+extra buffering and copying when receiving message frames,
+ceph_msg_header2 must be available in advance – it stores
+the transaction id which the user buffers are keyed on.
+The implementation has to choose between forgoing this
+optimization or acting on an unverified segment.</p>
+</li>
+<li><p>late_flags is not covered by any crc.  Since it stores the
+abort flag, a single bit flip can result in a completed frame
+being dropped (causing the sender to hang waiting for a reply)
+or, worse, in an aborted frame with garbage segment payloads
+being dispatched.</p>
+<p>This was the case with msgr1 and got carried over to msgr2.0.</p>
+</li>
+</ol>
+<p>### msgr2.1-crc mode</p>
+<p>Differences from msgr2.0-crc:</p>
+<ol class="arabic">
+<li><p>The crc of the first segment is stored at the end of the
+first segment, not in the epilogue.  The epilogue stores up to
+three crcs, not up to four.</p>
+<p>If the first segment is empty, (__le32)-1 crc is not generated.</p>
+</li>
+<li><p>The epilogue is generated only if the frame has more than one
+segment (i.e. at least one of second to fourth segments is not
+empty).  Rationale: If the frame has only one segment, it cannot
+be aborted and there are no crcs to store in the epilogue.</p></li>
+<li><p>Unchecksummed late_flags is replaced with late_status which
+builds in bit error detection by using a 4-bit nibble per flag
+and two code words that are Hamming Distance = 4 apart (and not
+all zeros or ones).  This comes at the expense of having only
+one reserved flag, of course.</p></li>
+</ol>
+<p>Some example frames:</p>
+<ul>
+<li><p>A 0+0+0+0 frame (empty, no epilogue):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">preamble</span> <span class="p">(</span><span class="mi">32</span> <span class="nb">bytes</span><span class="p">)</span>
+</pre></div>
+</div>
+</li>
+<li><p>A 20+0+0+0 frame (no epilogue):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">preamble</span> <span class="p">(</span><span class="mi">32</span> <span class="nb">bytes</span><span class="p">)</span>
+<span class="n">segment1</span> <span class="n">payload</span> <span class="p">(</span><span class="mi">20</span> <span class="nb">bytes</span><span class="p">)</span>
+<span class="n">__le32</span> <span class="n">segment1</span> <span class="n">crc</span>
+</pre></div>
+</div>
+</li>
+<li><p>A 0+70+0+0 frame:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">preamble</span> <span class="p">(</span><span class="mi">32</span> <span class="nb">bytes</span><span class="p">)</span>
+<span class="n">segment2</span> <span class="n">payload</span> <span class="p">(</span><span class="mi">70</span> <span class="nb">bytes</span><span class="p">)</span>
+<span class="n">epilogue</span> <span class="p">(</span><span class="mi">13</span> <span class="nb">bytes</span><span class="p">)</span>
+</pre></div>
+</div>
+</li>
+<li><p>A 20+70+0+350 frame:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">preamble</span> <span class="p">(</span><span class="mi">32</span> <span class="nb">bytes</span><span class="p">)</span>
+<span class="n">segment1</span> <span class="n">payload</span> <span class="p">(</span><span class="mi">20</span> <span class="nb">bytes</span><span class="p">)</span>
+<span class="n">__le32</span> <span class="n">segment1</span> <span class="n">crc</span>
+<span class="n">segment2</span> <span class="n">payload</span> <span class="p">(</span><span class="mi">70</span> <span class="nb">bytes</span><span class="p">)</span>
+<span class="n">segment4</span> <span class="n">payload</span> <span class="p">(</span><span class="mi">350</span> <span class="nb">bytes</span><span class="p">)</span>
+<span class="n">epilogue</span> <span class="p">(</span><span class="mi">13</span> <span class="nb">bytes</span><span class="p">)</span>
+</pre></div>
+</div>
+</li>
+</ul>
+<p>where epilogue is:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">__u8</span> <span class="n">late_status</span>
+<span class="p">{</span>
+  <span class="n">__le32</span> <span class="n">segment</span> <span class="n">crc</span>
+<span class="p">}</span> <span class="o">*</span> <span class="mi">3</span>
+</pre></div>
+</div>
+</section>
+<section id="hello">
+<h2>Hello<a class="headerlink" href="#hello" title="Permalink to this heading">¶</a></h2>
+<ul>
+<li><p>TAG_HELLO: client-&gt;server and server-&gt;client:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">__u8</span> <span class="n">entity_type</span>
+<span class="n">entity_addr_t</span> <span class="n">peer_socket_address</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>We immediately share our entity type and the address of the peer (which can be useful
+for detecting our effective IP address, especially in the presence of NAT).</p></li>
+</ul>
+</li>
+</ul>
+</section>
+<section id="authentication">
+<h2>Authentication<a class="headerlink" href="#authentication" title="Permalink to this heading">¶</a></h2>
+<ul>
+<li><p>TAG_AUTH_REQUEST: client-&gt;server:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">__le32</span> <span class="n">method</span><span class="p">;</span>  <span class="o">//</span> <span class="n">CEPH_AUTH_</span><span class="p">{</span><span class="n">NONE</span><span class="p">,</span> <span class="n">CEPHX</span><span class="p">,</span> <span class="o">...</span><span class="p">}</span>
+<span class="n">__le32</span> <span class="n">num_preferred_modes</span><span class="p">;</span>
+<span class="nb">list</span><span class="o">&lt;</span><span class="n">__le32</span><span class="o">&gt;</span> <span class="n">mode</span>  <span class="o">//</span> <span class="n">CEPH_CON_MODE_</span><span class="o">*</span>
+<span class="n">method</span> <span class="n">specific</span> <span class="n">payload</span>
+</pre></div>
+</div>
+</li>
+<li><p>TAG_AUTH_BAD_METHOD server -&gt; client: reject client-selected auth method:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">__le32</span> <span class="n">method</span>
+<span class="n">__le32</span> <span class="n">negative</span> <span class="n">error</span> <span class="n">result</span> <span class="n">code</span>
+<span class="n">__le32</span> <span class="n">num_methods</span>
+<span class="nb">list</span><span class="o">&lt;</span><span class="n">__le32</span><span class="o">&gt;</span> <span class="n">allowed_methods</span> <span class="o">//</span> <span class="n">CEPH_AUTH_</span><span class="p">{</span><span class="n">NONE</span><span class="p">,</span> <span class="n">CEPHX</span><span class="p">,</span> <span class="o">...</span><span class="p">}</span>
+<span class="n">__le32</span> <span class="n">num_modes</span>
+<span class="nb">list</span><span class="o">&lt;</span><span class="n">__le32</span><span class="o">&gt;</span> <span class="n">allowed_modes</span>   <span class="o">//</span> <span class="n">CEPH_CON_MODE_</span><span class="o">*</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>Returns the attempted auth method, and error code (-EOPNOTSUPP if
+the method is unsupported), and the list of allowed authentication
+methods.</p></li>
+</ul>
+</li>
+<li><p>TAG_AUTH_REPLY_MORE: server-&gt;client:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">__le32</span> <span class="nb">len</span><span class="p">;</span>
+<span class="n">method</span> <span class="n">specific</span> <span class="n">payload</span>
+</pre></div>
+</div>
+</li>
+<li><p>TAG_AUTH_REQUEST_MORE: client-&gt;server:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">__le32</span> <span class="nb">len</span><span class="p">;</span>
+<span class="n">method</span> <span class="n">specific</span> <span class="n">payload</span>
+</pre></div>
+</div>
+</li>
+<li><p>TAG_AUTH_DONE: (server-&gt;client):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">__le64</span> <span class="n">global_id</span>
+<span class="n">__le32</span> <span class="n">connection</span> <span class="n">mode</span> <span class="o">//</span> <span class="n">CEPH_CON_MODE_</span><span class="o">*</span>
+<span class="n">method</span> <span class="n">specific</span> <span class="n">payload</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>The server is the one to decide authentication has completed and what
+the final connection mode will be.</p></li>
+</ul>
+</li>
+</ul>
+<p>Example of authentication phase interaction when the client uses an
+allowed authentication method:</p>
+<p class="ditaa">
+<img src="../../_images/ditaa-b3d9d50bc691bf95e24301f7892d8175126d55f2.png"/>
+</p>
+<p>Example of authentication phase interaction when the client uses a forbidden
+authentication method as the first attempt:</p>
+<p class="ditaa">
+<img src="../../_images/ditaa-152c7142e0cd71fec0716c2679d8ed52aa9767df.png"/>
+</p>
+</section>
+<section id="post-auth-frame-format">
+<h2>Post-auth frame format<a class="headerlink" href="#post-auth-frame-format" title="Permalink to this heading">¶</a></h2>
+<p>Depending on the negotiated connection mode from TAG_AUTH_DONE, the
+connection either stays in crc mode or switches to the corresponding
+secure mode (msgr2.0-secure or msgr2.1-secure).</p>
+<p>### msgr2.0-secure mode</p>
+<p>A msgr2.0-secure frame has the form:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+  <span class="n">preamble</span> <span class="p">(</span><span class="mi">32</span> <span class="nb">bytes</span><span class="p">)</span>
+  <span class="p">{</span>
+    <span class="n">segment</span> <span class="n">payload</span>
+    <span class="n">zero</span> <span class="n">padding</span> <span class="p">(</span><span class="n">out</span> <span class="n">to</span> <span class="mi">16</span> <span class="nb">bytes</span><span class="p">)</span>
+  <span class="p">}</span> <span class="o">*</span> <span class="n">number</span> <span class="n">of</span> <span class="n">segments</span>
+  <span class="n">epilogue</span> <span class="p">(</span><span class="mi">16</span> <span class="nb">bytes</span><span class="p">)</span>
+<span class="p">}</span> <span class="o">^</span> <span class="n">AES</span><span class="o">-</span><span class="mi">128</span><span class="o">-</span><span class="n">GCM</span> <span class="n">cipher</span>
+<span class="n">auth</span> <span class="n">tag</span> <span class="p">(</span><span class="mi">16</span> <span class="nb">bytes</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>where epilogue is:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">__u8</span> <span class="n">late_flags</span>
+<span class="n">zero</span> <span class="n">padding</span> <span class="p">(</span><span class="mi">15</span> <span class="nb">bytes</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>late_flags has the same meaning as in msgr2.0-crc mode.</p>
+<p>Each segment and the epilogue are zero padded out to 16 bytes.
+Technically, GCM doesn’t require any padding because Counter mode
+(the C in GCM) essentially turns a block cipher into a stream cipher.
+But, if the overall input length is not a multiple of 16 bytes, some
+implicit zero padding would occur internally because GHASH function
+used by GCM for generating auth tags only works on 16-byte blocks.</p>
+<p>Issues:</p>
+<ol class="arabic">
+<li><p>The sender encrypts the whole frame using a single nonce
+and generating a single auth tag.  Because segment lengths are
+stored in the preamble, the receiver has no choice but to decrypt
+and interpret the preamble without verifying the auth tag – it
+can’t even tell how much to read off the wire to get the auth tag
+otherwise!  This creates a decryption oracle, which, in conjunction
+with Counter mode malleability, could lead to recovery of sensitive
+information.</p>
+<p>This issue extends to the first segment of the message frame as
+well.  As in msgr2.0-crc mode, ceph_msg_header2 cannot be safely
+interpreted before the whole frame is read off the wire.</p>
+</li>
+<li><p>Deterministic nonce construction with a 4-byte counter field
+followed by an 8-byte fixed field is used.  The initial values are
+taken from the connection secret – a random byte string generated
+during the authentication phase.  Because the counter field is
+only four bytes long, it can wrap and then repeat in under a day,
+leading to GCM nonce reuse and therefore a potential complete
+loss of both authenticity and confidentiality for the connection.
+This was addressed by disconnecting before the counter repeats
+(CVE-2020-1759).</p></li>
+</ol>
+<p>### msgr2.1-secure mode</p>
+<p>Differences from msgr2.0-secure:</p>
+<ol class="arabic">
+<li><p>The preamble, the first segment and the rest of the frame are
+encrypted separately, using separate nonces and generating
+separate auth tags.  This gets rid of unverified plaintext use
+and keeps msgr2.1-secure mode close to msgr2.1-crc mode, allowing
+the implementation to receive message frames in a similar fashion
+(little to no buffering, same scatter/gather logic, etc).</p>
+<p>In order to reduce the number of en/decryption operations per
+frame, the preamble is grown by a fixed size inline buffer (48
+bytes) that the first segment is inlined into, either fully or
+partially.  The preamble auth tag covers both the preamble and the
+inline buffer, so if the first segment is small enough to be fully
+inlined, it becomes available after a single decryption operation.</p>
+</li>
+<li><p>As in msgr2.1-crc mode, the epilogue is generated only if the
+frame has more than one segment.  The rationale is even stronger,
+as it would require an extra en/decryption operation.</p></li>
+<li><p>For consistency with msgr2.1-crc mode, late_flags is replaced
+with late_status (the built-in bit error detection isn’t really
+needed in secure mode).</p></li>
+<li><p>In accordance with <a class="reference external" href="https://nvlpubs.nist.gov/nistpubs/Legacy/SP/nistspecialpublication800-38d.pdf">NIST Recommendation for GCM</a>, deterministic
+nonce construction with a 4-byte fixed field followed by an 8-byte
+counter field is used.  An 8-byte counter field should never repeat
+but the nonce reuse protection put in place for msgr2.0-secure mode
+is still there.</p>
+<p>The initial values are the same as in msgr2.0-secure mode.</p>
+</li>
+</ol>
+<p>As in msgr2.0-secure mode, each segment is zero padded out to
+16 bytes.  If the first segment is fully inlined, its padding goes
+to the inline buffer.  Otherwise, the padding is on the remainder.
+The corollary to this is that the inline buffer is consumed in
+16-byte chunks.</p>
+<p>The unused portion of the inline buffer is zeroed.</p>
+<p>Some example frames:</p>
+<ul>
+<li><p>A 0+0+0+0 frame (empty, nothing to inline, no epilogue):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+  <span class="n">preamble</span> <span class="p">(</span><span class="mi">32</span> <span class="nb">bytes</span><span class="p">)</span>
+  <span class="n">zero</span> <span class="n">padding</span> <span class="p">(</span><span class="mi">48</span> <span class="nb">bytes</span><span class="p">)</span>
+<span class="p">}</span> <span class="o">^</span> <span class="n">AES</span><span class="o">-</span><span class="mi">128</span><span class="o">-</span><span class="n">GCM</span> <span class="n">cipher</span>
+<span class="n">auth</span> <span class="n">tag</span> <span class="p">(</span><span class="mi">16</span> <span class="nb">bytes</span><span class="p">)</span>
+</pre></div>
+</div>
+</li>
+<li><p>A 20+0+0+0 frame (first segment fully inlined, no epilogue):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+  <span class="n">preamble</span> <span class="p">(</span><span class="mi">32</span> <span class="nb">bytes</span><span class="p">)</span>
+  <span class="n">segment1</span> <span class="n">payload</span> <span class="p">(</span><span class="mi">20</span> <span class="nb">bytes</span><span class="p">)</span>
+  <span class="n">zero</span> <span class="n">padding</span> <span class="p">(</span><span class="mi">28</span> <span class="nb">bytes</span><span class="p">)</span>
+<span class="p">}</span> <span class="o">^</span> <span class="n">AES</span><span class="o">-</span><span class="mi">128</span><span class="o">-</span><span class="n">GCM</span> <span class="n">cipher</span>
+<span class="n">auth</span> <span class="n">tag</span> <span class="p">(</span><span class="mi">16</span> <span class="nb">bytes</span><span class="p">)</span>
+</pre></div>
+</div>
+</li>
+<li><p>A 0+70+0+0 frame (nothing to inline):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+  <span class="n">preamble</span> <span class="p">(</span><span class="mi">32</span> <span class="nb">bytes</span><span class="p">)</span>
+  <span class="n">zero</span> <span class="n">padding</span> <span class="p">(</span><span class="mi">48</span> <span class="nb">bytes</span><span class="p">)</span>
+<span class="p">}</span> <span class="o">^</span> <span class="n">AES</span><span class="o">-</span><span class="mi">128</span><span class="o">-</span><span class="n">GCM</span> <span class="n">cipher</span>
+<span class="n">auth</span> <span class="n">tag</span> <span class="p">(</span><span class="mi">16</span> <span class="nb">bytes</span><span class="p">)</span>
+<span class="p">{</span>
+  <span class="n">segment2</span> <span class="n">payload</span> <span class="p">(</span><span class="mi">70</span> <span class="nb">bytes</span><span class="p">)</span>
+  <span class="n">zero</span> <span class="n">padding</span> <span class="p">(</span><span class="mi">10</span> <span class="nb">bytes</span><span class="p">)</span>
+  <span class="n">epilogue</span> <span class="p">(</span><span class="mi">16</span> <span class="nb">bytes</span><span class="p">)</span>
+<span class="p">}</span> <span class="o">^</span> <span class="n">AES</span><span class="o">-</span><span class="mi">128</span><span class="o">-</span><span class="n">GCM</span> <span class="n">cipher</span>
+<span class="n">auth</span> <span class="n">tag</span> <span class="p">(</span><span class="mi">16</span> <span class="nb">bytes</span><span class="p">)</span>
+</pre></div>
+</div>
+</li>
+<li><p>A 20+70+0+350 frame (first segment fully inlined):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+  <span class="n">preamble</span> <span class="p">(</span><span class="mi">32</span> <span class="nb">bytes</span><span class="p">)</span>
+  <span class="n">segment1</span> <span class="n">payload</span> <span class="p">(</span><span class="mi">20</span> <span class="nb">bytes</span><span class="p">)</span>
+  <span class="n">zero</span> <span class="n">padding</span> <span class="p">(</span><span class="mi">28</span> <span class="nb">bytes</span><span class="p">)</span>
+<span class="p">}</span> <span class="o">^</span> <span class="n">AES</span><span class="o">-</span><span class="mi">128</span><span class="o">-</span><span class="n">GCM</span> <span class="n">cipher</span>
+<span class="n">auth</span> <span class="n">tag</span> <span class="p">(</span><span class="mi">16</span> <span class="nb">bytes</span><span class="p">)</span>
+<span class="p">{</span>
+  <span class="n">segment2</span> <span class="n">payload</span> <span class="p">(</span><span class="mi">70</span> <span class="nb">bytes</span><span class="p">)</span>
+  <span class="n">zero</span> <span class="n">padding</span> <span class="p">(</span><span class="mi">10</span> <span class="nb">bytes</span><span class="p">)</span>
+  <span class="n">segment4</span> <span class="n">payload</span> <span class="p">(</span><span class="mi">350</span> <span class="nb">bytes</span><span class="p">)</span>
+  <span class="n">zero</span> <span class="n">padding</span> <span class="p">(</span><span class="mi">2</span> <span class="nb">bytes</span><span class="p">)</span>
+  <span class="n">epilogue</span> <span class="p">(</span><span class="mi">16</span> <span class="nb">bytes</span><span class="p">)</span>
+<span class="p">}</span> <span class="o">^</span> <span class="n">AES</span><span class="o">-</span><span class="mi">128</span><span class="o">-</span><span class="n">GCM</span> <span class="n">cipher</span>
+<span class="n">auth</span> <span class="n">tag</span> <span class="p">(</span><span class="mi">16</span> <span class="nb">bytes</span><span class="p">)</span>
+</pre></div>
+</div>
+</li>
+<li><p>A 105+0+0+0 frame (first segment partially inlined, no epilogue):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+  <span class="n">preamble</span> <span class="p">(</span><span class="mi">32</span> <span class="nb">bytes</span><span class="p">)</span>
+  <span class="n">segment1</span> <span class="n">payload</span> <span class="p">(</span><span class="mi">48</span> <span class="nb">bytes</span><span class="p">)</span>
+<span class="p">}</span> <span class="o">^</span> <span class="n">AES</span><span class="o">-</span><span class="mi">128</span><span class="o">-</span><span class="n">GCM</span> <span class="n">cipher</span>
+<span class="n">auth</span> <span class="n">tag</span> <span class="p">(</span><span class="mi">16</span> <span class="nb">bytes</span><span class="p">)</span>
+<span class="p">{</span>
+  <span class="n">segment1</span> <span class="n">payload</span> <span class="n">remainder</span> <span class="p">(</span><span class="mi">57</span> <span class="nb">bytes</span><span class="p">)</span>
+  <span class="n">zero</span> <span class="n">padding</span> <span class="p">(</span><span class="mi">7</span> <span class="nb">bytes</span><span class="p">)</span>
+<span class="p">}</span> <span class="o">^</span> <span class="n">AES</span><span class="o">-</span><span class="mi">128</span><span class="o">-</span><span class="n">GCM</span> <span class="n">cipher</span>
+<span class="n">auth</span> <span class="n">tag</span> <span class="p">(</span><span class="mi">16</span> <span class="nb">bytes</span><span class="p">)</span>
+</pre></div>
+</div>
+</li>
+<li><p>A 105+70+0+350 frame (first segment partially inlined):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+  <span class="n">preamble</span> <span class="p">(</span><span class="mi">32</span> <span class="nb">bytes</span><span class="p">)</span>
+  <span class="n">segment1</span> <span class="n">payload</span> <span class="p">(</span><span class="mi">48</span> <span class="nb">bytes</span><span class="p">)</span>
+<span class="p">}</span> <span class="o">^</span> <span class="n">AES</span><span class="o">-</span><span class="mi">128</span><span class="o">-</span><span class="n">GCM</span> <span class="n">cipher</span>
+<span class="n">auth</span> <span class="n">tag</span> <span class="p">(</span><span class="mi">16</span> <span class="nb">bytes</span><span class="p">)</span>
+<span class="p">{</span>
+  <span class="n">segment1</span> <span class="n">payload</span> <span class="n">remainder</span> <span class="p">(</span><span class="mi">57</span> <span class="nb">bytes</span><span class="p">)</span>
+  <span class="n">zero</span> <span class="n">padding</span> <span class="p">(</span><span class="mi">7</span> <span class="nb">bytes</span><span class="p">)</span>
+<span class="p">}</span> <span class="o">^</span> <span class="n">AES</span><span class="o">-</span><span class="mi">128</span><span class="o">-</span><span class="n">GCM</span> <span class="n">cipher</span>
+<span class="n">auth</span> <span class="n">tag</span> <span class="p">(</span><span class="mi">16</span> <span class="nb">bytes</span><span class="p">)</span>
+<span class="p">{</span>
+  <span class="n">segment2</span> <span class="n">payload</span> <span class="p">(</span><span class="mi">70</span> <span class="nb">bytes</span><span class="p">)</span>
+  <span class="n">zero</span> <span class="n">padding</span> <span class="p">(</span><span class="mi">10</span> <span class="nb">bytes</span><span class="p">)</span>
+  <span class="n">segment4</span> <span class="n">payload</span> <span class="p">(</span><span class="mi">350</span> <span class="nb">bytes</span><span class="p">)</span>
+  <span class="n">zero</span> <span class="n">padding</span> <span class="p">(</span><span class="mi">2</span> <span class="nb">bytes</span><span class="p">)</span>
+  <span class="n">epilogue</span> <span class="p">(</span><span class="mi">16</span> <span class="nb">bytes</span><span class="p">)</span>
+<span class="p">}</span> <span class="o">^</span> <span class="n">AES</span><span class="o">-</span><span class="mi">128</span><span class="o">-</span><span class="n">GCM</span> <span class="n">cipher</span>
+<span class="n">auth</span> <span class="n">tag</span> <span class="p">(</span><span class="mi">16</span> <span class="nb">bytes</span><span class="p">)</span>
+</pre></div>
+</div>
+</li>
+</ul>
+<p>where epilogue is:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">__u8</span> <span class="n">late_status</span>
+<span class="n">zero</span> <span class="n">padding</span> <span class="p">(</span><span class="mi">15</span> <span class="nb">bytes</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>late_status has the same meaning as in msgr2.1-crc mode.</p>
+</section>
+<section id="message-flow-handshake">
+<h2>Message flow handshake<a class="headerlink" href="#message-flow-handshake" title="Permalink to this heading">¶</a></h2>
+<p>In this phase the peers identify each other and (if desired) reconnect to
+an established session.</p>
+<ul>
+<li><p>TAG_CLIENT_IDENT (client-&gt;server): identify ourselves:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">__le32</span> <span class="n">num_addrs</span>
+<span class="n">entity_addrvec_t</span><span class="o">*</span><span class="n">num_addrs</span> <span class="n">entity</span> <span class="n">addrs</span>
+<span class="n">entity_addr_t</span> <span class="n">target</span> <span class="n">entity</span> <span class="n">addr</span>
+<span class="n">__le64</span> <span class="n">gid</span> <span class="p">(</span><span class="n">numeric</span> <span class="n">part</span> <span class="n">of</span> <span class="n">osd</span><span class="mf">.0</span><span class="p">,</span> <span class="n">client</span><span class="mf">.123456</span><span class="p">,</span> <span class="o">...</span><span class="p">)</span>
+<span class="n">__le64</span> <span class="n">global_seq</span>
+<span class="n">__le64</span> <span class="n">features</span> <span class="n">supported</span> <span class="p">(</span><span class="n">CEPH_FEATURE_</span><span class="o">*</span> <span class="n">bitmask</span><span class="p">)</span>
+<span class="n">__le64</span> <span class="n">features</span> <span class="n">required</span> <span class="p">(</span><span class="n">CEPH_FEATURE_</span><span class="o">*</span> <span class="n">bitmask</span><span class="p">)</span>
+<span class="n">__le64</span> <span class="n">flags</span> <span class="p">(</span><span class="n">CEPH_MSG_CONNECT_</span><span class="o">*</span> <span class="n">bitmask</span><span class="p">)</span>
+<span class="n">__le64</span> <span class="n">cookie</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>client will send first, server will reply with same.  if this is a
+new session, the client and server can proceed to the message exchange.</p></li>
+<li><p>the target addr is who the client is trying to connect <em>to</em>, so
+that the server side can close the connection if the client is
+talking to the wrong daemon.</p></li>
+<li><p>type.gid (entity_name_t) is set here, by combinging the type shared in the hello
+frame with the gid here.  this means we don’t need it
+in the header of every message.  it also means that we can’t send
+messages “from” other entity_name_t’s.  the current
+implementations set this at the top of _send_message etc so this
+shouldn’t break any existing functionality.  implementation will
+likely want to mask this against what the authenticated credential
+allows.</p></li>
+<li><p>cookie is the client coookie used to identify a session, and can be used
+to reconnect to an existing session.</p></li>
+<li><p>we’ve dropped the ‘protocol_version’ field from msgr1</p></li>
+</ul>
+</li>
+<li><p>TAG_IDENT_MISSING_FEATURES (server-&gt;client): complain about a TAG_IDENT
+with too few features:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">__le64</span> <span class="n">features</span> <span class="n">we</span> <span class="n">require</span> <span class="n">that</span> <span class="n">the</span> <span class="n">peer</span> <span class="n">didn</span><span class="s1">&#39;t advertise</span>
+</pre></div>
+</div>
+</li>
+<li><p>TAG_SERVER_IDENT (server-&gt;client): accept client ident and identify server:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">__le32</span> <span class="n">num_addrs</span>
+<span class="n">entity_addrvec_t</span><span class="o">*</span><span class="n">num_addrs</span> <span class="n">entity</span> <span class="n">addrs</span>
+<span class="n">__le64</span> <span class="n">gid</span> <span class="p">(</span><span class="n">numeric</span> <span class="n">part</span> <span class="n">of</span> <span class="n">osd</span><span class="mf">.0</span><span class="p">,</span> <span class="n">client</span><span class="mf">.123456</span><span class="p">,</span> <span class="o">...</span><span class="p">)</span>
+<span class="n">__le64</span> <span class="n">global_seq</span>
+<span class="n">__le64</span> <span class="n">features</span> <span class="n">supported</span> <span class="p">(</span><span class="n">CEPH_FEATURE_</span><span class="o">*</span> <span class="n">bitmask</span><span class="p">)</span>
+<span class="n">__le64</span> <span class="n">features</span> <span class="n">required</span> <span class="p">(</span><span class="n">CEPH_FEATURE_</span><span class="o">*</span> <span class="n">bitmask</span><span class="p">)</span>
+<span class="n">__le64</span> <span class="n">flags</span> <span class="p">(</span><span class="n">CEPH_MSG_CONNECT_</span><span class="o">*</span> <span class="n">bitmask</span><span class="p">)</span>
+<span class="n">__le64</span> <span class="n">cookie</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>The server cookie can be used by the client if it is later disconnected
+and wants to reconnect and resume the session.</p></li>
+</ul>
+</li>
+<li><p>TAG_RECONNECT (client-&gt;server): reconnect to an established session:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">__le32</span> <span class="n">num_addrs</span>
+<span class="n">entity_addr_t</span> <span class="o">*</span> <span class="n">num_addrs</span>
+<span class="n">__le64</span> <span class="n">client_cookie</span>
+<span class="n">__le64</span> <span class="n">server_cookie</span>
+<span class="n">__le64</span> <span class="n">global_seq</span>
+<span class="n">__le64</span> <span class="n">connect_seq</span>
+<span class="n">__le64</span> <span class="n">msg_seq</span> <span class="p">(</span><span class="n">the</span> <span class="n">last</span> <span class="n">msg</span> <span class="n">seq</span> <span class="n">received</span><span class="p">)</span>
+</pre></div>
+</div>
+</li>
+<li><p>TAG_RECONNECT_OK (server-&gt;client): acknowledge a reconnect attempt:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">__le64</span> <span class="n">msg_seq</span> <span class="p">(</span><span class="n">last</span> <span class="n">msg</span> <span class="n">seq</span> <span class="n">received</span><span class="p">)</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>once the client receives this, the client can proceed to message exchange.</p></li>
+<li><p>once the server sends this, the server can proceed to message exchange.</p></li>
+</ul>
+</li>
+<li><p>TAG_RECONNECT_RETRY_SESSION (server only): fail reconnect due to stale connect_seq</p></li>
+<li><p>TAG_RECONNECT_RETRY_GLOBAL (server only): fail reconnect due to stale global_seq</p></li>
+<li><p>TAG_RECONNECT_WAIT (server only): fail reconnect due to connect race.</p>
+<ul class="simple">
+<li><p>Indicates that the server is already connecting to the client, and
+that direction should win the race.  The client should wait for that
+connection to complete.</p></li>
+</ul>
+</li>
+<li><p>TAG_RESET_SESSION (server only): ask client to reset session:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">__u8</span> <span class="n">full</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>full flag indicates whether peer should do a full reset, i.e., drop
+message queue.</p></li>
+</ul>
+</li>
+</ul>
+<p>Example of failure scenarios:</p>
+<ul class="simple">
+<li><p>First client’s client_ident message is lost, and then client reconnects.</p></li>
+</ul>
+<p class="ditaa">
+<img src="../../_images/ditaa-b39bae9af6fb2b7014aa8ef8732b92c98859ae7c.png"/>
+</p>
+<ul class="simple">
+<li><p>Server’s server_ident message is lost, and then client reconnects.</p></li>
+</ul>
+<p class="ditaa">
+<img src="../../_images/ditaa-c2faea49b2ed89775929e777ad955ffac652ef9a.png"/>
+</p>
+<ul class="simple">
+<li><p>Server’s server_ident message is lost, and then server reconnects.</p></li>
+</ul>
+<p class="ditaa">
+<img src="../../_images/ditaa-3499ae9ebec0fa5d8055ef8d082be339f7e4d1e2.png"/>
+</p>
+<ul class="simple">
+<li><p>Connection failure after session is established, and then client reconnects.</p></li>
+</ul>
+<p class="ditaa">
+<img src="../../_images/ditaa-de127b228f537d562dc400ae3d822e96c26eef19.png"/>
+</p>
+<ul class="simple">
+<li><p>Connection failure after session is established because server reset,
+and then client reconnects.</p></li>
+</ul>
+<p class="ditaa">
+<img src="../../_images/ditaa-87ff8fc9511ca18e7caf0b7bde18b35c96f0edd5.png"/>
+</p>
+<p>RC* means that the reset session full flag depends on the policy.resetcheck
+of the connection.</p>
+<ul class="simple">
+<li><p>Connection failure after session is established because client reset,
+and then client reconnects.</p></li>
+</ul>
+<p class="ditaa">
+<img src="../../_images/ditaa-e53a4c5d63da19632b0e43ac9c7e2d776862036c.png"/>
+</p>
+</section>
+<section id="message-exchange">
+<h2>Message exchange<a class="headerlink" href="#message-exchange" title="Permalink to this heading">¶</a></h2>
+<p>Once a session is established, we can exchange messages.</p>
+<ul>
+<li><p>TAG_MSG: a message:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph_msg_header2</span>
+<span class="n">front</span>
+<span class="n">middle</span>
+<span class="n">data_pre_padding</span>
+<span class="n">data</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><dl class="simple">
+<dt>The ceph_msg_header2 is modified from ceph_msg_header:</dt><dd><ul>
+<li><p>include an ack_seq.  This avoids the need for a TAG_ACK
+message most of the time.</p></li>
+<li><p>remove the src field, which we now get from the message flow
+handshake (TAG_IDENT).</p></li>
+<li><p>specifies the data_pre_padding length, which can be used to
+adjust the alignment of the data payload.  (NOTE: is this is
+useful?)</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+</li>
+<li><p>TAG_ACK: acknowledge receipt of message(s):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">__le64</span> <span class="n">seq</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>This is only used for stateful sessions.</p></li>
+</ul>
+</li>
+<li><p>TAG_KEEPALIVE2: check for connection liveness:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph_timespec</span> <span class="n">stamp</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>Time stamp is local to sender.</p></li>
+</ul>
+</li>
+<li><p>TAG_KEEPALIVE2_ACK: reply to a keepalive2:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph_timestamp</span> <span class="n">stamp</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>Time stamp is from the TAG_KEEPALIVE2 we are responding to.</p></li>
+</ul>
+</li>
+<li><p>TAG_CLOSE: terminate a connection</p>
+<p>Indicates that a connection should be terminated. This is equivalent
+to a hangup or reset (i.e., should trigger ms_handle_reset).  It
+isn’t strictly necessary or useful as we could just disconnect the
+TCP connection.</p>
+</li>
+</ul>
+<section id="example-of-protocol-interaction-wip">
+<h3>Example of protocol interaction (WIP)<a class="headerlink" href="#example-of-protocol-interaction-wip" title="Permalink to this heading">¶</a></h3>
+<p class="ditaa">
+<img src="../../_images/ditaa-7526689750ac7115b002b5d60da3641a4836d8d8.png"/>
+</p>
+</section>
+</section>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../">
+              <img class="logo" src="../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../install/">Installing Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cephadm/">Cephadm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rados/">Ceph Storage Cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cephfs/">Ceph File System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rbd/">Ceph Block Device</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../radosgw/">Ceph Object Gateway</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/">Ceph Manager Daemon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../developer_guide/">Developer Guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../internals/">Ceph Internals</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../blkin/">Tracing Ceph With Blkin</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../bluestore/">BlueStore Internals</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cache-pool/">Cache pool</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../ceph_krb_auth/">A Detailed Documentation on How to Set up Ceph Kerberos Authentication</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cephfs-mirroring/">CephFS Mirroring</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cephfs-reclaim/">CephFS Reclaim Interface</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cephfs-snapshots/">CephFS Snapshots</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cephx/">Cephx</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cephx_protocol/">A Detailed Description of the Cephx Authentication Protocol</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../config/">Configuration Management System</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../config-key/">config-key layout</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../context/">CephContext</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../continuous-integration/">Continuous Integration Architecture</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../corpus/">Corpus structure</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpu-profiler/">Installing Oprofile</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cxx/">C++17 and libstdc++ ABI</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../delayed-delete/">CephFS delayed deletion</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../dev_cluster_deployement/">Deploying a development cluster</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../dev_cluster_deployement/#deploying-multiple-development-clusters-on-the-same-machine">Deploying multiple development clusters on the same machine</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../development-workflow/">Development workflows</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../documenting/">Documenting Ceph</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../encoding/">Serialization (encode/decode)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../erasure-coded-pool/">Erasure Coded pool</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../file-striping/">File striping</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../freebsd/">FreeBSD Implementation details</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../generatedocs/">Building Ceph Documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../iana/">IANA Numbers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../kubernetes/">Hacking on Ceph in Kubernetes with Rook</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../libs/">Library architecture</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../logging/">Use of the cluster log</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../logs/">Debug logs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../macos/">build on MacOS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../messenger/">Messenger notes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../mon-bootstrap/">Monitor bootstrap</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../mon-elections/">Monitor Elections</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../mon-on-disk-formats/">ON-DISK FORMAT</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../mon-osdmap-prune/">FULL OSDMAP VERSION PRUNING</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">msgr2 protocol (msgr2.0 and msgr2.1)</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#goals">Goals</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#definitions">Definitions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#phases">Phases</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#banner">Banner</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#frame-format">Frame format</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#hello">Hello</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#authentication">Authentication</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#post-auth-frame-format">Post-auth frame format</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#message-flow-handshake">Message flow handshake</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#message-exchange">Message exchange</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#example-of-protocol-interaction-wip">Example of protocol interaction (WIP)</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../network-encoding/">Network Encoding</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../network-protocol/">Network Protocol</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../object-store/">Object Store Architecture Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../osd-class-path/">OSD class path issues</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../peering/">Peering</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../perf/">Using perf</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../perf_counters/">Perf counters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../perf_histograms/">Perf histograms</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../placement-group/">PG (Placement Group) notes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../quick_guide/">Developer Guide (Quick)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rados-client-protocol/">RADOS client protocol</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rbd-diff/">RBD Incremental Backup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rbd-export/">RBD Export &amp; Import</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rbd-layering/">RBD Layering</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../release-checklists/">Release checklists</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../release-process/">Ceph Release Process</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../seastore/">SeaStore</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../sepia/">Sepia community test lab</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../session_authentication/">Session Authentication for the Cephx Protocol</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../testing/">Testing notes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../versions/">Public OSD Version</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../vstart-ganesha/">NFS CephFS-RGW Developer Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../wireshark/">Wireshark Dissector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../zoned-storage/">Zoned Storage Support</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../osd_internals/">OSD developer documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../mds_internals/">MDS developer documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../radosgw/">RADOS Gateway developer documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../ceph-volume/">ceph-volume developer documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../crimson/">Crimson developer documentation</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../network-encoding/" title="Network Encoding"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../mon-osdmap-prune/" title="FULL OSDMAP VERSION PRUNING"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../internals/" >Ceph Internals</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">msgr2 protocol (msgr2.0 and msgr2.1)</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

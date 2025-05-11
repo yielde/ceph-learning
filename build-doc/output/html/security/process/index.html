@@ -1,0 +1,195 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Vulnerability Management Process &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css" />
+    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../genindex/" />
+    <link rel="search" title="Search" href="../../search/" />
+    <link rel="next" title="Ceph Glossary" href="../../glossary/" />
+    <link rel="prev" title="CVE-2021-20288: Unauthorized global_id reuse in cephx" href="../CVE-2021-20288/" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../../glossary/" title="Ceph Glossary"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../CVE-2021-20288/" title="CVE-2021-20288: Unauthorized global_id reuse in cephx"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../" accesskey="U">Security</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Vulnerability Management Process</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="vulnerability-management-process">
+<h1>Vulnerability Management Process<a class="headerlink" href="#vulnerability-management-process" title="Permalink to this heading">¶</a></h1>
+<ol class="arabic simple">
+<li><p>The report will be acknowledged within three business days.</p></li>
+<li><p>The team will investigate the reported issue and will update the email
+thread with relevant information. The team may ask for additional
+information regarding the reported issue.</p></li>
+<li><p>If the team does not confirm the report, no further action will be
+taken and the issue will be closed.</p></li>
+<li><p>If the report is confirmed by Ceph team members, a unique CVE identifier
+will be assigned to the report and then shared with the reporter. The Ceph
+security team will start working on a fix.</p></li>
+<li><p>If a reporter has no disclosure date in mind, a Ceph security team
+member will coordinate a release date (CRD) with the list members
+and share the mutually agreed disclosure date with the reporter.</p></li>
+<li><p>The vulnerability disclosure / release date is set excluding Friday and
+holiday periods.</p></li>
+<li><p>Embargoes are preferred for Critical and High impact
+issues. Embargo should not be held for more than 90 days from the
+date of vulnerability confirmation, except under unusual
+circumstances. For Low and Moderate issues with limited impact and
+an easy workaround or where an issue that is already public, a
+standard patch release process will be followed to fix the
+vulnerability once CVE is assigned.</p></li>
+<li><p>Fixes for issues of “Medium” and “Low” severity will be released as part of
+the next standard release cycle. List members will receive seven days of
+advance notice prior to the release date of these fixes. The details of the
+CVE fix will be included in the release notes, and the release notes will be
+linked in the public announcement.</p></li>
+<li><p>Commits will be handled in a private repository for review and
+testing and a new patch version will be released from this private
+repository.</p></li>
+<li><p>If a vulnerability is unintentionally already fixed in the public
+repository, a few days are given to downstream stakeholders/vendors
+to prepare for updating before the public disclosure.</p></li>
+<li><p>An announcement will be made disclosing the vulnerability. The
+fastest place to receive security announcements is via the
+<a class="reference external" href="mailto:ceph-announce&#37;&#52;&#48;ceph&#46;io">ceph-announce<span>&#64;</span>ceph<span>&#46;</span>io</a> or
+<a class="reference external" href="mailto:oss-security&#37;&#52;&#48;lists&#46;openwall&#46;com">oss-security<span>&#64;</span>lists<span>&#46;</span>openwall<span>&#46;</span>com</a> mailing
+lists.  (These lists are low-traffic).</p></li>
+</ol>
+<p>If the report is considered embargoed, we ask you to not disclose the
+vulnerability before it has been fixed and announced, unless you
+received a response from the Ceph security team that you can do
+so. This holds true until the public disclosure date that was agreed
+upon by the list. Thank you for improving the security of Ceph and its
+ecosystem. Your efforts and responsible disclosure are greatly
+appreciated and will be acknowledged.</p>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../">
+              <img class="logo" src="../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../install/">Installing Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cephadm/">Cephadm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rados/">Ceph Storage Cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cephfs/">Ceph File System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rbd/">Ceph Block Device</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../radosgw/">Ceph Object Gateway</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/">Ceph Manager Daemon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dev/developer_guide/">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dev/internals/">Ceph Internals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../">Security</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../cves/">Past Vulnerabilities / CVEs</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Vulnerability Management Process</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../#reporting-a-vulnerability">Reporting a vulnerability</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../#supported-versions">Supported versions</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../../glossary/" title="Ceph Glossary"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../CVE-2021-20288/" title="CVE-2021-20288: Unauthorized global_id reuse in cephx"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../" >Security</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Vulnerability Management Process</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

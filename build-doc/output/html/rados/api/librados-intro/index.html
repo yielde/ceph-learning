@@ -1,0 +1,1027 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Introduction to librados &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/css/custom.css" />
+    <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/jquery.js"></script>
+    <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../../genindex/" />
+    <link rel="search" title="Search" href="../../../search/" />
+    <link rel="next" title="Librados (C)" href="../librados/" />
+    <link rel="prev" title="Ceph Storage Cluster APIs" href="../" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../librados/" title="Librados (C)"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../" title="Ceph Storage Cluster APIs"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../" >Ceph Storage Cluster</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../" accesskey="U">Ceph Storage Cluster APIs</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Introduction to librados</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="introduction-to-librados">
+<h1>Introduction to librados<a class="headerlink" href="#introduction-to-librados" title="Permalink to this heading">¶</a></h1>
+<p>The <a class="reference internal" href="../../../glossary/#term-Ceph-Storage-Cluster"><span class="xref std std-term">Ceph Storage Cluster</span></a> provides the basic storage service that allows
+<a class="reference internal" href="../../../glossary/#term-Ceph"><span class="xref std std-term">Ceph</span></a> to uniquely deliver <strong>object, block, and file storage</strong> in one
+unified system. However, you are not limited to using the RESTful, block, or
+POSIX interfaces. Based upon <abbr title="Reliable Autonomic Distributed Object Store">RADOS</abbr>, the <code class="docutils literal notranslate"><span class="pre">librados</span></code> API enables you to create your own interface to the
+Ceph Storage Cluster.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">librados</span></code> API enables you to interact with the two types of daemons in
+the Ceph Storage Cluster:</p>
+<ul class="simple">
+<li><p>The <a class="reference internal" href="../../../glossary/#term-Ceph-Monitor"><span class="xref std std-term">Ceph Monitor</span></a>, which maintains a master copy of the cluster map.</p></li>
+<li><p>The <a class="reference internal" href="../../../glossary/#term-Ceph-OSD-Daemon"><span class="xref std std-term">Ceph OSD Daemon</span></a> (OSD), which stores data as objects on a storage node.</p></li>
+</ul>
+<p class="ditaa">
+<img src="../../../_images/ditaa-2fb9b073781e561c4947b74687285560dde591af.png"/>
+</p>
+<p>This guide provides a high-level introduction to using <code class="docutils literal notranslate"><span class="pre">librados</span></code>.
+Refer to <a class="reference internal" href="../../../architecture/"><span class="doc">Architecture</span></a> for additional details of the Ceph
+Storage Cluster. To use the API, you need a running Ceph Storage Cluster.
+See <a class="reference external" href="../../../start">Installation (Quick)</a> for details.</p>
+<section id="step-1-getting-librados">
+<h2>Step 1: Getting librados<a class="headerlink" href="#step-1-getting-librados" title="Permalink to this heading">¶</a></h2>
+<p>Your client application must bind with <code class="docutils literal notranslate"><span class="pre">librados</span></code> to connect to the Ceph
+Storage Cluster. You must install <code class="docutils literal notranslate"><span class="pre">librados</span></code> and any required packages to
+write applications that use <code class="docutils literal notranslate"><span class="pre">librados</span></code>. The <code class="docutils literal notranslate"><span class="pre">librados</span></code> API is written in
+C++, with additional bindings for C, Python, Java and PHP.</p>
+<section id="getting-librados-for-c-c">
+<h3>Getting librados for C/C++<a class="headerlink" href="#getting-librados-for-c-c" title="Permalink to this heading">¶</a></h3>
+<p>To install <code class="docutils literal notranslate"><span class="pre">librados</span></code> development support files for C/C++ on Debian/Ubuntu
+distributions, execute the following:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><style type="text/css">
+span.prompt1:before {
+  content: "$ ";
+}
+</style><span class="prompt1">sudo<span class="w"> </span>apt-get<span class="w"> </span>install<span class="w"> </span>librados-dev</span>
+</pre></div></div><p>To install <code class="docutils literal notranslate"><span class="pre">librados</span></code> development support files for C/C++ on RHEL/CentOS
+distributions, execute the following:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">sudo<span class="w"> </span>yum<span class="w"> </span>install<span class="w"> </span>librados2-devel</span>
+</pre></div></div><p>Once you install <code class="docutils literal notranslate"><span class="pre">librados</span></code> for developers, you can find the required
+headers for C/C++ under <code class="docutils literal notranslate"><span class="pre">/usr/include/rados</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ls<span class="w"> </span>/usr/include/rados</span>
+</pre></div></div></section>
+<section id="getting-librados-for-python">
+<h3>Getting librados for Python<a class="headerlink" href="#getting-librados-for-python" title="Permalink to this heading">¶</a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">rados</span></code> module provides <code class="docutils literal notranslate"><span class="pre">librados</span></code> support to Python
+applications. The <code class="docutils literal notranslate"><span class="pre">librados-dev</span></code> package for Debian/Ubuntu
+and the <code class="docutils literal notranslate"><span class="pre">librados2-devel</span></code> package for RHEL/CentOS will install the
+<code class="docutils literal notranslate"><span class="pre">python-rados</span></code> package for you. You may install <code class="docutils literal notranslate"><span class="pre">python-rados</span></code>
+directly too.</p>
+<p>To install <code class="docutils literal notranslate"><span class="pre">librados</span></code> development support files for Python on Debian/Ubuntu
+distributions, execute the following:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">sudo<span class="w"> </span>apt-get<span class="w"> </span>install<span class="w"> </span>python3-rados</span>
+</pre></div></div><p>To install <code class="docutils literal notranslate"><span class="pre">librados</span></code> development support files for Python on RHEL/CentOS
+distributions, execute the following:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">sudo<span class="w"> </span>yum<span class="w"> </span>install<span class="w"> </span>python-rados</span>
+</pre></div></div><p>To install <code class="docutils literal notranslate"><span class="pre">librados</span></code> development support files for Python on SLE/openSUSE
+distributions, execute the following:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">sudo<span class="w"> </span>zypper<span class="w"> </span>install<span class="w"> </span>python3-rados</span>
+</pre></div></div><p>You can find the module under <code class="docutils literal notranslate"><span class="pre">/usr/share/pyshared</span></code> on Debian systems,
+or under <code class="docutils literal notranslate"><span class="pre">/usr/lib/python*/site-packages</span></code> on CentOS/RHEL systems.</p>
+</section>
+<section id="getting-librados-for-java">
+<h3>Getting librados for Java<a class="headerlink" href="#getting-librados-for-java" title="Permalink to this heading">¶</a></h3>
+<p>To install <code class="docutils literal notranslate"><span class="pre">librados</span></code> for Java, you need to execute the following procedure:</p>
+<ol class="arabic">
+<li><p>Install <code class="docutils literal notranslate"><span class="pre">jna.jar</span></code>. For Debian/Ubuntu, execute:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">sudo<span class="w"> </span>apt-get<span class="w"> </span>install<span class="w"> </span>libjna-java</span>
+</pre></div></div><p>For CentOS/RHEL, execute:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">sudo<span class="w"> </span>yum<span class="w"> </span>install<span class="w"> </span>jna</span>
+</pre></div></div><p>The JAR files are located in <code class="docutils literal notranslate"><span class="pre">/usr/share/java</span></code>.</p>
+</li>
+<li><p>Clone the <code class="docutils literal notranslate"><span class="pre">rados-java</span></code> repository:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">git<span class="w"> </span>clone<span class="w"> </span>--recursive<span class="w"> </span>https://github.com/ceph/rados-java.git</span>
+</pre></div></div></li>
+<li><p>Build the <code class="docutils literal notranslate"><span class="pre">rados-java</span></code> repository:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1"><span class="nb">cd</span><span class="w"> </span>rados-java</span>
+<span class="prompt1">ant</span>
+</pre></div></div><p>The JAR file is located under <code class="docutils literal notranslate"><span class="pre">rados-java/target</span></code>.</p>
+</li>
+<li><p>Copy the JAR for RADOS to a common location (e.g., <code class="docutils literal notranslate"><span class="pre">/usr/share/java</span></code>) and
+ensure that it and the JNA JAR are in your JVM’s classpath. For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">sudo<span class="w"> </span>cp<span class="w"> </span>target/rados-0.1.3.jar<span class="w"> </span>/usr/share/java/rados-0.1.3.jar</span>
+<span class="prompt1">sudo<span class="w"> </span>ln<span class="w"> </span>-s<span class="w"> </span>/usr/share/java/jna-3.2.7.jar<span class="w"> </span>/usr/lib/jvm/default-java/jre/lib/ext/jna-3.2.7.jar</span>
+<span class="prompt1">sudo<span class="w"> </span>ln<span class="w"> </span>-s<span class="w"> </span>/usr/share/java/rados-0.1.3.jar<span class="w">  </span>/usr/lib/jvm/default-java/jre/lib/ext/rados-0.1.3.jar</span>
+</pre></div></div></li>
+</ol>
+<p>To build the documentation, execute the following:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ant<span class="w"> </span>docs</span>
+</pre></div></div></section>
+<section id="getting-librados-for-php">
+<h3>Getting librados for PHP<a class="headerlink" href="#getting-librados-for-php" title="Permalink to this heading">¶</a></h3>
+<p>To install the <code class="docutils literal notranslate"><span class="pre">librados</span></code> extension for PHP, you need to execute the following procedure:</p>
+<ol class="arabic">
+<li><p>Install php-dev. For Debian/Ubuntu, execute:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">sudo<span class="w"> </span>apt-get<span class="w"> </span>install<span class="w"> </span>php5-dev<span class="w"> </span>build-essential</span>
+</pre></div></div><p>For CentOS/RHEL, execute:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">sudo<span class="w"> </span>yum<span class="w"> </span>install<span class="w"> </span>php-devel</span>
+</pre></div></div></li>
+<li><p>Clone the <code class="docutils literal notranslate"><span class="pre">phprados</span></code> repository:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">git<span class="w"> </span>clone<span class="w"> </span>https://github.com/ceph/phprados.git</span>
+</pre></div></div></li>
+<li><p>Build <code class="docutils literal notranslate"><span class="pre">phprados</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1"><span class="nb">cd</span><span class="w"> </span>phprados</span>
+<span class="prompt1">phpize</span>
+<span class="prompt1">./configure</span>
+<span class="prompt1">make</span>
+<span class="prompt1">sudo<span class="w"> </span>make<span class="w"> </span>install</span>
+</pre></div></div></li>
+<li><p>Enable <code class="docutils literal notranslate"><span class="pre">phprados</span></code> by adding the following line to <code class="docutils literal notranslate"><span class="pre">php.ini</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">extension</span><span class="o">=</span><span class="n">rados</span><span class="o">.</span><span class="n">so</span>
+</pre></div>
+</div>
+</li>
+</ol>
+</section>
+</section>
+<section id="step-2-configuring-a-cluster-handle">
+<h2>Step 2: Configuring a Cluster Handle<a class="headerlink" href="#step-2-configuring-a-cluster-handle" title="Permalink to this heading">¶</a></h2>
+<p>A <a class="reference internal" href="../../../glossary/#term-Ceph-Client"><span class="xref std std-term">Ceph Client</span></a>, via <code class="docutils literal notranslate"><span class="pre">librados</span></code>, interacts directly with OSDs to store
+and retrieve data. To interact with OSDs, the client app must invoke
+<code class="docutils literal notranslate"><span class="pre">librados</span></code>  and connect to a Ceph Monitor. Once connected, <code class="docutils literal notranslate"><span class="pre">librados</span></code>
+retrieves the  <a class="reference internal" href="../../../glossary/#term-Cluster-Map"><span class="xref std std-term">Cluster Map</span></a> from the Ceph Monitor. When the client app
+wants to read or write data, it creates an I/O context and binds to a
+<a class="reference internal" href="../../../glossary/#term-Pool"><span class="xref std std-term">Pool</span></a>. The pool has an associated <a class="reference internal" href="../../../glossary/#term-CRUSH-rule"><span class="xref std std-term">CRUSH rule</span></a> that defines how it
+will place data in the storage cluster. Via the I/O context, the client
+provides the object name to <code class="docutils literal notranslate"><span class="pre">librados</span></code>, which takes the object name
+and the cluster map (i.e., the topology of the cluster) and <a class="reference external" href="../../../architecture#calculating-pg-ids">computes</a> the
+placement group and <a class="reference external" href="../../../architecture#mapping-pgs-to-osds">OSD</a>  for locating the data. Then the client application
+can read or write data. The client app doesn’t need to learn about the topology
+of the cluster directly.</p>
+<p class="ditaa">
+<img src="../../../_images/ditaa-312ad4d3385315b3f2c1bef71495301d857ab385.png"/>
+</p>
+<p>The Ceph Storage Cluster handle encapsulates the client configuration, including:</p>
+<ul class="simple">
+<li><p>The <a class="reference external" href="../../operations/user-management#command-line-usage">user ID</a> for <code class="docutils literal notranslate"><span class="pre">rados_create()</span></code> or user name for <code class="docutils literal notranslate"><span class="pre">rados_create2()</span></code>
+(preferred).</p></li>
+<li><p>The <a class="reference internal" href="../../../glossary/#term-CephX"><span class="xref std std-term">cephx</span></a> authentication key</p></li>
+<li><p>The monitor ID and IP address</p></li>
+<li><p>Logging levels</p></li>
+<li><p>Debugging levels</p></li>
+</ul>
+<p>Thus, the first steps in using the cluster from your app are to 1) create
+a cluster handle that your app will use to connect to the storage cluster,
+and then 2) use that handle to connect. To connect to the cluster, the
+app must supply a monitor address, a username and an authentication key
+(cephx is enabled by default).</p>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>Talking to different Ceph Storage Clusters – or to the same cluster
+with different users – requires different cluster handles.</p>
+</div>
+<p>RADOS provides a number of ways for you to set the required values. For
+the monitor and encryption key settings, an easy way to handle them is to ensure
+that your Ceph configuration file contains a <code class="docutils literal notranslate"><span class="pre">keyring</span></code> path to a keyring file
+and at least one monitor address (e.g., <code class="docutils literal notranslate"><span class="pre">mon</span> <span class="pre">host</span></code>). For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[</span><span class="k">global</span><span class="p">]</span>
+<span class="n">mon</span> <span class="n">host</span> <span class="o">=</span> <span class="mf">192.168.1.1</span>
+<span class="n">keyring</span> <span class="o">=</span> <span class="o">/</span><span class="n">etc</span><span class="o">/</span><span class="n">ceph</span><span class="o">/</span><span class="n">ceph</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">admin</span><span class="o">.</span><span class="n">keyring</span>
+</pre></div>
+</div>
+<p>Once you create the handle, you can read a Ceph configuration file to configure
+the handle. You can also pass arguments to your app and parse them with the
+function for parsing command line arguments (e.g., <code class="docutils literal notranslate"><span class="pre">rados_conf_parse_argv()</span></code>),
+or parse Ceph environment variables (e.g., <code class="docutils literal notranslate"><span class="pre">rados_conf_parse_env()</span></code>). Some
+wrappers may not implement convenience methods, so you may need to implement
+these capabilities. The following diagram provides a high-level flow for the
+initial connection.</p>
+<p class="ditaa">
+<img src="../../../_images/ditaa-1d8037c0eee0344d7c9d81627e628f9f0a4e5ac4.png"/>
+</p>
+<p>Once connected, your app can invoke functions that affect the whole cluster
+with only the cluster handle. For example, once you have a cluster
+handle, you can:</p>
+<ul class="simple">
+<li><p>Get cluster statistics</p></li>
+<li><p>Use Pool Operation (exists, create, list, delete)</p></li>
+<li><p>Get and set the configuration</p></li>
+</ul>
+<p>One of the powerful features of Ceph is the ability to bind to different pools.
+Each pool may have a different number of placement groups, object replicas and
+replication strategies. For example, a pool could be set up as a “hot” pool that
+uses SSDs for frequently used objects or a “cold” pool that uses erasure coding.</p>
+<p>The main difference in the various <code class="docutils literal notranslate"><span class="pre">librados</span></code> bindings is between C and
+the object-oriented bindings for C++, Java and Python. The object-oriented
+bindings use objects to represent cluster handles, IO Contexts, iterators,
+exceptions, etc.</p>
+<section id="c-example">
+<h3>C Example<a class="headerlink" href="#c-example" title="Permalink to this heading">¶</a></h3>
+<p>For C, creating a simple cluster handle using the <code class="docutils literal notranslate"><span class="pre">admin</span></code> user, configuring
+it and connecting to the cluster might look something like this:</p>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;stdio.h&gt;</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;stdlib.h&gt;</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;string.h&gt;</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;rados/librados.h&gt;</span>
+
+<span class="kt">int</span><span class="w"> </span><span class="nf">main</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">argc</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="o">**</span><span class="n">argv</span><span class="p">)</span>
+<span class="p">{</span>
+
+<span class="w">        </span><span class="cm">/* Declare the cluster handle and required arguments. */</span>
+<span class="w">        </span><span class="n">rados_t</span><span class="w"> </span><span class="n">cluster</span><span class="p">;</span>
+<span class="w">        </span><span class="kt">char</span><span class="w"> </span><span class="n">cluster_name</span><span class="p">[]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;ceph&quot;</span><span class="p">;</span>
+<span class="w">        </span><span class="kt">char</span><span class="w"> </span><span class="n">user_name</span><span class="p">[]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;client.admin&quot;</span><span class="p">;</span>
+<span class="w">        </span><span class="kt">uint64_t</span><span class="w"> </span><span class="n">flags</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+
+<span class="w">        </span><span class="cm">/* Initialize the cluster handle with the &quot;ceph&quot; cluster name and the &quot;client.admin&quot; user */</span>
+<span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="n">err</span><span class="p">;</span>
+<span class="w">        </span><span class="n">err</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rados_create2</span><span class="p">(</span><span class="o">&amp;</span><span class="n">cluster</span><span class="p">,</span><span class="w"> </span><span class="n">cluster_name</span><span class="p">,</span><span class="w"> </span><span class="n">user_name</span><span class="p">,</span><span class="w"> </span><span class="n">flags</span><span class="p">);</span>
+
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">err</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                </span><span class="n">fprintf</span><span class="p">(</span><span class="n">stderr</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;%s: Couldn&#39;t create the cluster handle! %s</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">argv</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="w"> </span><span class="n">strerror</span><span class="p">(</span><span class="o">-</span><span class="n">err</span><span class="p">));</span>
+<span class="w">                </span><span class="n">exit</span><span class="p">(</span><span class="n">EXIT_FAILURE</span><span class="p">);</span>
+<span class="w">        </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;</span><span class="se">\n</span><span class="s">Created a cluster handle.</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+<span class="w">        </span><span class="p">}</span>
+
+
+<span class="w">        </span><span class="cm">/* Read a Ceph configuration file to configure the cluster handle. */</span>
+<span class="w">        </span><span class="n">err</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rados_conf_read_file</span><span class="p">(</span><span class="n">cluster</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/etc/ceph/ceph.conf&quot;</span><span class="p">);</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">err</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                </span><span class="n">fprintf</span><span class="p">(</span><span class="n">stderr</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;%s: cannot read config file: %s</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">argv</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="w"> </span><span class="n">strerror</span><span class="p">(</span><span class="o">-</span><span class="n">err</span><span class="p">));</span>
+<span class="w">                </span><span class="n">exit</span><span class="p">(</span><span class="n">EXIT_FAILURE</span><span class="p">);</span>
+<span class="w">        </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;</span><span class="se">\n</span><span class="s">Read the config file.</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+<span class="w">        </span><span class="p">}</span>
+
+<span class="w">        </span><span class="cm">/* Read command line arguments */</span>
+<span class="w">        </span><span class="n">err</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rados_conf_parse_argv</span><span class="p">(</span><span class="n">cluster</span><span class="p">,</span><span class="w"> </span><span class="n">argc</span><span class="p">,</span><span class="w"> </span><span class="n">argv</span><span class="p">);</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">err</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                </span><span class="n">fprintf</span><span class="p">(</span><span class="n">stderr</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;%s: cannot parse command line arguments: %s</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">argv</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="w"> </span><span class="n">strerror</span><span class="p">(</span><span class="o">-</span><span class="n">err</span><span class="p">));</span>
+<span class="w">                </span><span class="n">exit</span><span class="p">(</span><span class="n">EXIT_FAILURE</span><span class="p">);</span>
+<span class="w">        </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;</span><span class="se">\n</span><span class="s">Read the command line arguments.</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+<span class="w">        </span><span class="p">}</span>
+
+<span class="w">        </span><span class="cm">/* Connect to the cluster */</span>
+<span class="w">        </span><span class="n">err</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rados_connect</span><span class="p">(</span><span class="n">cluster</span><span class="p">);</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">err</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                </span><span class="n">fprintf</span><span class="p">(</span><span class="n">stderr</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;%s: cannot connect to cluster: %s</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">argv</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="w"> </span><span class="n">strerror</span><span class="p">(</span><span class="o">-</span><span class="n">err</span><span class="p">));</span>
+<span class="w">                </span><span class="n">exit</span><span class="p">(</span><span class="n">EXIT_FAILURE</span><span class="p">);</span>
+<span class="w">        </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;</span><span class="se">\n</span><span class="s">Connected to the cluster.</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+<span class="w">        </span><span class="p">}</span>
+
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>Compile your client and link to <code class="docutils literal notranslate"><span class="pre">librados</span></code> using <code class="docutils literal notranslate"><span class="pre">-lrados</span></code>. For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">gcc<span class="w"> </span>ceph-client.c<span class="w"> </span>-lrados<span class="w"> </span>-o<span class="w"> </span>ceph-client</span>
+</pre></div></div></section>
+<section id="id1">
+<h3>C++ Example<a class="headerlink" href="#id1" title="Permalink to this heading">¶</a></h3>
+<p>The Ceph project provides a C++ example in the <code class="docutils literal notranslate"><span class="pre">ceph/examples/librados</span></code>
+directory. For C++, a simple cluster handle using the <code class="docutils literal notranslate"><span class="pre">admin</span></code> user requires
+you to initialize a <code class="docutils literal notranslate"><span class="pre">librados::Rados</span></code> cluster handle object:</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;iostream&gt;</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;string&gt;</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;rados/librados.hpp&gt;</span>
+
+<span class="kt">int</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">argc</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="o">**</span><span class="n">argv</span><span class="p">)</span>
+<span class="p">{</span>
+
+<span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+
+<span class="w">        </span><span class="cm">/* Declare the cluster handle and required variables. */</span>
+<span class="w">        </span><span class="n">librados</span><span class="o">::</span><span class="n">Rados</span><span class="w"> </span><span class="n">cluster</span><span class="p">;</span>
+<span class="w">        </span><span class="kt">char</span><span class="w"> </span><span class="n">cluster_name</span><span class="p">[]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;ceph&quot;</span><span class="p">;</span>
+<span class="w">        </span><span class="kt">char</span><span class="w"> </span><span class="n">user_name</span><span class="p">[]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;client.admin&quot;</span><span class="p">;</span>
+<span class="w">        </span><span class="kt">uint64_t</span><span class="w"> </span><span class="n">flags</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+
+<span class="w">        </span><span class="cm">/* Initialize the cluster handle with the &quot;ceph&quot; cluster name and &quot;client.admin&quot; user */</span>
+<span class="w">        </span><span class="p">{</span>
+<span class="w">                </span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cluster</span><span class="p">.</span><span class="n">init2</span><span class="p">(</span><span class="n">user_name</span><span class="p">,</span><span class="w"> </span><span class="n">cluster_name</span><span class="p">,</span><span class="w"> </span><span class="n">flags</span><span class="p">);</span>
+<span class="w">                </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ret</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                        </span><span class="n">std</span><span class="o">::</span><span class="n">cerr</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;Couldn&#39;t initialize the cluster handle! error &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">ret</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+<span class="w">                        </span><span class="k">return</span><span class="w"> </span><span class="n">EXIT_FAILURE</span><span class="p">;</span>
+<span class="w">                </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                        </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;Created a cluster handle.&quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+<span class="w">                </span><span class="p">}</span>
+<span class="w">        </span><span class="p">}</span>
+
+<span class="w">        </span><span class="cm">/* Read a Ceph configuration file to configure the cluster handle. */</span>
+<span class="w">        </span><span class="p">{</span>
+<span class="w">                </span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cluster</span><span class="p">.</span><span class="n">conf_read_file</span><span class="p">(</span><span class="s">&quot;/etc/ceph/ceph.conf&quot;</span><span class="p">);</span>
+<span class="w">                </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ret</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                        </span><span class="n">std</span><span class="o">::</span><span class="n">cerr</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;Couldn&#39;t read the Ceph configuration file! error &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">ret</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+<span class="w">                        </span><span class="k">return</span><span class="w"> </span><span class="n">EXIT_FAILURE</span><span class="p">;</span>
+<span class="w">                </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                        </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;Read the Ceph configuration file.&quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+<span class="w">                </span><span class="p">}</span>
+<span class="w">        </span><span class="p">}</span>
+
+<span class="w">        </span><span class="cm">/* Read command line arguments */</span>
+<span class="w">        </span><span class="p">{</span>
+<span class="w">                </span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cluster</span><span class="p">.</span><span class="n">conf_parse_argv</span><span class="p">(</span><span class="n">argc</span><span class="p">,</span><span class="w"> </span><span class="n">argv</span><span class="p">);</span>
+<span class="w">                </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ret</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                        </span><span class="n">std</span><span class="o">::</span><span class="n">cerr</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;Couldn&#39;t parse command line options! error &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">ret</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+<span class="w">                        </span><span class="k">return</span><span class="w"> </span><span class="n">EXIT_FAILURE</span><span class="p">;</span>
+<span class="w">                </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                        </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;Parsed command line options.&quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+<span class="w">                </span><span class="p">}</span>
+<span class="w">        </span><span class="p">}</span>
+
+<span class="w">        </span><span class="cm">/* Connect to the cluster */</span>
+<span class="w">        </span><span class="p">{</span>
+<span class="w">                </span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cluster</span><span class="p">.</span><span class="n">connect</span><span class="p">();</span>
+<span class="w">                </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ret</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                        </span><span class="n">std</span><span class="o">::</span><span class="n">cerr</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;Couldn&#39;t connect to cluster! error &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">ret</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+<span class="w">                        </span><span class="k">return</span><span class="w"> </span><span class="n">EXIT_FAILURE</span><span class="p">;</span>
+<span class="w">                </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                        </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;Connected to the cluster.&quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+<span class="w">                </span><span class="p">}</span>
+<span class="w">        </span><span class="p">}</span>
+
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>Compile the source; then, link <code class="docutils literal notranslate"><span class="pre">librados</span></code> using <code class="docutils literal notranslate"><span class="pre">-lrados</span></code>.
+For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">g++<span class="w"> </span>-g<span class="w"> </span>-c<span class="w"> </span>ceph-client.cc<span class="w"> </span>-o<span class="w"> </span>ceph-client.o</span>
+<span class="prompt1">g++<span class="w"> </span>-g<span class="w"> </span>ceph-client.o<span class="w"> </span>-lrados<span class="w"> </span>-o<span class="w"> </span>ceph-client</span>
+</pre></div></div></section>
+<section id="python-example">
+<h3>Python Example<a class="headerlink" href="#python-example" title="Permalink to this heading">¶</a></h3>
+<p>Python uses the <code class="docutils literal notranslate"><span class="pre">admin</span></code> id and the <code class="docutils literal notranslate"><span class="pre">ceph</span></code> cluster name by default, and
+will read the standard <code class="docutils literal notranslate"><span class="pre">ceph.conf</span></code> file if the conffile parameter is
+set to the empty string. The Python binding converts C++ errors
+into exceptions.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">rados</span>
+
+<span class="k">try</span><span class="p">:</span>
+        <span class="n">cluster</span> <span class="o">=</span> <span class="n">rados</span><span class="o">.</span><span class="n">Rados</span><span class="p">(</span><span class="n">conffile</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">)</span>
+<span class="k">except</span> <span class="ne">TypeError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="nb">print</span> <span class="s1">&#39;Argument validation error: &#39;</span><span class="p">,</span> <span class="n">e</span>
+        <span class="k">raise</span> <span class="n">e</span>
+
+<span class="nb">print</span> <span class="s2">&quot;Created cluster handle.&quot;</span>
+
+<span class="k">try</span><span class="p">:</span>
+        <span class="n">cluster</span><span class="o">.</span><span class="n">connect</span><span class="p">()</span>
+<span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="nb">print</span> <span class="s2">&quot;connection error: &quot;</span><span class="p">,</span> <span class="n">e</span>
+        <span class="k">raise</span> <span class="n">e</span>
+<span class="k">finally</span><span class="p">:</span>
+        <span class="nb">print</span> <span class="s2">&quot;Connected to the cluster.&quot;</span>
+</pre></div>
+</div>
+<p>Execute the example to verify that it connects to your cluster:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">python<span class="w"> </span>ceph-client.py</span>
+</pre></div></div></section>
+<section id="java-example">
+<h3>Java Example<a class="headerlink" href="#java-example" title="Permalink to this heading">¶</a></h3>
+<p>Java requires you to specify the user ID (<code class="docutils literal notranslate"><span class="pre">admin</span></code>) or user name
+(<code class="docutils literal notranslate"><span class="pre">client.admin</span></code>), and uses the <code class="docutils literal notranslate"><span class="pre">ceph</span></code> cluster name by default . The Java
+binding converts C++-based errors into exceptions.</p>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">com.ceph.rados.Rados</span><span class="p">;</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">com.ceph.rados.RadosException</span><span class="p">;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">java.io.File</span><span class="p">;</span>
+
+<span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">CephClient</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="kd">public</span><span class="w"> </span><span class="kd">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">main</span><span class="w"> </span><span class="p">(</span><span class="n">String</span><span class="w"> </span><span class="n">args</span><span class="o">[]</span><span class="p">){</span>
+
+<span class="w">                </span><span class="k">try</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                        </span><span class="n">Rados</span><span class="w"> </span><span class="n">cluster</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">Rados</span><span class="p">(</span><span class="s">&quot;admin&quot;</span><span class="p">);</span>
+<span class="w">                        </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">&quot;Created cluster handle.&quot;</span><span class="p">);</span>
+
+<span class="w">                        </span><span class="n">File</span><span class="w"> </span><span class="n">f</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">File</span><span class="p">(</span><span class="s">&quot;/etc/ceph/ceph.conf&quot;</span><span class="p">);</span>
+<span class="w">                        </span><span class="n">cluster</span><span class="p">.</span><span class="na">confReadFile</span><span class="p">(</span><span class="n">f</span><span class="p">);</span>
+<span class="w">                        </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">&quot;Read the configuration file.&quot;</span><span class="p">);</span>
+
+<span class="w">                        </span><span class="n">cluster</span><span class="p">.</span><span class="na">connect</span><span class="p">();</span>
+<span class="w">                        </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">&quot;Connected to the cluster.&quot;</span><span class="p">);</span>
+
+<span class="w">                </span><span class="p">}</span><span class="w"> </span><span class="k">catch</span><span class="w"> </span><span class="p">(</span><span class="n">RadosException</span><span class="w"> </span><span class="n">e</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                        </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">e</span><span class="p">.</span><span class="na">getMessage</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="s">&quot;: &quot;</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">e</span><span class="p">.</span><span class="na">getReturnValue</span><span class="p">());</span>
+<span class="w">                </span><span class="p">}</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>Compile the source; then, run it. If you have copied the JAR to
+<code class="docutils literal notranslate"><span class="pre">/usr/share/java</span></code> and sym linked from your <code class="docutils literal notranslate"><span class="pre">ext</span></code> directory, you won’t need
+to specify the classpath. For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">javac<span class="w"> </span>CephClient.java</span>
+<span class="prompt1">java<span class="w"> </span>CephClient</span>
+</pre></div></div></section>
+<section id="php-example">
+<h3>PHP Example<a class="headerlink" href="#php-example" title="Permalink to this heading">¶</a></h3>
+<p>With the RADOS extension enabled in PHP you can start creating a new cluster handle very easily:</p>
+<div class="highlight-php notranslate"><div class="highlight"><pre><span></span><span class="cp">&lt;?php</span>
+
+<span class="nv">$r</span> <span class="o">=</span> <span class="nx">rados_create</span><span class="p">();</span>
+<span class="nx">rados_conf_read_file</span><span class="p">(</span><span class="nv">$r</span><span class="p">,</span> <span class="s1">&#39;/etc/ceph/ceph.conf&#39;</span><span class="p">);</span>
+<span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nx">rados_connect</span><span class="p">(</span><span class="nv">$r</span><span class="p">))</span> <span class="p">{</span>
+        <span class="k">echo</span> <span class="s2">&quot;Failed to connect to Ceph cluster&quot;</span><span class="p">;</span>
+<span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+        <span class="k">echo</span> <span class="s2">&quot;Successfully connected to Ceph cluster&quot;</span><span class="p">;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>Save this as rados.php and run the code:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">php<span class="w"> </span>rados.php</span>
+</pre></div></div></section>
+</section>
+<section id="step-3-creating-an-i-o-context">
+<h2>Step 3: Creating an I/O Context<a class="headerlink" href="#step-3-creating-an-i-o-context" title="Permalink to this heading">¶</a></h2>
+<p>Once your app has a cluster handle and a connection to a Ceph Storage Cluster,
+you may create an I/O Context and begin reading and writing data. An I/O Context
+binds the connection to a specific pool. The user must have appropriate
+<a class="reference external" href="../../operations/user-management#authorization-capabilities">CAPS</a> permissions to access the specified pool. For example, a user with read
+access but not write access will only be able to read data. I/O Context
+functionality includes:</p>
+<ul class="simple">
+<li><p>Write/read data and extended attributes</p></li>
+<li><p>List and iterate over objects and extended attributes</p></li>
+<li><p>Snapshot pools, list snapshots, etc.</p></li>
+</ul>
+<p class="ditaa">
+<img src="../../../_images/ditaa-5e97dfcab6ea3dd761d6dc9fb731ed96aedd7113.png"/>
+</p>
+<p>RADOS enables you to interact both synchronously and asynchronously. Once your
+app has an I/O Context, read/write operations only require you to know the
+object/xattr name. The CRUSH algorithm encapsulated in <code class="docutils literal notranslate"><span class="pre">librados</span></code> uses the
+cluster map to identify the appropriate OSD. OSD daemons handle the replication,
+as described in <a class="reference external" href="../../../architecture#smart-daemons-enable-hyperscale">Smart Daemons Enable Hyperscale</a>. The <code class="docutils literal notranslate"><span class="pre">librados</span></code> library also
+maps objects to placement groups, as described in  <a class="reference external" href="../../../architecture#calculating-pg-ids">Calculating PG IDs</a>.</p>
+<p>The following examples use the default <code class="docutils literal notranslate"><span class="pre">data</span></code> pool. However, you may also
+use the API to list pools, ensure they exist, or create and delete pools. For
+the write operations, the examples illustrate how to use synchronous mode. For
+the read operations, the examples illustrate how to use asynchronous mode.</p>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>Use caution when deleting pools with this API. If you delete
+a pool, the pool and ALL DATA in the pool will be lost.</p>
+</div>
+<section id="id2">
+<h3>C Example<a class="headerlink" href="#id2" title="Permalink to this heading">¶</a></h3>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;stdio.h&gt;</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;stdlib.h&gt;</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;string.h&gt;</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;rados/librados.h&gt;</span>
+
+<span class="kt">int</span><span class="w"> </span><span class="nf">main</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">argc</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="o">**</span><span class="n">argv</span><span class="p">)</span>
+<span class="p">{</span>
+<span class="w">        </span><span class="cm">/*</span>
+<span class="cm">         * Continued from previous C example, where cluster handle and</span>
+<span class="cm">         * connection are established. First declare an I/O Context.</span>
+<span class="cm">         */</span>
+
+<span class="w">        </span><span class="n">rados_ioctx_t</span><span class="w"> </span><span class="n">io</span><span class="p">;</span>
+<span class="w">        </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">poolname</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;data&quot;</span><span class="p">;</span>
+
+<span class="w">        </span><span class="n">err</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rados_ioctx_create</span><span class="p">(</span><span class="n">cluster</span><span class="p">,</span><span class="w"> </span><span class="n">poolname</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">io</span><span class="p">);</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">err</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                </span><span class="n">fprintf</span><span class="p">(</span><span class="n">stderr</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;%s: cannot open rados pool %s: %s</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">argv</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="w"> </span><span class="n">poolname</span><span class="p">,</span><span class="w"> </span><span class="n">strerror</span><span class="p">(</span><span class="o">-</span><span class="n">err</span><span class="p">));</span>
+<span class="w">                </span><span class="n">rados_shutdown</span><span class="p">(</span><span class="n">cluster</span><span class="p">);</span>
+<span class="w">                </span><span class="n">exit</span><span class="p">(</span><span class="n">EXIT_FAILURE</span><span class="p">);</span>
+<span class="w">        </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;</span><span class="se">\n</span><span class="s">Created I/O context.</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+<span class="w">        </span><span class="p">}</span>
+
+<span class="w">        </span><span class="cm">/* Write data to the cluster synchronously. */</span>
+<span class="w">        </span><span class="n">err</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rados_write</span><span class="p">(</span><span class="n">io</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;hw&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Hello World!&quot;</span><span class="p">,</span><span class="w"> </span><span class="mi">12</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">err</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                </span><span class="n">fprintf</span><span class="p">(</span><span class="n">stderr</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;%s: Cannot write object </span><span class="se">\&quot;</span><span class="s">hw</span><span class="se">\&quot;</span><span class="s"> to pool %s: %s</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">argv</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="w"> </span><span class="n">poolname</span><span class="p">,</span><span class="w"> </span><span class="n">strerror</span><span class="p">(</span><span class="o">-</span><span class="n">err</span><span class="p">));</span>
+<span class="w">                </span><span class="n">rados_ioctx_destroy</span><span class="p">(</span><span class="n">io</span><span class="p">);</span>
+<span class="w">                </span><span class="n">rados_shutdown</span><span class="p">(</span><span class="n">cluster</span><span class="p">);</span>
+<span class="w">                </span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+<span class="w">        </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;</span><span class="se">\n</span><span class="s">Wrote </span><span class="se">\&quot;</span><span class="s">Hello World</span><span class="se">\&quot;</span><span class="s"> to object </span><span class="se">\&quot;</span><span class="s">hw</span><span class="se">\&quot;</span><span class="s">.</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+<span class="w">        </span><span class="p">}</span>
+
+<span class="w">        </span><span class="kt">char</span><span class="w"> </span><span class="n">xattr</span><span class="p">[]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;en_US&quot;</span><span class="p">;</span>
+<span class="w">        </span><span class="n">err</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rados_setxattr</span><span class="p">(</span><span class="n">io</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;hw&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;lang&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">xattr</span><span class="p">,</span><span class="w"> </span><span class="mi">5</span><span class="p">);</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">err</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                </span><span class="n">fprintf</span><span class="p">(</span><span class="n">stderr</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;%s: Cannot write xattr to pool %s: %s</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">argv</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="w"> </span><span class="n">poolname</span><span class="p">,</span><span class="w"> </span><span class="n">strerror</span><span class="p">(</span><span class="o">-</span><span class="n">err</span><span class="p">));</span>
+<span class="w">                </span><span class="n">rados_ioctx_destroy</span><span class="p">(</span><span class="n">io</span><span class="p">);</span>
+<span class="w">                </span><span class="n">rados_shutdown</span><span class="p">(</span><span class="n">cluster</span><span class="p">);</span>
+<span class="w">                </span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+<span class="w">        </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;</span><span class="se">\n</span><span class="s">Wrote </span><span class="se">\&quot;</span><span class="s">en_US</span><span class="se">\&quot;</span><span class="s"> to xattr </span><span class="se">\&quot;</span><span class="s">lang</span><span class="se">\&quot;</span><span class="s"> for object </span><span class="se">\&quot;</span><span class="s">hw</span><span class="se">\&quot;</span><span class="s">.</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+<span class="w">        </span><span class="p">}</span>
+
+<span class="w">        </span><span class="cm">/*</span>
+<span class="cm">         * Read data from the cluster asynchronously.</span>
+<span class="cm">         * First, set up asynchronous I/O completion.</span>
+<span class="cm">         */</span>
+<span class="w">        </span><span class="n">rados_completion_t</span><span class="w"> </span><span class="n">comp</span><span class="p">;</span>
+<span class="w">        </span><span class="n">err</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rados_aio_create_completion</span><span class="p">(</span><span class="nb">NULL</span><span class="p">,</span><span class="w"> </span><span class="nb">NULL</span><span class="p">,</span><span class="w"> </span><span class="nb">NULL</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">comp</span><span class="p">);</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">err</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                </span><span class="n">fprintf</span><span class="p">(</span><span class="n">stderr</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;%s: Could not create aio completion: %s</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">argv</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="w"> </span><span class="n">strerror</span><span class="p">(</span><span class="o">-</span><span class="n">err</span><span class="p">));</span>
+<span class="w">                </span><span class="n">rados_ioctx_destroy</span><span class="p">(</span><span class="n">io</span><span class="p">);</span>
+<span class="w">                </span><span class="n">rados_shutdown</span><span class="p">(</span><span class="n">cluster</span><span class="p">);</span>
+<span class="w">                </span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+<span class="w">        </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;</span><span class="se">\n</span><span class="s">Created AIO completion.</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+<span class="w">        </span><span class="p">}</span>
+
+<span class="w">        </span><span class="cm">/* Next, read data using rados_aio_read. */</span>
+<span class="w">        </span><span class="kt">char</span><span class="w"> </span><span class="n">read_res</span><span class="p">[</span><span class="mi">100</span><span class="p">];</span>
+<span class="w">        </span><span class="n">err</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rados_aio_read</span><span class="p">(</span><span class="n">io</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;hw&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">comp</span><span class="p">,</span><span class="w"> </span><span class="n">read_res</span><span class="p">,</span><span class="w"> </span><span class="mi">12</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">err</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                </span><span class="n">fprintf</span><span class="p">(</span><span class="n">stderr</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;%s: Cannot read object. %s %s</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">argv</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="w"> </span><span class="n">poolname</span><span class="p">,</span><span class="w"> </span><span class="n">strerror</span><span class="p">(</span><span class="o">-</span><span class="n">err</span><span class="p">));</span>
+<span class="w">                </span><span class="n">rados_ioctx_destroy</span><span class="p">(</span><span class="n">io</span><span class="p">);</span>
+<span class="w">                </span><span class="n">rados_shutdown</span><span class="p">(</span><span class="n">cluster</span><span class="p">);</span>
+<span class="w">                </span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+<span class="w">        </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;</span><span class="se">\n</span><span class="s">Read object </span><span class="se">\&quot;</span><span class="s">hw</span><span class="se">\&quot;</span><span class="s">. The contents are:</span><span class="se">\n</span><span class="s"> %s </span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">read_res</span><span class="p">);</span>
+<span class="w">        </span><span class="p">}</span>
+
+<span class="w">        </span><span class="cm">/* Wait for the operation to complete */</span>
+<span class="w">        </span><span class="n">rados_aio_wait_for_complete</span><span class="p">(</span><span class="n">comp</span><span class="p">);</span>
+
+<span class="w">        </span><span class="cm">/* Release the asynchronous I/O complete handle to avoid memory leaks. */</span>
+<span class="w">        </span><span class="n">rados_aio_release</span><span class="p">(</span><span class="n">comp</span><span class="p">);</span>
+
+
+<span class="w">        </span><span class="kt">char</span><span class="w"> </span><span class="n">xattr_res</span><span class="p">[</span><span class="mi">100</span><span class="p">];</span>
+<span class="w">        </span><span class="n">err</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rados_getxattr</span><span class="p">(</span><span class="n">io</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;hw&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;lang&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">xattr_res</span><span class="p">,</span><span class="w"> </span><span class="mi">5</span><span class="p">);</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">err</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                </span><span class="n">fprintf</span><span class="p">(</span><span class="n">stderr</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;%s: Cannot read xattr. %s %s</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">argv</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="w"> </span><span class="n">poolname</span><span class="p">,</span><span class="w"> </span><span class="n">strerror</span><span class="p">(</span><span class="o">-</span><span class="n">err</span><span class="p">));</span>
+<span class="w">                </span><span class="n">rados_ioctx_destroy</span><span class="p">(</span><span class="n">io</span><span class="p">);</span>
+<span class="w">                </span><span class="n">rados_shutdown</span><span class="p">(</span><span class="n">cluster</span><span class="p">);</span>
+<span class="w">                </span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+<span class="w">        </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;</span><span class="se">\n</span><span class="s">Read xattr </span><span class="se">\&quot;</span><span class="s">lang</span><span class="se">\&quot;</span><span class="s"> for object </span><span class="se">\&quot;</span><span class="s">hw</span><span class="se">\&quot;</span><span class="s">. The contents are:</span><span class="se">\n</span><span class="s"> %s </span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">xattr_res</span><span class="p">);</span>
+<span class="w">        </span><span class="p">}</span>
+
+<span class="w">        </span><span class="n">err</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rados_rmxattr</span><span class="p">(</span><span class="n">io</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;hw&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;lang&quot;</span><span class="p">);</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">err</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                </span><span class="n">fprintf</span><span class="p">(</span><span class="n">stderr</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;%s: Cannot remove xattr. %s %s</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">argv</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="w"> </span><span class="n">poolname</span><span class="p">,</span><span class="w"> </span><span class="n">strerror</span><span class="p">(</span><span class="o">-</span><span class="n">err</span><span class="p">));</span>
+<span class="w">                </span><span class="n">rados_ioctx_destroy</span><span class="p">(</span><span class="n">io</span><span class="p">);</span>
+<span class="w">                </span><span class="n">rados_shutdown</span><span class="p">(</span><span class="n">cluster</span><span class="p">);</span>
+<span class="w">                </span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+<span class="w">        </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;</span><span class="se">\n</span><span class="s">Removed xattr </span><span class="se">\&quot;</span><span class="s">lang</span><span class="se">\&quot;</span><span class="s"> for object </span><span class="se">\&quot;</span><span class="s">hw</span><span class="se">\&quot;</span><span class="s">.</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+<span class="w">        </span><span class="p">}</span>
+
+<span class="w">        </span><span class="n">err</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rados_remove</span><span class="p">(</span><span class="n">io</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;hw&quot;</span><span class="p">);</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">err</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                </span><span class="n">fprintf</span><span class="p">(</span><span class="n">stderr</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;%s: Cannot remove object. %s %s</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">argv</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="w"> </span><span class="n">poolname</span><span class="p">,</span><span class="w"> </span><span class="n">strerror</span><span class="p">(</span><span class="o">-</span><span class="n">err</span><span class="p">));</span>
+<span class="w">                </span><span class="n">rados_ioctx_destroy</span><span class="p">(</span><span class="n">io</span><span class="p">);</span>
+<span class="w">                </span><span class="n">rados_shutdown</span><span class="p">(</span><span class="n">cluster</span><span class="p">);</span>
+<span class="w">                </span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+<span class="w">        </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;</span><span class="se">\n</span><span class="s">Removed object </span><span class="se">\&quot;</span><span class="s">hw</span><span class="se">\&quot;</span><span class="s">.</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+<span class="w">        </span><span class="p">}</span>
+
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+<section id="id3">
+<h3>C++ Example<a class="headerlink" href="#id3" title="Permalink to this heading">¶</a></h3>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;iostream&gt;</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;string&gt;</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;rados/librados.hpp&gt;</span>
+
+<span class="kt">int</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">argc</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="o">**</span><span class="n">argv</span><span class="p">)</span>
+<span class="p">{</span>
+
+<span class="w">        </span><span class="cm">/* Continued from previous C++ example, where cluster handle and</span>
+<span class="cm">         * connection are established. First declare an I/O Context.</span>
+<span class="cm">         */</span>
+
+<span class="w">        </span><span class="n">librados</span><span class="o">::</span><span class="n">IoCtx</span><span class="w"> </span><span class="n">io_ctx</span><span class="p">;</span>
+<span class="w">        </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">pool_name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;data&quot;</span><span class="p">;</span>
+
+<span class="w">        </span><span class="p">{</span>
+<span class="w">                </span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cluster</span><span class="p">.</span><span class="n">ioctx_create</span><span class="p">(</span><span class="n">pool_name</span><span class="p">,</span><span class="w"> </span><span class="n">io_ctx</span><span class="p">);</span>
+<span class="w">                </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ret</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                        </span><span class="n">std</span><span class="o">::</span><span class="n">cerr</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;Couldn&#39;t set up ioctx! error &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">ret</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+<span class="w">                        </span><span class="n">exit</span><span class="p">(</span><span class="n">EXIT_FAILURE</span><span class="p">);</span>
+<span class="w">                </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                        </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;Created an ioctx for the pool.&quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+<span class="w">                </span><span class="p">}</span>
+<span class="w">        </span><span class="p">}</span>
+
+
+<span class="w">        </span><span class="cm">/* Write an object synchronously. */</span>
+<span class="w">        </span><span class="p">{</span>
+<span class="w">                </span><span class="n">librados</span><span class="o">::</span><span class="n">bufferlist</span><span class="w"> </span><span class="n">bl</span><span class="p">;</span>
+<span class="w">                </span><span class="n">bl</span><span class="p">.</span><span class="n">append</span><span class="p">(</span><span class="s">&quot;Hello World!&quot;</span><span class="p">);</span>
+<span class="w">                </span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">io_ctx</span><span class="p">.</span><span class="n">write_full</span><span class="p">(</span><span class="s">&quot;hw&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">bl</span><span class="p">);</span>
+<span class="w">                </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ret</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                        </span><span class="n">std</span><span class="o">::</span><span class="n">cerr</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;Couldn&#39;t write object! error &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">ret</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+<span class="w">                        </span><span class="n">exit</span><span class="p">(</span><span class="n">EXIT_FAILURE</span><span class="p">);</span>
+<span class="w">                </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                        </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;Wrote new object &#39;hw&#39; &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+<span class="w">                </span><span class="p">}</span>
+<span class="w">        </span><span class="p">}</span>
+
+
+<span class="w">        </span><span class="cm">/*</span>
+<span class="cm">         * Add an xattr to the object.</span>
+<span class="cm">         */</span>
+<span class="w">        </span><span class="p">{</span>
+<span class="w">                </span><span class="n">librados</span><span class="o">::</span><span class="n">bufferlist</span><span class="w"> </span><span class="n">lang_bl</span><span class="p">;</span>
+<span class="w">                </span><span class="n">lang_bl</span><span class="p">.</span><span class="n">append</span><span class="p">(</span><span class="s">&quot;en_US&quot;</span><span class="p">);</span>
+<span class="w">                </span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">io_ctx</span><span class="p">.</span><span class="n">setxattr</span><span class="p">(</span><span class="s">&quot;hw&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;lang&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">lang_bl</span><span class="p">);</span>
+<span class="w">                </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ret</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                        </span><span class="n">std</span><span class="o">::</span><span class="n">cerr</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;failed to set xattr version entry! error &quot;</span>
+<span class="w">                        </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">ret</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+<span class="w">                        </span><span class="n">exit</span><span class="p">(</span><span class="n">EXIT_FAILURE</span><span class="p">);</span>
+<span class="w">                </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                        </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;Set the xattr &#39;lang&#39; on our object!&quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+<span class="w">                </span><span class="p">}</span>
+<span class="w">        </span><span class="p">}</span>
+
+
+<span class="w">        </span><span class="cm">/*</span>
+<span class="cm">         * Read the object back asynchronously.</span>
+<span class="cm">         */</span>
+<span class="w">        </span><span class="p">{</span>
+<span class="w">                </span><span class="n">librados</span><span class="o">::</span><span class="n">bufferlist</span><span class="w"> </span><span class="n">read_buf</span><span class="p">;</span>
+<span class="w">                </span><span class="kt">int</span><span class="w"> </span><span class="n">read_len</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">4194304</span><span class="p">;</span>
+
+<span class="w">                </span><span class="c1">//Create I/O Completion.</span>
+<span class="w">                </span><span class="n">librados</span><span class="o">::</span><span class="n">AioCompletion</span><span class="w"> </span><span class="o">*</span><span class="n">read_completion</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">librados</span><span class="o">::</span><span class="n">Rados</span><span class="o">::</span><span class="n">aio_create_completion</span><span class="p">();</span>
+
+<span class="w">                </span><span class="c1">//Send read request.</span>
+<span class="w">                </span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">io_ctx</span><span class="p">.</span><span class="n">aio_read</span><span class="p">(</span><span class="s">&quot;hw&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">read_completion</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">read_buf</span><span class="p">,</span><span class="w"> </span><span class="n">read_len</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span>
+<span class="w">                </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ret</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                        </span><span class="n">std</span><span class="o">::</span><span class="n">cerr</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;Couldn&#39;t start read object! error &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">ret</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+<span class="w">                        </span><span class="n">exit</span><span class="p">(</span><span class="n">EXIT_FAILURE</span><span class="p">);</span>
+<span class="w">                </span><span class="p">}</span>
+
+<span class="w">                </span><span class="c1">// Wait for the request to complete, and check that it succeeded.</span>
+<span class="w">                </span><span class="n">read_completion</span><span class="o">-&gt;</span><span class="n">wait_for_complete</span><span class="p">();</span>
+<span class="w">                </span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">read_completion</span><span class="o">-&gt;</span><span class="n">get_return_value</span><span class="p">();</span>
+<span class="w">                </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ret</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                        </span><span class="n">std</span><span class="o">::</span><span class="n">cerr</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;Couldn&#39;t read object! error &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">ret</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+<span class="w">                        </span><span class="n">exit</span><span class="p">(</span><span class="n">EXIT_FAILURE</span><span class="p">);</span>
+<span class="w">                </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                        </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;Read object hw asynchronously with contents.</span><span class="se">\n</span><span class="s">&quot;</span>
+<span class="w">                        </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">read_buf</span><span class="p">.</span><span class="n">c_str</span><span class="p">()</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+<span class="w">                </span><span class="p">}</span>
+<span class="w">        </span><span class="p">}</span>
+
+
+<span class="w">        </span><span class="cm">/*</span>
+<span class="cm">         * Read the xattr.</span>
+<span class="cm">         */</span>
+<span class="w">        </span><span class="p">{</span>
+<span class="w">                </span><span class="n">librados</span><span class="o">::</span><span class="n">bufferlist</span><span class="w"> </span><span class="n">lang_res</span><span class="p">;</span>
+<span class="w">                </span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">io_ctx</span><span class="p">.</span><span class="n">getxattr</span><span class="p">(</span><span class="s">&quot;hw&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;lang&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">lang_res</span><span class="p">);</span>
+<span class="w">                </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ret</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                        </span><span class="n">std</span><span class="o">::</span><span class="n">cerr</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;failed to get xattr version entry! error &quot;</span>
+<span class="w">                        </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">ret</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+<span class="w">                        </span><span class="n">exit</span><span class="p">(</span><span class="n">EXIT_FAILURE</span><span class="p">);</span>
+<span class="w">                </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                        </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;Got the xattr &#39;lang&#39; from object hw!&quot;</span>
+<span class="w">                        </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">lang_res</span><span class="p">.</span><span class="n">c_str</span><span class="p">()</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+<span class="w">                </span><span class="p">}</span>
+<span class="w">        </span><span class="p">}</span>
+
+
+<span class="w">        </span><span class="cm">/*</span>
+<span class="cm">         * Remove the xattr.</span>
+<span class="cm">         */</span>
+<span class="w">        </span><span class="p">{</span>
+<span class="w">                </span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">io_ctx</span><span class="p">.</span><span class="n">rmxattr</span><span class="p">(</span><span class="s">&quot;hw&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;lang&quot;</span><span class="p">);</span>
+<span class="w">                </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ret</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                        </span><span class="n">std</span><span class="o">::</span><span class="n">cerr</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;Failed to remove xattr! error &quot;</span>
+<span class="w">                        </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">ret</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+<span class="w">                        </span><span class="n">exit</span><span class="p">(</span><span class="n">EXIT_FAILURE</span><span class="p">);</span>
+<span class="w">                </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                        </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;Removed the xattr &#39;lang&#39; from our object!&quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+<span class="w">                </span><span class="p">}</span>
+<span class="w">        </span><span class="p">}</span>
+
+<span class="w">        </span><span class="cm">/*</span>
+<span class="cm">         * Remove the object.</span>
+<span class="cm">         */</span>
+<span class="w">        </span><span class="p">{</span>
+<span class="w">                </span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">io_ctx</span><span class="p">.</span><span class="n">remove</span><span class="p">(</span><span class="s">&quot;hw&quot;</span><span class="p">);</span>
+<span class="w">                </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ret</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                        </span><span class="n">std</span><span class="o">::</span><span class="n">cerr</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;Couldn&#39;t remove object! error &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">ret</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+<span class="w">                        </span><span class="n">exit</span><span class="p">(</span><span class="n">EXIT_FAILURE</span><span class="p">);</span>
+<span class="w">                </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                        </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;Removed object &#39;hw&#39;.&quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+<span class="w">                </span><span class="p">}</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+<section id="id4">
+<h3>Python Example<a class="headerlink" href="#id4" title="Permalink to this heading">¶</a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span> <span class="s2">&quot;</span><span class="se">\n\n</span><span class="s2">I/O Context and Object Operations&quot;</span>
+<span class="nb">print</span> <span class="s2">&quot;=================================&quot;</span>
+
+<span class="nb">print</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Creating a context for the &#39;data&#39; pool&quot;</span>
+<span class="k">if</span> <span class="ow">not</span> <span class="n">cluster</span><span class="o">.</span><span class="n">pool_exists</span><span class="p">(</span><span class="s1">&#39;data&#39;</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s1">&#39;No data pool exists&#39;</span><span class="p">)</span>
+<span class="n">ioctx</span> <span class="o">=</span> <span class="n">cluster</span><span class="o">.</span><span class="n">open_ioctx</span><span class="p">(</span><span class="s1">&#39;data&#39;</span><span class="p">)</span>
+
+<span class="nb">print</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Writing object &#39;hw&#39; with contents &#39;Hello World!&#39; to pool &#39;data&#39;.&quot;</span>
+<span class="n">ioctx</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;hw&quot;</span><span class="p">,</span> <span class="s2">&quot;Hello World!&quot;</span><span class="p">)</span>
+<span class="nb">print</span> <span class="s2">&quot;Writing XATTR &#39;lang&#39; with value &#39;en_US&#39; to object &#39;hw&#39;&quot;</span>
+<span class="n">ioctx</span><span class="o">.</span><span class="n">set_xattr</span><span class="p">(</span><span class="s2">&quot;hw&quot;</span><span class="p">,</span> <span class="s2">&quot;lang&quot;</span><span class="p">,</span> <span class="s2">&quot;en_US&quot;</span><span class="p">)</span>
+
+
+<span class="nb">print</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Writing object &#39;bm&#39; with contents &#39;Bonjour tout le monde!&#39; to pool &#39;data&#39;.&quot;</span>
+<span class="n">ioctx</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;bm&quot;</span><span class="p">,</span> <span class="s2">&quot;Bonjour tout le monde!&quot;</span><span class="p">)</span>
+<span class="nb">print</span> <span class="s2">&quot;Writing XATTR &#39;lang&#39; with value &#39;fr_FR&#39; to object &#39;bm&#39;&quot;</span>
+<span class="n">ioctx</span><span class="o">.</span><span class="n">set_xattr</span><span class="p">(</span><span class="s2">&quot;bm&quot;</span><span class="p">,</span> <span class="s2">&quot;lang&quot;</span><span class="p">,</span> <span class="s2">&quot;fr_FR&quot;</span><span class="p">)</span>
+
+<span class="nb">print</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Contents of object &#39;hw&#39;</span><span class="se">\n</span><span class="s2">------------------------&quot;</span>
+<span class="nb">print</span> <span class="n">ioctx</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="s2">&quot;hw&quot;</span><span class="p">)</span>
+
+<span class="nb">print</span> <span class="s2">&quot;</span><span class="se">\n\n</span><span class="s2">Getting XATTR &#39;lang&#39; from object &#39;hw&#39;&quot;</span>
+<span class="nb">print</span> <span class="n">ioctx</span><span class="o">.</span><span class="n">get_xattr</span><span class="p">(</span><span class="s2">&quot;hw&quot;</span><span class="p">,</span> <span class="s2">&quot;lang&quot;</span><span class="p">)</span>
+
+<span class="nb">print</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Contents of object &#39;bm&#39;</span><span class="se">\n</span><span class="s2">------------------------&quot;</span>
+<span class="nb">print</span> <span class="n">ioctx</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="s2">&quot;bm&quot;</span><span class="p">)</span>
+
+<span class="nb">print</span> <span class="s2">&quot;Getting XATTR &#39;lang&#39; from object &#39;bm&#39;&quot;</span>
+<span class="nb">print</span> <span class="n">ioctx</span><span class="o">.</span><span class="n">get_xattr</span><span class="p">(</span><span class="s2">&quot;bm&quot;</span><span class="p">,</span> <span class="s2">&quot;lang&quot;</span><span class="p">)</span>
+
+
+<span class="nb">print</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Removing object &#39;hw&#39;&quot;</span>
+<span class="n">ioctx</span><span class="o">.</span><span class="n">remove_object</span><span class="p">(</span><span class="s2">&quot;hw&quot;</span><span class="p">)</span>
+
+<span class="nb">print</span> <span class="s2">&quot;Removing object &#39;bm&#39;&quot;</span>
+<span class="n">ioctx</span><span class="o">.</span><span class="n">remove_object</span><span class="p">(</span><span class="s2">&quot;bm&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="id5">
+<h3>Java-Example<a class="headerlink" href="#id5" title="Permalink to this heading">¶</a></h3>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">com.ceph.rados.Rados</span><span class="p">;</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">com.ceph.rados.RadosException</span><span class="p">;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">java.io.File</span><span class="p">;</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">com.ceph.rados.IoCTX</span><span class="p">;</span>
+
+<span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">CephClient</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="kd">public</span><span class="w"> </span><span class="kd">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">main</span><span class="w"> </span><span class="p">(</span><span class="n">String</span><span class="w"> </span><span class="n">args</span><span class="o">[]</span><span class="p">){</span>
+
+<span class="w">                </span><span class="k">try</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                        </span><span class="n">Rados</span><span class="w"> </span><span class="n">cluster</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">Rados</span><span class="p">(</span><span class="s">&quot;admin&quot;</span><span class="p">);</span>
+<span class="w">                        </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">&quot;Created cluster handle.&quot;</span><span class="p">);</span>
+
+<span class="w">                        </span><span class="n">File</span><span class="w"> </span><span class="n">f</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">File</span><span class="p">(</span><span class="s">&quot;/etc/ceph/ceph.conf&quot;</span><span class="p">);</span>
+<span class="w">                        </span><span class="n">cluster</span><span class="p">.</span><span class="na">confReadFile</span><span class="p">(</span><span class="n">f</span><span class="p">);</span>
+<span class="w">                        </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">&quot;Read the configuration file.&quot;</span><span class="p">);</span>
+
+<span class="w">                        </span><span class="n">cluster</span><span class="p">.</span><span class="na">connect</span><span class="p">();</span>
+<span class="w">                        </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">&quot;Connected to the cluster.&quot;</span><span class="p">);</span>
+
+<span class="w">                        </span><span class="n">IoCTX</span><span class="w"> </span><span class="n">io</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cluster</span><span class="p">.</span><span class="na">ioCtxCreate</span><span class="p">(</span><span class="s">&quot;data&quot;</span><span class="p">);</span>
+
+<span class="w">                        </span><span class="n">String</span><span class="w"> </span><span class="n">oidone</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;hw&quot;</span><span class="p">;</span>
+<span class="w">                        </span><span class="n">String</span><span class="w"> </span><span class="n">contentone</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;Hello World!&quot;</span><span class="p">;</span>
+<span class="w">                        </span><span class="n">io</span><span class="p">.</span><span class="na">write</span><span class="p">(</span><span class="n">oidone</span><span class="p">,</span><span class="w"> </span><span class="n">contentone</span><span class="p">);</span>
+
+<span class="w">                        </span><span class="n">String</span><span class="w"> </span><span class="n">oidtwo</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;bm&quot;</span><span class="p">;</span>
+<span class="w">                        </span><span class="n">String</span><span class="w"> </span><span class="n">contenttwo</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;Bonjour tout le monde!&quot;</span><span class="p">;</span>
+<span class="w">                        </span><span class="n">io</span><span class="p">.</span><span class="na">write</span><span class="p">(</span><span class="n">oidtwo</span><span class="p">,</span><span class="w"> </span><span class="n">contenttwo</span><span class="p">);</span>
+
+<span class="w">                        </span><span class="n">String</span><span class="o">[]</span><span class="w"> </span><span class="n">objects</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">io</span><span class="p">.</span><span class="na">listObjects</span><span class="p">();</span>
+<span class="w">                        </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="n">String</span><span class="w"> </span><span class="n">object</span><span class="p">:</span><span class="w"> </span><span class="n">objects</span><span class="p">)</span>
+<span class="w">                                </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">object</span><span class="p">);</span>
+
+<span class="w">                        </span><span class="n">io</span><span class="p">.</span><span class="na">remove</span><span class="p">(</span><span class="n">oidone</span><span class="p">);</span>
+<span class="w">                        </span><span class="n">io</span><span class="p">.</span><span class="na">remove</span><span class="p">(</span><span class="n">oidtwo</span><span class="p">);</span>
+
+<span class="w">                        </span><span class="n">cluster</span><span class="p">.</span><span class="na">ioCtxDestroy</span><span class="p">(</span><span class="n">io</span><span class="p">);</span>
+
+<span class="w">                </span><span class="p">}</span><span class="w"> </span><span class="k">catch</span><span class="w"> </span><span class="p">(</span><span class="n">RadosException</span><span class="w"> </span><span class="n">e</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                        </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">e</span><span class="p">.</span><span class="na">getMessage</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="s">&quot;: &quot;</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">e</span><span class="p">.</span><span class="na">getReturnValue</span><span class="p">());</span>
+<span class="w">                </span><span class="p">}</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+<section id="id6">
+<h3>PHP Example<a class="headerlink" href="#id6" title="Permalink to this heading">¶</a></h3>
+<div class="highlight-php notranslate"><div class="highlight"><pre><span></span><span class="cp">&lt;?php</span>
+
+<span class="nv">$io</span> <span class="o">=</span> <span class="nx">rados_ioctx_create</span><span class="p">(</span><span class="nv">$r</span><span class="p">,</span> <span class="s2">&quot;mypool&quot;</span><span class="p">);</span>
+<span class="nx">rados_write_full</span><span class="p">(</span><span class="nv">$io</span><span class="p">,</span> <span class="s2">&quot;oidOne&quot;</span><span class="p">,</span> <span class="s2">&quot;mycontents&quot;</span><span class="p">);</span>
+<span class="nx">rados_remove</span><span class="p">(</span><span class="s2">&quot;oidOne&quot;</span><span class="p">);</span>
+<span class="nx">rados_ioctx_destroy</span><span class="p">(</span><span class="nv">$io</span><span class="p">);</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="step-4-closing-sessions">
+<h2>Step 4: Closing Sessions<a class="headerlink" href="#step-4-closing-sessions" title="Permalink to this heading">¶</a></h2>
+<p>Once your app finishes with the I/O Context and cluster handle, the app should
+close the connection and shutdown the handle. For asynchronous I/O, the app
+should also ensure that pending asynchronous operations have completed.</p>
+<section id="id7">
+<h3>C Example<a class="headerlink" href="#id7" title="Permalink to this heading">¶</a></h3>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="n">rados_ioctx_destroy</span><span class="p">(</span><span class="n">io</span><span class="p">);</span>
+<span class="n">rados_shutdown</span><span class="p">(</span><span class="n">cluster</span><span class="p">);</span>
+</pre></div>
+</div>
+</section>
+<section id="id8">
+<h3>C++ Example<a class="headerlink" href="#id8" title="Permalink to this heading">¶</a></h3>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">io_ctx</span><span class="p">.</span><span class="n">close</span><span class="p">();</span>
+<span class="n">cluster</span><span class="p">.</span><span class="n">shutdown</span><span class="p">();</span>
+</pre></div>
+</div>
+</section>
+<section id="id9">
+<h3>Java Example<a class="headerlink" href="#id9" title="Permalink to this heading">¶</a></h3>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="n">cluster</span><span class="p">.</span><span class="na">ioCtxDestroy</span><span class="p">(</span><span class="n">io</span><span class="p">);</span>
+<span class="n">cluster</span><span class="p">.</span><span class="na">shutDown</span><span class="p">();</span>
+</pre></div>
+</div>
+</section>
+<section id="id10">
+<h3>Python Example<a class="headerlink" href="#id10" title="Permalink to this heading">¶</a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Closing the connection.&quot;</span>
+<span class="n">ioctx</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+<span class="nb">print</span> <span class="s2">&quot;Shutting down the handle.&quot;</span>
+<span class="n">cluster</span><span class="o">.</span><span class="n">shutdown</span><span class="p">()</span>
+</pre></div>
+</div>
+</section>
+<section id="id11">
+<h3>PHP Example<a class="headerlink" href="#id11" title="Permalink to this heading">¶</a></h3>
+<div class="highlight-php notranslate"><div class="highlight"><pre><span></span><span class="x">rados_shutdown($r);</span>
+</pre></div>
+</div>
+</section>
+</section>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../../">
+              <img class="logo" src="../../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../install/">Installing Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cephadm/">Cephadm</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../">Ceph Storage Cluster</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../../configuration/">Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../cephadm/">Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../operations/">Operations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../man/">Man Pages</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../troubleshooting/">Troubleshooting</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../">APIs</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Introduction to librados</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#step-1-getting-librados">Step 1: Getting librados</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#getting-librados-for-c-c">Getting librados for C/C++</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#getting-librados-for-python">Getting librados for Python</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#getting-librados-for-java">Getting librados for Java</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#getting-librados-for-php">Getting librados for PHP</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#step-2-configuring-a-cluster-handle">Step 2: Configuring a Cluster Handle</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#c-example">C Example</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#id1">C++ Example</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#python-example">Python Example</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#java-example">Java Example</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#php-example">PHP Example</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#step-3-creating-an-i-o-context">Step 3: Creating an I/O Context</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#id2">C Example</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#id3">C++ Example</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#id4">Python Example</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#id5">Java-Example</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#id6">PHP Example</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#step-4-closing-sessions">Step 4: Closing Sessions</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#id7">C Example</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#id8">C++ Example</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#id9">Java Example</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#id10">Python Example</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#id11">PHP Example</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../librados/">librados (C)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../libradospp/">librados (C++)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../python/">librados (Python)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../libcephsqlite/">libcephsqlite (SQLite)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../objclass-sdk/">object class</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cephfs/">Ceph File System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../rbd/">Ceph Block Device</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../radosgw/">Ceph Object Gateway</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../mgr/">Ceph Manager Daemon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../mgr/dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dev/developer_guide/">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dev/internals/">Ceph Internals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../../../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../librados/" title="Librados (C)"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../" title="Ceph Storage Cluster APIs"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../" >Ceph Storage Cluster</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../" >Ceph Storage Cluster APIs</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Introduction to librados</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

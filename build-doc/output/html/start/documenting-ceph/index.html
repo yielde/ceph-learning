@@ -1,0 +1,1024 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Documenting Ceph &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css" />
+    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../genindex/" />
+    <link rel="search" title="Search" href="../../search/" />
+    <link rel="next" title="Installing Ceph" href="../../install/" />
+    <link rel="prev" title="Get Involved in the Ceph Community!" href="../get-involved/" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../../install/" title="Installing Ceph"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../get-involved/" title="Get Involved in the Ceph Community!"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../intro/" accesskey="U">Intro to Ceph</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Documenting Ceph</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="documenting-ceph">
+<span id="id1"></span><h1>Documenting Ceph<a class="headerlink" href="#documenting-ceph" title="Permalink to this heading">¶</a></h1>
+<p>You can help the Ceph project by contributing to the documentation.  Even
+small contributions help the Ceph project.</p>
+<p>The Ceph documentation source resides in the <code class="docutils literal notranslate"><span class="pre">ceph/doc</span></code> directory of the Ceph
+repository, and Python Sphinx renders the source into HTML and manpages. The
+<a class="reference external" href="http://ceph.com/docs">http://ceph.com/docs</a> link currently displays the  <code class="docutils literal notranslate"><span class="pre">master</span></code> branch by default,
+but you may view documentation for older branches (e.g., <code class="docutils literal notranslate"><span class="pre">argonaut</span></code>) or future
+branches (e.g., <code class="docutils literal notranslate"><span class="pre">next</span></code>) as well as work-in-progress branches by substituting
+<code class="docutils literal notranslate"><span class="pre">master</span></code> with the branch name you prefer.</p>
+<p>Another way to suggest a documentation correction is to make a pull request.
+The instructions for making a pull request against the Ceph documentation are
+in the section <a class="reference internal" href="#making-contributions"><span class="std std-ref">Making Contributions</span></a>.</p>
+<p>If this is your first time making an improvement to the documentation or
+if you have noticed a small mistake (such as a spelling error or a typo),
+it will be easier to send an email than to make a pull request. You will
+be credited for the improvement unless you instruct Ceph Upstream
+Documentation not to credit you.</p>
+<section id="location-of-the-documentation-in-the-repository">
+<h2>Location of the Documentation in the Repository<a class="headerlink" href="#location-of-the-documentation-in-the-repository" title="Permalink to this heading">¶</a></h2>
+<p>The Ceph documentation source is in the <code class="docutils literal notranslate"><span class="pre">ceph/doc</span></code> directory of the Ceph
+repository. Python Sphinx renders the source into HTML and manpages.</p>
+</section>
+<section id="viewing-old-ceph-documentation">
+<h2>Viewing Old Ceph Documentation<a class="headerlink" href="#viewing-old-ceph-documentation" title="Permalink to this heading">¶</a></h2>
+<p>The <a class="reference external" href="https://docs.ceph.com">https://docs.ceph.com</a> link displays the latest release branch by default
+(for example, if “Quincy” is the most recent release, then by default
+<a class="reference external" href="https://docs.ceph.com">https://docs.ceph.com</a> displays the documentation for Quincy), but you can view
+the documentation for older versions of Ceph (for example, <code class="docutils literal notranslate"><span class="pre">pacific</span></code>) by
+replacing the version name in the url (for example, <code class="docutils literal notranslate"><span class="pre">quincy</span></code> in
+<a class="reference external" href="https://docs.ceph.com/en/quincy">https://docs.ceph.com/en/pacific</a>) with the
+branch name you prefer (for example, <code class="docutils literal notranslate"><span class="pre">pacific</span></code>, to create a URL that reads
+<a class="reference external" href="https://docs.ceph.com/en/pacific/">https://docs.ceph.com/en/pacific/</a>).</p>
+</section>
+<section id="making-contributions">
+<span id="id3"></span><h2>Making Contributions<a class="headerlink" href="#making-contributions" title="Permalink to this heading">¶</a></h2>
+<p>Making a documentation contribution involves the same basic procedure as making
+a code contribution, with one exception: you must build documentation source
+instead of compiling program source. This sequence (the sequence of building
+the documentation source) includes the following steps:</p>
+<ol class="arabic simple">
+<li><p><a class="reference internal" href="#get-the-source">Get the Source</a></p></li>
+<li><p><a class="reference internal" href="#select-a-branch">Select a Branch</a></p></li>
+<li><p><a class="reference internal" href="#make-a-change">Make a Change</a></p></li>
+<li><p><a class="reference internal" href="#build-the-source">Build the Source</a></p></li>
+<li><p><a class="reference internal" href="#commit-the-change">Commit the Change</a></p></li>
+<li><p><a class="reference internal" href="#push-the-change">Push the Change</a></p></li>
+<li><p><a class="reference internal" href="#make-a-pull-request">Make a Pull Request</a></p></li>
+<li><p><a class="reference internal" href="#notify-us">Notify Us</a></p></li>
+</ol>
+<section id="get-the-source">
+<h3>Get the Source<a class="headerlink" href="#get-the-source" title="Permalink to this heading">¶</a></h3>
+<p>The source of the Ceph documentation is a collection of ReStructured Text files
+that are in the Ceph repository in the <code class="docutils literal notranslate"><span class="pre">ceph/doc</span></code> directory. For details
+on GitHub and Ceph, see <a class="reference internal" href="../get-involved/#get-involved"><span class="std std-ref">Get Involved in the Ceph Community!</span></a>.</p>
+<p>Use the <a class="reference external" href="https://help.github.com/articles/using-pull-requests">Fork and Pull</a> approach to make documentation contributions. To do
+this, you must:</p>
+<ol class="arabic">
+<li><p>Install git locally. In Debian or Ubuntu, run the following command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><style type="text/css">
+span.prompt1:before {
+  content: "$ ";
+}
+</style><span class="prompt1">sudo<span class="w"> </span>apt-get<span class="w"> </span>install<span class="w"> </span>git</span>
+</pre></div></div><p>In Fedora, run the following command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">sudo<span class="w"> </span>yum<span class="w"> </span>install<span class="w"> </span>git</span>
+</pre></div></div><p>In CentOS/RHEL, run the following command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">sudo<span class="w"> </span>yum<span class="w"> </span>install<span class="w"> </span>git</span>
+</pre></div></div></li>
+<li><p>Make sure that your <code class="docutils literal notranslate"><span class="pre">.gitconfig</span></code> file has been configured to include your
+name and email address:</p>
+<div class="highlight-ini notranslate"><div class="highlight"><pre><span></span><span class="k">[user]</span>
+<span class="w">   </span><span class="na">email</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">{your-email-address}</span>
+<span class="w">   </span><span class="na">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">{your-name}</span>
+</pre></div>
+</div>
+<p>For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">git<span class="w"> </span>config<span class="w"> </span>--global<span class="w"> </span>user.name<span class="w"> </span><span class="s2">&quot;John Doe&quot;</span></span>
+<span class="prompt1">git<span class="w"> </span>config<span class="w"> </span>--global<span class="w"> </span>user.email<span class="w"> </span>johndoe@example.com</span>
+</pre></div></div></li>
+<li><p>Create a  <a class="reference external" href="http://github.com">github</a> account (if you don’t have one).</p></li>
+<li><p>Fork the Ceph project. See <a class="reference external" href="https://github.com/ceph/ceph">https://github.com/ceph/ceph</a>.</p></li>
+<li><p>Clone your fork of the Ceph project to your local host. This creates what is
+known as a “local working copy”.</p></li>
+</ol>
+<p>The Ceph documentation is organized by component:</p>
+<ul class="simple">
+<li><p><strong>Ceph Storage Cluster:</strong> The Ceph Storage Cluster documentation is
+in the <code class="docutils literal notranslate"><span class="pre">doc/rados</span></code> directory.</p></li>
+<li><p><strong>Ceph Block Device:</strong> The Ceph Block Device documentation is in
+the <code class="docutils literal notranslate"><span class="pre">doc/rbd</span></code> directory.</p></li>
+<li><p><strong>Ceph Object Storage:</strong> The Ceph Object Storage documentation is in
+the <code class="docutils literal notranslate"><span class="pre">doc/radosgw</span></code> directory.</p></li>
+<li><p><strong>Ceph File System:</strong> The Ceph File System documentation is in the
+<code class="docutils literal notranslate"><span class="pre">doc/cephfs</span></code> directory.</p></li>
+<li><p><strong>Installation (Quick):</strong> Quick start documentation is in the
+<code class="docutils literal notranslate"><span class="pre">doc/start</span></code> directory.</p></li>
+<li><p><strong>Installation (Manual):</strong> Documentaton concerning the manual installation of
+Ceph is in the <code class="docutils literal notranslate"><span class="pre">doc/install</span></code> directory.</p></li>
+<li><p><strong>Manpage:</strong> Manpage source is in the <code class="docutils literal notranslate"><span class="pre">doc/man</span></code> directory.</p></li>
+<li><p><strong>Developer:</strong> Developer documentation is in the <code class="docutils literal notranslate"><span class="pre">doc/dev</span></code>
+directory.</p></li>
+<li><p><strong>Images:</strong> Images including JPEG and PNG files are stored in the
+<code class="docutils literal notranslate"><span class="pre">doc/images</span></code> directory.</p></li>
+</ul>
+</section>
+<section id="select-a-branch">
+<h3>Select a Branch<a class="headerlink" href="#select-a-branch" title="Permalink to this heading">¶</a></h3>
+<p>When you make small changes to the documentation, such as fixing typographical
+errors or clarifying explanations, use the <code class="docutils literal notranslate"><span class="pre">main</span></code> branch (default). You
+should also use the <code class="docutils literal notranslate"><span class="pre">main</span></code> branch when making contributions to features that
+are in the current release. <code class="docutils literal notranslate"><span class="pre">main</span></code> is the most commonly used branch. :</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">git<span class="w"> </span>checkout<span class="w"> </span>main</span>
+</pre></div></div><p>When you make changes to documentation that affect an upcoming release, use
+the <code class="docutils literal notranslate"><span class="pre">next</span></code> branch. <code class="docutils literal notranslate"><span class="pre">next</span></code> is the second most commonly used branch. :</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">git<span class="w"> </span>checkout<span class="w"> </span>next</span>
+</pre></div></div><p>When you are making substantial contributions such as new features that are not
+yet in the current release; if your contribution is related to an issue with a
+tracker ID; or, if you want to see your documentation rendered on the Ceph.com
+website before it gets merged into the <code class="docutils literal notranslate"><span class="pre">main</span></code> branch, you should create a
+branch. To distinguish branches that include only documentation updates, we
+prepend them with <code class="docutils literal notranslate"><span class="pre">wip-doc</span></code> by convention, following the form
+<code class="docutils literal notranslate"><span class="pre">wip-doc-{your-branch-name}</span></code>. If the branch relates to an issue filed in
+<a class="reference external" href="http://tracker.ceph.com/issues">http://tracker.ceph.com/issues</a>, the branch name incorporates the issue number.
+For example, if a documentation branch is a fix for issue #4000, the branch name
+should be <code class="docutils literal notranslate"><span class="pre">wip-doc-4000</span></code> by convention and the relevant tracker URL will be
+<a class="reference external" href="http://tracker.ceph.com/issues/4000">http://tracker.ceph.com/issues/4000</a>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Please do not mingle documentation contributions and source code
+contributions in a single commit. When you keep documentation
+commits separate from source code commits, it simplifies the review
+process. We highly recommend that any pull request that adds a feature or
+a configuration option should also include a documentation commit that
+describes the changes.</p>
+</div>
+<p>Before you create your branch name, ensure that it doesn’t already exist in the
+local or remote repository. :</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">git<span class="w"> </span>branch<span class="w"> </span>-a<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>wip-doc-<span class="o">{</span>your-branch-name<span class="o">}</span></span>
+</pre></div></div><p>If it doesn’t exist, create your branch:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">git<span class="w"> </span>checkout<span class="w"> </span>-b<span class="w"> </span>wip-doc-<span class="o">{</span>your-branch-name<span class="o">}</span></span>
+</pre></div></div></section>
+<section id="make-a-change">
+<h3>Make a Change<a class="headerlink" href="#make-a-change" title="Permalink to this heading">¶</a></h3>
+<p>Modifying a document involves opening a reStructuredText file, changing
+its contents, and saving the changes. See <a class="reference internal" href="#documentation-style-guide">Documentation Style Guide</a> for
+details on syntax requirements.</p>
+<p>Adding a document involves creating a new reStructuredText file within the
+<code class="docutils literal notranslate"><span class="pre">doc</span></code> directory tree with a <code class="docutils literal notranslate"><span class="pre">*.rst</span></code>
+extension. You must also include a reference to the document: a hyperlink
+or a table of contents entry. The <code class="docutils literal notranslate"><span class="pre">index.rst</span></code> file of a top-level directory
+usually contains a TOC, where you can add the new file name. All documents must
+have a title. See <a class="reference internal" href="#headings">Headings</a> for details.</p>
+<p>Your new document doesn’t get tracked by <code class="docutils literal notranslate"><span class="pre">git</span></code> automatically. When you want
+to add the document to the repository,  you must use <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">add</span>
+<span class="pre">{path-to-filename}</span></code>. For example, from the top level  directory of the
+repository, adding an <code class="docutils literal notranslate"><span class="pre">example.rst</span></code> file to the <code class="docutils literal notranslate"><span class="pre">rados</span></code> subdirectory would
+look like this:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">git<span class="w"> </span>add<span class="w"> </span>doc/rados/example.rst</span>
+</pre></div></div><p>Deleting a document involves removing it from the repository with <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">rm</span>
+<span class="pre">{path-to-filename}</span></code>. For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">git<span class="w"> </span>rm<span class="w"> </span>doc/rados/example.rst</span>
+</pre></div></div><p>You must also remove any reference to a deleted document from other documents.</p>
+</section>
+<section id="build-the-source">
+<h3>Build the Source<a class="headerlink" href="#build-the-source" title="Permalink to this heading">¶</a></h3>
+<p>To build the documentation, navigate to the <code class="docutils literal notranslate"><span class="pre">ceph</span></code> repository directory:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1"><span class="nb">cd</span><span class="w"> </span>ceph</span>
+</pre></div></div><div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The directory that contains <code class="docutils literal notranslate"><span class="pre">build-doc</span></code> and <code class="docutils literal notranslate"><span class="pre">serve-doc</span></code> must be included
+in the <code class="docutils literal notranslate"><span class="pre">PATH</span></code> environment variable in order for these commands to work.</p>
+</div>
+<p>To build the documentation on Debian/Ubuntu, Fedora, or CentOS/RHEL, execute:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">admin/build-doc</span>
+</pre></div></div><p>To scan for the reachability of external links, execute:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">admin/build-doc<span class="w"> </span>linkcheck</span>
+</pre></div></div><p>Executing <code class="docutils literal notranslate"><span class="pre">admin/build-doc</span></code> will create a <code class="docutils literal notranslate"><span class="pre">build-doc</span></code> directory under
+<code class="docutils literal notranslate"><span class="pre">ceph</span></code>.  You may need to create a directory under <code class="docutils literal notranslate"><span class="pre">ceph/build-doc</span></code> for
+output of Javadoc files:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">mkdir<span class="w"> </span>-p<span class="w"> </span>output/html/api/libcephfs-java/javadoc</span>
+</pre></div></div><p>The build script <code class="docutils literal notranslate"><span class="pre">build-doc</span></code> will produce an output of errors and warnings.
+You MUST fix errors in documents you modified before committing a change, and
+you SHOULD fix warnings that are related to syntax you modified.</p>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>You must validate ALL HYPERLINKS. If a hyperlink is broken,
+it automatically breaks the build!</p>
+</div>
+<p>Once you build the documentation set, you may start an HTTP server at
+<code class="docutils literal notranslate"><span class="pre">http://localhost:8080/</span></code> to view it:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">admin/serve-doc</span>
+</pre></div></div><p>You can also navigate to <code class="docutils literal notranslate"><span class="pre">build-doc/output</span></code> to inspect the built documents.
+There should be an <code class="docutils literal notranslate"><span class="pre">html</span></code> directory and a <code class="docutils literal notranslate"><span class="pre">man</span></code> directory containing
+documentation in HTML and manpage formats respectively.</p>
+<section id="build-the-source-first-time">
+<h4>Build the Source (First Time)<a class="headerlink" href="#build-the-source-first-time" title="Permalink to this heading">¶</a></h4>
+<p>Ceph uses Python Sphinx, which is generally distribution agnostic. The first
+time you build Ceph documentation, it will generate a doxygen XML tree, which
+is a bit time consuming.</p>
+<p>Python Sphinx does have some dependencies that vary across distributions. The
+first time you build the documentation, the script will notify you if you do not
+have the dependencies installed. To run Sphinx and build documentation successfully,
+the following packages are required:</p>
+<style type="text/css">div.body h3{margin:5px 0px 0px 0px;}</style>
+<table cellpadding="10"><colgroup><col width="30%"><col width="30%"><col width="30%"></colgroup><tbody valign="top"><tr><td><h3>Debian/Ubuntu</h3><ul class="simple">
+<li><p>gcc</p></li>
+<li><p>python3-dev</p></li>
+<li><p>python3-pip</p></li>
+<li><p>python3-sphinx</p></li>
+<li><p>pytnon3-venv</p></li>
+<li><p>libxml2-dev</p></li>
+<li><p>libxslt1-dev</p></li>
+<li><p>doxygen</p></li>
+<li><p>graphviz</p></li>
+<li><p>ant</p></li>
+<li><p>ditaa</p></li>
+</ul>
+</td><td><h3>Fedora</h3><ul class="simple">
+<li><p>gcc</p></li>
+<li><p>python-devel</p></li>
+<li><p>python-pip</p></li>
+<li><p>python-docutils</p></li>
+<li><p>python-jinja2</p></li>
+<li><p>python-pygments</p></li>
+<li><p>python-sphinx</p></li>
+<li><p>libxml2-devel</p></li>
+<li><p>libxslt1-devel</p></li>
+<li><p>doxygen</p></li>
+<li><p>graphviz</p></li>
+<li><p>ant</p></li>
+<li><p>ditaa</p></li>
+</ul>
+</td><td><h3>CentOS/RHEL</h3><ul class="simple">
+<li><p>gcc</p></li>
+<li><p>python-devel</p></li>
+<li><p>python-pip</p></li>
+<li><p>python-docutils</p></li>
+<li><p>python-jinja2</p></li>
+<li><p>python-pygments</p></li>
+<li><p>python-sphinx</p></li>
+<li><p>libxml2-dev</p></li>
+<li><p>libxslt1-dev</p></li>
+<li><p>doxygen</p></li>
+<li><p>graphviz</p></li>
+<li><p>ant</p></li>
+</ul>
+</td></tr></tbody></table><p>Install each dependency that is not installed on your host. For Debian/Ubuntu
+distributions, execute the following:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">sudo<span class="w"> </span>apt-get<span class="w"> </span>install<span class="w"> </span>gcc<span class="w"> </span>python-dev<span class="w"> </span>python-pip<span class="w"> </span>libxml2-dev<span class="w"> </span>libxslt-dev<span class="w"> </span>doxygen<span class="w"> </span>graphviz<span class="w"> </span>ant<span class="w"> </span>ditaa</span>
+<span class="prompt1">sudo<span class="w"> </span>apt-get<span class="w"> </span>install<span class="w"> </span>python-sphinx</span>
+</pre></div></div><p>For Fedora distributions, execute the following:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">sudo<span class="w"> </span>yum<span class="w"> </span>install<span class="w"> </span>gcc<span class="w"> </span>python-devel<span class="w"> </span>python-pip<span class="w"> </span>libxml2-devel<span class="w"> </span>libxslt-devel<span class="w"> </span>doxygen<span class="w"> </span>graphviz<span class="w"> </span>ant</span>
+<span class="prompt1">sudo<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>html2text</span>
+<span class="prompt1">sudo<span class="w"> </span>yum<span class="w"> </span>install<span class="w"> </span>python-jinja2<span class="w"> </span>python-pygments<span class="w"> </span>python-docutils<span class="w"> </span>python-sphinx</span>
+<span class="prompt1">sudo<span class="w"> </span>yum<span class="w"> </span>install<span class="w"> </span>jericho-html<span class="w"> </span>ditaa</span>
+</pre></div></div><p>For CentOS/RHEL distributions, it is recommended to have <code class="docutils literal notranslate"><span class="pre">epel</span></code> (Extra
+Packages for Enterprise Linux) repository as it provides some extra packages
+which are not available in the default repository. To install <code class="docutils literal notranslate"><span class="pre">epel</span></code>, execute
+the following:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">sudo<span class="w"> </span>yum<span class="w"> </span>install<span class="w"> </span>-y<span class="w"> </span>https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm</span>
+</pre></div></div><p>For CentOS/RHEL distributions, execute the following:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">sudo<span class="w"> </span>yum<span class="w"> </span>install<span class="w"> </span>gcc<span class="w"> </span>python-devel<span class="w"> </span>python-pip<span class="w"> </span>libxml2-devel<span class="w"> </span>libxslt-devel<span class="w"> </span>doxygen<span class="w"> </span>graphviz<span class="w"> </span>ant</span>
+<span class="prompt1">sudo<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>html2text</span>
+</pre></div></div><p>For CentOS/RHEL distributions, the remaining python packages are not available
+in the default and <code class="docutils literal notranslate"><span class="pre">epel</span></code> repositories. So, use <a class="reference external" href="http://rpmfind.net/">http://rpmfind.net/</a> to find
+the packages. Then, download them from a mirror and install them. For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">wget<span class="w"> </span>http://rpmfind.net/linux/centos/7/os/x86_64/Packages/python-jinja2-2.7.2-2.el7.noarch.rpm</span>
+<span class="prompt1">sudo<span class="w"> </span>yum<span class="w"> </span>install<span class="w"> </span>python-jinja2-2.7.2-2.el7.noarch.rpm</span>
+<span class="prompt1">wget<span class="w"> </span>http://rpmfind.net/linux/centos/7/os/x86_64/Packages/python-pygments-1.4-9.el7.noarch.rpm</span>
+<span class="prompt1">sudo<span class="w"> </span>yum<span class="w"> </span>install<span class="w"> </span>python-pygments-1.4-9.el7.noarch.rpm</span>
+<span class="prompt1">wget<span class="w"> </span>http://rpmfind.net/linux/centos/7/os/x86_64/Packages/python-docutils-0.11-0.2.20130715svn7687.el7.noarch.rpm</span>
+<span class="prompt1">sudo<span class="w"> </span>yum<span class="w"> </span>install<span class="w"> </span>python-docutils-0.11-0.2.20130715svn7687.el7.noarch.rpm</span>
+<span class="prompt1">wget<span class="w"> </span>http://rpmfind.net/linux/centos/7/os/x86_64/Packages/python-sphinx-1.1.3-11.el7.noarch.rpm</span>
+<span class="prompt1">sudo<span class="w"> </span>yum<span class="w"> </span>install<span class="w"> </span>python-sphinx-1.1.3-11.el7.noarch.rpm</span>
+</pre></div></div><p>Ceph documentation makes extensive use of <a class="reference external" href="http://ditaa.sourceforge.net/">ditaa</a>, which is not presently built
+for CentOS/RHEL7. You must install <code class="docutils literal notranslate"><span class="pre">ditaa</span></code> if you are making changes to
+<code class="docutils literal notranslate"><span class="pre">ditaa</span></code> diagrams so that you can verify that they render properly before you
+commit new or modified <code class="docutils literal notranslate"><span class="pre">ditaa</span></code> diagrams. You may retrieve compatible required
+packages for CentOS/RHEL distributions and install them manually. To run
+<code class="docutils literal notranslate"><span class="pre">ditaa</span></code> on CentOS/RHEL7, following dependencies are required:</p>
+<ul class="simple">
+<li><p>jericho-html</p></li>
+<li><p>jai-imageio-core</p></li>
+<li><p>batik</p></li>
+</ul>
+<p>Use <a class="reference external" href="http://rpmfind.net/">http://rpmfind.net/</a> to find compatible <code class="docutils literal notranslate"><span class="pre">ditaa</span></code> and the dependencies.
+Then, download them from a mirror and install them. For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">wget<span class="w"> </span>http://rpmfind.net/linux/fedora/linux/releases/22/Everything/x86_64/os/Packages/j/jericho-html-3.3-4.fc22.noarch.rpm</span>
+<span class="prompt1">sudo<span class="w"> </span>yum<span class="w"> </span>install<span class="w"> </span>jericho-html-3.3-4.fc22.noarch.rpm</span>
+<span class="prompt1">wget<span class="w"> </span>http://rpmfind.net/linux/centos/7/os/x86_64/Packages/jai-imageio-core-1.2-0.14.20100217cvs.el7.noarch.rpm</span>
+<span class="prompt1">sudo<span class="w"> </span>yum<span class="w"> </span>install<span class="w"> </span>jai-imageio-core-1.2-0.14.20100217cvs.el7.noarch.rpm</span>
+<span class="prompt1">wget<span class="w"> </span>http://rpmfind.net/linux/centos/7/os/x86_64/Packages/batik-1.8-0.12.svn1230816.el7.noarch.rpm</span>
+<span class="prompt1">sudo<span class="w"> </span>yum<span class="w"> </span>install<span class="w"> </span>batik-1.8-0.12.svn1230816.el7.noarch.rpm</span>
+<span class="prompt1">wget<span class="w"> </span>http://rpmfind.net/linux/fedora/linux/releases/22/Everything/x86_64/os/Packages/d/ditaa-0.9-13.r74.fc21.noarch.rpm</span>
+<span class="prompt1">sudo<span class="w"> </span>yum<span class="w"> </span>install<span class="w"> </span>ditaa-0.9-13.r74.fc21.noarch.rpm</span>
+</pre></div></div><p>Once you have installed all these packages, build the documentation by following
+the steps given in <a class="reference internal" href="#build-the-source">Build the Source</a>.</p>
+</section>
+</section>
+<section id="commit-the-change">
+<h3>Commit the Change<a class="headerlink" href="#commit-the-change" title="Permalink to this heading">¶</a></h3>
+<p>Ceph documentation commits are simple, but follow a strict convention:</p>
+<ul class="simple">
+<li><p>A commit SHOULD have 1 file per commit (it simplifies rollback). You MAY
+commit multiple files with related changes. Unrelated changes SHOULD NOT
+be put into the same commit.</p></li>
+<li><p>A commit MUST have a comment.</p></li>
+<li><p>A commit comment MUST be prepended with <code class="docutils literal notranslate"><span class="pre">doc:</span></code>. (strict)</p></li>
+<li><p>The comment summary MUST be one line only. (strict)</p></li>
+<li><p>Additional comments MAY follow a blank line after the summary,
+but should be terse.</p></li>
+<li><p>A commit MAY include <code class="docutils literal notranslate"><span class="pre">Fixes:</span> <span class="pre">#{bug</span> <span class="pre">number}</span></code>.</p></li>
+<li><p>Commits MUST include <code class="docutils literal notranslate"><span class="pre">Signed-off-by:</span> <span class="pre">Firstname</span> <span class="pre">Lastname</span> <span class="pre">&lt;email&gt;</span></code>. (strict)</p></li>
+</ul>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>Follow the foregoing convention particularly where it says
+<code class="docutils literal notranslate"><span class="pre">(strict)</span></code> or you will be asked to modify your commit to comply with
+this convention.</p>
+</div>
+<p>The following is a common commit comment (preferred):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">doc</span><span class="p">:</span> <span class="n">Fixes</span> <span class="n">a</span> <span class="n">spelling</span> <span class="n">error</span> <span class="ow">and</span> <span class="n">a</span> <span class="n">broken</span> <span class="n">hyperlink</span><span class="o">.</span>
+
+<span class="n">Signed</span><span class="o">-</span><span class="n">off</span><span class="o">-</span><span class="n">by</span><span class="p">:</span> <span class="n">John</span> <span class="n">Doe</span> <span class="o">&lt;</span><span class="n">john</span><span class="o">.</span><span class="n">doe</span><span class="nd">@gmail</span><span class="o">.</span><span class="n">com</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<p>The following comment includes a reference to a bug.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">doc</span><span class="p">:</span> <span class="n">Fixes</span> <span class="n">a</span> <span class="n">spelling</span> <span class="n">error</span> <span class="ow">and</span> <span class="n">a</span> <span class="n">broken</span> <span class="n">hyperlink</span><span class="o">.</span>
+
+<span class="n">Fixes</span><span class="p">:</span> <span class="c1">#1234</span>
+
+<span class="n">Signed</span><span class="o">-</span><span class="n">off</span><span class="o">-</span><span class="n">by</span><span class="p">:</span> <span class="n">John</span> <span class="n">Doe</span> <span class="o">&lt;</span><span class="n">john</span><span class="o">.</span><span class="n">doe</span><span class="nd">@gmail</span><span class="o">.</span><span class="n">com</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<p>The following comment includes a terse sentence following the comment summary.
+There is a carriage return between the summary line and the description:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">doc</span><span class="p">:</span> <span class="n">Added</span> <span class="n">mon</span> <span class="n">setting</span> <span class="n">to</span> <span class="n">monitor</span> <span class="n">config</span> <span class="n">reference</span>
+
+<span class="n">Describes</span> <span class="s1">&#39;mon setting&#39;</span><span class="p">,</span> <span class="n">which</span> <span class="ow">is</span> <span class="n">a</span> <span class="n">new</span> <span class="n">setting</span> <span class="n">added</span>
+<span class="n">to</span> <span class="n">config_opts</span><span class="o">.</span><span class="n">h</span><span class="o">.</span>
+
+<span class="n">Signed</span><span class="o">-</span><span class="n">off</span><span class="o">-</span><span class="n">by</span><span class="p">:</span> <span class="n">John</span> <span class="n">Doe</span> <span class="o">&lt;</span><span class="n">john</span><span class="o">.</span><span class="n">doe</span><span class="nd">@gmail</span><span class="o">.</span><span class="n">com</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<p>To commit changes, execute the following:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">git<span class="w"> </span>commit<span class="w"> </span>-a</span>
+</pre></div></div><p>An easy way to manage your documentation commits is to use visual tools for
+<code class="docutils literal notranslate"><span class="pre">git</span></code>. For example, <code class="docutils literal notranslate"><span class="pre">gitk</span></code> provides a graphical interface for viewing the
+repository history, and <code class="docutils literal notranslate"><span class="pre">git-gui</span></code> provides a graphical interface for viewing
+your uncommitted changes, staging them for commit, committing the changes and
+pushing them to your forked Ceph repository.</p>
+<p>For Debian/Ubuntu, execute:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">sudo<span class="w"> </span>apt-get<span class="w"> </span>install<span class="w"> </span>gitk<span class="w"> </span>git-gui</span>
+</pre></div></div><p>For Fedora/CentOS/RHEL, execute:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">sudo<span class="w"> </span>yum<span class="w"> </span>install<span class="w"> </span>gitk<span class="w"> </span>git-gui</span>
+</pre></div></div><p>Then, execute:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1"><span class="nb">cd</span><span class="w"> </span><span class="o">{</span>git-ceph-repo-path<span class="o">}</span></span>
+<span class="prompt1">gitk</span>
+</pre></div></div><p>Finally, select <strong>File-&gt;Start git gui</strong> to activate the graphical user interface.</p>
+</section>
+<section id="push-the-change">
+<h3>Push the Change<a class="headerlink" href="#push-the-change" title="Permalink to this heading">¶</a></h3>
+<p>Once you have one or more commits, you must push them from the local copy of the
+repository to <code class="docutils literal notranslate"><span class="pre">github</span></code>. A graphical tool like <code class="docutils literal notranslate"><span class="pre">git-gui</span></code> provides a user
+interface for pushing to the repository. If you created a branch previously:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">git<span class="w"> </span>push<span class="w"> </span>origin<span class="w"> </span>wip-doc-<span class="o">{</span>your-branch-name<span class="o">}</span></span>
+</pre></div></div><p>Otherwise:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">git<span class="w"> </span>push</span>
+</pre></div></div></section>
+<section id="make-a-pull-request">
+<h3>Make a Pull Request<a class="headerlink" href="#make-a-pull-request" title="Permalink to this heading">¶</a></h3>
+<p>As noted earlier, you can make documentation contributions using the <a class="reference external" href="https://help.github.com/articles/using-pull-requests">Fork and
+Pull</a> approach.</p>
+</section>
+<section id="squash-extraneous-commits">
+<h3>Squash Extraneous Commits<a class="headerlink" href="#squash-extraneous-commits" title="Permalink to this heading">¶</a></h3>
+<p>Each pull request ought to be associated with only a single commit. If you have
+made more than one commit to the feature branch that you are working in, you
+will need to “squash” the multiple commits. “Squashing” is the colloquial term
+for a particular kind of “interactive rebase”. Squashing can be done in a great
+number of ways, but the example here will deal with a situation in which there
+are three commits and the changes in all three of the commits are kept. The three
+commits will be squashed into a single commit.</p>
+<ol class="arabic">
+<li><p>Make the commits that you will later squash.</p>
+<ol class="arabic">
+<li><p>Make the first commit.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">doc</span><span class="o">/</span><span class="n">glossary</span><span class="p">:</span> <span class="n">improve</span> <span class="s2">&quot;CephX&quot;</span> <span class="n">entry</span>
+
+<span class="n">Improve</span> <span class="n">the</span> <span class="n">glossary</span> <span class="n">entry</span> <span class="k">for</span> <span class="s2">&quot;CephX&quot;</span><span class="o">.</span>
+
+<span class="n">Signed</span><span class="o">-</span><span class="n">off</span><span class="o">-</span><span class="n">by</span><span class="p">:</span> <span class="n">Zac</span> <span class="n">Dover</span> <span class="o">&lt;</span><span class="n">zac</span><span class="o">.</span><span class="n">dover</span><span class="nd">@proton</span><span class="o">.</span><span class="n">me</span><span class="o">&gt;</span>
+
+<span class="c1"># Please enter the commit message for your changes. Lines starting</span>
+<span class="c1"># with &#39;#&#39; will be ignored, and an empty message aborts the commit.</span>
+<span class="c1">#</span>
+<span class="c1"># On branch wip-doc-2023-03-28-glossary-cephx</span>
+<span class="c1"># Changes to be committed:</span>
+<span class="c1">#       modified:   glossary.rst</span>
+<span class="c1">#</span>
+</pre></div>
+</div>
+</li>
+<li><p>Make the second commit.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">doc</span><span class="o">/</span><span class="n">glossary</span><span class="p">:</span> <span class="n">add</span> <span class="n">link</span> <span class="n">to</span> <span class="n">architecture</span> <span class="n">doc</span>
+
+<span class="n">Add</span> <span class="n">a</span> <span class="n">link</span> <span class="n">to</span> <span class="n">a</span> <span class="n">section</span> <span class="ow">in</span> <span class="n">the</span> <span class="n">architecture</span> <span class="n">document</span><span class="p">,</span> <span class="n">which</span> <span class="n">link</span>
+<span class="n">will</span> <span class="n">be</span> <span class="n">used</span> <span class="ow">in</span> <span class="n">the</span> <span class="n">process</span> <span class="n">of</span> <span class="n">improving</span> <span class="n">the</span> <span class="s2">&quot;CephX&quot;</span> <span class="n">glossary</span> <span class="n">entry</span><span class="o">.</span>
+
+<span class="n">Signed</span><span class="o">-</span><span class="n">off</span><span class="o">-</span><span class="n">by</span><span class="p">:</span> <span class="n">Zac</span> <span class="n">Dover</span> <span class="o">&lt;</span><span class="n">zac</span><span class="o">.</span><span class="n">dover</span><span class="nd">@proton</span><span class="o">.</span><span class="n">me</span><span class="o">&gt;</span>
+
+   <span class="c1"># Please enter the commit message for your changes. Lines starting</span>
+   <span class="c1"># with &#39;#&#39; will be ignored, and an empty message aborts the commit.</span>
+   <span class="c1">#</span>
+   <span class="c1"># On branch wip-doc-2023-03-28-glossary-cephx</span>
+   <span class="c1"># Your branch is up to date with &#39;origin/wip-doc-2023-03-28-glossary-cephx&#39;.</span>
+   <span class="c1">#</span>
+   <span class="c1"># Changes to be committed:</span>
+   <span class="c1">#       modified:   architecture.rst</span>
+</pre></div>
+</div>
+</li>
+<li><p>Make the third commit.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">doc</span><span class="o">/</span><span class="n">glossary</span><span class="p">:</span> <span class="n">link</span> <span class="n">to</span> <span class="n">Arch</span> <span class="n">doc</span> <span class="ow">in</span> <span class="s2">&quot;CephX&quot;</span> <span class="n">glossary</span>
+
+<span class="n">Link</span> <span class="n">to</span> <span class="n">the</span> <span class="n">Architecture</span> <span class="n">document</span> <span class="kn">from</span><span class="w"> </span><span class="nn">the</span> <span class="s2">&quot;CephX&quot;</span> <span class="n">entry</span> <span class="ow">in</span> <span class="n">the</span>
+<span class="n">Glossary</span><span class="o">.</span>
+
+<span class="n">Signed</span><span class="o">-</span><span class="n">off</span><span class="o">-</span><span class="n">by</span><span class="p">:</span> <span class="n">Zac</span> <span class="n">Dover</span> <span class="o">&lt;</span><span class="n">zac</span><span class="o">.</span><span class="n">dover</span><span class="nd">@proton</span><span class="o">.</span><span class="n">me</span><span class="o">&gt;</span>
+
+<span class="c1"># Please enter the commit message for your changes. Lines starting</span>
+<span class="c1"># with &#39;#&#39; will be ignored, and an empty message aborts the commit.</span>
+<span class="c1">#</span>
+<span class="c1"># On branch wip-doc-2023-03-28-glossary-cephx</span>
+<span class="c1"># Your branch is up to date with &#39;origin/wip-doc-2023-03-28-glossary-cephx&#39;.</span>
+<span class="c1">#</span>
+<span class="c1"># Changes to be committed:</span>
+<span class="c1">#       modified:   glossary.rst</span>
+</pre></div>
+</div>
+</li>
+</ol>
+</li>
+<li><p>There are now three commits in the feature branch. We will now begin the
+process of squashing them into a single commit.</p>
+<ol class="arabic">
+<li><p>Run the command <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">rebase</span> <span class="pre">-i</span> <span class="pre">main</span></code>, which rebases the current branch
+(the feature branch) against the <code class="docutils literal notranslate"><span class="pre">main</span></code> branch:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">git<span class="w"> </span>rebase<span class="w"> </span>-i<span class="w"> </span>main</span>
+</pre></div></div></li>
+<li><p>A list of the commits that have been made to the feature branch now
+appear, and looks like this:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pick</span> <span class="n">d395e500883</span> <span class="n">doc</span><span class="o">/</span><span class="n">glossary</span><span class="p">:</span> <span class="n">improve</span> <span class="s2">&quot;CephX&quot;</span> <span class="n">entry</span>
+<span class="n">pick</span> <span class="n">b34986e2922</span> <span class="n">doc</span><span class="o">/</span><span class="n">glossary</span><span class="p">:</span> <span class="n">add</span> <span class="n">link</span> <span class="n">to</span> <span class="n">architecture</span> <span class="n">doc</span>
+<span class="n">pick</span> <span class="mi">74</span><span class="n">d0719735c</span> <span class="n">doc</span><span class="o">/</span><span class="n">glossary</span><span class="p">:</span> <span class="n">link</span> <span class="n">to</span> <span class="n">Arch</span> <span class="n">doc</span> <span class="ow">in</span> <span class="s2">&quot;CephX&quot;</span> <span class="n">glossary</span>
+
+<span class="c1"># Rebase 0793495b9d1..74d0719735c onto 0793495b9d1 (3 commands)</span>
+<span class="c1">#</span>
+<span class="c1"># Commands:</span>
+<span class="c1"># p, pick &lt;commit&gt; = use commit</span>
+<span class="c1"># r, reword &lt;commit&gt; = use commit, but edit the commit message</span>
+<span class="c1"># e, edit &lt;commit&gt; = use commit, but stop for amending</span>
+<span class="c1"># s, squash &lt;commit&gt; = use commit, but meld into previous commit</span>
+<span class="c1"># f, fixup [-C | -c] &lt;commit&gt; = like &quot;squash&quot; but keep only the previous</span>
+<span class="c1">#                    commit&#39;s log message, unless -C is used, in which case</span>
+<span class="c1">#                    keep only this commit&#39;s message; -c is same as -C but</span>
+<span class="c1">#                    opens the editor</span>
+<span class="c1"># x, exec &lt;command&gt; = run command (the rest of the line) using shell</span>
+<span class="c1"># b, break = stop here (continue rebase later with &#39;git rebase --continue&#39;)</span>
+<span class="c1"># d, drop &lt;commit&gt; = remove commit</span>
+<span class="c1"># l, label &lt;label&gt; = label current HEAD with a name</span>
+<span class="c1"># t, reset &lt;label&gt; = reset HEAD to a label</span>
+<span class="c1"># m, merge [-C &lt;commit&gt; | -c &lt;commit&gt;] &lt;label&gt; [# &lt;oneline&gt;]</span>
+<span class="c1">#         create a merge commit using the original merge commit&#39;s</span>
+<span class="c1">#         message (or the oneline, if no original merge commit was</span>
+<span class="c1">#         specified); use -c &lt;commit&gt; to reword the commit message</span>
+<span class="c1"># u, update-ref &lt;ref&gt; = track a placeholder for the &lt;ref&gt; to be updated</span>
+<span class="c1">#                       to this position in the new commits. The &lt;ref&gt; is</span>
+<span class="c1">#                       updated at the end of the rebase</span>
+<span class="c1">#</span>
+<span class="c1"># These lines can be re-ordered; they are executed from top to bottom.</span>
+<span class="c1">#</span>
+<span class="c1"># If you remove a line here THAT COMMIT WILL BE LOST.</span>
+</pre></div>
+</div>
+<p>Find the part of the screen that says “pick”. This is the part that you will
+alter. There are three commits that are currently labeled “pick”. We will
+choose one of them to remain labeled “pick”, and we will label the other two
+commits “squash”.</p>
+</li>
+</ol>
+</li>
+<li><p>Label two of the three commits <code class="docutils literal notranslate"><span class="pre">squash</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pick</span> <span class="n">d395e500883</span> <span class="n">doc</span><span class="o">/</span><span class="n">glossary</span><span class="p">:</span> <span class="n">improve</span> <span class="s2">&quot;CephX&quot;</span> <span class="n">entry</span>
+<span class="n">squash</span> <span class="n">b34986e2922</span> <span class="n">doc</span><span class="o">/</span><span class="n">glossary</span><span class="p">:</span> <span class="n">add</span> <span class="n">link</span> <span class="n">to</span> <span class="n">architecture</span> <span class="n">doc</span>
+<span class="n">squash</span> <span class="mi">74</span><span class="n">d0719735c</span> <span class="n">doc</span><span class="o">/</span><span class="n">glossary</span><span class="p">:</span> <span class="n">link</span> <span class="n">to</span> <span class="n">Arch</span> <span class="n">doc</span> <span class="ow">in</span> <span class="s2">&quot;CephX&quot;</span> <span class="n">glossary</span>
+
+<span class="c1"># Rebase 0793495b9d1..74d0719735c onto 0793495b9d1 (3 commands)</span>
+<span class="c1">#</span>
+<span class="c1"># Commands:</span>
+<span class="c1"># p, pick &lt;commit&gt; = use commit</span>
+<span class="c1"># r, reword &lt;commit&gt; = use commit, but edit the commit message</span>
+<span class="c1"># e, edit &lt;commit&gt; = use commit, but stop for amending</span>
+<span class="c1"># s, squash &lt;commit&gt; = use commit, but meld into previous commit</span>
+<span class="c1"># f, fixup [-C | -c] &lt;commit&gt; = like &quot;squash&quot; but keep only the previous</span>
+<span class="c1">#                    commit&#39;s log message, unless -C is used, in which case</span>
+<span class="c1">#                    keep only this commit&#39;s message; -c is same as -C but</span>
+<span class="c1">#                    opens the editor</span>
+<span class="c1"># x, exec &lt;command&gt; = run command (the rest of the line) using shell</span>
+<span class="c1"># b, break = stop here (continue rebase later with &#39;git rebase --continue&#39;)</span>
+<span class="c1"># d, drop &lt;commit&gt; = remove commit</span>
+<span class="c1"># l, label &lt;label&gt; = label current HEAD with a name</span>
+<span class="c1"># t, reset &lt;label&gt; = reset HEAD to a label</span>
+<span class="c1"># m, merge [-C &lt;commit&gt; | -c &lt;commit&gt;] &lt;label&gt; [# &lt;oneline&gt;]</span>
+<span class="c1">#         create a merge commit using the original merge commit&#39;s</span>
+<span class="c1">#         message (or the oneline, if no original merge commit was</span>
+<span class="c1">#         specified); use -c &lt;commit&gt; to reword the commit message</span>
+<span class="c1"># u, update-ref &lt;ref&gt; = track a placeholder for the &lt;ref&gt; to be updated</span>
+<span class="c1">#                       to this position in the new commits. The &lt;ref&gt; is</span>
+<span class="c1">#                       updated at the end of the rebase</span>
+<span class="c1">#</span>
+<span class="c1"># These lines can be re-ordered; they are executed from top to bottom.</span>
+<span class="c1">#</span>
+<span class="c1"># If you remove a line here THAT COMMIT WILL BE LOST.</span>
+</pre></div>
+</div>
+</li>
+<li><p>Now we create a commit message that applies to all the commits that have
+been squashed together:</p>
+<ol class="arabic">
+<li><p>When you save and close the list of commits that you have designated for
+squashing, a list of all three commit messages appears, and it looks
+like this:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># This is a combination of 3 commits.</span>
+<span class="c1"># This is the 1st commit message:</span>
+
+<span class="n">doc</span><span class="o">/</span><span class="n">glossary</span><span class="p">:</span> <span class="n">improve</span> <span class="s2">&quot;CephX&quot;</span> <span class="n">entry</span>
+
+<span class="n">Improve</span> <span class="n">the</span> <span class="n">glossary</span> <span class="n">entry</span> <span class="k">for</span> <span class="s2">&quot;CephX&quot;</span><span class="o">.</span>
+
+<span class="n">Signed</span><span class="o">-</span><span class="n">off</span><span class="o">-</span><span class="n">by</span><span class="p">:</span> <span class="n">Zac</span> <span class="n">Dover</span> <span class="o">&lt;</span><span class="n">zac</span><span class="o">.</span><span class="n">dover</span><span class="nd">@proton</span><span class="o">.</span><span class="n">me</span><span class="o">&gt;</span>
+
+<span class="c1"># This is the commit message #2:</span>
+
+<span class="n">doc</span><span class="o">/</span><span class="n">glossary</span><span class="p">:</span> <span class="n">add</span> <span class="n">link</span> <span class="n">to</span> <span class="n">architecture</span> <span class="n">doc</span>
+
+<span class="n">Add</span> <span class="n">a</span> <span class="n">link</span> <span class="n">to</span> <span class="n">a</span> <span class="n">section</span> <span class="ow">in</span> <span class="n">the</span> <span class="n">architecture</span> <span class="n">document</span><span class="p">,</span> <span class="n">which</span> <span class="n">link</span>
+<span class="n">will</span> <span class="n">be</span> <span class="n">used</span> <span class="ow">in</span> <span class="n">the</span> <span class="n">process</span> <span class="n">of</span> <span class="n">improving</span> <span class="n">the</span> <span class="s2">&quot;CephX&quot;</span> <span class="n">glossary</span> <span class="n">entry</span><span class="o">.</span>
+
+<span class="n">Signed</span><span class="o">-</span><span class="n">off</span><span class="o">-</span><span class="n">by</span><span class="p">:</span> <span class="n">Zac</span> <span class="n">Dover</span> <span class="o">&lt;</span><span class="n">zac</span><span class="o">.</span><span class="n">dover</span><span class="nd">@proton</span><span class="o">.</span><span class="n">me</span><span class="o">&gt;</span>
+
+<span class="c1"># This is the commit message #3:</span>
+
+<span class="n">doc</span><span class="o">/</span><span class="n">glossary</span><span class="p">:</span> <span class="n">link</span> <span class="n">to</span> <span class="n">Arch</span> <span class="n">doc</span> <span class="ow">in</span> <span class="s2">&quot;CephX&quot;</span> <span class="n">glossary</span>
+
+<span class="n">Link</span> <span class="n">to</span> <span class="n">the</span> <span class="n">Architecture</span> <span class="n">document</span> <span class="kn">from</span><span class="w"> </span><span class="nn">the</span> <span class="s2">&quot;CephX&quot;</span> <span class="n">entry</span> <span class="ow">in</span> <span class="n">the</span>
+<span class="n">Glossary</span><span class="o">.</span>
+
+<span class="n">Signed</span><span class="o">-</span><span class="n">off</span><span class="o">-</span><span class="n">by</span><span class="p">:</span> <span class="n">Zac</span> <span class="n">Dover</span> <span class="o">&lt;</span><span class="n">zac</span><span class="o">.</span><span class="n">dover</span><span class="nd">@proton</span><span class="o">.</span><span class="n">me</span><span class="o">&gt;</span>
+
+<span class="c1"># Please enter the commit message for your changes. Lines starting</span>
+<span class="c1"># with &#39;#&#39; will be ignored, and an empty message aborts the commit.</span>
+<span class="c1">#</span>
+<span class="c1"># Date:      Tue Mar 28 18:42:11 2023 +1000</span>
+<span class="c1">#</span>
+<span class="c1"># interactive rebase in progress; onto 0793495b9d1</span>
+<span class="c1"># Last commands done (3 commands done):</span>
+<span class="c1">#    squash b34986e2922 doc/glossary: add link to architecture doc</span>
+<span class="c1">#    squash 74d0719735c doc/glossary: link to Arch doc in &quot;CephX&quot; glossary</span>
+<span class="c1"># No commands remaining.</span>
+<span class="c1"># You are currently rebasing branch &#39;wip-doc-2023-03-28-glossary-cephx&#39; on &#39;0793495b9d1&#39;.</span>
+<span class="c1">#</span>
+<span class="c1"># Changes to be committed:</span>
+<span class="c1">#       modified:   doc/architecture.rst</span>
+<span class="c1">#       modified:   doc/glossary.rst</span>
+</pre></div>
+</div>
+</li>
+<li><p>The commit messages have been revised into the simpler form presented here:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">doc</span><span class="o">/</span><span class="n">glossary</span><span class="p">:</span> <span class="n">improve</span> <span class="s2">&quot;CephX&quot;</span> <span class="n">entry</span>
+
+<span class="n">Improve</span> <span class="n">the</span> <span class="n">glossary</span> <span class="n">entry</span> <span class="k">for</span> <span class="s2">&quot;CephX&quot;</span><span class="o">.</span>
+
+<span class="n">Signed</span><span class="o">-</span><span class="n">off</span><span class="o">-</span><span class="n">by</span><span class="p">:</span> <span class="n">Zac</span> <span class="n">Dover</span> <span class="o">&lt;</span><span class="n">zac</span><span class="o">.</span><span class="n">dover</span><span class="nd">@proton</span><span class="o">.</span><span class="n">me</span><span class="o">&gt;</span>
+
+<span class="c1"># Please enter the commit message for your changes. Lines starting</span>
+<span class="c1"># with &#39;#&#39; will be ignored, and an empty message aborts the commit.</span>
+<span class="c1">#</span>
+<span class="c1"># Date:      Tue Mar 28 18:42:11 2023 +1000</span>
+<span class="c1">#</span>
+<span class="c1"># interactive rebase in progress; onto 0793495b9d1</span>
+<span class="c1"># Last commands done (3 commands done):</span>
+<span class="c1">#    squash b34986e2922 doc/glossary: add link to architecture doc</span>
+<span class="c1">#    squash 74d0719735c doc/glossary: link to Arch doc in &quot;CephX&quot; glossary</span>
+<span class="c1"># No commands remaining.</span>
+<span class="c1"># You are currently rebasing branch &#39;wip-doc-2023-03-28-glossary-cephx&#39; on &#39;0793495b9d1&#39;.</span>
+<span class="c1">#</span>
+<span class="c1"># Changes to be committed:</span>
+<span class="c1">#       modified:   doc/architecture.rst</span>
+<span class="c1">#       modified:   doc/glossary.rst</span>
+</pre></div>
+</div>
+</li>
+</ol>
+</li>
+<li><p>Force push the squashed commit from your local working copy to the remote
+upstream branch. The force push is necessary because the newly squashed commit
+does not have an ancestor in the remote. If that confuses you, just run this
+command and don’t think too much about it:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">git<span class="w"> </span>push<span class="w"> </span>-f</span>
+</pre></div></div><div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Enumerating</span> <span class="n">objects</span><span class="p">:</span> <span class="mi">9</span><span class="p">,</span> <span class="n">done</span><span class="o">.</span>
+<span class="n">Counting</span> <span class="n">objects</span><span class="p">:</span> <span class="mi">100</span><span class="o">%</span> <span class="p">(</span><span class="mi">9</span><span class="o">/</span><span class="mi">9</span><span class="p">),</span> <span class="n">done</span><span class="o">.</span>
+<span class="n">Delta</span> <span class="n">compression</span> <span class="n">using</span> <span class="n">up</span> <span class="n">to</span> <span class="mi">8</span> <span class="n">threads</span>
+<span class="n">Compressing</span> <span class="n">objects</span><span class="p">:</span> <span class="mi">100</span><span class="o">%</span> <span class="p">(</span><span class="mi">5</span><span class="o">/</span><span class="mi">5</span><span class="p">),</span> <span class="n">done</span><span class="o">.</span>
+<span class="n">Writing</span> <span class="n">objects</span><span class="p">:</span> <span class="mi">100</span><span class="o">%</span> <span class="p">(</span><span class="mi">5</span><span class="o">/</span><span class="mi">5</span><span class="p">),</span> <span class="mi">722</span> <span class="nb">bytes</span> <span class="o">|</span> <span class="mf">722.00</span> <span class="n">KiB</span><span class="o">/</span><span class="n">s</span><span class="p">,</span> <span class="n">done</span><span class="o">.</span>
+<span class="n">Total</span> <span class="mi">5</span> <span class="p">(</span><span class="n">delta</span> <span class="mi">4</span><span class="p">),</span> <span class="n">reused</span> <span class="mi">0</span> <span class="p">(</span><span class="n">delta</span> <span class="mi">0</span><span class="p">),</span> <span class="n">pack</span><span class="o">-</span><span class="n">reused</span> <span class="mi">0</span>
+<span class="n">remote</span><span class="p">:</span> <span class="n">Resolving</span> <span class="n">deltas</span><span class="p">:</span> <span class="mi">100</span><span class="o">%</span> <span class="p">(</span><span class="mi">4</span><span class="o">/</span><span class="mi">4</span><span class="p">),</span> <span class="n">completed</span> <span class="k">with</span> <span class="mi">4</span> <span class="n">local</span> <span class="n">objects</span><span class="o">.</span>
+<span class="n">To</span> <span class="n">github</span><span class="o">.</span><span class="n">com</span><span class="p">:</span><span class="n">zdover23</span><span class="o">/</span><span class="n">ceph</span><span class="o">.</span><span class="n">git</span>
+ <span class="o">+</span> <span class="n">b34986e2922</span><span class="o">..</span><span class="mf">.02e3</span><span class="n">a5cb763</span> <span class="n">wip</span><span class="o">-</span><span class="n">doc</span><span class="o">-</span><span class="mi">2023</span><span class="o">-</span><span class="mi">03</span><span class="o">-</span><span class="mi">28</span><span class="o">-</span><span class="n">glossary</span><span class="o">-</span><span class="n">cephx</span> <span class="o">-&gt;</span> <span class="n">wip</span><span class="o">-</span><span class="n">doc</span><span class="o">-</span><span class="mi">2023</span><span class="o">-</span><span class="mi">03</span><span class="o">-</span><span class="mi">28</span><span class="o">-</span><span class="n">glossary</span><span class="o">-</span><span class="n">cephx</span> <span class="p">(</span><span class="n">forced</span> <span class="n">update</span><span class="p">)</span>
+</pre></div>
+</div>
+</li>
+</ol>
+</section>
+<section id="notify-us">
+<h3>Notify Us<a class="headerlink" href="#notify-us" title="Permalink to this heading">¶</a></h3>
+<p>If some time has passed and the pull request that you raised has not been
+reviewed, contact the component lead and ask what’s taking so long. See
+<a class="reference internal" href="../../governance/#clt"><span class="std std-ref">Ceph Leadership Team</span></a> for a list of component leads.</p>
+</section>
+</section>
+<section id="documentation-style-guide">
+<h2>Documentation Style Guide<a class="headerlink" href="#documentation-style-guide" title="Permalink to this heading">¶</a></h2>
+<p>One objective of the Ceph documentation project is to ensure the readability of
+the documentation in both native restructuredText format and its rendered
+formats such as HTML. Navigate to your Ceph repository and view a document in
+its native format. You may notice that it is generally as legible in a terminal
+as it is in its rendered HTML format. Additionally, you may also notice that
+diagrams in <code class="docutils literal notranslate"><span class="pre">ditaa</span></code> format also render reasonably well in text mode. :</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">less<span class="w"> </span>doc/architecture.rst</span>
+</pre></div></div><p>Review the following style guides to maintain this consistency.</p>
+<section id="headings">
+<h3>Headings<a class="headerlink" href="#headings" title="Permalink to this heading">¶</a></h3>
+<ol class="arabic simple">
+<li><p><strong>Document Titles:</strong> Document titles use the <code class="docutils literal notranslate"><span class="pre">=</span></code> character overline and
+underline with a leading and trailing space on the title text line.
+See <a class="reference external" href="http://docutils.sourceforge.net/docs/user/rst/quickstart.html#document-title-subtitle">Document Title</a> for details.</p></li>
+<li><p><strong>Section Titles:</strong> Section tiles use the <code class="docutils literal notranslate"><span class="pre">=</span></code> character underline with no
+leading or trailing spaces for text. Two carriage returns should precede a
+section title (unless an inline reference precedes it). See <a class="reference external" href="http://docutils.sourceforge.net/docs/user/rst/quickstart.html#sections">Sections</a> for
+details.</p></li>
+<li><p><strong>Subsection Titles:</strong> Subsection titles use the <code class="docutils literal notranslate"><span class="pre">_</span></code> character underline
+with no leading or trailing spaces for text.  Two carriage returns should
+precede a subsection title (unless an inline reference precedes it).</p></li>
+</ol>
+</section>
+<section id="text-body">
+<h3>Text Body<a class="headerlink" href="#text-body" title="Permalink to this heading">¶</a></h3>
+<p>As a general rule, we prefer text to wrap at column 80 so that it is legible in
+a command line interface without leading or trailing white space. Where
+possible, we prefer to maintain this convention with text, lists, literal text
+(exceptions allowed), tables, and <code class="docutils literal notranslate"><span class="pre">ditaa</span></code> graphics.</p>
+<ol class="arabic">
+<li><p><strong>Paragraphs</strong>: Paragraphs have a leading and a trailing carriage return,
+and should be 80 characters wide or less so that the documentation can be
+read in native format in a command line terminal.</p></li>
+<li><p><strong>Literal Text:</strong> To create an example of literal text (e.g., command line
+usage), terminate the preceding paragraph with <code class="docutils literal notranslate"><span class="pre">::</span></code> or enter a carriage
+return to create an empty line after the preceding paragraph; then, enter
+<code class="docutils literal notranslate"><span class="pre">::</span></code> on a separate line followed by another empty line. Then, begin the
+literal text with tab indentation (preferred) or space indentation of 3
+characters.</p></li>
+<li><p><strong>Indented Text:</strong> Indented text such as bullet points
+(e.g., <code class="docutils literal notranslate"><span class="pre">-</span> <span class="pre">some</span> <span class="pre">text</span></code>) may span multiple lines. The text of subsequent
+lines should begin at the same character position as the text of the
+indented text (less numbers, bullets, etc.).</p>
+<p>Indented text may include literal text examples. Whereas, text indentation
+should be done with spaces, literal text examples should be indented with
+tabs. This convention enables you to add an additional indented paragraph
+following a literal example by leaving a blank line and beginning the
+subsequent paragraph with space indentation.</p>
+</li>
+<li><p><strong>Numbered Lists:</strong> Numbered lists should use autonumbering by starting
+a numbered indent with <code class="docutils literal notranslate"><span class="pre">#.</span></code> instead of the actual number so that
+numbered paragraphs can be repositioned without requiring manual
+renumbering.</p></li>
+<li><p><strong>Code Examples:</strong> Ceph supports the use of the
+<code class="docutils literal notranslate"><span class="pre">..</span> <span class="pre">code-block::&lt;language&gt;</span></code> role, so that you can add highlighting to
+source examples. This is preferred for source code. However, use of this
+tag will cause autonumbering to restart at 1 if it is used as an example
+within a numbered list. See <a class="reference external" href="http://sphinx-doc.org/markup/code.html">Showing code examples</a> for details.</p></li>
+</ol>
+</section>
+<section id="paragraph-level-markup">
+<h3>Paragraph Level Markup<a class="headerlink" href="#paragraph-level-markup" title="Permalink to this heading">¶</a></h3>
+<p>The Ceph project uses <a class="reference external" href="http://sphinx-doc.org/markup/para.html">paragraph level markup</a> to highlight points.</p>
+<ol class="arabic simple">
+<li><p><strong>Tip:</strong> Use the <code class="docutils literal notranslate"><span class="pre">..</span> <span class="pre">tip::</span></code> directive to provide additional information
+that assists the reader or steers the reader away from trouble.</p></li>
+<li><p><strong>Note</strong>: Use the <code class="docutils literal notranslate"><span class="pre">..</span> <span class="pre">note::</span></code> directive to highlight an important point.</p></li>
+<li><p><strong>Important:</strong> Use the <code class="docutils literal notranslate"><span class="pre">..</span> <span class="pre">important::</span></code> directive to highlight important
+requirements or caveats (e.g., anything that could lead to data loss). Use
+this directive sparingly, because it renders in red.</p></li>
+<li><p><strong>Version Added:</strong> Use the <code class="docutils literal notranslate"><span class="pre">..</span> <span class="pre">versionadded::</span></code> directive for new features
+or configuration settings so that users know the minimum release for using
+a feature.</p></li>
+<li><p><strong>Version Changed:</strong> Use the <code class="docutils literal notranslate"><span class="pre">..</span> <span class="pre">versionchanged::</span></code> directive for changes
+in usage or configuration settings.</p></li>
+<li><p><strong>Deprecated:</strong> Use the <code class="docutils literal notranslate"><span class="pre">..</span> <span class="pre">deprecated::</span></code> directive when CLI usage,
+a feature or a configuration setting is no longer preferred or will be
+discontinued.</p></li>
+<li><p><strong>Topic:</strong> Use the <code class="docutils literal notranslate"><span class="pre">..</span> <span class="pre">topic::</span></code> directive to encapsulate text that is
+outside the main flow of the document. See the <a class="reference external" href="http://docutils.sourceforge.net/docs/ref/rst/directives.html#topic">topic directive</a> for
+additional details.</p></li>
+</ol>
+</section>
+<section id="table-of-contents-toc-and-hyperlinks">
+<h3>Table of Contents (TOC) and Hyperlinks<a class="headerlink" href="#table-of-contents-toc-and-hyperlinks" title="Permalink to this heading">¶</a></h3>
+<p>The documents in the Ceph documentation suite follow certain conventions that
+are explained in this section.</p>
+<p>Every document (every <code class="docutils literal notranslate"><span class="pre">.rst</span></code> file) in the Sphinx-controlled Ceph
+documentation suite must be linked either (1) from another document in the
+documentation suite or (2) from a table of contents (TOC). If any document in
+the documentation suite is not linked in this way, the <code class="docutils literal notranslate"><span class="pre">build-doc</span></code> script
+generates warnings when it tries to build the documentation.</p>
+<p>The Ceph project uses the <code class="docutils literal notranslate"><span class="pre">..</span> <span class="pre">toctree::</span></code> directive. See <a class="reference external" href="http://sphinx-doc.org/markup/toctree.html">The TOC tree</a> for
+details. When rendering a table of contents (TOC), specify the <code class="docutils literal notranslate"><span class="pre">:maxdepth:</span></code>
+parameter so that the rendered TOC is not too long.</p>
+<p>Use the <code class="docutils literal notranslate"><span class="pre">:ref:</span></code> syntax where a link target contains a specific unique
+identifier (for example, <code class="docutils literal notranslate"><span class="pre">..</span> <span class="pre">_unique-target-id:</span></code>). A link to the section
+designated by <code class="docutils literal notranslate"><span class="pre">..</span> <span class="pre">_unique-target-id:</span></code> looks like this:
+<code class="docutils literal notranslate"><span class="pre">:ref:`unique-target-id`</span></code>. If this convention is followed, the links within
+the <code class="docutils literal notranslate"><span class="pre">.rst</span></code> source files will work even if the source files are moved within
+the <code class="docutils literal notranslate"><span class="pre">ceph/doc</span></code> directory. See <a class="reference external" href="http://www.sphinx-doc.org/en/master/usage/restructuredtext/roles.html#role-ref">Cross referencing arbitrary locations</a> for
+details.</p>
+<section id="external-hyperlink-example">
+<span id="start-external-hyperlink-example"></span><h4>External Hyperlink Example<a class="headerlink" href="#external-hyperlink-example" title="Permalink to this heading">¶</a></h4>
+<p>It is also possible to create a link to a section of the documentation and to
+have custom text appear in the body of the link. This is useful when it is more
+important to preserve the text of the sentence containing the link than it is
+to refer explicitly to the title of the section being linked to.</p>
+<p>For example, RST that links to the Sphinx Python Document Generator homepage
+and generates a sentence reading “Click here to learn more about Python
+Sphinx.” looks like this:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>``Click `here &lt;https://www.sphinx-doc.org&gt;`_ to learn more about Python
+Sphinx.``
+</pre></div>
+</div>
+<p>And here it is, rendered:</p>
+<p>Click <a class="reference external" href="https://www.sphinx-doc.org">here</a> to learn more about Python Sphinx.</p>
+<p>Pay special attention to the underscore after the backtick. If you forget to
+include it and this is your first day working with RST, there’s a chance that
+you’ll spend all day wondering what went wrong without realizing that you
+omitted that underscore. Also, pay special attention to the space between the
+substitution text (in this case, “here”) and the less-than bracket that sets
+the explicit link apart from the substition text. The link will not render
+properly without this space.</p>
+</section>
+<section id="linking-customs">
+<h4>Linking Customs<a class="headerlink" href="#linking-customs" title="Permalink to this heading">¶</a></h4>
+<p>By a custom established when Ceph was still being developed by Inktank,
+contributors to the documentation of the Ceph project preferred to use the
+convention of putting <code class="docutils literal notranslate"><span class="pre">..</span> <span class="pre">_Link</span> <span class="pre">Text:</span> <span class="pre">../path</span></code> links at the bottom of the
+document and linking to them using references of the form <code class="docutils literal notranslate"><span class="pre">:ref:`path`</span></code>. This
+convention was preferred because it made the documents more readable in a
+command line interface. As of 2023, though, we have no preference for one over
+the other. Use whichever convention makes the text easier to read.</p>
+</section>
+</section>
+<section id="quirks-of-restructured-text">
+<h3>Quirks of ReStructured Text<a class="headerlink" href="#quirks-of-restructured-text" title="Permalink to this heading">¶</a></h3>
+<section id="external-links">
+<h4>External Links<a class="headerlink" href="#external-links" title="Permalink to this heading">¶</a></h4>
+<p id="external-link-with-inline-text">This is the formula for links to addresses external to the Ceph documentation:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`inline text &lt;http:www.foo.com&gt;`_
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Do not fail to include the space between the inline text and the
+less-than sign.</p>
+<p>Do not fail to include the underscore after the final backtick.</p>
+<p>To link to addresses that are external to the Ceph documentation, include a
+space between the inline text and the angle bracket that precedes the
+external address. This is precisely the opposite of <a class="reference internal" href="#internal-link-with-inline-text"><span class="std std-ref">the convention for
+inline text that links to a location inside the Ceph
+documentation</span></a>. If this seems inconsistent
+and confusing to you, then you’re right. It is inconsistent and confusing.</p>
+</div>
+<p>See also “<a class="reference internal" href="#start-external-hyperlink-example"><span class="std std-ref">External Hyperlink Example</span></a>”.</p>
+</section>
+<section id="internal-links">
+<h4>Internal Links<a class="headerlink" href="#internal-links" title="Permalink to this heading">¶</a></h4>
+<p>To link to a section in the Ceph documentation, you must (1) define a target
+link before the section and then (2) link to that target from another location
+in the documentation. Here are the formulas for targets and links to those
+targets:</p>
+<p>Target:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">..</span> <span class="n">_target</span><span class="p">:</span>
+
+<span class="n">Title</span> <span class="n">of</span> <span class="n">Targeted</span> <span class="n">Section</span>
+<span class="o">=========================</span>
+
+<span class="n">Lorem</span> <span class="n">ipsum</span><span class="o">...</span>
+</pre></div>
+</div>
+<p>Link to target:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>:ref:`target`
+</pre></div>
+</div>
+<p id="internal-link-with-inline-text">Link to target with inline text:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>:ref:`inline text&lt;target&gt;`
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>There is no space between “inline text” and the angle bracket that
+immediately follows it. This is precisely the opposite of <a class="reference internal" href="#external-link-with-inline-text"><span class="std std-ref">the
+convention for inline text that links to a location outside of the Ceph
+documentation</span></a>. If this seems inconsistent
+and confusing to you, then you’re right. It is inconsistent and confusing.</p>
+</div>
+</section>
+<section id="escaping-bold-characters-within-words">
+<h4>Escaping Bold Characters within Words<a class="headerlink" href="#escaping-bold-characters-within-words" title="Permalink to this heading">¶</a></h4>
+<p>This section explains how to make certain letters within a word bold while
+leaving the other letters in the word regular (non-bold).</p>
+<p>The following single-line paragraph provides an example of this:</p>
+<p><strong>C</strong>eph <strong>F</strong>ile <strong>S</strong>ystem.</p>
+<p>In ReStructured Text, the following formula will not work:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">**</span><span class="n">C</span><span class="o">**</span><span class="n">eph</span> <span class="o">**</span><span class="n">F</span><span class="o">**</span><span class="n">ile</span> <span class="o">**</span><span class="n">S</span><span class="o">**</span><span class="n">ystem</span>
+</pre></div>
+</div>
+<p>The bolded notation must be turned off by means of the escape character (\), as shown here:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">**</span><span class="n">C</span><span class="o">**</span>\<span class="n">eph</span> <span class="o">**</span><span class="n">F</span><span class="o">**</span>\<span class="n">ile</span> <span class="o">**</span><span class="n">S</span><span class="o">**</span>\<span class="n">ystem</span>
+</pre></div>
+</div>
+</section>
+</section>
+</section>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../">
+              <img class="logo" src="../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../intro/">Intro to Ceph</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../hardware-recommendations/">Hardware Recommendations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../os-recommendations/">OS Recommendations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../get-involved/">Get Involved in the Ceph Community!</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Documenting Ceph</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#location-of-the-documentation-in-the-repository">Location of the Documentation in the Repository</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#viewing-old-ceph-documentation">Viewing Old Ceph Documentation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#making-contributions">Making Contributions</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#get-the-source">Get the Source</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#select-a-branch">Select a Branch</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#make-a-change">Make a Change</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#build-the-source">Build the Source</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#build-the-source-first-time">Build the Source (First Time)</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#commit-the-change">Commit the Change</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#push-the-change">Push the Change</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#make-a-pull-request">Make a Pull Request</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#squash-extraneous-commits">Squash Extraneous Commits</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#notify-us">Notify Us</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#documentation-style-guide">Documentation Style Guide</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#headings">Headings</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#text-body">Text Body</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#paragraph-level-markup">Paragraph Level Markup</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#table-of-contents-toc-and-hyperlinks">Table of Contents (TOC) and Hyperlinks</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#external-hyperlink-example">External Hyperlink Example</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#linking-customs">Linking Customs</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#quirks-of-restructured-text">Quirks of ReStructured Text</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#external-links">External Links</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#internal-links">Internal Links</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#escaping-bold-characters-within-words">Escaping Bold Characters within Words</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../install/">Installing Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cephadm/">Cephadm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rados/">Ceph Storage Cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cephfs/">Ceph File System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rbd/">Ceph Block Device</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../radosgw/">Ceph Object Gateway</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/">Ceph Manager Daemon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dev/developer_guide/">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dev/internals/">Ceph Internals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../../install/" title="Installing Ceph"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../get-involved/" title="Get Involved in the Ceph Community!"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../intro/" >Intro to Ceph</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Documenting Ceph</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

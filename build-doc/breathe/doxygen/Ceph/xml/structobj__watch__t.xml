@@ -1,0 +1,77 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.1" xml:lang="en-US">
+  <compounddef id="structobj__watch__t" kind="struct" language="C++" prot="public">
+    <compoundname>obj_watch_t</compoundname>
+    <includes refid="rados__types_8h" local="no">rados_types.h</includes>
+      <sectiondef kind="public-attrib">
+      <memberdef kind="variable" id="structobj__watch__t_1a5c521d5238d99ce7014905779cc3a2be" prot="public" static="no" mutable="no">
+        <type>char</type>
+        <definition>char obj_watch_t::addr[256]</definition>
+        <argsstring>[256]</argsstring>
+        <name>addr</name>
+        <briefdescription>
+<para>Address of the Watcher. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/data/ceph-learning/src/include/rados/rados_types.h" line="12" column="8" bodyfile="/data/ceph-learning/src/include/rados/rados_types.h" bodystart="12" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structobj__watch__t_1a9b773ca6095b61ee6154107d59939a50" prot="public" static="no" mutable="no">
+        <type>int64_t</type>
+        <definition>int64_t obj_watch_t::watcher_id</definition>
+        <argsstring></argsstring>
+        <name>watcher_id</name>
+        <briefdescription>
+<para>Watcher ID. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/data/ceph-learning/src/include/rados/rados_types.h" line="14" column="11" bodyfile="/data/ceph-learning/src/include/rados/rados_types.h" bodystart="14" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structobj__watch__t_1a6c49bc31779a8d2511838a5e0cb5ff31" prot="public" static="no" mutable="no">
+        <type>uint64_t</type>
+        <definition>uint64_t obj_watch_t::cookie</definition>
+        <argsstring></argsstring>
+        <name>cookie</name>
+        <briefdescription>
+<para>Cookie. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/data/ceph-learning/src/include/rados/rados_types.h" line="16" column="12" bodyfile="/data/ceph-learning/src/include/rados/rados_types.h" bodystart="16" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structobj__watch__t_1a5e987bcbc17814f83d559920f5aab1dd" prot="public" static="no" mutable="no">
+        <type>uint32_t</type>
+        <definition>uint32_t obj_watch_t::timeout_seconds</definition>
+        <argsstring></argsstring>
+        <name>timeout_seconds</name>
+        <briefdescription>
+<para>Timeout in Seconds. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/data/ceph-learning/src/include/rados/rados_types.h" line="18" column="12" bodyfile="/data/ceph-learning/src/include/rados/rados_types.h" bodystart="18" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+<para>One item from list_watchers </para>
+    </detaileddescription>
+    <location file="/data/ceph-learning/src/include/rados/rados_types.h" line="10" column="1" bodyfile="/data/ceph-learning/src/include/rados/rados_types.h" bodystart="10" bodyend="19"/>
+    <listofallmembers>
+      <member refid="structobj__watch__t_1a5c521d5238d99ce7014905779cc3a2be" prot="public" virt="non-virtual"><scope>obj_watch_t</scope><name>addr</name></member>
+      <member refid="structobj__watch__t_1a6c49bc31779a8d2511838a5e0cb5ff31" prot="public" virt="non-virtual"><scope>obj_watch_t</scope><name>cookie</name></member>
+      <member refid="structobj__watch__t_1a5e987bcbc17814f83d559920f5aab1dd" prot="public" virt="non-virtual"><scope>obj_watch_t</scope><name>timeout_seconds</name></member>
+      <member refid="structobj__watch__t_1a9b773ca6095b61ee6154107d59939a50" prot="public" virt="non-virtual"><scope>obj_watch_t</scope><name>watcher_id</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

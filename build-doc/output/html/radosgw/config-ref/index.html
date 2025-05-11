@@ -1,0 +1,1903 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Ceph Object Gateway Config Reference &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css" />
+    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../genindex/" />
+    <link rel="search" title="Search" href="../../search/" />
+    <link rel="next" title="Admin Guide" href="../admin/" />
+    <link rel="prev" title="Pools" href="../pools/" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../admin/" title="Admin Guide"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../pools/" title="Pools"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../" accesskey="U">Ceph Object Gateway</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Ceph Object Gateway Config Reference</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="ceph-object-gateway-config-reference">
+<h1>Ceph Object Gateway Config Reference<a class="headerlink" href="#ceph-object-gateway-config-reference" title="Permalink to this heading">¶</a></h1>
+<p>The following settings may added to the Ceph configuration file (i.e., usually
+<code class="docutils literal notranslate"><span class="pre">ceph.conf</span></code>) under the <code class="docutils literal notranslate"><span class="pre">[client.radosgw.{instance-name}]</span></code> section. The
+settings may contain default values. If you do not specify each setting in the
+Ceph configuration file, the default value will be set automatically.</p>
+<p>Configuration variables set under the <code class="docutils literal notranslate"><span class="pre">[client.radosgw.{instance-name}]</span></code>
+section will not apply to rgw or radosgw-admin commands without an instance-name
+specified in the command. Thus variables meant to be applied to all RGW
+instances or all radosgw-admin options can be put into the <code class="docutils literal notranslate"><span class="pre">[global]</span></code> or the
+<code class="docutils literal notranslate"><span class="pre">[client]</span></code> section to avoid specifying <code class="docutils literal notranslate"><span class="pre">instance-name</span></code>.</p>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_frontends</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Configures the HTTP frontend(s). The configuration for multiple
+frontends can be provided in a comma-delimited list. Each frontend
+configuration may include a list of options separated by spaces,
+where each option is in the form “key=value” or “key”. See
+<a class="reference external" href="../frontends">HTTP Frontends</a> for more on supported options.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">beast</span> <span class="pre">port=7480</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_data</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Sets the location of the data files for Ceph RADOS Gateway.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">/var/lib/ceph/radosgw/$cluster-$id</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_enable_apis</span></code></p>
+<dl class="field-list">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Enables the specified APIs.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Enabling the <code class="docutils literal notranslate"><span class="pre">s3</span></code> API is a requirement for
+any <code class="docutils literal notranslate"><span class="pre">radosgw</span></code> instance that is meant to
+participate in a <a class="reference external" href="../multisite">multi-site</a>
+configuration.</p>
+</div>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">s3,</span> <span class="pre">s3website,</span> <span class="pre">swift,</span> <span class="pre">swift_auth,</span> <span class="pre">admin,</span> <span class="pre">sts,</span> <span class="pre">iam,</span> <span class="pre">notifications</span></code> All APIs.</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_cache_enabled</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Whether the Ceph Object Gateway cache is enabled.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Boolean</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">true</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_cache_lru_size</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The number of entries in the Ceph Object Gateway cache.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">10000</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_socket_path</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The socket path for the domain socket. <code class="docutils literal notranslate"><span class="pre">FastCgiExternalServer</span></code>
+uses this socket. If you do not specify a socket path, Ceph
+Object Gateway will not run as an external server. The path you
+specify here must be the same as the path specified in the
+<code class="docutils literal notranslate"><span class="pre">rgw.conf</span></code> file.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p>N/A</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_fcgi_socket_backlog</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The socket backlog for fcgi.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">1024</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_host</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The host for the Ceph Object Gateway instance. Can be an IP
+address or a hostname.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">0.0.0.0</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_port</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Port the instance listens for requests. If not specified,
+Ceph Object Gateway runs external FastCGI.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_dns_name</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The DNS name of the served domain. See also the <code class="docutils literal notranslate"><span class="pre">hostnames</span></code> setting within regions.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_script_uri</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The alternative value for the <code class="docutils literal notranslate"><span class="pre">SCRIPT_URI</span></code> if not set
+in the request.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_request_uri</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The alternative value for the <code class="docutils literal notranslate"><span class="pre">REQUEST_URI</span></code> if not set
+in the request.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_print_continue</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Enable <code class="docutils literal notranslate"><span class="pre">100-continue</span></code> if it is operational.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Boolean</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">true</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_remote_addr_param</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The remote address parameter. For example, the HTTP field
+containing the remote address, or the <code class="docutils literal notranslate"><span class="pre">X-Forwarded-For</span></code>
+address if a reverse proxy is operational.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">REMOTE_ADDR</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_op_thread_timeout</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The timeout in seconds for open threads.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p>600</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_op_thread_suicide_timeout</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The time <code class="docutils literal notranslate"><span class="pre">timeout</span></code> in seconds before a Ceph Object Gateway
+process dies. Disabled if set to <code class="docutils literal notranslate"><span class="pre">0</span></code>.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">0</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_thread_pool_size</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The size of the thread pool.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p>100 threads.</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_num_control_oids</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The number of notification objects used for cache synchronization
+between different <code class="docutils literal notranslate"><span class="pre">rgw</span></code> instances.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">8</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_init_timeout</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The number of seconds before Ceph Object Gateway gives up on
+initialization.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">30</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_mime_types_file</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The path and location of the MIME-types file. Used for Swift
+auto-detection of object types.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">/etc/mime.types</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_s3_success_create_obj_status</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The alternate success status response for <code class="docutils literal notranslate"><span class="pre">create-obj</span></code>.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">0</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_resolve_cname</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Whether <code class="docutils literal notranslate"><span class="pre">rgw</span></code> should use DNS CNAME record of the request
+hostname field (if hostname is not equal to <code class="docutils literal notranslate"><span class="pre">rgw</span> <span class="pre">dns</span> <span class="pre">name</span></code>).</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Boolean</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">false</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_obj_stripe_size</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The size of an object stripe for Ceph Object Gateway objects.
+See <a class="reference external" href="../../architecture#data-striping">Architecture</a> for details on striping.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">4</span> <span class="pre">&lt;&lt;</span> <span class="pre">20</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_extended_http_attrs</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Add new set of attributes that could be set on an entity
+(user, bucket or object). These extra attributes can be set
+through HTTP header fields when putting the entity or modifying
+it using POST method. If set, these attributes will return as
+HTTP  fields when doing GET/HEAD on the entity.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+<dt class="field-even">Example</dt>
+<dd class="field-even"><p>“content_foo, content_bar, x-foo-bar”</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_exit_timeout_secs</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Number of seconds to wait for a process before exiting
+unconditionally.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">120</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_get_obj_window_size</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The window size in bytes for a single object request.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">16</span> <span class="pre">&lt;&lt;</span> <span class="pre">20</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_get_obj_max_req_size</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The maximum request size of a single get operation sent to the
+Ceph Storage Cluster.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">4</span> <span class="pre">&lt;&lt;</span> <span class="pre">20</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_relaxed_s3_bucket_names</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Enables relaxed S3 bucket names rules for US region buckets.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Boolean</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">false</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_list_buckets_max_chunk</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The maximum number of buckets to retrieve in a single operation
+when listing user buckets.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">1000</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_override_bucket_index_max_shards</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Represents the number of shards for the bucket index object,
+a value of zero indicates there is no sharding. It is not
+recommended to set a value too large (e.g. thousand) as it
+increases the cost for bucket listing.
+This variable should be set in the client or global sections
+so that it is automatically applied to radosgw-admin commands.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">0</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_curl_wait_timeout_ms</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The timeout in milliseconds for certain <code class="docutils literal notranslate"><span class="pre">curl</span></code> calls.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">1000</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_copy_obj_progress</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Enables output of object progress during long copy operations.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Boolean</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">true</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_copy_obj_progress_every_bytes</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The minimum bytes between copy progress output.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">1024</span> <span class="pre">*</span> <span class="pre">1024</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_admin_entry</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The entry point for an admin request URL.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">admin</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_content_length_compat</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Enable compatibility handling of FCGI requests with both <code class="docutils literal notranslate"><span class="pre">CONTENT_LENGTH</span></code> and <code class="docutils literal notranslate"><span class="pre">HTTP_CONTENT_LENGTH</span></code> set.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Boolean</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">false</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_bucket_quota_ttl</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The amount of time in seconds cached quota information is
+trusted.  After this timeout, the quota information will be
+re-fetched from the cluster.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">600</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_user_quota_bucket_sync_interval</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The amount of time in seconds bucket quota information is
+accumulated before syncing to the cluster.  During this time,
+other RGW instances will not see the changes in bucket quota
+stats from operations on this instance.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">180</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_user_quota_sync_interval</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The amount of time in seconds user quota information is
+accumulated before syncing to the cluster.  During this time,
+other RGW instances will not see the changes in user quota stats
+from operations on this instance.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">180</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_bucket_default_quota_max_objects</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Default max number of objects per bucket. Set on new users,
+if no other quota is specified. Has no effect on existing users.
+This variable should be set in the client or global sections
+so that it is automatically applied to radosgw-admin commands.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">-1</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_bucket_default_quota_max_size</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Default max capacity per bucket, in bytes. Set on new users,
+if no other quota is specified. Has no effect on existing users.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">-1</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_user_default_quota_max_objects</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Default max number of objects for a user. This includes all
+objects in all buckets owned by the user. Set on new users,
+if no other quota is specified. Has no effect on existing users.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">-1</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_user_default_quota_max_size</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The value for user max size quota in bytes set on new users,
+if no other quota is specified.  Has no effect on existing users.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">-1</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_verify_ssl</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Verify SSL certificates while making requests.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Boolean</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">true</span></code></p>
+</dd>
+</dl>
+<section id="lifecycle-settings">
+<h2>Lifecycle Settings<a class="headerlink" href="#lifecycle-settings" title="Permalink to this heading">¶</a></h2>
+<p>Bucket Lifecycle configuration can be used to manage your objects so they are stored
+effectively throughout their lifetime. In past releases Lifecycle processing was rate-limited
+by single threaded processing. With the Nautilus release this has been addressed and the
+Ceph Object Gateway now allows for parallel thread processing of bucket lifecycles across
+additional Ceph Object Gateway instances and replaces the in-order
+index shard enumeration with a random ordered sequence.</p>
+<p>There are two options in particular to look at when looking to increase the
+aggressiveness of lifecycle processing:</p>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_lc_max_worker</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>This option specifies the number of lifecycle worker threads
+to run in parallel, thereby processing bucket and index
+shards simultaneously.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">3</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_lc_max_wp_worker</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>This option specifies the number of threads in each lifecycle
+workers work pool. This option can help accelerate processing each bucket.</p>
+</dd>
+</dl>
+<p>These values can be tuned based upon your specific workload to further increase the
+aggressiveness of lifecycle processing. For a workload with a larger number of buckets (thousands)
+you would look at increasing the <code class="docutils literal notranslate"><span class="pre">rgw_lc_max_worker</span></code> value from the default value of 3 whereas for a
+workload with a smaller number of buckets but higher number of objects (hundreds of thousands)
+per bucket you would consider decreasing <code class="docutils literal notranslate"><span class="pre">rgw_lc_max_wp_worker</span></code> from the default value of 3.</p>
+<dl class="field-list simple">
+<dt class="field-odd">NOTE</dt>
+<dd class="field-odd"><p>When looking to tune either of these specific values please validate the
+current Cluster performance and Ceph Object Gateway utilization before increasing.</p>
+</dd>
+</dl>
+</section>
+<section id="garbage-collection-settings">
+<h2>Garbage Collection Settings<a class="headerlink" href="#garbage-collection-settings" title="Permalink to this heading">¶</a></h2>
+<p>The Ceph Object Gateway allocates storage for new objects immediately.</p>
+<p>The Ceph Object Gateway purges the storage space used for deleted and overwritten
+objects in the Ceph Storage cluster some time after the gateway deletes the
+objects from the bucket index. The process of purging the deleted object data
+from the Ceph Storage cluster is known as Garbage Collection or GC.</p>
+<p>To view the queue of objects awaiting garbage collection, execute the following:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ radosgw-admin gc list
+
+Note: specify ``--include-all`` to list all entries, including unexpired
+</pre></div>
+</div>
+<p>Garbage collection is a background activity that may
+execute continuously or during times of low loads, depending upon how the
+administrator configures the Ceph Object Gateway. By default, the Ceph Object
+Gateway conducts GC operations continuously. Since GC operations are a normal
+part of Ceph Object Gateway operations, especially with object delete
+operations, objects eligible for garbage collection exist most of the time.</p>
+<p>Some workloads may temporarily or permanently outpace the rate of garbage
+collection activity. This is especially true of delete-heavy workloads, where
+many objects get stored for a short period of time and then deleted. For these
+types of workloads, administrators can increase the priority of garbage
+collection operations relative to other operations with the following
+configuration parameters.</p>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_gc_max_objs</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The maximum number of objects that may be handled by
+garbage collection in one garbage collection processing cycle.
+Please do not change this value after the first deployment.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">32</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_gc_obj_min_wait</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The minimum wait time before a deleted object may be removed
+and handled by garbage collection processing.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">2</span> <span class="pre">*</span> <span class="pre">3600</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_gc_processor_max_time</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The maximum time between the beginning of two consecutive garbage
+collection processing cycles.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">3600</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_gc_processor_period</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The cycle time for garbage collection processing.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">3600</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_gc_max_concurrent_io</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The maximum number of concurrent IO operations that the RGW garbage
+collection thread will use when purging old data.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">10</span></code></p>
+</dd>
+<dt class="field-even">Tuning Garbage Collection for Delete Heavy Workloads</dt>
+<dd class="field-even"><p></p></dd>
+</dl>
+<p>As an initial step towards tuning Ceph Garbage Collection to be more aggressive the following options are suggested to be increased from their default configuration values:</p>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_gc_max_concurrent_io</span> <span class="pre">=</span> <span class="pre">20</span></code>
+<code class="docutils literal notranslate"><span class="pre">rgw_gc_max_trim_chunk</span> <span class="pre">=</span> <span class="pre">64</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">NOTE</dt>
+<dd class="field-odd"><p>Modifying these values requires a restart of the RGW service.</p>
+</dd>
+</dl>
+<p>Once these values have been increased from default please monitor for performance of the cluster during Garbage Collection to verify no adverse performance issues due to the increased values.</p>
+</section>
+<section id="multisite-settings">
+<h2>Multisite Settings<a class="headerlink" href="#multisite-settings" title="Permalink to this heading">¶</a></h2>
+<div class="versionadded">
+<p><span class="versionmodified added">New in version Jewel.</span></p>
+</div>
+<p>You may include the following settings in your Ceph configuration
+file under each <code class="docutils literal notranslate"><span class="pre">[client.radosgw.{instance-name}]</span></code> instance.</p>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_zone</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The name of the zone for the gateway instance. If no zone is
+set, a cluster-wide default can be configured with the command
+<code class="docutils literal notranslate"><span class="pre">radosgw-admin</span> <span class="pre">zone</span> <span class="pre">default</span></code>.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_zonegroup</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The name of the zonegroup for the gateway instance. If no
+zonegroup is set, a cluster-wide default can be configured with
+the command <code class="docutils literal notranslate"><span class="pre">radosgw-admin</span> <span class="pre">zonegroup</span> <span class="pre">default</span></code>.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_realm</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The name of the realm for the gateway instance. If no realm is
+set, a cluster-wide default can be configured with the command
+<code class="docutils literal notranslate"><span class="pre">radosgw-admin</span> <span class="pre">realm</span> <span class="pre">default</span></code>.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_run_sync_thread</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>If there are other zones in the realm to sync from, spawn threads
+to handle the sync of data and metadata.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Boolean</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">true</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_data_log_window</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The data log entries window in seconds.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">30</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_data_log_changes_size</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The number of in-memory entries to hold for the data changes log.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">1000</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_data_log_obj_prefix</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The object name prefix for the data log.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">data_log</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_data_log_num_shards</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The number of shards (objects) on which to keep the
+data changes log.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">128</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_md_log_max_shards</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The maximum number of shards for the metadata log.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">64</span></code></p>
+</dd>
+</dl>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>The values of <code class="docutils literal notranslate"><span class="pre">rgw_data_log_num_shards</span></code> and
+<code class="docutils literal notranslate"><span class="pre">rgw_md_log_max_shards</span></code> should not be changed after sync has
+started.</p>
+</div>
+</section>
+<section id="s3-settings">
+<h2>S3 Settings<a class="headerlink" href="#s3-settings" title="Permalink to this heading">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_s3_auth_use_ldap</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Should S3 authentication use LDAP?</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Boolean</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">false</span></code></p>
+</dd>
+</dl>
+</section>
+<section id="swift-settings">
+<h2>Swift Settings<a class="headerlink" href="#swift-settings" title="Permalink to this heading">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_enforce_swift_acls</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Enforces the Swift Access Control List (ACL) settings.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Boolean</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">true</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_swift_token_expiration</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The time in seconds for expiring a Swift token.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">24</span> <span class="pre">*</span> <span class="pre">3600</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_swift_url</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The URL for the Ceph Object Gateway Swift API.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_swift_url_prefix</span></code></p>
+<dl class="field-list">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The URL prefix for the Swift API, to distinguish it from
+the S3 API endpoint. The default is <code class="docutils literal notranslate"><span class="pre">swift</span></code>, which
+makes the Swift API available at the URL
+<code class="docutils literal notranslate"><span class="pre">http://host:port/swift/v1</span></code> (or
+<code class="docutils literal notranslate"><span class="pre">http://host:port/swift/v1/AUTH_%(tenant_id)s</span></code> if
+<code class="docutils literal notranslate"><span class="pre">rgw</span> <span class="pre">swift</span> <span class="pre">account</span> <span class="pre">in</span> <span class="pre">url</span></code> is enabled).</p>
+<p>For compatibility, setting this configuration variable
+to the empty string causes the default <code class="docutils literal notranslate"><span class="pre">swift</span></code> to be
+used; if you do want an empty prefix, set this option to
+<code class="docutils literal notranslate"><span class="pre">/</span></code>.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>If you set this option to <code class="docutils literal notranslate"><span class="pre">/</span></code>, you must
+disable the S3 API by modifying <code class="docutils literal notranslate"><span class="pre">rgw</span>
+<span class="pre">enable</span> <span class="pre">apis</span></code> to exclude <code class="docutils literal notranslate"><span class="pre">s3</span></code>. It is not
+possible to operate radosgw with <code class="docutils literal notranslate"><span class="pre">rgw</span>
+<span class="pre">swift</span> <span class="pre">url</span> <span class="pre">prefix</span> <span class="pre">=</span> <span class="pre">/</span></code> and simultaneously
+support both the S3 and Swift APIs. If you
+do need to support both APIs without
+prefixes, deploy multiple radosgw instances
+to listen on different hosts (or ports)
+instead, enabling some for S3 and some for
+Swift.</p>
+</div>
+</dd>
+<dt class="field-even">Default</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">swift</span></code></p>
+</dd>
+<dt class="field-odd">Example</dt>
+<dd class="field-odd"><p>“/swift-testing”</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_swift_auth_url</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Default URL for verifying v1 auth tokens (if not using internal
+Swift auth).</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_swift_auth_entry</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The entry point for a Swift auth URL.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">auth</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_swift_account_in_url</span></code></p>
+<dl class="field-list">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Whether or not the Swift account name should be included
+in the Swift API URL.</p>
+<p>If set to <code class="docutils literal notranslate"><span class="pre">false</span></code> (the default), then the Swift API
+will listen on a URL formed like
+<code class="docutils literal notranslate"><span class="pre">http://host:port/&lt;rgw_swift_url_prefix&gt;/v1</span></code>, and the
+account name (commonly a Keystone project UUID if
+radosgw is configured with <a class="reference external" href="../keystone">Keystone integration</a>) will be inferred from request
+headers.</p>
+<p>If set to <code class="docutils literal notranslate"><span class="pre">true</span></code>, the Swift API URL will be
+<code class="docutils literal notranslate"><span class="pre">http://host:port/&lt;rgw_swift_url_prefix&gt;/v1/AUTH_&lt;account_name&gt;</span></code>
+(or
+<code class="docutils literal notranslate"><span class="pre">http://host:port/&lt;rgw_swift_url_prefix&gt;/v1/AUTH_&lt;keystone_project_id&gt;</span></code>)
+instead, and the Keystone <code class="docutils literal notranslate"><span class="pre">object-store</span></code> endpoint must
+accordingly be configured to include the
+<code class="docutils literal notranslate"><span class="pre">AUTH_%(tenant_id)s</span></code> suffix.</p>
+<p>You <strong>must</strong> set this option to <code class="docutils literal notranslate"><span class="pre">true</span></code> (and update the
+Keystone service catalog) if you want radosgw to support
+publicly-readable containers and <a class="reference external" href="../swift/tempurl">temporary URLs</a>.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Boolean</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">false</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_swift_versioning_enabled</span></code></p>
+<dl class="field-list">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Enables the Object Versioning of OpenStack Object Storage API.
+This allows clients to put the <code class="docutils literal notranslate"><span class="pre">X-Versions-Location</span></code> attribute
+on containers that should be versioned. The attribute specifies
+the name of container storing archived versions. It must be owned
+by the same user that the versioned container due to access
+control verification - ACLs are NOT taken into consideration.
+Those containers cannot be versioned by the S3 object versioning
+mechanism.</p>
+<p>A slightly different attribute, <code class="docutils literal notranslate"><span class="pre">X-History-Location</span></code>, which is also understood by
+<a class="reference external" href="https://docs.openstack.org/swift/latest/api/object_versioning.html">OpenStack Swift</a>
+for handling <code class="docutils literal notranslate"><span class="pre">DELETE</span></code> operations, is currently not supported.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Boolean</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">false</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_trust_forwarded_https</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>When a proxy in front of radosgw is used for ssl termination, radosgw
+does not know whether incoming http connections are secure. Enable
+this option to trust the <code class="docutils literal notranslate"><span class="pre">Forwarded</span></code> and <code class="docutils literal notranslate"><span class="pre">X-Forwarded-Proto</span></code> headers
+sent by the proxy when determining whether the connection is secure.
+This is required for some features, such as server side encryption.
+(Never enable this setting if you do not have a trusted proxy in front of
+radosgw, or else malicious users will be able to set these headers in
+any request.)</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Boolean</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">false</span></code></p>
+</dd>
+</dl>
+</section>
+<section id="logging-settings">
+<h2>Logging Settings<a class="headerlink" href="#logging-settings" title="Permalink to this heading">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_log_nonexistent_bucket</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Enables Ceph Object Gateway to log a request for a non-existent
+bucket.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Boolean</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">false</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_log_object_name</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The logging format for an object name. See ma npage
+<em class="manpage">date</em> for details about format specifiers.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Date</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">%Y-%m-%d-%H-%i-%n</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_log_object_name_utc</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Whether a logged object name includes a UTC time.
+If <code class="docutils literal notranslate"><span class="pre">false</span></code>, it uses the local time.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Boolean</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">false</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_usage_max_shards</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The maximum number of shards for usage logging.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">32</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_usage_max_user_shards</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The maximum number of shards used for a single user’s
+usage logging.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">1</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_enable_ops_log</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Enable logging for each successful Ceph Object Gateway operation.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Boolean</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">false</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_enable_usage_log</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Enable the usage log.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Boolean</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">false</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_ops_log_rados</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Whether the operations log should be written to the
+Ceph Storage Cluster backend.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Boolean</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">true</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_ops_log_socket_path</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The Unix domain socket for writing operations logs.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_ops_log_file_path</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The file for writing operations logs.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_ops_log_data_backlog</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The maximum data backlog data size for operations logs written
+to a Unix domain socket.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">5</span> <span class="pre">&lt;&lt;</span> <span class="pre">20</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_usage_log_flush_threshold</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The number of dirty merged entries in the usage log before
+flushing synchronously.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p>1024</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_usage_log_tick_interval</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Flush pending usage log data every <code class="docutils literal notranslate"><span class="pre">n</span></code> seconds.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">30</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_log_http_headers</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Comma-delimited list of HTTP headers to include with ops
+log entries.  Header names are case insensitive, and use
+the full header name with words separated by underscores.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+<dt class="field-even">Example</dt>
+<dd class="field-even"><p>“http_x_forwarded_for, http_x_special_k”</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_intent_log_object_name</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The logging format for the intent log object name. See the manpage
+<em class="manpage">date</em> for details about format specifiers.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Date</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">%Y-%m-%d-%i-%n</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_intent_log_object_name_utc</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Whether the intent log object name uses UTC time.
+If <code class="docutils literal notranslate"><span class="pre">false</span></code>, it uses the local time.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Boolean</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">false</span></code></p>
+</dd>
+</dl>
+</section>
+<section id="keystone-settings">
+<h2>Keystone Settings<a class="headerlink" href="#keystone-settings" title="Permalink to this heading">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_keystone_url</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The URL for the Keystone server.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_keystone_api_version</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The version (2 or 3) of OpenStack Identity API that should be
+used for communication with the Keystone server.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">2</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_keystone_admin_domain</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The name of OpenStack domain with admin privilege when using
+OpenStack Identity API v3.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_keystone_admin_project</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The name of OpenStack project with admin privilege when using
+OpenStack Identity API v3. If left unspecified, value of
+<code class="docutils literal notranslate"><span class="pre">rgw</span> <span class="pre">keystone</span> <span class="pre">admin</span> <span class="pre">tenant</span></code> will be used instead.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_keystone_admin_token</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The Keystone admin token (shared secret). In Ceph RGW
+authentication with the admin token has priority over
+authentication with the admin credentials
+(<code class="docutils literal notranslate"><span class="pre">rgw_keystone_admin_user</span></code>, <code class="docutils literal notranslate"><span class="pre">rgw_keystone_admin_password</span></code>,
+<code class="docutils literal notranslate"><span class="pre">rgw_keystone_admin_tenant</span></code>, <code class="docutils literal notranslate"><span class="pre">rgw_keystone_admin_project</span></code>,
+<code class="docutils literal notranslate"><span class="pre">rgw_keystone_admin_domain</span></code>). The Keystone admin token
+has been deprecated, but can be used to integrate with
+older environments.  It is preferred to instead configure
+<code class="docutils literal notranslate"><span class="pre">rgw_keystone_admin_token_path</span></code> to avoid exposing the token.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_keystone_admin_token_path</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Path to a file containing the Keystone admin token
+(shared secret).  In Ceph RadosGW authentication with
+the admin token has priority over authentication with
+the admin credentials
+(<code class="docutils literal notranslate"><span class="pre">rgw_keystone_admin_user</span></code>, <code class="docutils literal notranslate"><span class="pre">rgw_keystone_admin_password</span></code>,
+<code class="docutils literal notranslate"><span class="pre">rgw_keystone_admin_tenant</span></code>, <code class="docutils literal notranslate"><span class="pre">rgw_keystone_admin_project</span></code>,
+<code class="docutils literal notranslate"><span class="pre">rgw_keystone_admin_domain</span></code>).
+The Keystone admin token has been deprecated, but can be
+used to integrate with older environments.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_keystone_admin_tenant</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The name of OpenStack tenant with admin privilege (Service Tenant) when
+using OpenStack Identity API v2</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_keystone_admin_user</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The name of OpenStack user with admin privilege for Keystone
+authentication (Service User) when using OpenStack Identity API v2</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_keystone_admin_password</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The password for OpenStack admin user when using OpenStack
+Identity API v2.  It is preferred to instead configure
+<code class="docutils literal notranslate"><span class="pre">rgw_keystone_admin_password_path</span></code> to avoid exposing the token.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_keystone_admin_password_path</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Path to a file containing the password for OpenStack
+admin user when using OpenStack Identity API v2.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_keystone_accepted_roles</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The roles required to serve requests.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">Member,</span> <span class="pre">admin</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_keystone_token_cache_size</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The maximum number of entries in each Keystone token cache.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">10000</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_keystone_revocation_interval</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The number of seconds between token revocation checks.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">15</span> <span class="pre">*</span> <span class="pre">60</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_keystone_verify_ssl</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Verify SSL certificates while making token requests to keystone.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Boolean</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">true</span></code></p>
+</dd>
+</dl>
+</section>
+<section id="server-side-encryption-settings">
+<h2>Server-side encryption Settings<a class="headerlink" href="#server-side-encryption-settings" title="Permalink to this heading">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_crypt_s3_kms_backend</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Where the SSE-KMS encryption keys are stored. Supported KMS
+systems are OpenStack Barbican (<code class="docutils literal notranslate"><span class="pre">barbican</span></code>, the default) and
+HashiCorp Vault (<code class="docutils literal notranslate"><span class="pre">vault</span></code>).</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+</section>
+<section id="barbican-settings">
+<h2>Barbican Settings<a class="headerlink" href="#barbican-settings" title="Permalink to this heading">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_barbican_url</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The URL for the Barbican server.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_keystone_barbican_user</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The name of the OpenStack user with access to the <a class="reference external" href="../barbican">Barbican</a>
+secrets used for <a class="reference external" href="../encryption">Encryption</a>.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_keystone_barbican_password</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The password associated with the <a class="reference external" href="../barbican">Barbican</a> user.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_keystone_barbican_tenant</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The name of the OpenStack tenant associated with the <a class="reference external" href="../barbican">Barbican</a>
+user when using OpenStack Identity API v2.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_keystone_barbican_project</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The name of the OpenStack project associated with the <a class="reference external" href="../barbican">Barbican</a>
+user when using OpenStack Identity API v3.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_keystone_barbican_domain</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The name of the OpenStack domain associated with the <a class="reference external" href="../barbican">Barbican</a>
+user when using OpenStack Identity API v3.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+</section>
+<section id="hashicorp-vault-settings">
+<h2>HashiCorp Vault Settings<a class="headerlink" href="#hashicorp-vault-settings" title="Permalink to this heading">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_crypt_vault_auth</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Type of authentication method to be used. The only method
+currently supported is <code class="docutils literal notranslate"><span class="pre">token</span></code>.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">token</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_crypt_vault_token_file</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>If authentication method is <code class="docutils literal notranslate"><span class="pre">token</span></code>, provide a path to the token
+file, which should be readable only by Rados Gateway.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_crypt_vault_addr</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Vault server base address, e.g. <code class="docutils literal notranslate"><span class="pre">http://vaultserver:8200</span></code>.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_crypt_vault_prefix</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The Vault secret URL prefix, which can be used to restrict access
+to a particular subset of the secret space, e.g. <code class="docutils literal notranslate"><span class="pre">/v1/secret/data</span></code>.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_crypt_vault_secret_engine</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Vault Secret Engine to be used to retrieve encryption keys: choose
+between kv-v2, transit.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_crypt_vault_namespace</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>If set, Vault Namespace provides tenant isolation for teams and individuals
+on the same Vault Enterprise instance, e.g. <code class="docutils literal notranslate"><span class="pre">acme/tenant1</span></code></p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+<section id="qos-settings">
+<h3>QoS settings<a class="headerlink" href="#qos-settings" title="Permalink to this heading">¶</a></h3>
+<div class="versionadded">
+<p><span class="versionmodified added">New in version Nautilus.</span></p>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">civetweb</span></code> frontend has a threading model that uses a thread per
+connection and hence is automatically throttled by <code class="docutils literal notranslate"><span class="pre">rgw_thread_pool_size</span></code>
+configurable when it comes to accepting connections. The newer <code class="docutils literal notranslate"><span class="pre">beast</span></code> frontend is
+not restricted by the thread pool size when it comes to accepting new
+connections, so a scheduler abstraction is introduced in the Nautilus release
+to support future methods of scheduling requests.</p>
+<p>Currently the scheduler defaults to a throttler which throttles the active
+connections to a configured limit. QoS based on mClock is currently in an
+<em>experimental</em> phase and not recommended for production yet. Current
+implementation of <em>dmclock_client</em> op queue divides RGW Ops on admin, auth
+(swift auth, sts) metadata &amp; data requests.</p>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_max_concurrent_requests</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Maximum number of concurrent HTTP requests that the Beast front end
+will process. Tuning this can help to limit memory usage under
+heavy load.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p>1024</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_scheduler_type</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The RGW scheduler to use. Valid values are <code class="docutils literal notranslate"><span class="pre">throttler`</span> <span class="pre">and</span>
+<span class="pre">``dmclock</span></code>. Currently defaults to <code class="docutils literal notranslate"><span class="pre">throttler</span></code> which throttles Beast
+frontend requests. <code class="docutils literal notranslate"><span class="pre">dmclock`</span> <span class="pre">is</span> <span class="pre">*experimental*</span> <span class="pre">and</span> <span class="pre">requires</span> <span class="pre">the</span>
+<span class="pre">``dmclock</span></code> to be included in the <code class="docutils literal notranslate"><span class="pre">experimental_feature_enabled</span></code>
+configuration option.</p>
+</dd>
+</dl>
+<p>The options below tune the experimental dmclock scheduler. For
+additional reading on dmclock, see <a class="reference internal" href="../../rados/configuration/osd-config-ref/#dmclock-qos"><span class="std std-ref">QoS Based on mClock</span></a>. <cite>op_class</cite> for the flags below is
+one of <code class="docutils literal notranslate"><span class="pre">admin</span></code>, <code class="docutils literal notranslate"><span class="pre">auth</span></code>, <code class="docutils literal notranslate"><span class="pre">metadata</span></code>, or <code class="docutils literal notranslate"><span class="pre">data</span></code>.</p>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_dmclock_&lt;op_class&gt;_res</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The mclock reservation for <cite>op_class</cite> requests</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>float</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p>100.0</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_dmclock_&lt;op_class&gt;_wgt</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The mclock weight for <cite>op_class</cite> requests</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>float</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p>1.0</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">rgw_dmclock_&lt;op_class&gt;_lim</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The mclock limit for <cite>op_class</cite> requests</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>float</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p>0.0</p>
+</dd>
+</dl>
+</section>
+</section>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../">
+              <img class="logo" src="../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../install/">Installing Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cephadm/">Cephadm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rados/">Ceph Storage Cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cephfs/">Ceph File System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rbd/">Ceph Block Device</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../">Ceph Object Gateway</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../frontends/">HTTP Frontends</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../placement/">Pool Placement and Storage Classes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../multisite/">Multisite Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../multisite-sync-policy/">Multisite Sync Policy Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pools/">Configuring Pools</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Config Reference</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#lifecycle-settings">Lifecycle Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#garbage-collection-settings">Garbage Collection Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#multisite-settings">Multisite Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#s3-settings">S3 Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#swift-settings">Swift Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#logging-settings">Logging Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#keystone-settings">Keystone Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#server-side-encryption-settings">Server-side encryption Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#barbican-settings">Barbican Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#hashicorp-vault-settings">HashiCorp Vault Settings</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#qos-settings">QoS settings</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../admin/">Admin Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../s3/">S3 API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rgw-cache/">Data caching and CDN</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../swift/">Swift API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../adminops/">Admin Ops API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/">Python binding</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../nfs/">Export over NFS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../keystone/">OpenStack Keystone Integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../barbican/">OpenStack Barbican Integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../vault/">HashiCorp Vault Integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../kmip/">KMIP Integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../opa/">Open Policy Agent Integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../multitenancy/">Multi-tenancy</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../compression/">Compression</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../ldap-auth/">LDAP Authentication</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../encryption/">Server-Side Encryption</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../bucketpolicy/">Bucket Policy</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../dynamicresharding/">Dynamic bucket index resharding</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../mfa/">Multi factor authentication</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../sync-modules/">Sync Modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../notifications/">Bucket Notifications</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../layout/">Data Layout in RADOS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../STS/">STS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../STSLite/">STS Lite</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../keycloak/">Keycloak</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../session-tags/">Session Tags</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../role/">Role</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../orphans/">Orphan List and Associated Tooling</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../oidc/">OpenID Connect Provider</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../troubleshooting/">Troubleshooting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../man/8/radosgw/">Manpage radosgw</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../man/8/radosgw-admin/">Manpage radosgw-admin</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../qat-accel/">QAT Acceleration for Encryption and Compression</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../s3select/">S3-select</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../lua-scripting/">Lua Scripting</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/">Ceph Manager Daemon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dev/developer_guide/">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dev/internals/">Ceph Internals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../admin/" title="Admin Guide"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../pools/" title="Pools"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../" >Ceph Object Gateway</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Ceph Object Gateway Config Reference</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

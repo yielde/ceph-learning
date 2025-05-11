@@ -1,0 +1,209 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Supported Features of the Kernel Driver &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css" />
+    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../genindex/" />
+    <link rel="search" title="Search" href="../../search/" />
+    <link rel="next" title="ceph-fuse – FUSE-based client for ceph" href="../../man/8/ceph-fuse/" />
+    <link rel="prev" title="CephFS Shell" href="../cephfs-shell/" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../../man/8/ceph-fuse/" title="ceph-fuse – FUSE-based client for ceph"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../cephfs-shell/" title="CephFS Shell"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../" accesskey="U">Ceph File System</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Supported Features of the Kernel Driver</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="supported-features-of-the-kernel-driver">
+<h1>Supported Features of the Kernel Driver<a class="headerlink" href="#supported-features-of-the-kernel-driver" title="Permalink to this heading">¶</a></h1>
+<p>The kernel driver is developed separately from the core ceph code, and as
+such it sometimes differs from the FUSE driver in feature implementation.
+The following details the implementation status of various CephFS features
+in the kernel driver.</p>
+<section id="inline-data">
+<h2>Inline data<a class="headerlink" href="#inline-data" title="Permalink to this heading">¶</a></h2>
+<p>Inline data was introduced by the Firefly release. This feature is being
+deprecated in mainline CephFS, and may be removed from a future kernel
+release.</p>
+<p>Linux kernel clients &gt;= 3.19 can read inline data and convert existing
+inline data to RADOS objects when file data is modified. At present,
+Linux kernel clients do not store file data as inline data.</p>
+<p>See <a class="reference external" href="../experimental-features">Experimental Features</a> for more information.</p>
+</section>
+<section id="quotas">
+<h2>Quotas<a class="headerlink" href="#quotas" title="Permalink to this heading">¶</a></h2>
+<p>Quota was first introduced by the hammer release. Quota disk format got renewed
+by the Mimic release. Linux kernel clients &gt;= 4.17 can support the new format
+quota. At present, no Linux kernel client support the old format quota.</p>
+<p>See <a class="reference external" href="../quota">Quotas</a> for more information.</p>
+</section>
+<section id="multiple-file-systems-within-a-ceph-cluster">
+<h2>Multiple file systems within a Ceph cluster<a class="headerlink" href="#multiple-file-systems-within-a-ceph-cluster" title="Permalink to this heading">¶</a></h2>
+<p>The feature was introduced by the Jewel release. Linux kernel clients &gt;= 4.7
+can support it.</p>
+<p>See <a class="reference external" href="../experimental-features">Experimental Features</a> for more information.</p>
+</section>
+<section id="multiple-active-metadata-servers">
+<h2>Multiple active metadata servers<a class="headerlink" href="#multiple-active-metadata-servers" title="Permalink to this heading">¶</a></h2>
+<p>The feature has been supported since the Luminous release. It is recommended to
+use Linux kernel clients &gt;= 4.14 when there are multiple active MDS.</p>
+</section>
+<section id="snapshots">
+<h2>Snapshots<a class="headerlink" href="#snapshots" title="Permalink to this heading">¶</a></h2>
+<p>The feature has been supported since the Mimic release. It is recommended to
+use Linux kernel clients &gt;= 4.17 if snapshot is used.</p>
+</section>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../">
+              <img class="logo" src="../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../install/">Installing Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cephadm/">Cephadm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rados/">Ceph Storage Cluster</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../">Ceph File System</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../#getting-started-with-cephfs">Getting Started with CephFS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../#administration">Administration</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../#mounting-cephfs">Mounting CephFS</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../client-config-ref/"> Client Configuration Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../client-auth/"> Client Authentication</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../mount-prerequisites/"> Mount CephFS: Prerequisites</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../mount-using-kernel-driver/"> Mount CephFS using Kernel Driver</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../mount-using-fuse/"> Mount CephFS using FUSE</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../ceph-dokan/"> Mount CephFS on Windows</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../cephfs-shell/"> Use the CephFS Shell</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#"> Supported Features of Kernel Driver</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#inline-data">Inline data</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#quotas">Quotas</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#multiple-file-systems-within-a-ceph-cluster">Multiple file systems within a Ceph cluster</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#multiple-active-metadata-servers">Multiple active metadata servers</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#snapshots">Snapshots</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../man/8/ceph-fuse/"> Manual: ceph-fuse</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../man/8/mount.ceph/"> Manual: mount.ceph</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../man/8/mount.fuse.ceph/"> Manual: mount.fuse.ceph</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../#cephfs-concepts">CephFS Concepts</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../#troubleshooting-and-disaster-recovery">Troubleshooting and Disaster Recovery</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../#developer-guides">Developer Guides</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../#additional-details">Additional Details</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../rbd/">Ceph Block Device</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../radosgw/">Ceph Object Gateway</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/">Ceph Manager Daemon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dev/developer_guide/">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dev/internals/">Ceph Internals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../../man/8/ceph-fuse/" title="ceph-fuse – FUSE-based client for ceph"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../cephfs-shell/" title="CephFS Shell"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../" >Ceph File System</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Supported Features of the Kernel Driver</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

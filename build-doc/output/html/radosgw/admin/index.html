@@ -1,0 +1,690 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Admin Guide &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css" />
+    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../genindex/" />
+    <link rel="search" title="Search" href="../../search/" />
+    <link rel="next" title="Ceph Object Gateway S3 API" href="../s3/" />
+    <link rel="prev" title="Ceph Object Gateway Config Reference" href="../config-ref/" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../s3/" title="Ceph Object Gateway S3 API"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../config-ref/" title="Ceph Object Gateway Config Reference"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../" accesskey="U">Ceph Object Gateway</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Admin Guide</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="admin-guide">
+<h1>Admin Guide<a class="headerlink" href="#admin-guide" title="Permalink to this heading">¶</a></h1>
+<p>Once you have your Ceph Object Storage service up and running, you may
+administer the service with user management, access controls, quotas
+and usage tracking among other features.</p>
+<section id="user-management">
+<h2>User Management<a class="headerlink" href="#user-management" title="Permalink to this heading">¶</a></h2>
+<p>Ceph Object Storage user management refers to users of the Ceph Object Storage
+service (i.e., not the Ceph Object Gateway as a user of the Ceph Storage
+Cluster). You must create a user, access key and secret to enable end users to
+interact with Ceph Object Gateway services.</p>
+<p>There are two user types:</p>
+<ul class="simple">
+<li><p><strong>User:</strong> The term ‘user’ reflects a user of the S3 interface.</p></li>
+<li><p><strong>Subuser:</strong> The term ‘subuser’ reflects a user of the Swift interface. A subuser
+is associated to a user .</p></li>
+</ul>
+<p class="ditaa">
+<img src="../../_images/ditaa-dd42ecd8838fa453f337614fcaa16aecfe70557e.png"/>
+</p>
+<p>You can create, modify, view, suspend and remove users and subusers. In addition
+to user and subuser IDs, you may add a display name and an email address for a
+user.  You can specify a key and secret, or generate a key and secret
+automatically. When generating or specifying keys, note that user IDs correspond
+to an S3 key type and subuser IDs correspond to a swift key type. Swift keys
+also have access levels of <code class="docutils literal notranslate"><span class="pre">read</span></code>, <code class="docutils literal notranslate"><span class="pre">write</span></code>, <code class="docutils literal notranslate"><span class="pre">readwrite</span></code> and <code class="docutils literal notranslate"><span class="pre">full</span></code>.</p>
+<section id="create-a-user">
+<h3>Create a User<a class="headerlink" href="#create-a-user" title="Permalink to this heading">¶</a></h3>
+<p>To create a user (S3 interface), execute the following:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">radosgw</span><span class="o">-</span><span class="n">admin</span> <span class="n">user</span> <span class="n">create</span> <span class="o">--</span><span class="n">uid</span><span class="o">=</span><span class="p">{</span><span class="n">username</span><span class="p">}</span> <span class="o">--</span><span class="n">display</span><span class="o">-</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;{display-name}&quot;</span> <span class="p">[</span><span class="o">--</span><span class="n">email</span><span class="o">=</span><span class="p">{</span><span class="n">email</span><span class="p">}]</span>
+</pre></div>
+</div>
+<p>For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">radosgw</span><span class="o">-</span><span class="n">admin</span> <span class="n">user</span> <span class="n">create</span> <span class="o">--</span><span class="n">uid</span><span class="o">=</span><span class="n">johndoe</span> <span class="o">--</span><span class="n">display</span><span class="o">-</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;John Doe&quot;</span> <span class="o">--</span><span class="n">email</span><span class="o">=</span><span class="n">john</span><span class="nd">@example</span><span class="o">.</span><span class="n">com</span>
+</pre></div>
+</div>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="p">{</span><span class="w"> </span><span class="s2">&quot;user_id&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;johndoe&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="s2">&quot;display_name&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;John Doe&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="s2">&quot;email&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;john@example.com&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="s2">&quot;suspended&quot;</span><span class="o">:</span><span class="w"> </span><span class="mf">0</span><span class="p">,</span>
+<span class="w">  </span><span class="s2">&quot;max_buckets&quot;</span><span class="o">:</span><span class="w"> </span><span class="mf">1000</span><span class="p">,</span>
+<span class="w">  </span><span class="s2">&quot;subusers&quot;</span><span class="o">:</span><span class="w"> </span><span class="p">[],</span>
+<span class="w">  </span><span class="s2">&quot;keys&quot;</span><span class="o">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">        </span><span class="p">{</span><span class="w"> </span><span class="s2">&quot;user&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;johndoe&quot;</span><span class="p">,</span>
+<span class="w">          </span><span class="s2">&quot;access_key&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;11BS02LGFB6AL6H1ADMW&quot;</span><span class="p">,</span>
+<span class="w">          </span><span class="s2">&quot;secret_key&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;vzCEkuryfn060dfee4fgQPqFrncKEIkh3ZcdOANY&quot;</span><span class="p">}],</span>
+<span class="w">  </span><span class="s2">&quot;swift_keys&quot;</span><span class="o">:</span><span class="w"> </span><span class="p">[],</span>
+<span class="w">  </span><span class="s2">&quot;caps&quot;</span><span class="o">:</span><span class="w"> </span><span class="p">[],</span>
+<span class="w">  </span><span class="s2">&quot;op_mask&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;read, write, delete&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="s2">&quot;default_placement&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="s2">&quot;placement_tags&quot;</span><span class="o">:</span><span class="w"> </span><span class="p">[],</span>
+<span class="w">  </span><span class="s2">&quot;bucket_quota&quot;</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="s2">&quot;enabled&quot;</span><span class="o">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
+<span class="w">      </span><span class="s2">&quot;max_size_kb&quot;</span><span class="o">:</span><span class="w"> </span><span class="o">-</span><span class="mf">1</span><span class="p">,</span>
+<span class="w">      </span><span class="s2">&quot;max_objects&quot;</span><span class="o">:</span><span class="w"> </span><span class="o">-</span><span class="mf">1</span><span class="p">},</span>
+<span class="w">  </span><span class="s2">&quot;user_quota&quot;</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="s2">&quot;enabled&quot;</span><span class="o">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
+<span class="w">      </span><span class="s2">&quot;max_size_kb&quot;</span><span class="o">:</span><span class="w"> </span><span class="o">-</span><span class="mf">1</span><span class="p">,</span>
+<span class="w">      </span><span class="s2">&quot;max_objects&quot;</span><span class="o">:</span><span class="w"> </span><span class="o">-</span><span class="mf">1</span><span class="p">},</span>
+<span class="w">  </span><span class="s2">&quot;temp_url_keys&quot;</span><span class="o">:</span><span class="w"> </span><span class="p">[]}</span>
+</pre></div>
+</div>
+<p>Creating a user also creates an <code class="docutils literal notranslate"><span class="pre">access_key</span></code> and <code class="docutils literal notranslate"><span class="pre">secret_key</span></code> entry for use
+with any S3 API-compatible client.</p>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>Check the key output. Sometimes <code class="docutils literal notranslate"><span class="pre">radosgw-admin</span></code>
+generates a JSON escape (<code class="docutils literal notranslate"><span class="pre">\</span></code>) character, and some clients
+do not know how to handle JSON escape characters. Remedies include
+removing the JSON escape character (<code class="docutils literal notranslate"><span class="pre">\</span></code>), encapsulating the string
+in quotes, regenerating the key and ensuring that it
+does not have a JSON escape character or specify the key and secret
+manually.</p>
+</div>
+</section>
+<section id="create-a-subuser">
+<h3>Create a Subuser<a class="headerlink" href="#create-a-subuser" title="Permalink to this heading">¶</a></h3>
+<p>To create a subuser (Swift interface) for the user, you must specify the user ID
+(<code class="docutils literal notranslate"><span class="pre">--uid={username}</span></code>), a subuser ID and the access level for the subuser.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">radosgw</span><span class="o">-</span><span class="n">admin</span> <span class="n">subuser</span> <span class="n">create</span> <span class="o">--</span><span class="n">uid</span><span class="o">=</span><span class="p">{</span><span class="n">uid</span><span class="p">}</span> <span class="o">--</span><span class="n">subuser</span><span class="o">=</span><span class="p">{</span><span class="n">uid</span><span class="p">}</span> <span class="o">--</span><span class="n">access</span><span class="o">=</span><span class="p">[</span> <span class="n">read</span> <span class="o">|</span> <span class="n">write</span> <span class="o">|</span> <span class="n">readwrite</span> <span class="o">|</span> <span class="n">full</span> <span class="p">]</span>
+</pre></div>
+</div>
+<p>For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">radosgw</span><span class="o">-</span><span class="n">admin</span> <span class="n">subuser</span> <span class="n">create</span> <span class="o">--</span><span class="n">uid</span><span class="o">=</span><span class="n">johndoe</span> <span class="o">--</span><span class="n">subuser</span><span class="o">=</span><span class="n">johndoe</span><span class="p">:</span><span class="n">swift</span> <span class="o">--</span><span class="n">access</span><span class="o">=</span><span class="n">full</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><code class="docutils literal notranslate"><span class="pre">full</span></code> is not <code class="docutils literal notranslate"><span class="pre">readwrite</span></code>, as it also includes the access control policy.</p>
+</div>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="p">{</span><span class="w"> </span><span class="s2">&quot;user_id&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;johndoe&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="s2">&quot;display_name&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;John Doe&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="s2">&quot;email&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;john@example.com&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="s2">&quot;suspended&quot;</span><span class="o">:</span><span class="w"> </span><span class="mf">0</span><span class="p">,</span>
+<span class="w">  </span><span class="s2">&quot;max_buckets&quot;</span><span class="o">:</span><span class="w"> </span><span class="mf">1000</span><span class="p">,</span>
+<span class="w">  </span><span class="s2">&quot;subusers&quot;</span><span class="o">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">        </span><span class="p">{</span><span class="w"> </span><span class="s2">&quot;id&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;johndoe:swift&quot;</span><span class="p">,</span>
+<span class="w">          </span><span class="s2">&quot;permissions&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;full-control&quot;</span><span class="p">}],</span>
+<span class="w">  </span><span class="s2">&quot;keys&quot;</span><span class="o">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">        </span><span class="p">{</span><span class="w"> </span><span class="s2">&quot;user&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;johndoe&quot;</span><span class="p">,</span>
+<span class="w">          </span><span class="s2">&quot;access_key&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;11BS02LGFB6AL6H1ADMW&quot;</span><span class="p">,</span>
+<span class="w">          </span><span class="s2">&quot;secret_key&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;vzCEkuryfn060dfee4fgQPqFrncKEIkh3ZcdOANY&quot;</span><span class="p">}],</span>
+<span class="w">  </span><span class="s2">&quot;swift_keys&quot;</span><span class="o">:</span><span class="w"> </span><span class="p">[],</span>
+<span class="w">  </span><span class="s2">&quot;caps&quot;</span><span class="o">:</span><span class="w"> </span><span class="p">[],</span>
+<span class="w">  </span><span class="s2">&quot;op_mask&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;read, write, delete&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="s2">&quot;default_placement&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="s2">&quot;placement_tags&quot;</span><span class="o">:</span><span class="w"> </span><span class="p">[],</span>
+<span class="w">  </span><span class="s2">&quot;bucket_quota&quot;</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="s2">&quot;enabled&quot;</span><span class="o">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
+<span class="w">      </span><span class="s2">&quot;max_size_kb&quot;</span><span class="o">:</span><span class="w"> </span><span class="o">-</span><span class="mf">1</span><span class="p">,</span>
+<span class="w">      </span><span class="s2">&quot;max_objects&quot;</span><span class="o">:</span><span class="w"> </span><span class="o">-</span><span class="mf">1</span><span class="p">},</span>
+<span class="w">  </span><span class="s2">&quot;user_quota&quot;</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="s2">&quot;enabled&quot;</span><span class="o">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
+<span class="w">      </span><span class="s2">&quot;max_size_kb&quot;</span><span class="o">:</span><span class="w"> </span><span class="o">-</span><span class="mf">1</span><span class="p">,</span>
+<span class="w">      </span><span class="s2">&quot;max_objects&quot;</span><span class="o">:</span><span class="w"> </span><span class="o">-</span><span class="mf">1</span><span class="p">},</span>
+<span class="w">  </span><span class="s2">&quot;temp_url_keys&quot;</span><span class="o">:</span><span class="w"> </span><span class="p">[]}</span>
+</pre></div>
+</div>
+</section>
+<section id="get-user-info">
+<h3>Get User Info<a class="headerlink" href="#get-user-info" title="Permalink to this heading">¶</a></h3>
+<p>To get information about a user, you must specify <code class="docutils literal notranslate"><span class="pre">user</span> <span class="pre">info</span></code> and the user ID
+(<code class="docutils literal notranslate"><span class="pre">--uid={username}</span></code>) .</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">radosgw</span><span class="o">-</span><span class="n">admin</span> <span class="n">user</span> <span class="n">info</span> <span class="o">--</span><span class="n">uid</span><span class="o">=</span><span class="n">johndoe</span>
+</pre></div>
+</div>
+</section>
+<section id="modify-user-info">
+<h3>Modify User Info<a class="headerlink" href="#modify-user-info" title="Permalink to this heading">¶</a></h3>
+<p>To modify information about a user, you must specify the user ID (<code class="docutils literal notranslate"><span class="pre">--uid={username}</span></code>)
+and the attributes you want to modify. Typical modifications are to keys and secrets,
+email addresses, display names and access levels. For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">radosgw</span><span class="o">-</span><span class="n">admin</span> <span class="n">user</span> <span class="n">modify</span> <span class="o">--</span><span class="n">uid</span><span class="o">=</span><span class="n">johndoe</span> <span class="o">--</span><span class="n">display</span><span class="o">-</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;John E. Doe&quot;</span>
+</pre></div>
+</div>
+<p>To modify subuser values, specify <code class="docutils literal notranslate"><span class="pre">subuser</span> <span class="pre">modify</span></code>, user ID and the subuser ID. For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">radosgw</span><span class="o">-</span><span class="n">admin</span> <span class="n">subuser</span> <span class="n">modify</span> <span class="o">--</span><span class="n">uid</span><span class="o">=</span><span class="n">johndoe</span> <span class="o">--</span><span class="n">subuser</span><span class="o">=</span><span class="n">johndoe</span><span class="p">:</span><span class="n">swift</span> <span class="o">--</span><span class="n">access</span><span class="o">=</span><span class="n">full</span>
+</pre></div>
+</div>
+</section>
+<section id="user-enable-suspend">
+<h3>User Enable/Suspend<a class="headerlink" href="#user-enable-suspend" title="Permalink to this heading">¶</a></h3>
+<p>When you create a user, the user is enabled by default. However, you may suspend
+user  privileges and re-enable them at a later time. To suspend a user, specify
+<code class="docutils literal notranslate"><span class="pre">user</span> <span class="pre">suspend</span></code> and the user ID.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">radosgw</span><span class="o">-</span><span class="n">admin</span> <span class="n">user</span> <span class="n">suspend</span> <span class="o">--</span><span class="n">uid</span><span class="o">=</span><span class="n">johndoe</span>
+</pre></div>
+</div>
+<p>To re-enable a suspended user, specify <code class="docutils literal notranslate"><span class="pre">user</span> <span class="pre">enable</span></code> and the user ID.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">radosgw</span><span class="o">-</span><span class="n">admin</span> <span class="n">user</span> <span class="n">enable</span> <span class="o">--</span><span class="n">uid</span><span class="o">=</span><span class="n">johndoe</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Disabling the user disables the subuser.</p>
+</div>
+</section>
+<section id="remove-a-user">
+<h3>Remove a User<a class="headerlink" href="#remove-a-user" title="Permalink to this heading">¶</a></h3>
+<p>When you remove a user, the user and subuser are removed from the system.
+However, you may remove just the subuser if you wish. To remove a user (and
+subuser), specify <code class="docutils literal notranslate"><span class="pre">user</span> <span class="pre">rm</span></code> and the user ID.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">radosgw</span><span class="o">-</span><span class="n">admin</span> <span class="n">user</span> <span class="n">rm</span> <span class="o">--</span><span class="n">uid</span><span class="o">=</span><span class="n">johndoe</span>
+</pre></div>
+</div>
+<p>To remove the subuser only, specify <code class="docutils literal notranslate"><span class="pre">subuser</span> <span class="pre">rm</span></code> and the subuser ID.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">radosgw</span><span class="o">-</span><span class="n">admin</span> <span class="n">subuser</span> <span class="n">rm</span> <span class="o">--</span><span class="n">subuser</span><span class="o">=</span><span class="n">johndoe</span><span class="p">:</span><span class="n">swift</span>
+</pre></div>
+</div>
+<p>Options include:</p>
+<ul class="simple">
+<li><p><strong>Purge Data:</strong> The <code class="docutils literal notranslate"><span class="pre">--purge-data</span></code> option purges all data associated
+to the UID.</p></li>
+<li><p><strong>Purge Keys:</strong> The <code class="docutils literal notranslate"><span class="pre">--purge-keys</span></code> option purges all keys associated
+to the UID.</p></li>
+</ul>
+</section>
+<section id="remove-a-subuser">
+<h3>Remove a Subuser<a class="headerlink" href="#remove-a-subuser" title="Permalink to this heading">¶</a></h3>
+<p>When you remove a sub user, you are removing access to the Swift interface.
+The user will remain in the system. To remove the subuser, specify
+<code class="docutils literal notranslate"><span class="pre">subuser</span> <span class="pre">rm</span></code> and the subuser ID.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">radosgw</span><span class="o">-</span><span class="n">admin</span> <span class="n">subuser</span> <span class="n">rm</span> <span class="o">--</span><span class="n">subuser</span><span class="o">=</span><span class="n">johndoe</span><span class="p">:</span><span class="n">swift</span>
+</pre></div>
+</div>
+<p>Options include:</p>
+<ul class="simple">
+<li><p><strong>Purge Keys:</strong> The <code class="docutils literal notranslate"><span class="pre">--purge-keys</span></code> option purges all keys associated
+to the UID.</p></li>
+</ul>
+</section>
+<section id="add-remove-a-key">
+<h3>Add / Remove a Key<a class="headerlink" href="#add-remove-a-key" title="Permalink to this heading">¶</a></h3>
+<p>Both users and subusers require the key to access the S3 or Swift interface. To
+use S3, the user needs a key pair which is composed of an access key and a
+secret key. On the other hand, to use Swift, the user typically needs a secret
+key (password), and use it together with the associated user ID. You may create
+a key and either specify or generate the access key and/or secret key. You may
+also remove a key. Options include:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">--key-type=&lt;type&gt;</span></code> specifies the key type. The options are: s3, swift</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--access-key=&lt;key&gt;</span></code> manually specifies an S3 access key.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--secret-key=&lt;key&gt;</span></code> manually specifies a S3 secret key or a Swift secret key.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--gen-access-key</span></code> automatically generates a random S3 access key.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--gen-secret</span></code> automatically generates a random S3 secret key or a random Swift secret key.</p></li>
+</ul>
+<p>An example how to add a specified S3 key pair for a user.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">radosgw</span><span class="o">-</span><span class="n">admin</span> <span class="n">key</span> <span class="n">create</span> <span class="o">--</span><span class="n">uid</span><span class="o">=</span><span class="n">foo</span> <span class="o">--</span><span class="n">key</span><span class="o">-</span><span class="nb">type</span><span class="o">=</span><span class="n">s3</span> <span class="o">--</span><span class="n">access</span><span class="o">-</span><span class="n">key</span> <span class="n">fooAccessKey</span> <span class="o">--</span><span class="n">secret</span><span class="o">-</span><span class="n">key</span> <span class="n">fooSecretKey</span>
+</pre></div>
+</div>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="p">{</span><span class="w"> </span><span class="s2">&quot;user_id&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;foo&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="s2">&quot;rados_uid&quot;</span><span class="o">:</span><span class="w"> </span><span class="mf">0</span><span class="p">,</span>
+<span class="w">  </span><span class="s2">&quot;display_name&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;foo&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="s2">&quot;email&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;foo@example.com&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="s2">&quot;suspended&quot;</span><span class="o">:</span><span class="w"> </span><span class="mf">0</span><span class="p">,</span>
+<span class="w">  </span><span class="s2">&quot;keys&quot;</span><span class="o">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="p">{</span><span class="w"> </span><span class="s2">&quot;user&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;foo&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="s2">&quot;access_key&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;fooAccessKey&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="s2">&quot;secret_key&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;fooSecretKey&quot;</span><span class="p">}],</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>Note that you may create multiple S3 key pairs for a user.</p>
+<p>To attach a specified swift secret key for a subuser.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">radosgw</span><span class="o">-</span><span class="n">admin</span> <span class="n">key</span> <span class="n">create</span> <span class="o">--</span><span class="n">subuser</span><span class="o">=</span><span class="n">foo</span><span class="p">:</span><span class="n">bar</span> <span class="o">--</span><span class="n">key</span><span class="o">-</span><span class="nb">type</span><span class="o">=</span><span class="n">swift</span> <span class="o">--</span><span class="n">secret</span><span class="o">-</span><span class="n">key</span> <span class="n">barSecret</span>
+</pre></div>
+</div>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="p">{</span><span class="w"> </span><span class="s2">&quot;user_id&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;foo&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="s2">&quot;rados_uid&quot;</span><span class="o">:</span><span class="w"> </span><span class="mf">0</span><span class="p">,</span>
+<span class="w">  </span><span class="s2">&quot;display_name&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;foo&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="s2">&quot;email&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;foo@example.com&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="s2">&quot;suspended&quot;</span><span class="o">:</span><span class="w"> </span><span class="mf">0</span><span class="p">,</span>
+<span class="w">  </span><span class="s2">&quot;subusers&quot;</span><span class="o">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">     </span><span class="p">{</span><span class="w"> </span><span class="s2">&quot;id&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;foo:bar&quot;</span><span class="p">,</span>
+<span class="w">       </span><span class="s2">&quot;permissions&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;full-control&quot;</span><span class="p">}],</span>
+<span class="w">  </span><span class="s2">&quot;swift_keys&quot;</span><span class="o">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="p">{</span><span class="w"> </span><span class="s2">&quot;user&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;foo:bar&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="s2">&quot;secret_key&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;asfghjghghmgm&quot;</span><span class="p">}]}</span>
+</pre></div>
+</div>
+<p>Note that a subuser can have only one swift secret key.</p>
+<p>Subusers can also be used with S3 APIs if the subuser is associated with a S3 key pair.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">radosgw</span><span class="o">-</span><span class="n">admin</span> <span class="n">key</span> <span class="n">create</span> <span class="o">--</span><span class="n">subuser</span><span class="o">=</span><span class="n">foo</span><span class="p">:</span><span class="n">bar</span> <span class="o">--</span><span class="n">key</span><span class="o">-</span><span class="nb">type</span><span class="o">=</span><span class="n">s3</span> <span class="o">--</span><span class="n">access</span><span class="o">-</span><span class="n">key</span> <span class="n">barAccessKey</span> <span class="o">--</span><span class="n">secret</span><span class="o">-</span><span class="n">key</span> <span class="n">barSecretKey</span>
+</pre></div>
+</div>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="p">{</span><span class="w"> </span><span class="s2">&quot;user_id&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;foo&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="s2">&quot;rados_uid&quot;</span><span class="o">:</span><span class="w"> </span><span class="mf">0</span><span class="p">,</span>
+<span class="w">  </span><span class="s2">&quot;display_name&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;foo&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="s2">&quot;email&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;foo@example.com&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="s2">&quot;suspended&quot;</span><span class="o">:</span><span class="w"> </span><span class="mf">0</span><span class="p">,</span>
+<span class="w">  </span><span class="s2">&quot;subusers&quot;</span><span class="o">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">     </span><span class="p">{</span><span class="w"> </span><span class="s2">&quot;id&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;foo:bar&quot;</span><span class="p">,</span>
+<span class="w">       </span><span class="s2">&quot;permissions&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;full-control&quot;</span><span class="p">}],</span>
+<span class="w">  </span><span class="s2">&quot;keys&quot;</span><span class="o">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="p">{</span><span class="w"> </span><span class="s2">&quot;user&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;foo:bar&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="s2">&quot;access_key&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;barAccessKey&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="s2">&quot;secret_key&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;barSecretKey&quot;</span><span class="p">}],</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>To remove a S3 key pair, specify the access key.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">radosgw</span><span class="o">-</span><span class="n">admin</span> <span class="n">key</span> <span class="n">rm</span> <span class="o">--</span><span class="n">uid</span><span class="o">=</span><span class="n">foo</span> <span class="o">--</span><span class="n">key</span><span class="o">-</span><span class="nb">type</span><span class="o">=</span><span class="n">s3</span> <span class="o">--</span><span class="n">access</span><span class="o">-</span><span class="n">key</span><span class="o">=</span><span class="n">fooAccessKey</span>
+</pre></div>
+</div>
+<p>To remove the swift secret key.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">radosgw</span><span class="o">-</span><span class="n">admin</span> <span class="n">key</span> <span class="n">rm</span> <span class="o">--</span><span class="n">subuser</span><span class="o">=</span><span class="n">foo</span><span class="p">:</span><span class="n">bar</span> <span class="o">--</span><span class="n">key</span><span class="o">-</span><span class="nb">type</span><span class="o">=</span><span class="n">swift</span>
+</pre></div>
+</div>
+</section>
+<section id="add-remove-admin-capabilities">
+<h3>Add / Remove Admin Capabilities<a class="headerlink" href="#add-remove-admin-capabilities" title="Permalink to this heading">¶</a></h3>
+<p>The Ceph Storage Cluster provides an administrative API that enables  users to
+execute administrative functions via the REST API. By default, users do NOT have
+access to this API. To enable a user to exercise  administrative functionality,
+provide the user with administrative capabilities.</p>
+<p>To add administrative capabilities to a user, execute the following:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">radosgw</span><span class="o">-</span><span class="n">admin</span> <span class="n">caps</span> <span class="n">add</span> <span class="o">--</span><span class="n">uid</span><span class="o">=</span><span class="p">{</span><span class="n">uid</span><span class="p">}</span> <span class="o">--</span><span class="n">caps</span><span class="o">=</span><span class="p">{</span><span class="n">caps</span><span class="p">}</span>
+</pre></div>
+</div>
+<p>You can add read, write or all capabilities to users, buckets, metadata and
+usage (utilization). For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">--</span><span class="n">caps</span><span class="o">=</span><span class="s2">&quot;[users|buckets|metadata|usage|zone]=[*|read|write|read, write]&quot;</span>
+</pre></div>
+</div>
+<p>For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">radosgw</span><span class="o">-</span><span class="n">admin</span> <span class="n">caps</span> <span class="n">add</span> <span class="o">--</span><span class="n">uid</span><span class="o">=</span><span class="n">johndoe</span> <span class="o">--</span><span class="n">caps</span><span class="o">=</span><span class="s2">&quot;users=*;buckets=*&quot;</span>
+</pre></div>
+</div>
+<p>To remove administrative capabilities from a user, execute the following:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">radosgw</span><span class="o">-</span><span class="n">admin</span> <span class="n">caps</span> <span class="n">rm</span> <span class="o">--</span><span class="n">uid</span><span class="o">=</span><span class="n">johndoe</span> <span class="o">--</span><span class="n">caps</span><span class="o">=</span><span class="p">{</span><span class="n">caps</span><span class="p">}</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="quota-management">
+<h2>Quota Management<a class="headerlink" href="#quota-management" title="Permalink to this heading">¶</a></h2>
+<p>The Ceph Object Gateway enables you to set quotas on users and buckets owned by
+users. Quotas include the maximum number of objects in a bucket and the maximum
+storage size a bucket can hold.</p>
+<ul class="simple">
+<li><p><strong>Bucket:</strong> The <code class="docutils literal notranslate"><span class="pre">--bucket</span></code> option allows you to specify a quota for
+buckets the user owns.</p></li>
+<li><p><strong>Maximum Objects:</strong> The <code class="docutils literal notranslate"><span class="pre">--max-objects</span></code> setting allows you to specify
+the maximum number of objects. A negative value disables this setting.</p></li>
+<li><p><strong>Maximum Size:</strong> The <code class="docutils literal notranslate"><span class="pre">--max-size</span></code> option allows you to specify a quota
+size in B/K/M/G/T, where B is the default. A negative value disables this setting.</p></li>
+<li><p><strong>Quota Scope:</strong> The <code class="docutils literal notranslate"><span class="pre">--quota-scope</span></code> option sets the scope for the quota.
+The options are <code class="docutils literal notranslate"><span class="pre">bucket</span></code> and <code class="docutils literal notranslate"><span class="pre">user</span></code>. Bucket quotas apply to buckets a
+user owns. User quotas apply to a user.</p></li>
+</ul>
+<section id="set-user-quota">
+<h3>Set User Quota<a class="headerlink" href="#set-user-quota" title="Permalink to this heading">¶</a></h3>
+<p>Before you enable a quota, you must first set the quota parameters.
+For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">radosgw</span><span class="o">-</span><span class="n">admin</span> <span class="n">quota</span> <span class="nb">set</span> <span class="o">--</span><span class="n">quota</span><span class="o">-</span><span class="n">scope</span><span class="o">=</span><span class="n">user</span> <span class="o">--</span><span class="n">uid</span><span class="o">=&lt;</span><span class="n">uid</span><span class="o">&gt;</span> <span class="p">[</span><span class="o">--</span><span class="nb">max</span><span class="o">-</span><span class="n">objects</span><span class="o">=&lt;</span><span class="n">num</span> <span class="n">objects</span><span class="o">&gt;</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="nb">max</span><span class="o">-</span><span class="n">size</span><span class="o">=&lt;</span><span class="nb">max</span> <span class="n">size</span><span class="o">&gt;</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">radosgw</span><span class="o">-</span><span class="n">admin</span> <span class="n">quota</span> <span class="nb">set</span> <span class="o">--</span><span class="n">quota</span><span class="o">-</span><span class="n">scope</span><span class="o">=</span><span class="n">user</span> <span class="o">--</span><span class="n">uid</span><span class="o">=</span><span class="n">johndoe</span> <span class="o">--</span><span class="nb">max</span><span class="o">-</span><span class="n">objects</span><span class="o">=</span><span class="mi">1024</span> <span class="o">--</span><span class="nb">max</span><span class="o">-</span><span class="n">size</span><span class="o">=</span><span class="mi">1024</span><span class="n">B</span>
+</pre></div>
+</div>
+<p>A negative value for num objects and / or max size means that the
+specific quota attribute check is disabled.</p>
+</section>
+<section id="enable-disable-user-quota">
+<h3>Enable/Disable User Quota<a class="headerlink" href="#enable-disable-user-quota" title="Permalink to this heading">¶</a></h3>
+<p>Once you set a user quota, you may enable it. For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">radosgw</span><span class="o">-</span><span class="n">admin</span> <span class="n">quota</span> <span class="n">enable</span> <span class="o">--</span><span class="n">quota</span><span class="o">-</span><span class="n">scope</span><span class="o">=</span><span class="n">user</span> <span class="o">--</span><span class="n">uid</span><span class="o">=&lt;</span><span class="n">uid</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<p>You may disable an enabled user quota. For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">radosgw</span><span class="o">-</span><span class="n">admin</span> <span class="n">quota</span> <span class="n">disable</span> <span class="o">--</span><span class="n">quota</span><span class="o">-</span><span class="n">scope</span><span class="o">=</span><span class="n">user</span> <span class="o">--</span><span class="n">uid</span><span class="o">=&lt;</span><span class="n">uid</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+</section>
+<section id="set-bucket-quota">
+<h3>Set Bucket Quota<a class="headerlink" href="#set-bucket-quota" title="Permalink to this heading">¶</a></h3>
+<p>Bucket quotas apply to the buckets owned by the specified <code class="docutils literal notranslate"><span class="pre">uid</span></code>. They are
+independent of the user.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">radosgw</span><span class="o">-</span><span class="n">admin</span> <span class="n">quota</span> <span class="nb">set</span> <span class="o">--</span><span class="n">uid</span><span class="o">=&lt;</span><span class="n">uid</span><span class="o">&gt;</span> <span class="o">--</span><span class="n">quota</span><span class="o">-</span><span class="n">scope</span><span class="o">=</span><span class="n">bucket</span> <span class="p">[</span><span class="o">--</span><span class="nb">max</span><span class="o">-</span><span class="n">objects</span><span class="o">=&lt;</span><span class="n">num</span> <span class="n">objects</span><span class="o">&gt;</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="nb">max</span><span class="o">-</span><span class="n">size</span><span class="o">=&lt;</span><span class="nb">max</span> <span class="n">size</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>A negative value for num objects and / or max size means that the
+specific quota attribute check is disabled.</p>
+</section>
+<section id="enable-disable-bucket-quota">
+<h3>Enable/Disable Bucket Quota<a class="headerlink" href="#enable-disable-bucket-quota" title="Permalink to this heading">¶</a></h3>
+<p>Once you set a bucket quota, you may enable it. For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">radosgw</span><span class="o">-</span><span class="n">admin</span> <span class="n">quota</span> <span class="n">enable</span> <span class="o">--</span><span class="n">quota</span><span class="o">-</span><span class="n">scope</span><span class="o">=</span><span class="n">bucket</span> <span class="o">--</span><span class="n">uid</span><span class="o">=&lt;</span><span class="n">uid</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<p>You may disable an enabled bucket quota. For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">radosgw</span><span class="o">-</span><span class="n">admin</span> <span class="n">quota</span> <span class="n">disable</span> <span class="o">--</span><span class="n">quota</span><span class="o">-</span><span class="n">scope</span><span class="o">=</span><span class="n">bucket</span> <span class="o">--</span><span class="n">uid</span><span class="o">=&lt;</span><span class="n">uid</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+</section>
+<section id="get-quota-settings">
+<h3>Get Quota Settings<a class="headerlink" href="#get-quota-settings" title="Permalink to this heading">¶</a></h3>
+<p>You may access each user’s quota settings via the user information
+API. To read user quota setting information with the CLI interface,
+execute the following:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">radosgw</span><span class="o">-</span><span class="n">admin</span> <span class="n">user</span> <span class="n">info</span> <span class="o">--</span><span class="n">uid</span><span class="o">=&lt;</span><span class="n">uid</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+</section>
+<section id="update-quota-stats">
+<h3>Update Quota Stats<a class="headerlink" href="#update-quota-stats" title="Permalink to this heading">¶</a></h3>
+<p>Quota stats get updated asynchronously. You can update quota
+statistics for all users and all buckets manually to retrieve
+the latest quota stats.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">radosgw</span><span class="o">-</span><span class="n">admin</span> <span class="n">user</span> <span class="n">stats</span> <span class="o">--</span><span class="n">uid</span><span class="o">=&lt;</span><span class="n">uid</span><span class="o">&gt;</span> <span class="o">--</span><span class="n">sync</span><span class="o">-</span><span class="n">stats</span>
+</pre></div>
+</div>
+</section>
+<section id="get-user-usage-stats">
+<span id="rgw-user-usage-stats"></span><h3>Get User Usage Stats<a class="headerlink" href="#get-user-usage-stats" title="Permalink to this heading">¶</a></h3>
+<p>To see how much of the quota a user has consumed, execute the following:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">radosgw</span><span class="o">-</span><span class="n">admin</span> <span class="n">user</span> <span class="n">stats</span> <span class="o">--</span><span class="n">uid</span><span class="o">=&lt;</span><span class="n">uid</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>You should execute <code class="docutils literal notranslate"><span class="pre">radosgw-admin</span> <span class="pre">user</span> <span class="pre">stats</span></code> with the
+<code class="docutils literal notranslate"><span class="pre">--sync-stats</span></code> option to receive the latest data.</p>
+</div>
+</section>
+<section id="default-quotas">
+<h3>Default Quotas<a class="headerlink" href="#default-quotas" title="Permalink to this heading">¶</a></h3>
+<p>You can set default quotas in the config.  These defaults are used when
+creating a new user and have no effect on existing users. If the
+relevant default quota is set in config, then that quota is set on the
+new user, and that quota is enabled.  See <code class="docutils literal notranslate"><span class="pre">rgw</span> <span class="pre">bucket</span> <span class="pre">default</span> <span class="pre">quota</span> <span class="pre">max</span> <span class="pre">objects</span></code>,
+<code class="docutils literal notranslate"><span class="pre">rgw</span> <span class="pre">bucket</span> <span class="pre">default</span> <span class="pre">quota</span> <span class="pre">max</span> <span class="pre">size</span></code>, <code class="docutils literal notranslate"><span class="pre">rgw</span> <span class="pre">user</span> <span class="pre">default</span> <span class="pre">quota</span> <span class="pre">max</span> <span class="pre">objects</span></code>, and
+<code class="docutils literal notranslate"><span class="pre">rgw</span> <span class="pre">user</span> <span class="pre">default</span> <span class="pre">quota</span> <span class="pre">max</span> <span class="pre">size</span></code> in <a class="reference external" href="../config-ref/">Ceph Object Gateway Config Reference</a></p>
+</section>
+<section id="quota-cache">
+<h3>Quota Cache<a class="headerlink" href="#quota-cache" title="Permalink to this heading">¶</a></h3>
+<p>Quota statistics are cached on each RGW instance.  If there are multiple
+instances, then the cache can keep quotas from being perfectly enforced, as
+each instance will have a different view of quotas.  The options that control
+this are <code class="docutils literal notranslate"><span class="pre">rgw</span> <span class="pre">bucket</span> <span class="pre">quota</span> <span class="pre">ttl</span></code>, <code class="docutils literal notranslate"><span class="pre">rgw</span> <span class="pre">user</span> <span class="pre">quota</span> <span class="pre">bucket</span> <span class="pre">sync</span> <span class="pre">interval</span></code> and
+<code class="docutils literal notranslate"><span class="pre">rgw</span> <span class="pre">user</span> <span class="pre">quota</span> <span class="pre">sync</span> <span class="pre">interval</span></code>.  The higher these values are, the more
+efficient quota operations are, but the more out-of-sync multiple instances
+will be.  The lower these values are, the closer to perfect enforcement
+multiple instances will achieve.  If all three are 0, then quota caching is
+effectively disabled, and multiple instances will have perfect quota
+enforcement.  See <a class="reference external" href="../config-ref/">Ceph Object Gateway Config Reference</a></p>
+</section>
+<section id="reading-writing-global-quotas">
+<h3>Reading / Writing Global Quotas<a class="headerlink" href="#reading-writing-global-quotas" title="Permalink to this heading">¶</a></h3>
+<p>You can read and write global quota settings in the period configuration. To
+view the global quota settings:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">radosgw</span><span class="o">-</span><span class="n">admin</span> <span class="k">global</span> <span class="n">quota</span> <span class="n">get</span>
+</pre></div>
+</div>
+<p>The global quota settings can be manipulated with the <code class="docutils literal notranslate"><span class="pre">global</span> <span class="pre">quota</span></code>
+counterparts of the <code class="docutils literal notranslate"><span class="pre">quota</span> <span class="pre">set</span></code>, <code class="docutils literal notranslate"><span class="pre">quota</span> <span class="pre">enable</span></code>, and <code class="docutils literal notranslate"><span class="pre">quota</span> <span class="pre">disable</span></code>
+commands.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">radosgw</span><span class="o">-</span><span class="n">admin</span> <span class="k">global</span> <span class="n">quota</span> <span class="nb">set</span> <span class="o">--</span><span class="n">quota</span><span class="o">-</span><span class="n">scope</span> <span class="n">bucket</span> <span class="o">--</span><span class="nb">max</span><span class="o">-</span><span class="n">objects</span> <span class="mi">1024</span>
+<span class="n">radosgw</span><span class="o">-</span><span class="n">admin</span> <span class="k">global</span> <span class="n">quota</span> <span class="n">enable</span> <span class="o">--</span><span class="n">quota</span><span class="o">-</span><span class="n">scope</span> <span class="n">bucket</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>In a multisite configuration, where there is a realm and period
+present, changes to the global quotas must be committed using <code class="docutils literal notranslate"><span class="pre">period</span>
+<span class="pre">update</span> <span class="pre">--commit</span></code>. If there is no period present, the rados gateway(s) must
+be restarted for the changes to take effect.</p>
+</div>
+</section>
+</section>
+<section id="usage">
+<h2>Usage<a class="headerlink" href="#usage" title="Permalink to this heading">¶</a></h2>
+<p>The Ceph Object Gateway logs usage for each user. You can track
+user usage within date ranges too.</p>
+<ul class="simple">
+<li><p>Add <code class="docutils literal notranslate"><span class="pre">rgw</span> <span class="pre">enable</span> <span class="pre">usage</span> <span class="pre">log</span> <span class="pre">=</span> <span class="pre">true</span></code> in [client.rgw] section of ceph.conf and restart the radosgw service.</p></li>
+</ul>
+<p>Options include:</p>
+<ul class="simple">
+<li><p><strong>Start Date:</strong> The <code class="docutils literal notranslate"><span class="pre">--start-date</span></code> option allows you to filter usage
+stats from a particular start date (<strong>format:</strong> <code class="docutils literal notranslate"><span class="pre">yyyy-mm-dd[HH:MM:SS]</span></code>).</p></li>
+<li><p><strong>End Date:</strong> The <code class="docutils literal notranslate"><span class="pre">--end-date</span></code> option allows you to filter usage up
+to a particular date (<strong>format:</strong> <code class="docutils literal notranslate"><span class="pre">yyyy-mm-dd[HH:MM:SS]</span></code>).</p></li>
+<li><p><strong>Log Entries:</strong> The <code class="docutils literal notranslate"><span class="pre">--show-log-entries</span></code> option allows you to specify
+whether or not to include log entries with the usage stats
+(options: <code class="docutils literal notranslate"><span class="pre">true</span></code> | <code class="docutils literal notranslate"><span class="pre">false</span></code>).</p></li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>You may specify time with minutes and seconds, but it is stored
+with 1 hour resolution.</p>
+</div>
+<section id="show-usage">
+<h3>Show Usage<a class="headerlink" href="#show-usage" title="Permalink to this heading">¶</a></h3>
+<p>To show usage statistics, specify the <code class="docutils literal notranslate"><span class="pre">usage</span> <span class="pre">show</span></code>. To show usage for a
+particular user, you must specify a user ID. You may also specify a start date,
+end date, and whether or not to show log entries.:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">radosgw</span><span class="o">-</span><span class="n">admin</span> <span class="n">usage</span> <span class="n">show</span> <span class="o">--</span><span class="n">uid</span><span class="o">=</span><span class="n">johndoe</span> <span class="o">--</span><span class="n">start</span><span class="o">-</span><span class="n">date</span><span class="o">=</span><span class="mi">2012</span><span class="o">-</span><span class="mi">03</span><span class="o">-</span><span class="mi">01</span> <span class="o">--</span><span class="n">end</span><span class="o">-</span><span class="n">date</span><span class="o">=</span><span class="mi">2012</span><span class="o">-</span><span class="mi">04</span><span class="o">-</span><span class="mi">01</span>
+</pre></div>
+</div>
+<p>You may also show a summary of usage information for all users by omitting a user ID.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">radosgw</span><span class="o">-</span><span class="n">admin</span> <span class="n">usage</span> <span class="n">show</span> <span class="o">--</span><span class="n">show</span><span class="o">-</span><span class="n">log</span><span class="o">-</span><span class="n">entries</span><span class="o">=</span><span class="n">false</span>
+</pre></div>
+</div>
+</section>
+<section id="trim-usage">
+<h3>Trim Usage<a class="headerlink" href="#trim-usage" title="Permalink to this heading">¶</a></h3>
+<p>With heavy use, usage logs can begin to take up storage space. You can trim
+usage logs for all users and for specific users. You may also specify date
+ranges for trim operations.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">radosgw</span><span class="o">-</span><span class="n">admin</span> <span class="n">usage</span> <span class="n">trim</span> <span class="o">--</span><span class="n">start</span><span class="o">-</span><span class="n">date</span><span class="o">=</span><span class="mi">2010</span><span class="o">-</span><span class="mi">01</span><span class="o">-</span><span class="mi">01</span> <span class="o">--</span><span class="n">end</span><span class="o">-</span><span class="n">date</span><span class="o">=</span><span class="mi">2010</span><span class="o">-</span><span class="mi">12</span><span class="o">-</span><span class="mi">31</span>
+<span class="n">radosgw</span><span class="o">-</span><span class="n">admin</span> <span class="n">usage</span> <span class="n">trim</span> <span class="o">--</span><span class="n">uid</span><span class="o">=</span><span class="n">johndoe</span>
+<span class="n">radosgw</span><span class="o">-</span><span class="n">admin</span> <span class="n">usage</span> <span class="n">trim</span> <span class="o">--</span><span class="n">uid</span><span class="o">=</span><span class="n">johndoe</span> <span class="o">--</span><span class="n">end</span><span class="o">-</span><span class="n">date</span><span class="o">=</span><span class="mi">2013</span><span class="o">-</span><span class="mi">12</span><span class="o">-</span><span class="mi">31</span>
+</pre></div>
+</div>
+</section>
+</section>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../">
+              <img class="logo" src="../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../install/">Installing Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cephadm/">Cephadm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rados/">Ceph Storage Cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cephfs/">Ceph File System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rbd/">Ceph Block Device</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../">Ceph Object Gateway</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../frontends/">HTTP Frontends</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../placement/">Pool Placement and Storage Classes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../multisite/">Multisite Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../multisite-sync-policy/">Multisite Sync Policy Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pools/">Configuring Pools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../config-ref/">Config Reference</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Admin Guide</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#user-management">User Management</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#create-a-user">Create a User</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#create-a-subuser">Create a Subuser</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#get-user-info">Get User Info</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#modify-user-info">Modify User Info</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#user-enable-suspend">User Enable/Suspend</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#remove-a-user">Remove a User</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#remove-a-subuser">Remove a Subuser</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#add-remove-a-key">Add / Remove a Key</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#add-remove-admin-capabilities">Add / Remove Admin Capabilities</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#quota-management">Quota Management</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#set-user-quota">Set User Quota</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#enable-disable-user-quota">Enable/Disable User Quota</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#set-bucket-quota">Set Bucket Quota</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#enable-disable-bucket-quota">Enable/Disable Bucket Quota</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#get-quota-settings">Get Quota Settings</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#update-quota-stats">Update Quota Stats</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#get-user-usage-stats">Get User Usage Stats</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#default-quotas">Default Quotas</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#quota-cache">Quota Cache</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#reading-writing-global-quotas">Reading / Writing Global Quotas</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#usage">Usage</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#show-usage">Show Usage</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#trim-usage">Trim Usage</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../s3/">S3 API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rgw-cache/">Data caching and CDN</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../swift/">Swift API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../adminops/">Admin Ops API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/">Python binding</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../nfs/">Export over NFS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../keystone/">OpenStack Keystone Integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../barbican/">OpenStack Barbican Integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../vault/">HashiCorp Vault Integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../kmip/">KMIP Integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../opa/">Open Policy Agent Integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../multitenancy/">Multi-tenancy</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../compression/">Compression</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../ldap-auth/">LDAP Authentication</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../encryption/">Server-Side Encryption</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../bucketpolicy/">Bucket Policy</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../dynamicresharding/">Dynamic bucket index resharding</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../mfa/">Multi factor authentication</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../sync-modules/">Sync Modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../notifications/">Bucket Notifications</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../layout/">Data Layout in RADOS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../STS/">STS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../STSLite/">STS Lite</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../keycloak/">Keycloak</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../session-tags/">Session Tags</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../role/">Role</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../orphans/">Orphan List and Associated Tooling</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../oidc/">OpenID Connect Provider</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../troubleshooting/">Troubleshooting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../man/8/radosgw/">Manpage radosgw</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../man/8/radosgw-admin/">Manpage radosgw-admin</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../qat-accel/">QAT Acceleration for Encryption and Compression</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../s3select/">S3-select</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../lua-scripting/">Lua Scripting</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/">Ceph Manager Daemon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dev/developer_guide/">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dev/internals/">Ceph Internals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../s3/" title="Ceph Object Gateway S3 API"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../config-ref/" title="Ceph Object Gateway Config Reference"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../" >Ceph Object Gateway</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Admin Guide</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

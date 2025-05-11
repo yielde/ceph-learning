@@ -1,0 +1,301 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Python Swift Examples &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/css/custom.css" />
+    <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/jquery.js"></script>
+    <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../../genindex/" />
+    <link rel="search" title="Search" href="../../../search/" />
+    <link rel="next" title="Ruby Swift Examples" href="../ruby/" />
+    <link rel="prev" title="Java Swift Examples" href="../java/" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../ruby/" title="Ruby Swift Examples"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../java/" title="Java Swift Examples"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../" >Ceph Object Gateway</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../" accesskey="U">Ceph Object Gateway Swift API</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Python Swift Examples</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="python-swift-examples">
+<span id="python-swift"></span><h1>Python Swift Examples<a class="headerlink" href="#python-swift-examples" title="Permalink to this heading">¶</a></h1>
+<section id="create-a-connection">
+<h2>Create a Connection<a class="headerlink" href="#create-a-connection" title="Permalink to this heading">¶</a></h2>
+<p>This creates a connection so that you can interact with the server:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">swiftclient</span>
+<span class="n">user</span> <span class="o">=</span> <span class="s1">&#39;account_name:username&#39;</span>
+<span class="n">key</span> <span class="o">=</span> <span class="s1">&#39;your_api_key&#39;</span>
+
+<span class="n">conn</span> <span class="o">=</span> <span class="n">swiftclient</span><span class="o">.</span><span class="n">Connection</span><span class="p">(</span>
+        <span class="n">user</span><span class="o">=</span><span class="n">user</span><span class="p">,</span>
+        <span class="n">key</span><span class="o">=</span><span class="n">key</span><span class="p">,</span>
+        <span class="n">authurl</span><span class="o">=</span><span class="s1">&#39;https://objects.dreamhost.com/auth&#39;</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="create-a-container">
+<h2>Create a Container<a class="headerlink" href="#create-a-container" title="Permalink to this heading">¶</a></h2>
+<p>This creates a new container called <code class="docutils literal notranslate"><span class="pre">my-new-container</span></code>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">container_name</span> <span class="o">=</span> <span class="s1">&#39;my-new-container&#39;</span>
+<span class="n">conn</span><span class="o">.</span><span class="n">put_container</span><span class="p">(</span><span class="n">container_name</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="create-an-object">
+<h2>Create an Object<a class="headerlink" href="#create-an-object" title="Permalink to this heading">¶</a></h2>
+<p>This creates a file <code class="docutils literal notranslate"><span class="pre">hello.txt</span></code> from the file named <code class="docutils literal notranslate"><span class="pre">my_hello.txt</span></code>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s1">&#39;hello.txt&#39;</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">hello_file</span><span class="p">:</span>
+        <span class="n">conn</span><span class="o">.</span><span class="n">put_object</span><span class="p">(</span><span class="n">container_name</span><span class="p">,</span> <span class="s1">&#39;hello.txt&#39;</span><span class="p">,</span>
+                                        <span class="n">contents</span><span class="o">=</span> <span class="n">hello_file</span><span class="o">.</span><span class="n">read</span><span class="p">(),</span>
+                                        <span class="n">content_type</span><span class="o">=</span><span class="s1">&#39;text/plain&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="list-owned-containers">
+<h2>List Owned Containers<a class="headerlink" href="#list-owned-containers" title="Permalink to this heading">¶</a></h2>
+<p>This gets a list of containers that you own, and prints out the container name:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">container</span> <span class="ow">in</span> <span class="n">conn</span><span class="o">.</span><span class="n">get_account</span><span class="p">()[</span><span class="mi">1</span><span class="p">]:</span>
+        <span class="nb">print</span> <span class="n">container</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>The output will look something like this:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">mahbuckat1</span>
+<span class="n">mahbuckat2</span>
+<span class="n">mahbuckat3</span>
+</pre></div>
+</div>
+</section>
+<section id="list-a-container-s-content">
+<h2>List a Container’s Content<a class="headerlink" href="#list-a-container-s-content" title="Permalink to this heading">¶</a></h2>
+<p>This gets a list of objects in the container, and prints out each
+object’s name, the file size, and last modified date:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">conn</span><span class="o">.</span><span class="n">get_container</span><span class="p">(</span><span class="n">container_name</span><span class="p">)[</span><span class="mi">1</span><span class="p">]:</span>
+        <span class="nb">print</span> <span class="s1">&#39;</span><span class="si">{0}</span><span class="se">\t</span><span class="si">{1}</span><span class="se">\t</span><span class="si">{2}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">],</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;bytes&#39;</span><span class="p">],</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;last_modified&#39;</span><span class="p">])</span>
+</pre></div>
+</div>
+<p>The output will look something like this:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">myphoto1</span><span class="o">.</span><span class="n">jpg</span> <span class="mi">251262</span>  <span class="mi">2011</span><span class="o">-</span><span class="mi">08</span><span class="o">-</span><span class="mi">08</span><span class="n">T21</span><span class="p">:</span><span class="mi">35</span><span class="p">:</span><span class="mf">48.000</span><span class="n">Z</span>
+<span class="n">myphoto2</span><span class="o">.</span><span class="n">jpg</span> <span class="mi">262518</span>  <span class="mi">2011</span><span class="o">-</span><span class="mi">08</span><span class="o">-</span><span class="mi">08</span><span class="n">T21</span><span class="p">:</span><span class="mi">38</span><span class="p">:</span><span class="mf">01.000</span><span class="n">Z</span>
+</pre></div>
+</div>
+</section>
+<section id="retrieve-an-object">
+<h2>Retrieve an Object<a class="headerlink" href="#retrieve-an-object" title="Permalink to this heading">¶</a></h2>
+<p>This downloads the object <code class="docutils literal notranslate"><span class="pre">hello.txt</span></code> and saves it in
+<code class="docutils literal notranslate"><span class="pre">./my_hello.txt</span></code>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">obj_tuple</span> <span class="o">=</span> <span class="n">conn</span><span class="o">.</span><span class="n">get_object</span><span class="p">(</span><span class="n">container_name</span><span class="p">,</span> <span class="s1">&#39;hello.txt&#39;</span><span class="p">)</span>
+<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s1">&#39;my_hello.txt&#39;</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">my_hello</span><span class="p">:</span>
+        <span class="n">my_hello</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">obj_tuple</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+</pre></div>
+</div>
+</section>
+<section id="delete-an-object">
+<h2>Delete an Object<a class="headerlink" href="#delete-an-object" title="Permalink to this heading">¶</a></h2>
+<p>This deletes the object <code class="docutils literal notranslate"><span class="pre">hello.txt</span></code>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">conn</span><span class="o">.</span><span class="n">delete_object</span><span class="p">(</span><span class="n">container_name</span><span class="p">,</span> <span class="s1">&#39;hello.txt&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="delete-a-container">
+<h2>Delete a Container<a class="headerlink" href="#delete-a-container" title="Permalink to this heading">¶</a></h2>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The container must be empty! Otherwise the request won’t work!</p>
+</div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">conn</span><span class="o">.</span><span class="n">delete_container</span><span class="p">(</span><span class="n">container_name</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../../">
+              <img class="logo" src="../../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../install/">Installing Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cephadm/">Cephadm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../rados/">Ceph Storage Cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cephfs/">Ceph File System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../rbd/">Ceph Block Device</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../">Ceph Object Gateway</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../../frontends/">HTTP Frontends</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../placement/">Pool Placement and Storage Classes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../multisite/">Multisite Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../multisite-sync-policy/">Multisite Sync Policy Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../pools/">Configuring Pools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../config-ref/">Config Reference</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../admin/">Admin Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../s3/">S3 API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../rgw-cache/">Data caching and CDN</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../">Swift API</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="../#api">API</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="../auth/">Authentication</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../serviceops/">Service Ops</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../containerops/">Container Ops</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../objectops/">Object Ops</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../tempurl/">Temp URL Ops</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../tutorial/">Tutorial</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../java/">Java</a></li>
+<li class="toctree-l4 current"><a class="current reference internal" href="#">Python</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#create-a-connection">Create a Connection</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#create-a-container">Create a Container</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#create-an-object">Create an Object</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#list-owned-containers">List Owned Containers</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#list-a-container-s-content">List a Container’s Content</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#retrieve-an-object">Retrieve an Object</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#delete-an-object">Delete an Object</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#delete-a-container">Delete a Container</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="../ruby/">Ruby</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../#features-support">Features Support</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../adminops/">Admin Ops API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/">Python binding</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../nfs/">Export over NFS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../keystone/">OpenStack Keystone Integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../barbican/">OpenStack Barbican Integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../vault/">HashiCorp Vault Integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../kmip/">KMIP Integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../opa/">Open Policy Agent Integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../multitenancy/">Multi-tenancy</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../compression/">Compression</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../ldap-auth/">LDAP Authentication</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../encryption/">Server-Side Encryption</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../bucketpolicy/">Bucket Policy</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../dynamicresharding/">Dynamic bucket index resharding</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../mfa/">Multi factor authentication</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../sync-modules/">Sync Modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../notifications/">Bucket Notifications</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../layout/">Data Layout in RADOS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../STS/">STS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../STSLite/">STS Lite</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../keycloak/">Keycloak</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../session-tags/">Session Tags</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../role/">Role</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../orphans/">Orphan List and Associated Tooling</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../oidc/">OpenID Connect Provider</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../troubleshooting/">Troubleshooting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../man/8/radosgw/">Manpage radosgw</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../man/8/radosgw-admin/">Manpage radosgw-admin</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../qat-accel/">QAT Acceleration for Encryption and Compression</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../s3select/">S3-select</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../lua-scripting/">Lua Scripting</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../mgr/">Ceph Manager Daemon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../mgr/dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dev/developer_guide/">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dev/internals/">Ceph Internals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../../../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../ruby/" title="Ruby Swift Examples"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../java/" title="Java Swift Examples"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../" >Ceph Object Gateway</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../" >Ceph Object Gateway Swift API</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Python Swift Examples</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

@@ -1,0 +1,238 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>mount.fuse.ceph – mount ceph-fuse from /etc/fstab. &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/css/custom.css" />
+    <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/jquery.js"></script>
+    <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../../genindex/" />
+    <link rel="search" title="Search" href="../../../search/" />
+    <link rel="next" title="MDS States" href="../../../cephfs/mds-states/" />
+    <link rel="prev" title="mount.ceph – mount a Ceph file system" href="../mount.ceph/" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../../../cephfs/mds-states/" title="MDS States"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../mount.ceph/" title="mount.ceph – mount a Ceph file system"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../../cephfs/" accesskey="U">Ceph File System</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">mount.fuse.ceph – mount ceph-fuse from /etc/fstab.</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="mount-fuse-ceph-mount-ceph-fuse-from-etc-fstab">
+<h1>mount.fuse.ceph – mount ceph-fuse from /etc/fstab.<a class="headerlink" href="#mount-fuse-ceph-mount-ceph-fuse-from-etc-fstab" title="Permalink to this heading">¶</a></h1>
+<section id="synopsis">
+<h2>Synopsis<a class="headerlink" href="#synopsis" title="Permalink to this heading">¶</a></h2>
+<div class="line-block">
+<div class="line"><strong>mount.fuse.ceph</strong> [-h] [-o OPTIONS [<em>OPTIONS</em> …]]
+device [<em>device</em> …]
+mountpoint [<em>mountpoint</em> …]</div>
+</div>
+</section>
+<section id="description">
+<h2>Description<a class="headerlink" href="#description" title="Permalink to this heading">¶</a></h2>
+<p><strong>mount.fuse.ceph</strong> is a helper for mounting ceph-fuse from
+<code class="docutils literal notranslate"><span class="pre">/etc/fstab</span></code>.</p>
+<p>To use mount.fuse.ceph, add an entry in <code class="docutils literal notranslate"><span class="pre">/etc/fstab</span></code> like:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">DEVICE</span>    <span class="n">PATH</span>        <span class="n">TYPE</span>        <span class="n">OPTIONS</span>
+<span class="n">none</span>      <span class="o">/</span><span class="n">mnt</span><span class="o">/</span><span class="n">ceph</span>   <span class="n">fuse</span><span class="o">.</span><span class="n">ceph</span>   <span class="n">ceph</span><span class="o">.</span><span class="n">id</span><span class="o">=</span><span class="n">admin</span><span class="p">,</span><span class="n">_netdev</span><span class="p">,</span><span class="n">defaults</span>  <span class="mi">0</span> <span class="mi">0</span>
+<span class="n">none</span>      <span class="o">/</span><span class="n">mnt</span><span class="o">/</span><span class="n">ceph</span>   <span class="n">fuse</span><span class="o">.</span><span class="n">ceph</span>   <span class="n">ceph</span><span class="o">.</span><span class="n">name</span><span class="o">=</span><span class="n">client</span><span class="o">.</span><span class="n">admin</span><span class="p">,</span><span class="n">_netdev</span><span class="p">,</span><span class="n">defaults</span>  <span class="mi">0</span> <span class="mi">0</span>
+<span class="n">none</span>      <span class="o">/</span><span class="n">mnt</span><span class="o">/</span><span class="n">ceph</span>   <span class="n">fuse</span><span class="o">.</span><span class="n">ceph</span>   <span class="n">ceph</span><span class="o">.</span><span class="n">id</span><span class="o">=</span><span class="n">myuser</span><span class="p">,</span><span class="n">ceph</span><span class="o">.</span><span class="n">conf</span><span class="o">=/</span><span class="n">etc</span><span class="o">/</span><span class="n">ceph</span><span class="o">/</span><span class="n">foo</span><span class="o">.</span><span class="n">conf</span><span class="p">,</span><span class="n">_netdev</span><span class="p">,</span><span class="n">defaults</span>  <span class="mi">0</span> <span class="mi">0</span>
+</pre></div>
+</div>
+<p>ceph-fuse options are specified in the <code class="docutils literal notranslate"><span class="pre">OPTIONS</span></code> column and must begin
+with ‘<code class="docutils literal notranslate"><span class="pre">ceph.</span></code>’ prefix. This way ceph related fs options will be passed to
+ceph-fuse and others will be ignored by ceph-fuse.</p>
+</section>
+<section id="options">
+<h2>Options<a class="headerlink" href="#options" title="Permalink to this heading">¶</a></h2>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-mount.fuse.ceph-arg-ceph.id">
+<span id="cmdoption-mount-fuse-ceph-arg-ceph-id"></span><span class="sig-name descname"><span class="pre">ceph.id</span></span><span class="sig-prename descclassname"><span class="pre">=&lt;username&gt;</span></span><a class="headerlink" href="#cmdoption-mount.fuse.ceph-arg-ceph.id" title="Permalink to this definition">¶</a></dt>
+<dd><p>Specify that the ceph-fuse will authenticate as the given user.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-mount.fuse.ceph-arg-ceph.name">
+<span id="cmdoption-mount-fuse-ceph-arg-ceph-name"></span><span class="sig-name descname"><span class="pre">ceph.name</span></span><span class="sig-prename descclassname"><span class="pre">=client.admin</span></span><a class="headerlink" href="#cmdoption-mount.fuse.ceph-arg-ceph.name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Specify that the ceph-fuse will authenticate as client.admin</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-mount.fuse.ceph-arg-ceph.conf">
+<span id="cmdoption-mount-fuse-ceph-arg-ceph-conf"></span><span class="sig-name descname"><span class="pre">ceph.conf</span></span><span class="sig-prename descclassname"><span class="pre">=/etc/ceph/foo.conf</span></span><a class="headerlink" href="#cmdoption-mount.fuse.ceph-arg-ceph.conf" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sets ‘conf’ option to /etc/ceph/foo.conf via ceph-fuse command line.</p>
+</dd></dl>
+
+<p>Any valid ceph-fuse options can be passed this way.</p>
+</section>
+<section id="additional-info">
+<h2>Additional Info<a class="headerlink" href="#additional-info" title="Permalink to this heading">¶</a></h2>
+<p>The old format /etc/fstab entries are also supported:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">DEVICE</span>                              <span class="n">PATH</span>        <span class="n">TYPE</span>        <span class="n">OPTIONS</span>
+<span class="nb">id</span><span class="o">=</span><span class="n">admin</span>                            <span class="o">/</span><span class="n">mnt</span><span class="o">/</span><span class="n">ceph</span>   <span class="n">fuse</span><span class="o">.</span><span class="n">ceph</span>   <span class="n">defaults</span>   <span class="mi">0</span> <span class="mi">0</span>
+<span class="nb">id</span><span class="o">=</span><span class="n">myuser</span><span class="p">,</span><span class="n">conf</span><span class="o">=/</span><span class="n">etc</span><span class="o">/</span><span class="n">ceph</span><span class="o">/</span><span class="n">foo</span><span class="o">.</span><span class="n">conf</span>   <span class="o">/</span><span class="n">mnt</span><span class="o">/</span><span class="n">ceph</span>   <span class="n">fuse</span><span class="o">.</span><span class="n">ceph</span>   <span class="n">defaults</span>   <span class="mi">0</span> <span class="mi">0</span>
+</pre></div>
+</div>
+</section>
+<section id="availability">
+<h2>Availability<a class="headerlink" href="#availability" title="Permalink to this heading">¶</a></h2>
+<p><strong>mount.fuse.ceph</strong> is part of Ceph, a massively scalable, open-source, distributed storage system. Please
+refer to the Ceph documentation at <a class="reference external" href="http://ceph.com/docs">http://ceph.com/docs</a> for more
+information.</p>
+</section>
+<section id="see-also">
+<h2>See also<a class="headerlink" href="#see-also" title="Permalink to this heading">¶</a></h2>
+<p><a class="reference internal" href="../ceph-fuse/"><span class="doc">ceph-fuse</span></a>(8),
+<a class="reference internal" href="../ceph/"><span class="doc">ceph</span></a>(8)</p>
+</section>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../../">
+              <img class="logo" src="../../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../install/">Installing Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cephadm/">Cephadm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../rados/">Ceph Storage Cluster</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../../cephfs/">Ceph File System</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../../../cephfs/#getting-started-with-cephfs">Getting Started with CephFS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../cephfs/#administration">Administration</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../../../cephfs/#mounting-cephfs">Mounting CephFS</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../../../cephfs/client-config-ref/"> Client Configuration Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../cephfs/client-auth/"> Client Authentication</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../cephfs/mount-prerequisites/"> Mount CephFS: Prerequisites</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../cephfs/mount-using-kernel-driver/"> Mount CephFS using Kernel Driver</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../cephfs/mount-using-fuse/"> Mount CephFS using FUSE</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../cephfs/ceph-dokan/"> Mount CephFS on Windows</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../cephfs/cephfs-shell/"> Use the CephFS Shell</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../cephfs/kernel-features/"> Supported Features of Kernel Driver</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../ceph-fuse/"> Manual: ceph-fuse</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../mount.ceph/"> Manual: mount.ceph</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#"> Manual: mount.fuse.ceph</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#synopsis">Synopsis</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#description">Description</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#options">Options</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#additional-info">Additional Info</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#availability">Availability</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#see-also">See also</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../cephfs/#cephfs-concepts">CephFS Concepts</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../cephfs/#troubleshooting-and-disaster-recovery">Troubleshooting and Disaster Recovery</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../cephfs/#developer-guides">Developer Guides</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../cephfs/#additional-details">Additional Details</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../rbd/">Ceph Block Device</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../radosgw/">Ceph Object Gateway</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../mgr/">Ceph Manager Daemon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../mgr/dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dev/developer_guide/">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dev/internals/">Ceph Internals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../../../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../../../cephfs/mds-states/" title="MDS States"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../mount.ceph/" title="mount.ceph – mount a Ceph file system"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../../cephfs/" >Ceph File System</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">mount.fuse.ceph – mount ceph-fuse from /etc/fstab.</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

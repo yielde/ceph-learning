@@ -1,0 +1,765 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Bucket Notifications &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css" />
+    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../genindex/" />
+    <link rel="search" title="Search" href="../../search/" />
+    <link rel="next" title="Rados Gateway Data Layout" href="../layout/" />
+    <link rel="prev" title="Archive Sync Module" href="../archive-sync-module/" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../layout/" title="Rados Gateway Data Layout"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../archive-sync-module/" title="Archive Sync Module"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../" accesskey="U">Ceph Object Gateway</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Bucket Notifications</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="bucket-notifications">
+<h1><a class="toc-backref" href="#id4">Bucket Notifications</a><a class="headerlink" href="#bucket-notifications" title="Permalink to this heading">¶</a></h1>
+<div class="versionadded">
+<p><span class="versionmodified added">New in version Nautilus.</span></p>
+</div>
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="#bucket-notifications" id="id4">Bucket Notifications</a></p>
+<ul>
+<li><p><a class="reference internal" href="#notification-reliability" id="id5">Notification Reliability</a></p>
+<ul>
+<li><p><a class="reference internal" href="#synchronous-notifications" id="id6">Synchronous Notifications</a></p></li>
+<li><p><a class="reference internal" href="#asynchronous-notifications" id="id7">Asynchronous Notifications</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#topic-management-via-cli" id="id8">Topic Management via CLI</a></p></li>
+<li><p><a class="reference internal" href="#notification-performance-stats" id="id9">Notification Performance Stats</a></p></li>
+<li><p><a class="reference internal" href="#bucket-notification-rest-api" id="id10">Bucket Notification REST API</a></p>
+<ul>
+<li><p><a class="reference internal" href="#topics" id="id11">Topics</a></p>
+<ul>
+<li><p><a class="reference internal" href="#create-a-topic" id="id12">Create a Topic</a></p></li>
+<li><p><a class="reference internal" href="#get-topic-attributes" id="id13">Get Topic Attributes</a></p></li>
+<li><p><a class="reference internal" href="#get-topic-information" id="id14">Get Topic Information</a></p></li>
+<li><p><a class="reference internal" href="#delete-topic" id="id15">Delete Topic</a></p></li>
+<li><p><a class="reference internal" href="#list-topics" id="id16">List Topics</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#notifications" id="id17">Notifications</a></p></li>
+<li><p><a class="reference internal" href="#events" id="id18">Events</a></p></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+<p>Bucket notifications provide a mechanism for sending information out of radosgw
+when certain events happen on the bucket. Notifications can be sent to HTTP
+endpoints, AMQP0.9.1 endpoints, and Kafka endpoints.</p>
+<p>The <a class="reference external" href="../pubsub-module">PubSub Module</a> (and <em>not</em> the bucket-notification mechanism) should be
+used for events stored in Ceph.</p>
+<p>A user can create topics. A topic entity is defined by its name and is “per
+tenant”. A user can associate its topics (via notification configuration) only
+with buckets it owns.</p>
+<p>A notification entity must be created in order to send event notifications for
+a specific bucket. A notification entity can be created either for a subset
+of event types or for all event types (which is the default). The
+notification may also filter out events based on matches of the prefixes and
+suffixes of (1) the keys, (2) the metadata attributes attached to the object,
+or (3) the object tags. Regular-expression matching can also be used on these
+to create filters. There can be multiple notifications for any specific topic,
+and the same topic can used for multiple notifications.</p>
+<p>REST API has been defined so as to provide configuration and control interfaces
+for the bucket notification mechanism. This API is similar to the one defined
+as the S3-compatible API of the <a class="reference external" href="../pubsub-module">PubSub Module</a>.</p>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../s3-notification-compatibility/">S3 Bucket Notification Compatibility</a></li>
+</ul>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>To enable bucket notifications API, the <cite>rgw_enable_apis</cite> configuration parameter should contain: “notifications”.</p>
+</div>
+<section id="notification-reliability">
+<h2><a class="toc-backref" href="#id5">Notification Reliability</a><a class="headerlink" href="#notification-reliability" title="Permalink to this heading">¶</a></h2>
+<p>Notifications can be sent synchronously or asynchronously. This section
+describes the latency and reliability that you should expect for synchronous
+and asynchronous notifications.</p>
+<section id="synchronous-notifications">
+<h3><a class="toc-backref" href="#id6">Synchronous Notifications</a><a class="headerlink" href="#synchronous-notifications" title="Permalink to this heading">¶</a></h3>
+<p>Notifications can be sent synchronously, as part of the operation that
+triggered them. In this mode, the operation is acknowledged (acked) only after
+the notification is sent to the topic’s configured endpoint. This means that
+the round trip time of the notification (the time it takes to send the
+notification to the topic’s endpoint plus the time it takes to receive the
+acknowledgement) is added to the latency of the operation itself.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The original triggering operation is considered successful even if
+the notification fails with an error, cannot be delivered, or times out.</p>
+</div>
+</section>
+<section id="asynchronous-notifications">
+<h3><a class="toc-backref" href="#id7">Asynchronous Notifications</a><a class="headerlink" href="#asynchronous-notifications" title="Permalink to this heading">¶</a></h3>
+<p>Notifications can be sent asynchronously. They are committed into persistent
+storage and then asynchronously sent to the topic’s configured endpoint. In
+this case, the only latency added to the original operation is the latency
+added when the notification is committed to persistent storage.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If the notification fails with an error, cannot be delivered, or
+times out, it is retried until it is successfully acknowledged.</p>
+</div>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>To minimize the latency added by asynchronous notification, we
+recommended placing the “log” pool on fast media.</p>
+</div>
+</section>
+</section>
+<section id="topic-management-via-cli">
+<h2><a class="toc-backref" href="#id8">Topic Management via CLI</a><a class="headerlink" href="#topic-management-via-cli" title="Permalink to this heading">¶</a></h2>
+<p>Configuration of all topics, associated with a tenant, could be fetched using the following command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><style type="text/css">
+span.prompt1:before {
+  content: "# ";
+}
+</style><span class="prompt1">radosgw-admin<span class="w"> </span>topic<span class="w"> </span>list<span class="w"> </span><span class="o">[</span>--tenant<span class="o">={</span>tenant<span class="o">}]</span></span>
+</pre></div></div><p>Configuration of a specific topic could be fetched using:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">radosgw-admin<span class="w"> </span>topic<span class="w"> </span>get<span class="w"> </span>--topic<span class="o">={</span>topic-name<span class="o">}</span><span class="w"> </span><span class="o">[</span>--tenant<span class="o">={</span>tenant<span class="o">}]</span></span>
+</pre></div></div><p>And removed using:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">radosgw-admin<span class="w"> </span>topic<span class="w"> </span>rm<span class="w"> </span>--topic<span class="o">={</span>topic-name<span class="o">}</span><span class="w"> </span><span class="o">[</span>--tenant<span class="o">={</span>tenant<span class="o">}]</span></span>
+</pre></div></div></section>
+<section id="notification-performance-stats">
+<h2><a class="toc-backref" href="#id9">Notification Performance Stats</a><a class="headerlink" href="#notification-performance-stats" title="Permalink to this heading">¶</a></h2>
+<p>The same counters are shared between the pubsub sync module and the bucket notification mechanism.</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">pubsub_event_triggered</span></code>: running counter of events with at least one topic associated with them</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">pubsub_event_lost</span></code>: running counter of events that had topics associated with them but that were not pushed to any of the endpoints</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">pubsub_push_ok</span></code>: running counter, for all notifications, of events successfully pushed to their endpoint</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">pubsub_push_fail</span></code>: running counter, for all notifications, of events failed to be pushed to their endpoint</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">pubsub_push_pending</span></code>: gauge value of events pushed to an endpoint but not acked or nacked yet</p></li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><code class="docutils literal notranslate"><span class="pre">pubsub_event_triggered</span></code> and <code class="docutils literal notranslate"><span class="pre">pubsub_event_lost</span></code> are incremented per event, while:
+<code class="docutils literal notranslate"><span class="pre">pubsub_push_ok</span></code>, <code class="docutils literal notranslate"><span class="pre">pubsub_push_fail</span></code>, are incremented per push action on each notification</p>
+</div>
+</section>
+<section id="bucket-notification-rest-api">
+<h2><a class="toc-backref" href="#id10">Bucket Notification REST API</a><a class="headerlink" href="#bucket-notification-rest-api" title="Permalink to this heading">¶</a></h2>
+<section id="topics">
+<h3><a class="toc-backref" href="#id11">Topics</a><a class="headerlink" href="#topics" title="Permalink to this heading">¶</a></h3>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>In all topic actions, the parameters are URL-encoded and sent in the
+message body using this content type:
+<code class="docutils literal notranslate"><span class="pre">application/x-www-form-urlencoded</span></code>.</p>
+</div>
+<section id="create-a-topic">
+<h4><a class="toc-backref" href="#id12">Create a Topic</a><a class="headerlink" href="#create-a-topic" title="Permalink to this heading">¶</a></h4>
+<p>This creates a new topic. Provide the topic with push endpoint parameters,
+which will be used later when a notification is created. A response is
+generated. A successful response includes the the topic’s <a class="reference external" href="https://docs.aws.amazon.com/general/latest/gr/aws-arns-and-namespaces.html">ARN</a>
+(the “Amazon Resource Name”, a unique identifier used to reference the topic).
+To update a topic, use the same command that you used to create it (but when
+updating, use the name of an existing topic and different endpoint values).</p>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>Any notification already associated with the topic must be re-created
+in order for the topic to update.</p>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">POST</span>
+
+<span class="n">Action</span><span class="o">=</span><span class="n">CreateTopic</span>
+<span class="o">&amp;</span><span class="n">Name</span><span class="o">=&lt;</span><span class="n">topic</span><span class="o">-</span><span class="n">name</span><span class="o">&gt;</span>
+<span class="p">[</span><span class="o">&amp;</span><span class="n">Attributes</span><span class="o">.</span><span class="n">entry</span><span class="mf">.1</span><span class="o">.</span><span class="n">key</span><span class="o">=</span><span class="n">amqp</span><span class="o">-</span><span class="n">exchange</span><span class="o">&amp;</span><span class="n">Attributes</span><span class="o">.</span><span class="n">entry</span><span class="mf">.1</span><span class="o">.</span><span class="n">value</span><span class="o">=&lt;</span><span class="n">exchange</span><span class="o">&gt;</span><span class="p">]</span>
+<span class="p">[</span><span class="o">&amp;</span><span class="n">Attributes</span><span class="o">.</span><span class="n">entry</span><span class="mf">.2</span><span class="o">.</span><span class="n">key</span><span class="o">=</span><span class="n">amqp</span><span class="o">-</span><span class="n">ack</span><span class="o">-</span><span class="n">level</span><span class="o">&amp;</span><span class="n">Attributes</span><span class="o">.</span><span class="n">entry</span><span class="mf">.2</span><span class="o">.</span><span class="n">value</span><span class="o">=</span><span class="n">none</span><span class="o">|</span><span class="n">broker</span><span class="o">|</span><span class="n">routable</span><span class="p">]</span>
+<span class="p">[</span><span class="o">&amp;</span><span class="n">Attributes</span><span class="o">.</span><span class="n">entry</span><span class="mf">.3</span><span class="o">.</span><span class="n">key</span><span class="o">=</span><span class="n">verify</span><span class="o">-</span><span class="n">ssl</span><span class="o">&amp;</span><span class="n">Attributes</span><span class="o">.</span><span class="n">entry</span><span class="mf">.3</span><span class="o">.</span><span class="n">value</span><span class="o">=</span><span class="n">true</span><span class="o">|</span><span class="n">false</span><span class="p">]</span>
+<span class="p">[</span><span class="o">&amp;</span><span class="n">Attributes</span><span class="o">.</span><span class="n">entry</span><span class="mf">.4</span><span class="o">.</span><span class="n">key</span><span class="o">=</span><span class="n">kafka</span><span class="o">-</span><span class="n">ack</span><span class="o">-</span><span class="n">level</span><span class="o">&amp;</span><span class="n">Attributes</span><span class="o">.</span><span class="n">entry</span><span class="mf">.4</span><span class="o">.</span><span class="n">value</span><span class="o">=</span><span class="n">none</span><span class="o">|</span><span class="n">broker</span><span class="p">]</span>
+<span class="p">[</span><span class="o">&amp;</span><span class="n">Attributes</span><span class="o">.</span><span class="n">entry</span><span class="mf">.5</span><span class="o">.</span><span class="n">key</span><span class="o">=</span><span class="n">use</span><span class="o">-</span><span class="n">ssl</span><span class="o">&amp;</span><span class="n">Attributes</span><span class="o">.</span><span class="n">entry</span><span class="mf">.5</span><span class="o">.</span><span class="n">value</span><span class="o">=</span><span class="n">true</span><span class="o">|</span><span class="n">false</span><span class="p">]</span>
+<span class="p">[</span><span class="o">&amp;</span><span class="n">Attributes</span><span class="o">.</span><span class="n">entry</span><span class="mf">.6</span><span class="o">.</span><span class="n">key</span><span class="o">=</span><span class="n">ca</span><span class="o">-</span><span class="n">location</span><span class="o">&amp;</span><span class="n">Attributes</span><span class="o">.</span><span class="n">entry</span><span class="mf">.6</span><span class="o">.</span><span class="n">value</span><span class="o">=&lt;</span><span class="n">file</span> <span class="n">path</span><span class="o">&gt;</span><span class="p">]</span>
+<span class="p">[</span><span class="o">&amp;</span><span class="n">Attributes</span><span class="o">.</span><span class="n">entry</span><span class="mf">.7</span><span class="o">.</span><span class="n">key</span><span class="o">=</span><span class="n">OpaqueData</span><span class="o">&amp;</span><span class="n">Attributes</span><span class="o">.</span><span class="n">entry</span><span class="mf">.7</span><span class="o">.</span><span class="n">value</span><span class="o">=&lt;</span><span class="n">opaque</span> <span class="n">data</span><span class="o">&gt;</span><span class="p">]</span>
+<span class="p">[</span><span class="o">&amp;</span><span class="n">Attributes</span><span class="o">.</span><span class="n">entry</span><span class="mf">.8</span><span class="o">.</span><span class="n">key</span><span class="o">=</span><span class="n">push</span><span class="o">-</span><span class="n">endpoint</span><span class="o">&amp;</span><span class="n">Attributes</span><span class="o">.</span><span class="n">entry</span><span class="mf">.8</span><span class="o">.</span><span class="n">value</span><span class="o">=&lt;</span><span class="n">endpoint</span><span class="o">&gt;</span><span class="p">]</span>
+<span class="p">[</span><span class="o">&amp;</span><span class="n">Attributes</span><span class="o">.</span><span class="n">entry</span><span class="mf">.9</span><span class="o">.</span><span class="n">key</span><span class="o">=</span><span class="n">persistent</span><span class="o">&amp;</span><span class="n">Attributes</span><span class="o">.</span><span class="n">entry</span><span class="mf">.9</span><span class="o">.</span><span class="n">value</span><span class="o">=</span><span class="n">true</span><span class="o">|</span><span class="n">false</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>Request parameters:</p>
+<ul class="simple">
+<li><p>push-endpoint: This is the URI of an endpoint to send push notifications to.</p></li>
+<li><p>OpaqueData: Opaque data is set in the topic configuration and added to all
+notifications that are triggered by the topic.</p></li>
+<li><p>persistent: This indicates whether notifications to this endpoint are
+persistent (=asynchronous) or not persistent. (This is “false” by default.)</p></li>
+<li><p>HTTP endpoint</p></li>
+</ul>
+<blockquote>
+<div><ul class="simple">
+<li><p>URI: <code class="docutils literal notranslate"><span class="pre">http[s]://&lt;fqdn&gt;[:&lt;port]</span></code></p></li>
+<li><p>port: This defaults to 80 for HTTP and 443 for HTTPS.</p></li>
+<li><p>verify-ssl: This indicates whether the server certificate is validated by
+the client. (This is “true” by default.)</p></li>
+<li><p>cloudevents: This indicates whether the HTTP header should contain
+attributes according to the <a class="reference external" href="https://github.com/cloudevents/spec/blob/main/cloudevents/adapters/aws-s3.md">S3 CloudEvents Spec</a>. (This is “false” by
+default.)</p></li>
+</ul>
+</div></blockquote>
+<ul class="simple">
+<li><p>AMQP0.9.1 endpoint</p></li>
+</ul>
+<blockquote>
+<div><ul class="simple">
+<li><p>URI: <code class="docutils literal notranslate"><span class="pre">amqp[s]://[&lt;user&gt;:&lt;password&gt;&#64;]&lt;fqdn&gt;[:&lt;port&gt;][/&lt;vhost&gt;]</span></code></p></li>
+<li><p>user/password: This defaults to “guest/guest”.</p></li>
+<li><p>user/password: This must be provided only over HTTPS. Topic creation
+requests will otherwise be rejected.</p></li>
+<li><p>port: This defaults to 5672 for unencrypted connections and 5671 for
+SSL-encrypted connections.</p></li>
+<li><p>vhost: This defaults to “/”.</p></li>
+<li><p>verify-ssl: This indicates whether the server certificate is validated by
+the client. (This is “true” by default.)</p></li>
+<li><p>If <code class="docutils literal notranslate"><span class="pre">ca-location</span></code> is provided and a secure connection is used, the
+specified CA will be used to authenticate the broker. The default CA will
+not be used.</p></li>
+<li><p>amqp-exchange: The exchanges must exist and must be able to route messages
+based on topics. This parameter is mandatory.  Different topics that point
+to the same endpoint must use the same exchange.</p></li>
+<li><p>amqp-ack-level: No end2end acking is required. Messages may persist in the
+broker before being delivered to their final destinations. Three ack methods
+exist:</p></li>
+</ul>
+<blockquote>
+<div><ul class="simple">
+<li><p>“none”: The message is considered “delivered” if it is sent to the broker.</p></li>
+<li><p>“broker”: The message is considered “delivered” if it is acked by the broker (default).</p></li>
+<li><p>“routable”: The message is considered “delivered” if the broker can route to a consumer.</p></li>
+</ul>
+</div></blockquote>
+</div></blockquote>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>The topic-name (see <a class="reference internal" href="../pubsub-module/#radosgw-create-a-topic"><span class="std std-ref">Create a Topic</span></a>) is used for the
+AMQP topic (“routing key” for a topic exchange).</p>
+</div>
+<ul class="simple">
+<li><p>Kafka endpoint</p></li>
+</ul>
+<blockquote>
+<div><ul class="simple">
+<li><p>URI: <code class="docutils literal notranslate"><span class="pre">kafka://[&lt;user&gt;:&lt;password&gt;&#64;]&lt;fqdn&gt;[:&lt;port]</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">use-ssl</span></code>: If this is set to “true”, a secure connection is used to
+connect to the broker. (This is “false” by default.)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ca-location</span></code>: If this is provided and a secure connection is used, the
+specified CA will be used insted of the default CA to authenticate the
+broker.</p></li>
+<li><p>user/password: This must be provided only over HTTPS. Topic creation
+requests will otherwise be rejected.</p></li>
+<li><p>user/password: This must be provided along with <code class="docutils literal notranslate"><span class="pre">use-ssl</span></code>. Connections to
+the broker will otherwise fail.</p></li>
+<li><p>port: This defaults to 9092.</p></li>
+<li><p>kafka-ack-level: No end2end acking is required. Messages may persist in the
+broker before being delivered to their final destinations. Two ack methods
+exist:</p></li>
+</ul>
+<blockquote>
+<div><ul class="simple">
+<li><p>“none”: Messages are considered “delivered” if sent to the broker.</p></li>
+<li><p>“broker”: Messages are considered “delivered” if acked by the broker. (This
+is the default.)</p></li>
+</ul>
+</div></blockquote>
+</div></blockquote>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<ul class="simple">
+<li><p>The key-value pair of a specific parameter need not reside in the same
+line as the parameter, and need not appear in any specific order, but it
+must use the same index.</p></li>
+<li><p>Attribute indexing need not be sequential and need not start from any
+specific value.</p></li>
+<li><p><a class="reference external" href="https://docs.aws.amazon.com/sns/latest/api/API_CreateTopic.html">AWS Create Topic</a> provides a detailed explanation of the endpoint
+attributes format. In our case, however, different keys and values are
+used.</p></li>
+</ul>
+</div>
+<p>The response has the following format:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">&lt;</span><span class="n">CreateTopicResponse</span> <span class="n">xmlns</span><span class="o">=</span><span class="s2">&quot;https://sns.amazonaws.com/doc/2010-03-31/&quot;</span><span class="o">&gt;</span>
+    <span class="o">&lt;</span><span class="n">CreateTopicResult</span><span class="o">&gt;</span>
+        <span class="o">&lt;</span><span class="n">TopicArn</span><span class="o">&gt;&lt;/</span><span class="n">TopicArn</span><span class="o">&gt;</span>
+    <span class="o">&lt;/</span><span class="n">CreateTopicResult</span><span class="o">&gt;</span>
+    <span class="o">&lt;</span><span class="n">ResponseMetadata</span><span class="o">&gt;</span>
+        <span class="o">&lt;</span><span class="n">RequestId</span><span class="o">&gt;&lt;/</span><span class="n">RequestId</span><span class="o">&gt;</span>
+    <span class="o">&lt;/</span><span class="n">ResponseMetadata</span><span class="o">&gt;</span>
+<span class="o">&lt;/</span><span class="n">CreateTopicResponse</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<p>The topic <a class="reference external" href="https://docs.aws.amazon.com/general/latest/gr/aws-arns-and-namespaces.html">ARN</a>
+in the response has the following format:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">arn</span><span class="p">:</span><span class="n">aws</span><span class="p">:</span><span class="n">sns</span><span class="p">:</span><span class="o">&lt;</span><span class="n">zone</span><span class="o">-</span><span class="n">group</span><span class="o">&gt;</span><span class="p">:</span><span class="o">&lt;</span><span class="n">tenant</span><span class="o">&gt;</span><span class="p">:</span><span class="o">&lt;</span><span class="n">topic</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+</section>
+<section id="get-topic-attributes">
+<h4><a class="toc-backref" href="#id13">Get Topic Attributes</a><a class="headerlink" href="#get-topic-attributes" title="Permalink to this heading">¶</a></h4>
+<p>This returns information about a specific topic. This includes push-endpoint
+information, if provided.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">POST</span>
+
+<span class="n">Action</span><span class="o">=</span><span class="n">GetTopicAttributes</span>
+<span class="o">&amp;</span><span class="n">TopicArn</span><span class="o">=&lt;</span><span class="n">topic</span><span class="o">-</span><span class="n">arn</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<p>The response has the following format:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">&lt;</span><span class="n">GetTopicAttributesResponse</span><span class="o">&gt;</span>
+    <span class="o">&lt;</span><span class="n">GetTopicAttributesRersult</span><span class="o">&gt;</span>
+        <span class="o">&lt;</span><span class="n">Attributes</span><span class="o">&gt;</span>
+            <span class="o">&lt;</span><span class="n">entry</span><span class="o">&gt;</span>
+                <span class="o">&lt;</span><span class="n">key</span><span class="o">&gt;</span><span class="n">User</span><span class="o">&lt;/</span><span class="n">key</span><span class="o">&gt;</span>
+                <span class="o">&lt;</span><span class="n">value</span><span class="o">&gt;&lt;/</span><span class="n">value</span><span class="o">&gt;</span>
+            <span class="o">&lt;/</span><span class="n">entry</span><span class="o">&gt;</span>
+            <span class="o">&lt;</span><span class="n">entry</span><span class="o">&gt;</span>
+                <span class="o">&lt;</span><span class="n">key</span><span class="o">&gt;</span><span class="n">Name</span><span class="o">&lt;/</span><span class="n">key</span><span class="o">&gt;</span>
+                <span class="o">&lt;</span><span class="n">value</span><span class="o">&gt;&lt;/</span><span class="n">value</span><span class="o">&gt;</span>
+            <span class="o">&lt;/</span><span class="n">entry</span><span class="o">&gt;</span>
+            <span class="o">&lt;</span><span class="n">entry</span><span class="o">&gt;</span>
+                <span class="o">&lt;</span><span class="n">key</span><span class="o">&gt;</span><span class="n">EndPoint</span><span class="o">&lt;/</span><span class="n">key</span><span class="o">&gt;</span>
+                <span class="o">&lt;</span><span class="n">value</span><span class="o">&gt;&lt;/</span><span class="n">value</span><span class="o">&gt;</span>
+            <span class="o">&lt;/</span><span class="n">entry</span><span class="o">&gt;</span>
+            <span class="o">&lt;</span><span class="n">entry</span><span class="o">&gt;</span>
+                <span class="o">&lt;</span><span class="n">key</span><span class="o">&gt;</span><span class="n">TopicArn</span><span class="o">&lt;/</span><span class="n">key</span><span class="o">&gt;</span>
+                <span class="o">&lt;</span><span class="n">value</span><span class="o">&gt;&lt;/</span><span class="n">value</span><span class="o">&gt;</span>
+            <span class="o">&lt;/</span><span class="n">entry</span><span class="o">&gt;</span>
+            <span class="o">&lt;</span><span class="n">entry</span><span class="o">&gt;</span>
+                <span class="o">&lt;</span><span class="n">key</span><span class="o">&gt;</span><span class="n">OpaqueData</span><span class="o">&lt;/</span><span class="n">key</span><span class="o">&gt;</span>
+                <span class="o">&lt;</span><span class="n">value</span><span class="o">&gt;&lt;/</span><span class="n">value</span><span class="o">&gt;</span>
+            <span class="o">&lt;/</span><span class="n">entry</span><span class="o">&gt;</span>
+        <span class="o">&lt;/</span><span class="n">Attributes</span><span class="o">&gt;</span>
+    <span class="o">&lt;/</span><span class="n">GetTopicAttributesResult</span><span class="o">&gt;</span>
+    <span class="o">&lt;</span><span class="n">ResponseMetadata</span><span class="o">&gt;</span>
+        <span class="o">&lt;</span><span class="n">RequestId</span><span class="o">&gt;&lt;/</span><span class="n">RequestId</span><span class="o">&gt;</span>
+    <span class="o">&lt;/</span><span class="n">ResponseMetadata</span><span class="o">&gt;</span>
+<span class="o">&lt;/</span><span class="n">GetTopicAttributesResponse</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>User: the name of the user that created the topic.</p></li>
+<li><p>Name: the name of the topic.</p></li>
+<li><dl class="simple">
+<dt>EndPoint: The JSON-formatted endpoint parameters, including:</dt><dd><ul>
+<li><p>EndpointAddress: The push-endpoint URL.</p></li>
+<li><p>EndpointArgs: The push-endpoint args.</p></li>
+<li><p>EndpointTopic: The topic name to be sent to the endpoint (can be different
+than the above topic name).</p></li>
+<li><p>HasStoredSecret: This is “true” if the endpoint URL contains user/password
+information. In this case, the request must be made over HTTPS. The “topic
+get” request will otherwise be rejected.</p></li>
+<li><p>Persistent: This is “true” if the topic is persistent.</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><p>TopicArn: topic <a class="reference external" href="https://docs.aws.amazon.com/general/latest/gr/aws-arns-and-namespaces.html">ARN</a>.</p></li>
+<li><p>OpaqueData: The opaque data set on the topic.</p></li>
+</ul>
+</section>
+<section id="get-topic-information">
+<h4><a class="toc-backref" href="#id14">Get Topic Information</a><a class="headerlink" href="#get-topic-information" title="Permalink to this heading">¶</a></h4>
+<p>This returns information about a specific topic. This includes push-endpoint
+information, if provided.  Note that this API is now deprecated in favor of the
+AWS compliant <cite>GetTopicAttributes</cite> API.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">POST</span>
+
+<span class="n">Action</span><span class="o">=</span><span class="n">GetTopic</span>
+<span class="o">&amp;</span><span class="n">TopicArn</span><span class="o">=&lt;</span><span class="n">topic</span><span class="o">-</span><span class="n">arn</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<p>The response has the following format:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">&lt;</span><span class="n">GetTopicResponse</span><span class="o">&gt;</span>
+    <span class="o">&lt;</span><span class="n">GetTopicRersult</span><span class="o">&gt;</span>
+        <span class="o">&lt;</span><span class="n">Topic</span><span class="o">&gt;</span>
+            <span class="o">&lt;</span><span class="n">User</span><span class="o">&gt;&lt;/</span><span class="n">User</span><span class="o">&gt;</span>
+            <span class="o">&lt;</span><span class="n">Name</span><span class="o">&gt;&lt;/</span><span class="n">Name</span><span class="o">&gt;</span>
+            <span class="o">&lt;</span><span class="n">EndPoint</span><span class="o">&gt;</span>
+                <span class="o">&lt;</span><span class="n">EndpointAddress</span><span class="o">&gt;&lt;/</span><span class="n">EndpointAddress</span><span class="o">&gt;</span>
+                <span class="o">&lt;</span><span class="n">EndpointArgs</span><span class="o">&gt;&lt;/</span><span class="n">EndpointArgs</span><span class="o">&gt;</span>
+                <span class="o">&lt;</span><span class="n">EndpointTopic</span><span class="o">&gt;&lt;/</span><span class="n">EndpointTopic</span><span class="o">&gt;</span>
+                <span class="o">&lt;</span><span class="n">HasStoredSecret</span><span class="o">&gt;&lt;/</span><span class="n">HasStoredSecret</span><span class="o">&gt;</span>
+                <span class="o">&lt;</span><span class="n">Persistent</span><span class="o">&gt;&lt;/</span><span class="n">Persistent</span><span class="o">&gt;</span>
+            <span class="o">&lt;/</span><span class="n">EndPoint</span><span class="o">&gt;</span>
+            <span class="o">&lt;</span><span class="n">TopicArn</span><span class="o">&gt;&lt;/</span><span class="n">TopicArn</span><span class="o">&gt;</span>
+            <span class="o">&lt;</span><span class="n">OpaqueData</span><span class="o">&gt;&lt;/</span><span class="n">OpaqueData</span><span class="o">&gt;</span>
+        <span class="o">&lt;/</span><span class="n">Topic</span><span class="o">&gt;</span>
+    <span class="o">&lt;/</span><span class="n">GetTopicResult</span><span class="o">&gt;</span>
+    <span class="o">&lt;</span><span class="n">ResponseMetadata</span><span class="o">&gt;</span>
+        <span class="o">&lt;</span><span class="n">RequestId</span><span class="o">&gt;&lt;/</span><span class="n">RequestId</span><span class="o">&gt;</span>
+    <span class="o">&lt;/</span><span class="n">ResponseMetadata</span><span class="o">&gt;</span>
+<span class="o">&lt;/</span><span class="n">GetTopicResponse</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>User: The name of the user that created the topic.</p></li>
+<li><p>Name: The name of the topic.</p></li>
+<li><p>EndpointAddress: The push-endpoint URL.</p></li>
+<li><p>EndpointArgs: The push-endpoint args.</p></li>
+<li><p>EndpointTopic: The topic name to be sent to the endpoint (which can be
+different than the above topic name).</p></li>
+<li><p>HasStoredSecret: This is “true” if the endpoint URL contains user/password
+information. In this case, the request must be made over HTTPS. The “topic
+get” request will otherwise be rejected.</p></li>
+<li><p>Persistent: “true” if topic is persistent.</p></li>
+<li><p>TopicArn: topic <a class="reference external" href="https://docs.aws.amazon.com/general/latest/gr/aws-arns-and-namespaces.html">ARN</a>.</p></li>
+<li><p>OpaqueData: the opaque data set on the topic.</p></li>
+</ul>
+</section>
+<section id="delete-topic">
+<h4><a class="toc-backref" href="#id15">Delete Topic</a><a class="headerlink" href="#delete-topic" title="Permalink to this heading">¶</a></h4>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">POST</span>
+
+<span class="n">Action</span><span class="o">=</span><span class="n">DeleteTopic</span>
+<span class="o">&amp;</span><span class="n">TopicArn</span><span class="o">=&lt;</span><span class="n">topic</span><span class="o">-</span><span class="n">arn</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<p>This deletes the specified topic.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<ul class="simple">
+<li><p>Deleting an unknown notification (for example, double delete) is not
+considered an error.</p></li>
+<li><p>Deleting a topic does not automatically delete all notifications associated
+with it.</p></li>
+</ul>
+</div>
+<p>The response has the following format:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">&lt;</span><span class="n">DeleteTopicResponse</span> <span class="n">xmlns</span><span class="o">=</span><span class="s2">&quot;https://sns.amazonaws.com/doc/2010-03-31/&quot;</span><span class="o">&gt;</span>
+    <span class="o">&lt;</span><span class="n">ResponseMetadata</span><span class="o">&gt;</span>
+        <span class="o">&lt;</span><span class="n">RequestId</span><span class="o">&gt;&lt;/</span><span class="n">RequestId</span><span class="o">&gt;</span>
+    <span class="o">&lt;/</span><span class="n">ResponseMetadata</span><span class="o">&gt;</span>
+<span class="o">&lt;/</span><span class="n">DeleteTopicResponse</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+</section>
+<section id="list-topics">
+<h4><a class="toc-backref" href="#id16">List Topics</a><a class="headerlink" href="#list-topics" title="Permalink to this heading">¶</a></h4>
+<p>List all topics associated with a tenant.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">POST</span>
+
+<span class="n">Action</span><span class="o">=</span><span class="n">ListTopics</span>
+</pre></div>
+</div>
+<p>The response has the following format:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">&lt;</span><span class="n">ListTopicdResponse</span> <span class="n">xmlns</span><span class="o">=</span><span class="s2">&quot;https://sns.amazonaws.com/doc/2010-03-31/&quot;</span><span class="o">&gt;</span>
+    <span class="o">&lt;</span><span class="n">ListTopicsRersult</span><span class="o">&gt;</span>
+        <span class="o">&lt;</span><span class="n">Topics</span><span class="o">&gt;</span>
+            <span class="o">&lt;</span><span class="n">member</span><span class="o">&gt;</span>
+                <span class="o">&lt;</span><span class="n">User</span><span class="o">&gt;&lt;/</span><span class="n">User</span><span class="o">&gt;</span>
+                <span class="o">&lt;</span><span class="n">Name</span><span class="o">&gt;&lt;/</span><span class="n">Name</span><span class="o">&gt;</span>
+                <span class="o">&lt;</span><span class="n">EndPoint</span><span class="o">&gt;</span>
+                    <span class="o">&lt;</span><span class="n">EndpointAddress</span><span class="o">&gt;&lt;/</span><span class="n">EndpointAddress</span><span class="o">&gt;</span>
+                    <span class="o">&lt;</span><span class="n">EndpointArgs</span><span class="o">&gt;&lt;/</span><span class="n">EndpointArgs</span><span class="o">&gt;</span>
+                    <span class="o">&lt;</span><span class="n">EndpointTopic</span><span class="o">&gt;&lt;/</span><span class="n">EndpointTopic</span><span class="o">&gt;</span>
+                <span class="o">&lt;/</span><span class="n">EndPoint</span><span class="o">&gt;</span>
+                <span class="o">&lt;</span><span class="n">TopicArn</span><span class="o">&gt;&lt;/</span><span class="n">TopicArn</span><span class="o">&gt;</span>
+                <span class="o">&lt;</span><span class="n">OpaqueData</span><span class="o">&gt;&lt;/</span><span class="n">OpaqueData</span><span class="o">&gt;</span>
+            <span class="o">&lt;/</span><span class="n">member</span><span class="o">&gt;</span>
+        <span class="o">&lt;/</span><span class="n">Topics</span><span class="o">&gt;</span>
+    <span class="o">&lt;/</span><span class="n">ListTopicsResult</span><span class="o">&gt;</span>
+    <span class="o">&lt;</span><span class="n">ResponseMetadata</span><span class="o">&gt;</span>
+        <span class="o">&lt;</span><span class="n">RequestId</span><span class="o">&gt;&lt;/</span><span class="n">RequestId</span><span class="o">&gt;</span>
+    <span class="o">&lt;/</span><span class="n">ResponseMetadata</span><span class="o">&gt;</span>
+<span class="o">&lt;/</span><span class="n">ListTopicsResponse</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>If the endpoint URL contains user/password information in any part of the
+topic, the request must be made over HTTPS. The “topic list” request will
+otherwise be rejected.</p></li>
+</ul>
+</section>
+</section>
+<section id="notifications">
+<h3><a class="toc-backref" href="#id17">Notifications</a><a class="headerlink" href="#notifications" title="Permalink to this heading">¶</a></h3>
+<p>Detailed under: <a class="reference external" href="../s3/bucketops">Bucket Operations</a>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<ul class="simple">
+<li><p>“Abort Multipart Upload” request does not emit a notification</p></li>
+<li><p>Both “Initiate Multipart Upload” and “POST Object” requests will emit an <code class="docutils literal notranslate"><span class="pre">s3:ObjectCreated:Post</span></code> notification</p></li>
+</ul>
+</div>
+</section>
+<section id="events">
+<h3><a class="toc-backref" href="#id18">Events</a><a class="headerlink" href="#events" title="Permalink to this heading">¶</a></h3>
+<p>Events are in JSON format (regardless of the actual endpoint), and share the
+same structure as S3-compatible events that are pushed or pulled using the
+pubsub sync module. For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span><span class="s2">&quot;Records&quot;</span><span class="p">:[</span>
+    <span class="p">{</span>
+        <span class="s2">&quot;eventVersion&quot;</span><span class="p">:</span><span class="s2">&quot;2.1&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;eventSource&quot;</span><span class="p">:</span><span class="s2">&quot;ceph:s3&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;awsRegion&quot;</span><span class="p">:</span><span class="s2">&quot;us-east-1&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;eventTime&quot;</span><span class="p">:</span><span class="s2">&quot;2019-11-22T13:47:35.124724Z&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;eventName&quot;</span><span class="p">:</span><span class="s2">&quot;ObjectCreated:Put&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;userIdentity&quot;</span><span class="p">:{</span>
+            <span class="s2">&quot;principalId&quot;</span><span class="p">:</span><span class="s2">&quot;tester&quot;</span>
+        <span class="p">},</span>
+        <span class="s2">&quot;requestParameters&quot;</span><span class="p">:{</span>
+            <span class="s2">&quot;sourceIPAddress&quot;</span><span class="p">:</span><span class="s2">&quot;&quot;</span>
+        <span class="p">},</span>
+        <span class="s2">&quot;responseElements&quot;</span><span class="p">:{</span>
+            <span class="s2">&quot;x-amz-request-id&quot;</span><span class="p">:</span><span class="s2">&quot;503a4c37-85eb-47cd-8681-2817e80b4281.5330.903595&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;x-amz-id-2&quot;</span><span class="p">:</span><span class="s2">&quot;14d2-zone1-zonegroup1&quot;</span>
+        <span class="p">},</span>
+        <span class="s2">&quot;s3&quot;</span><span class="p">:{</span>
+            <span class="s2">&quot;s3SchemaVersion&quot;</span><span class="p">:</span><span class="s2">&quot;1.0&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;configurationId&quot;</span><span class="p">:</span><span class="s2">&quot;mynotif1&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;bucket&quot;</span><span class="p">:{</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span><span class="s2">&quot;mybucket1&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;ownerIdentity&quot;</span><span class="p">:{</span>
+                    <span class="s2">&quot;principalId&quot;</span><span class="p">:</span><span class="s2">&quot;tester&quot;</span>
+                <span class="p">},</span>
+                <span class="s2">&quot;arn&quot;</span><span class="p">:</span><span class="s2">&quot;arn:aws:s3:us-east-1::mybucket1&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;id&quot;</span><span class="p">:</span><span class="s2">&quot;503a4c37-85eb-47cd-8681-2817e80b4281.5332.38&quot;</span>
+            <span class="p">},</span>
+            <span class="s2">&quot;object&quot;</span><span class="p">:{</span>
+                <span class="s2">&quot;key&quot;</span><span class="p">:</span><span class="s2">&quot;myimage1.jpg&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;size&quot;</span><span class="p">:</span><span class="s2">&quot;1024&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;eTag&quot;</span><span class="p">:</span><span class="s2">&quot;37b51d194a7513e45b56f6524f2d51f2&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;versionId&quot;</span><span class="p">:</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;sequencer&quot;</span><span class="p">:</span> <span class="s2">&quot;F7E6D75DC742D108&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;metadata&quot;</span><span class="p">:[],</span>
+                <span class="s2">&quot;tags&quot;</span><span class="p">:[]</span>
+            <span class="p">}</span>
+        <span class="p">},</span>
+        <span class="s2">&quot;eventId&quot;</span><span class="p">:</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;opaqueData&quot;</span><span class="p">:</span><span class="s2">&quot;me@example.com&quot;</span>
+    <span class="p">}</span>
+<span class="p">]}</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>awsRegion: The zonegroup.</p></li>
+<li><p>eventTime: The timestamp, indicating when the event was triggered.</p></li>
+<li><p>eventName: For the list of supported events see: <a class="reference external" href="../s3-notification-compatibility">S3 Notification
+Compatibility</a>. Note that eventName values do not start with the <cite>s3:</cite>
+prefix.</p></li>
+<li><p>userIdentity.principalId: The user that triggered the change.</p></li>
+<li><p>requestParameters.sourceIPAddress: not supported</p></li>
+<li><p>responseElements.x-amz-request-id: The request ID of the original change.</p></li>
+<li><p>responseElements.x_amz_id_2: The RGW on which the change was made.</p></li>
+<li><p>s3.configurationId: The notification ID that created the event.</p></li>
+<li><p>s3.bucket.name: The name of the bucket.</p></li>
+<li><p>s3.bucket.ownerIdentity.principalId: The owner of the bucket.</p></li>
+<li><p>s3.bucket.arn: The ARN of the bucket.</p></li>
+<li><p>s3.bucket.id: The ID of the bucket. (This is an extension to the S3
+notification API.)</p></li>
+<li><p>s3.object.key: The object key.</p></li>
+<li><p>s3.object.size: The object size.</p></li>
+<li><p>s3.object.eTag: The object etag.</p></li>
+<li><p>s3.object.versionId: The object version, if the bucket is versioned. When a
+copy is made, it includes the version of the target object. When a delete
+marker is created, it includes the version of the delete marker.</p></li>
+<li><p>s3.object.sequencer: The monotonically-increasing identifier of the “change
+per object” (hexadecimal format).</p></li>
+<li><p>s3.object.metadata: Any metadata set on the object that is sent as
+<code class="docutils literal notranslate"><span class="pre">x-amz-meta-</span></code> (that is, any metadata set on the object that is sent as an
+extension to the S3 notification API).</p></li>
+<li><p>s3.object.tags: Any tags set on the object. (This is an extension to the S3
+notification API.)</p></li>
+<li><p>s3.eventId: The unique ID of the event, which could be used for acking. (This
+is an extension to the S3 notification API.)</p></li>
+<li><p>s3.opaqueData: This means that “opaque data” is set in the topic configuration
+and is added to all notifications triggered by the topic. (This is an
+extension to the S3 notification API.)</p></li>
+</ul>
+</section>
+</section>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../">
+              <img class="logo" src="../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../install/">Installing Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cephadm/">Cephadm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rados/">Ceph Storage Cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cephfs/">Ceph File System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rbd/">Ceph Block Device</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../">Ceph Object Gateway</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../frontends/">HTTP Frontends</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../placement/">Pool Placement and Storage Classes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../multisite/">Multisite Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../multisite-sync-policy/">Multisite Sync Policy Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pools/">Configuring Pools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../config-ref/">Config Reference</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../admin/">Admin Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../s3/">S3 API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rgw-cache/">Data caching and CDN</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../swift/">Swift API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../adminops/">Admin Ops API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/">Python binding</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../nfs/">Export over NFS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../keystone/">OpenStack Keystone Integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../barbican/">OpenStack Barbican Integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../vault/">HashiCorp Vault Integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../kmip/">KMIP Integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../opa/">Open Policy Agent Integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../multitenancy/">Multi-tenancy</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../compression/">Compression</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../ldap-auth/">LDAP Authentication</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../encryption/">Server-Side Encryption</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../bucketpolicy/">Bucket Policy</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../dynamicresharding/">Dynamic bucket index resharding</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../mfa/">Multi factor authentication</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../sync-modules/">Sync Modules</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Bucket Notifications</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../s3-notification-compatibility/">S3 Bucket Notification Compatibility</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#notification-reliability">Notification Reliability</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#synchronous-notifications">Synchronous Notifications</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#asynchronous-notifications">Asynchronous Notifications</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#topic-management-via-cli">Topic Management via CLI</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#notification-performance-stats">Notification Performance Stats</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#bucket-notification-rest-api">Bucket Notification REST API</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#topics">Topics</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#create-a-topic">Create a Topic</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#get-topic-attributes">Get Topic Attributes</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#get-topic-information">Get Topic Information</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#delete-topic">Delete Topic</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#list-topics">List Topics</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#notifications">Notifications</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#events">Events</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../layout/">Data Layout in RADOS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../STS/">STS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../STSLite/">STS Lite</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../keycloak/">Keycloak</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../session-tags/">Session Tags</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../role/">Role</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../orphans/">Orphan List and Associated Tooling</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../oidc/">OpenID Connect Provider</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../troubleshooting/">Troubleshooting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../man/8/radosgw/">Manpage radosgw</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../man/8/radosgw-admin/">Manpage radosgw-admin</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../qat-accel/">QAT Acceleration for Encryption and Compression</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../s3select/">S3-select</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../lua-scripting/">Lua Scripting</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/">Ceph Manager Daemon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dev/developer_guide/">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dev/internals/">Ceph Internals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../layout/" title="Rados Gateway Data Layout"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../archive-sync-module/" title="Archive Sync Module"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../" >Ceph Object Gateway</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Bucket Notifications</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

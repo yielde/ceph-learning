@@ -1,0 +1,1667 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Monitor Config Reference &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/css/custom.css" />
+    <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/jquery.js"></script>
+    <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../../genindex/" />
+    <link rel="search" title="Search" href="../../../search/" />
+    <link rel="next" title="Looking up Monitors through DNS" href="../mon-lookup-dns/" />
+    <link rel="prev" title="CephX Config Reference" href="../auth-config-ref/" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../mon-lookup-dns/" title="Looking up Monitors through DNS"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../auth-config-ref/" title="CephX Config Reference"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../" >Ceph Storage Cluster</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../" accesskey="U">Configuration</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Monitor Config Reference</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="monitor-config-reference">
+<span id="id1"></span><h1>Monitor Config Reference<a class="headerlink" href="#monitor-config-reference" title="Permalink to this heading">¶</a></h1>
+<p>Understanding how to configure a <a class="reference internal" href="../../../glossary/#term-Ceph-Monitor"><span class="xref std std-term">Ceph Monitor</span></a> is an important part of
+building a reliable <a class="reference internal" href="../../../glossary/#term-Ceph-Storage-Cluster"><span class="xref std std-term">Ceph Storage Cluster</span></a>. <strong>All Ceph Storage Clusters
+have at least one monitor</strong>. The monitor complement usually remains fairly
+consistent, but you can add, remove or replace a monitor in a cluster. See
+<a class="reference external" href="../../operations/add-or-rm-mons">Adding/Removing a Monitor</a> for details.</p>
+<section id="background">
+<span id="index-0"></span><h2>Background<a class="headerlink" href="#background" title="Permalink to this heading">¶</a></h2>
+<p>Ceph Monitors maintain a “master copy” of the <a class="reference internal" href="../../../glossary/#term-Cluster-Map"><span class="xref std std-term">Cluster Map</span></a>.</p>
+<p>The maintenance by Ceph Monitors of a <a class="reference internal" href="../../../glossary/#term-Cluster-Map"><span class="xref std std-term">Cluster Map</span></a> makes it possible for
+a <a class="reference internal" href="../../../glossary/#term-Ceph-Client"><span class="xref std std-term">Ceph Client</span></a> to determine the location of all Ceph Monitors, Ceph OSD
+Daemons, and Ceph Metadata Servers by connecting to one Ceph Monitor and
+retrieving a current cluster map. Before Ceph Clients can read from or write to
+Ceph OSD Daemons or Ceph Metadata Servers, they must connect to a Ceph Monitor.
+When a Ceph client has a current copy of the cluster map and the CRUSH
+algorithm, it can compute the location for any RADOS object within in the
+cluster. This ability to compute the locations of objects makes it possible for
+Ceph Clients to talk directly to Ceph OSD Daemons. This direct communication
+with Ceph OSD Daemons represents an improvment upon traditional storage
+architectures in which clients were required to communicate with a central
+component, and that improvment contributes to Ceph’s high scalability and
+performance. See <a class="reference external" href="../../../architecture#scalability-and-high-availability">Scalability and High Availability</a> for additional details.</p>
+<p>The Ceph Monitor’s primary function is to maintain a master copy of the cluster
+map. Monitors also provide authentication and logging services. All changes in
+the monitor services are written by the Ceph Monitor to a single Paxos
+instance, and Paxos writes the changes to a key/value store for strong
+consistency. Ceph Monitors are able to query the most recent version of the
+cluster map during sync operations, and they use the key/value store’s
+snapshots and iterators (using leveldb) to perform store-wide synchronization.</p>
+<p class="ditaa">
+<img src="../../../_images/ditaa-d93220ac740fbc1df6152f91b390a95f9b36f9c5.png"/>
+</p>
+<section id="cluster-maps">
+<span id="index-1"></span><h3>Cluster Maps<a class="headerlink" href="#cluster-maps" title="Permalink to this heading">¶</a></h3>
+<p>The cluster map is a composite of maps, including the monitor map, the OSD map,
+the placement group map and the metadata server map. The cluster map tracks a
+number of important things: which processes are <code class="docutils literal notranslate"><span class="pre">in</span></code> the Ceph Storage Cluster;
+which processes that are <code class="docutils literal notranslate"><span class="pre">in</span></code> the Ceph Storage Cluster are <code class="docutils literal notranslate"><span class="pre">up</span></code> and running
+or <code class="docutils literal notranslate"><span class="pre">down</span></code>; whether, the placement groups are <code class="docutils literal notranslate"><span class="pre">active</span></code> or <code class="docutils literal notranslate"><span class="pre">inactive</span></code>, and
+<code class="docutils literal notranslate"><span class="pre">clean</span></code> or in some other state; and, other details that reflect the current
+state of the cluster such as the total amount of storage space, and the amount
+of storage used.</p>
+<p>When there is a significant change in the state of the cluster–e.g., a Ceph OSD
+Daemon goes down, a placement group falls into a degraded state, etc.–the
+cluster map gets updated to reflect the current state of the cluster.
+Additionally, the Ceph Monitor also maintains a history of the prior states of
+the cluster. The monitor map, OSD map, placement group map and metadata server
+map each maintain a history of their map versions. We call each version an
+“epoch.”</p>
+<p>When operating your Ceph Storage Cluster, keeping track of these states is an
+important part of your system administration duties. See <a class="reference external" href="../../operations/monitoring">Monitoring a Cluster</a>
+and <a class="reference external" href="../../operations/monitoring-osd-pg">Monitoring OSDs and PGs</a> for additional details.</p>
+</section>
+<section id="monitor-quorum">
+<span id="index-2"></span><h3>Monitor Quorum<a class="headerlink" href="#monitor-quorum" title="Permalink to this heading">¶</a></h3>
+<p>Our Configuring ceph section provides a trivial <a class="reference external" href="../ceph-conf/#monitors">Ceph configuration file</a> that
+provides for one monitor in the test cluster. A cluster will run fine with a
+single monitor; however, <strong>a single monitor is a single-point-of-failure</strong>. To
+ensure high availability in a production Ceph Storage Cluster, you should run
+Ceph with multiple monitors so that the failure of a single monitor <strong>WILL NOT</strong>
+bring down your entire cluster.</p>
+<p>When a Ceph Storage Cluster runs multiple Ceph Monitors for high availability,
+Ceph Monitors use <a class="reference external" href="https://en.wikipedia.org/wiki/Paxos_(computer_science)">Paxos</a> to establish consensus about the master cluster map.
+A consensus requires a majority of monitors running to establish a quorum for
+consensus about the cluster map (e.g., 1; 2 out of 3; 3 out of 5; 4 out of 6;
+etc.).</p>
+<p><code class="docutils literal notranslate"><span class="pre">mon</span> <span class="pre">force</span> <span class="pre">quorum</span> <span class="pre">join</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Force monitor to join quorum even if it has been previously removed from the map</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Boolean</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">False</span></code></p>
+</dd>
+</dl>
+</section>
+<section id="consistency">
+<span id="index-3"></span><h3>Consistency<a class="headerlink" href="#consistency" title="Permalink to this heading">¶</a></h3>
+<p>When you add monitor settings to your Ceph configuration file, you need to be
+aware of some of the architectural aspects of Ceph Monitors. <strong>Ceph imposes
+strict consistency requirements</strong> for a Ceph monitor when discovering another
+Ceph Monitor within the cluster. Whereas, Ceph Clients and other Ceph daemons
+use the Ceph configuration file to discover monitors, monitors discover each
+other using the monitor map (monmap), not the Ceph configuration file.</p>
+<p>A Ceph Monitor always refers to the local copy of the monmap when discovering
+other Ceph Monitors in the Ceph Storage Cluster. Using the monmap instead of the
+Ceph configuration file avoids errors that could break the cluster (e.g., typos
+in <code class="docutils literal notranslate"><span class="pre">ceph.conf</span></code> when specifying a monitor address or port). Since monitors use
+monmaps for discovery and they share monmaps with clients and other Ceph
+daemons, <strong>the monmap provides monitors with a strict guarantee that their
+consensus is valid.</strong></p>
+<p>Strict consistency also applies to updates to the monmap. As with any other
+updates on the Ceph Monitor, changes to the monmap always run through a
+distributed consensus algorithm called <a class="reference external" href="https://en.wikipedia.org/wiki/Paxos_(computer_science)">Paxos</a>. The Ceph Monitors must agree on
+each update to the monmap, such as adding or removing a Ceph Monitor, to ensure
+that each monitor in the quorum has the same version of the monmap. Updates to
+the monmap are incremental so that Ceph Monitors have the latest agreed upon
+version, and a set of previous versions. Maintaining a history enables a Ceph
+Monitor that has an older version of the monmap to catch up with the current
+state of the Ceph Storage Cluster.</p>
+<p>If Ceph Monitors were to discover each other through the Ceph configuration file
+instead of through the monmap, additional risks would be introduced because
+Ceph configuration files are not updated and distributed automatically. Ceph
+Monitors might inadvertently use an older Ceph configuration file, fail to
+recognize a Ceph Monitor, fall out of a quorum, or develop a situation where
+<a class="reference external" href="https://en.wikipedia.org/wiki/Paxos_(computer_science)">Paxos</a> is not able to determine the current state of the system accurately.</p>
+</section>
+<section id="bootstrapping-monitors">
+<span id="index-4"></span><h3>Bootstrapping Monitors<a class="headerlink" href="#bootstrapping-monitors" title="Permalink to this heading">¶</a></h3>
+<p>In most configuration and deployment cases, tools that deploy Ceph help
+bootstrap the Ceph Monitors by generating a monitor map for you (e.g.,
+<code class="docutils literal notranslate"><span class="pre">cephadm</span></code>, etc). A Ceph Monitor requires a few explicit
+settings:</p>
+<ul class="simple">
+<li><p><strong>Filesystem ID</strong>: The <code class="docutils literal notranslate"><span class="pre">fsid</span></code> is the unique identifier for your
+object store. Since you can run multiple clusters on the same
+hardware, you must specify the unique ID of the object store when
+bootstrapping a monitor.  Deployment tools usually do this for you
+(e.g., <code class="docutils literal notranslate"><span class="pre">cephadm</span></code> can call a tool like <code class="docutils literal notranslate"><span class="pre">uuidgen</span></code>), but you
+may specify the <code class="docutils literal notranslate"><span class="pre">fsid</span></code> manually too.</p></li>
+<li><p><strong>Monitor ID</strong>: A monitor ID is a unique ID assigned to each monitor within
+the cluster. It is an alphanumeric value, and by convention the identifier
+usually follows an alphabetical increment (e.g., <code class="docutils literal notranslate"><span class="pre">a</span></code>, <code class="docutils literal notranslate"><span class="pre">b</span></code>, etc.). This
+can be set in a Ceph configuration file (e.g., <code class="docutils literal notranslate"><span class="pre">[mon.a]</span></code>, <code class="docutils literal notranslate"><span class="pre">[mon.b]</span></code>, etc.),
+by a deployment tool, or using the <code class="docutils literal notranslate"><span class="pre">ceph</span></code> commandline.</p></li>
+<li><p><strong>Keys</strong>: The monitor must have secret keys. A deployment tool such as
+<code class="docutils literal notranslate"><span class="pre">cephadm</span></code> usually does this for you, but you may
+perform this step manually too. See <a class="reference external" href="../../../dev/mon-bootstrap#secret-keys">Monitor Keyrings</a> for details.</p></li>
+</ul>
+<p>For additional details on bootstrapping, see <a class="reference external" href="../../../dev/mon-bootstrap">Bootstrapping a Monitor</a>.</p>
+</section>
+</section>
+<section id="configuring-monitors">
+<span id="index-5"></span><h2>Configuring Monitors<a class="headerlink" href="#configuring-monitors" title="Permalink to this heading">¶</a></h2>
+<p>To apply configuration settings to the entire cluster, enter the configuration
+settings under <code class="docutils literal notranslate"><span class="pre">[global]</span></code>. To apply configuration settings to all monitors in
+your cluster, enter the configuration settings under <code class="docutils literal notranslate"><span class="pre">[mon]</span></code>. To apply
+configuration settings to specific monitors, specify the monitor instance
+(e.g., <code class="docutils literal notranslate"><span class="pre">[mon.a]</span></code>). By convention, monitor instance names use alpha notation.</p>
+<div class="highlight-ini notranslate"><div class="highlight"><pre><span></span><span class="k">[global]</span>
+
+<span class="k">[mon]</span>
+
+<span class="k">[mon.a]</span>
+
+<span class="k">[mon.b]</span>
+
+<span class="k">[mon.c]</span>
+</pre></div>
+</div>
+<section id="minimum-configuration">
+<h3>Minimum Configuration<a class="headerlink" href="#minimum-configuration" title="Permalink to this heading">¶</a></h3>
+<p>The bare minimum monitor settings for a Ceph monitor via the Ceph configuration
+file include a hostname and a network address for each monitor. You can configure
+these under <code class="docutils literal notranslate"><span class="pre">[mon]</span></code> or under the entry for a specific monitor.</p>
+<div class="highlight-ini notranslate"><div class="highlight"><pre><span></span><span class="k">[global]</span>
+<span class="w">        </span><span class="na">mon host</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">10.0.0.2,10.0.0.3,10.0.0.4</span>
+</pre></div>
+</div>
+<div class="highlight-ini notranslate"><div class="highlight"><pre><span></span><span class="k">[mon.a]</span>
+<span class="w">        </span><span class="na">host</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">hostname1</span>
+<span class="w">        </span><span class="na">mon addr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">10.0.0.10:6789</span>
+</pre></div>
+</div>
+<p>See the <a class="reference external" href="../network-config-ref">Network Configuration Reference</a> for details.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This minimum configuration for monitors assumes that a deployment
+tool generates the <code class="docutils literal notranslate"><span class="pre">fsid</span></code> and the <code class="docutils literal notranslate"><span class="pre">mon.</span></code> key for you.</p>
+</div>
+<p>Once you deploy a Ceph cluster, you <strong>SHOULD NOT</strong> change the IP addresses of
+monitors. However, if you decide to change the monitor’s IP address, you
+must follow a specific procedure. See <a class="reference external" href="../../operations/add-or-rm-mons#changing-a-monitor-s-ip-address">Changing a Monitor’s IP Address</a> for
+details.</p>
+<p>Monitors can also be found by clients by using DNS SRV records. See <a class="reference external" href="../mon-lookup-dns">Monitor lookup through DNS</a> for details.</p>
+</section>
+<section id="cluster-id">
+<h3>Cluster ID<a class="headerlink" href="#cluster-id" title="Permalink to this heading">¶</a></h3>
+<p>Each Ceph Storage Cluster has a unique identifier (<code class="docutils literal notranslate"><span class="pre">fsid</span></code>). If specified, it
+usually appears under the <code class="docutils literal notranslate"><span class="pre">[global]</span></code> section of the configuration file.
+Deployment tools usually generate the <code class="docutils literal notranslate"><span class="pre">fsid</span></code> and store it in the monitor map,
+so the value may not appear in a configuration file. The <code class="docutils literal notranslate"><span class="pre">fsid</span></code> makes it
+possible to run daemons for multiple clusters on the same hardware.</p>
+<p><code class="docutils literal notranslate"><span class="pre">fsid</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The cluster ID. One per cluster.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>UUID</p>
+</dd>
+<dt class="field-odd">Required</dt>
+<dd class="field-odd"><p>Yes.</p>
+</dd>
+<dt class="field-even">Default</dt>
+<dd class="field-even"><p>N/A. May be generated by a deployment tool if not specified.</p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Do not set this value if you use a deployment tool that does
+it for you.</p>
+</div>
+</section>
+<section id="initial-members">
+<span id="index-6"></span><h3>Initial Members<a class="headerlink" href="#initial-members" title="Permalink to this heading">¶</a></h3>
+<p>We recommend running a production Ceph Storage Cluster with at least three Ceph
+Monitors to ensure high availability. When you run multiple monitors, you may
+specify the initial monitors that must be members of the cluster in order to
+establish a quorum. This may reduce the time it takes for your cluster to come
+online.</p>
+<div class="highlight-ini notranslate"><div class="highlight"><pre><span></span><span class="k">[mon]</span>
+<span class="w">        </span><span class="na">mon_initial_members</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">a,b,c</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">mon_initial_members</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The IDs of initial monitors in a cluster during startup. If
+specified, Ceph requires an odd number of monitors to form an
+initial quorum (e.g., 3).</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>A <em>majority</em> of monitors in your cluster must be able to reach
+each other in order to establish a quorum. You can decrease the initial
+number of monitors to establish a quorum with this setting.</p>
+</div>
+</section>
+<section id="data">
+<span id="index-7"></span><h3>Data<a class="headerlink" href="#data" title="Permalink to this heading">¶</a></h3>
+<p>Ceph provides a default path where Ceph Monitors store data. For optimal
+performance in a production Ceph Storage Cluster, we recommend running Ceph
+Monitors on separate hosts and drives from Ceph OSD Daemons. As leveldb uses
+<code class="docutils literal notranslate"><span class="pre">mmap()</span></code> for writing the data, Ceph Monitors flush their data from memory to disk
+very often, which can interfere with Ceph OSD Daemon workloads if the data
+store is co-located with the OSD Daemons.</p>
+<p>In Ceph versions 0.58 and earlier, Ceph Monitors store their data in plain files. This
+approach allows users to inspect monitor data with common tools like <code class="docutils literal notranslate"><span class="pre">ls</span></code>
+and <code class="docutils literal notranslate"><span class="pre">cat</span></code>. However, this approach didn’t provide strong consistency.</p>
+<p>In Ceph versions 0.59 and later, Ceph Monitors store their data as key/value
+pairs. Ceph Monitors require <a class="reference external" href="https://en.wikipedia.org/wiki/ACID">ACID</a> transactions. Using a data store prevents
+recovering Ceph Monitors from running corrupted versions through Paxos, and it
+enables multiple modification operations in one single atomic batch, among other
+advantages.</p>
+<p>Generally, we do not recommend changing the default data location. If you modify
+the default location, we recommend that you make it uniform across Ceph Monitors
+by setting it in the <code class="docutils literal notranslate"><span class="pre">[mon]</span></code> section of the configuration file.</p>
+<p><code class="docutils literal notranslate"><span class="pre">mon_data</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The monitor’s data location.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">/var/lib/ceph/mon/$cluster-$id</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">mon_data_size_warn</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Raise <code class="docutils literal notranslate"><span class="pre">HEALTH_WARN</span></code> status when a monitor’s data
+store grows to be larger than this size, 15GB by default.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">15*1024*1024*1024</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">mon_data_avail_warn</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Raise <code class="docutils literal notranslate"><span class="pre">HEALTH_WARN</span></code> status when the filesystem that houses a
+monitor’s data store reports that its available capacity is
+less than or equal to this percentage .</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">30</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">mon_data_avail_crit</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Raise <code class="docutils literal notranslate"><span class="pre">HEALTH_ERR</span></code> status when the filesystem that houses a
+monitor’s data store reports that its available capacity is
+less than or equal to this percentage.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">5</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">mon_warn_on_cache_pools_without_hit_sets</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Raise <code class="docutils literal notranslate"><span class="pre">HEALTH_WARN</span></code> when a cache pool does not
+have the <code class="docutils literal notranslate"><span class="pre">hit_set_type</span></code> value configured.
+See <a class="reference internal" href="../../operations/pools/#hit-set-type"><span class="std std-ref">hit_set_type</span></a> for more
+details.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Boolean</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">True</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">mon_warn_on_crush_straw_calc_version_zero</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Raise <code class="docutils literal notranslate"><span class="pre">HEALTH_WARN</span></code> when the CRUSH
+<code class="docutils literal notranslate"><span class="pre">straw_calc_version</span></code> is zero. See
+<a class="reference internal" href="../../operations/crush-map/#crush-map-tunables"><span class="std std-ref">CRUSH map tunables</span></a> for
+details.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Boolean</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">True</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">mon_warn_on_legacy_crush_tunables</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Raise <code class="docutils literal notranslate"><span class="pre">HEALTH_WARN</span></code> when
+CRUSH tunables are too old (older than <code class="docutils literal notranslate"><span class="pre">mon_min_crush_required_version</span></code>)</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Boolean</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">True</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">mon_crush_min_required_version</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The minimum tunable profile required by the cluster.
+See
+<a class="reference internal" href="../../operations/crush-map/#crush-map-tunables"><span class="std std-ref">CRUSH map tunables</span></a> for
+details.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">hammer</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">mon_warn_on_osd_down_out_interval_zero</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Raise <code class="docutils literal notranslate"><span class="pre">HEALTH_WARN</span></code> when
+<code class="docutils literal notranslate"><span class="pre">mon_osd_down_out_interval</span></code> is zero. Having this option set to
+zero on the leader acts much like the <code class="docutils literal notranslate"><span class="pre">noout</span></code> flag. It’s hard
+to figure out what’s going wrong with clusters without the
+<code class="docutils literal notranslate"><span class="pre">noout</span></code> flag set but acting like that just the same, so we
+report a warning in this case.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Boolean</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">True</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">mon_warn_on_slow_ping_ratio</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Raise <code class="docutils literal notranslate"><span class="pre">HEALTH_WARN</span></code> when any heartbeat
+between OSDs exceeds <code class="docutils literal notranslate"><span class="pre">mon_warn_on_slow_ping_ratio</span></code>
+of <code class="docutils literal notranslate"><span class="pre">osd_heartbeat_grace</span></code>.  The default is 5%.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Float</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">0.05</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">mon_warn_on_slow_ping_time</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Override <code class="docutils literal notranslate"><span class="pre">mon_warn_on_slow_ping_ratio</span></code> with a specific value.
+Raise <code class="docutils literal notranslate"><span class="pre">HEALTH_WARN</span></code> if any heartbeat
+between OSDs exceeds <code class="docutils literal notranslate"><span class="pre">mon_warn_on_slow_ping_time</span></code>
+milliseconds.  The default is 0 (disabled).</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">0</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">mon_warn_on_pool_no_redundancy</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Raise <code class="docutils literal notranslate"><span class="pre">HEALTH_WARN</span></code> if any pool is
+configured with no replicas.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Boolean</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">True</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">mon_cache_target_full_warn_ratio</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Position between pool’s <code class="docutils literal notranslate"><span class="pre">cache_target_full</span></code> and
+<code class="docutils literal notranslate"><span class="pre">target_max_object</span></code> where we start warning</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Float</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">0.66</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">mon_health_to_clog</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Enable sending a health summary to the cluster log periodically.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Boolean</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">True</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">mon_health_to_clog_tick_interval</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>How often (in seconds) the monitor sends a health summary to the cluster
+log (a non-positive number disables). If current health summary
+is empty or identical to the last time, monitor will not send it
+to cluster log.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Float</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">60.0</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">mon_health_to_clog_interval</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>How often (in seconds) the monitor sends a health summary to the cluster
+log (a non-positive number disables). Monitors will always
+send a summary to the cluster log whether or not it differs from
+the previous summary.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">3600</span></code></p>
+</dd>
+</dl>
+</section>
+<section id="storage-capacity">
+<span id="index-8"></span><span id="id2"></span><h3>Storage Capacity<a class="headerlink" href="#storage-capacity" title="Permalink to this heading">¶</a></h3>
+<p>When a Ceph Storage Cluster gets close to its maximum capacity
+(see``mon_osd_full ratio``), Ceph prevents you from writing to or reading from OSDs
+as a safety measure to prevent data loss. Therefore, letting a
+production Ceph Storage Cluster approach its full ratio is not a good practice,
+because it sacrifices high availability. The default full ratio is <code class="docutils literal notranslate"><span class="pre">.95</span></code>, or
+95% of capacity. This a very aggressive setting for a test cluster with a small
+number of OSDs.</p>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>When monitoring your cluster, be alert to warnings related to the
+<code class="docutils literal notranslate"><span class="pre">nearfull</span></code> ratio. This means that a failure of some OSDs could result
+in a temporary service disruption if one or more OSDs fails. Consider adding
+more OSDs to increase storage capacity.</p>
+</div>
+<p>A common scenario for test clusters involves a system administrator removing an
+OSD from the Ceph Storage Cluster, watching the cluster rebalance, then removing
+another OSD, and another, until at least one OSD eventually reaches the full
+ratio and the cluster locks up. We recommend a bit of capacity
+planning even with a test cluster. Planning enables you to gauge how much spare
+capacity you will need in order to maintain high availability. Ideally, you want
+to plan for a series of Ceph OSD Daemon failures where the cluster can recover
+to an <code class="docutils literal notranslate"><span class="pre">active+clean</span></code> state without replacing those OSDs
+immediately. Cluster operation continues in the <code class="docutils literal notranslate"><span class="pre">active+degraded</span></code> state, but this
+is not ideal for normal operation and should be addressed promptly.</p>
+<p>The following diagram depicts a simplistic Ceph Storage Cluster containing 33
+Ceph Nodes with one OSD per host, each OSD reading from
+and writing to a 3TB drive. So this exemplary Ceph Storage Cluster has a maximum
+actual capacity of 99TB. With a <code class="docutils literal notranslate"><span class="pre">mon</span> <span class="pre">osd</span> <span class="pre">full</span> <span class="pre">ratio</span></code> of <code class="docutils literal notranslate"><span class="pre">0.95</span></code>, if the Ceph
+Storage Cluster falls to 5TB of remaining capacity, the cluster will not allow
+Ceph Clients to read and write data. So the Ceph Storage Cluster’s operating
+capacity is 95TB, not 99TB.</p>
+<p class="ditaa">
+<img src="../../../_images/ditaa-711402e8fde8ea6a9ae1a39bb27a1b5431a0d8de.png"/>
+</p>
+<p>It is normal in such a cluster for one or two OSDs to fail. A less frequent but
+reasonable scenario involves a rack’s router or power supply failing, which
+brings down multiple OSDs simultaneously (e.g., OSDs 7-12). In such a scenario,
+you should still strive for a cluster that can remain operational and achieve an
+<code class="docutils literal notranslate"><span class="pre">active</span> <span class="pre">+</span> <span class="pre">clean</span></code> state–even if that means adding a few hosts with additional
+OSDs in short order. If your capacity utilization is too high, you may not lose
+data, but you could still sacrifice data availability while resolving an outage
+within a failure domain if capacity utilization of the cluster exceeds the full
+ratio. For this reason, we recommend at least some rough capacity planning.</p>
+<p>Identify two numbers for your cluster:</p>
+<ol class="arabic simple">
+<li><p>The number of OSDs.</p></li>
+<li><p>The total capacity of the cluster</p></li>
+</ol>
+<p>If you divide the total capacity of your cluster by the number of OSDs in your
+cluster, you will find the mean average capacity of an OSD within your cluster.
+Consider multiplying that number by the number of OSDs you expect will fail
+simultaneously during normal operations (a relatively small number). Finally
+multiply the capacity of the cluster by the full ratio to arrive at a maximum
+operating capacity; then, subtract the number of amount of data from the OSDs
+you expect to fail to arrive at a reasonable full ratio. Repeat the foregoing
+process with a higher number of OSD failures (e.g., a rack of OSDs) to arrive at
+a reasonable number for a near full ratio.</p>
+<p>The following settings only apply on cluster creation and are then stored in
+the OSDMap. To clarify, in normal operation the values that are used by OSDs
+are those found in the OSDMap, not those in the configuration file or central
+config store.</p>
+<div class="highlight-ini notranslate"><div class="highlight"><pre><span></span><span class="k">[global]</span>
+<span class="w">        </span><span class="na">mon_osd_full_ratio</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">.80</span>
+<span class="w">        </span><span class="na">mon_osd_backfillfull_ratio</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">.75</span>
+<span class="w">        </span><span class="na">mon_osd_nearfull_ratio</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">.70</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">mon_osd_full_ratio</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The threshold percentage of device space utilized before an OSD is
+considered <code class="docutils literal notranslate"><span class="pre">full</span></code>.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Float</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">0.95</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">mon_osd_backfillfull_ratio</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The threshold percentage of device space utilized before an OSD is
+considered too <code class="docutils literal notranslate"><span class="pre">full</span></code> to backfill.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Float</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">0.90</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">mon_osd_nearfull_ratio</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The threshold percentage of device space used before an OSD is
+considered <code class="docutils literal notranslate"><span class="pre">nearfull</span></code>.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Float</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">0.85</span></code></p>
+</dd>
+</dl>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>If some OSDs are nearfull, but others have plenty of capacity, you
+may have an inaccurate CRUSH weight set for the nearfull OSDs.</p>
+</div>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>These settings only apply during cluster creation. Afterwards they need
+to be changed in the OSDMap using <code class="docutils literal notranslate"><span class="pre">ceph</span> <span class="pre">osd</span> <span class="pre">set-nearfull-ratio</span></code> and
+<code class="docutils literal notranslate"><span class="pre">ceph</span> <span class="pre">osd</span> <span class="pre">set-full-ratio</span></code></p>
+</div>
+</section>
+<section id="heartbeat">
+<span id="index-9"></span><h3>Heartbeat<a class="headerlink" href="#heartbeat" title="Permalink to this heading">¶</a></h3>
+<p>Ceph monitors know about the cluster by requiring reports from each OSD, and by
+receiving reports from OSDs about the status of their neighboring OSDs. Ceph
+provides reasonable default settings for monitor/OSD interaction; however,  you
+may modify them as needed. See <a class="reference external" href="../mon-osd-interaction">Monitor/OSD Interaction</a> for details.</p>
+</section>
+<section id="monitor-store-synchronization">
+<span id="index-10"></span><h3>Monitor Store Synchronization<a class="headerlink" href="#monitor-store-synchronization" title="Permalink to this heading">¶</a></h3>
+<p>When you run a production cluster with multiple monitors (recommended), each
+monitor checks to see if a neighboring monitor has a more recent version of the
+cluster map (e.g., a map in a neighboring monitor with one or more epoch numbers
+higher than the most current epoch in the map of the instant monitor).
+Periodically, one monitor in the cluster may fall behind the other monitors to
+the point where it must leave the quorum, synchronize to retrieve the most
+current information about the cluster, and then rejoin the quorum. For the
+purposes of synchronization, monitors may assume one of three roles:</p>
+<ol class="arabic simple">
+<li><p><strong>Leader</strong>: The <cite>Leader</cite> is the first monitor to achieve the most recent
+Paxos version of the cluster map.</p></li>
+<li><p><strong>Provider</strong>: The <cite>Provider</cite> is a monitor that has the most recent version
+of the cluster map, but wasn’t the first to achieve the most recent version.</p></li>
+<li><p><strong>Requester:</strong> A <cite>Requester</cite> is a monitor that has fallen behind the leader
+and must synchronize in order to retrieve the most recent information about
+the cluster before it can rejoin the quorum.</p></li>
+</ol>
+<p>These roles enable a leader to delegate synchronization duties to a provider,
+which prevents synchronization requests from overloading the leader–improving
+performance. In the following diagram, the requester has learned that it has
+fallen behind the other monitors. The requester asks the leader to synchronize,
+and the leader tells the requester to synchronize with a provider.</p>
+<p class="ditaa">
+<img src="../../../_images/ditaa-af0ce2210eafb917a47884a8edbcbc94b581639b.png"/>
+</p>
+<p>Synchronization always occurs when a new monitor joins the cluster. During
+runtime operations, monitors may receive updates to the cluster map at different
+times. This means the leader and provider roles may migrate from one monitor to
+another. If this happens while synchronizing (e.g., a provider falls behind the
+leader), the provider can terminate synchronization with a requester.</p>
+<p>Once synchronization is complete, Ceph performs trimming across the cluster.
+Trimming requires that the placement groups are <code class="docutils literal notranslate"><span class="pre">active+clean</span></code>.</p>
+<p><code class="docutils literal notranslate"><span class="pre">mon_sync_timeout</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Number of seconds the monitor will wait for the next update
+message from its sync provider before it gives up and bootstrap
+again.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Double</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">60.0</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">mon_sync_max_payload_size</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The maximum size for a sync payload (in bytes).</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>32-bit Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">1048576</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">paxos_max_join_drift</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The maximum Paxos iterations before we must first sync the
+monitor data stores. When a monitor finds that its peer is too
+far ahead of it, it will first sync with data stores before moving
+on.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">10</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">paxos_stash_full_interval</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>How often (in commits) to stash a full copy of the PaxosService state.
+Current this setting only affects <code class="docutils literal notranslate"><span class="pre">mds</span></code>, <code class="docutils literal notranslate"><span class="pre">mon</span></code>, <code class="docutils literal notranslate"><span class="pre">auth</span></code> and <code class="docutils literal notranslate"><span class="pre">mgr</span></code>
+PaxosServices.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">25</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">paxos_propose_interval</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Gather updates for this time interval before proposing
+a map update.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Double</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">1.0</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">paxos_min</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The minimum number of Paxos states to keep around</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">500</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">paxos_min_wait</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The minimum amount of time to gather updates after a period of
+inactivity.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Double</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">0.05</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">paxos_trim_min</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Number of extra proposals tolerated before trimming</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">250</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">paxos_trim_max</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The maximum number of extra proposals to trim at a time</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">500</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">paxos_service_trim_min</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The minimum amount of versions to trigger a trim (0 disables it)</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">250</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">paxos_service_trim_max</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The maximum amount of versions to trim during a single proposal (0 disables it)</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">500</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">paxos</span> <span class="pre">service</span> <span class="pre">trim</span> <span class="pre">max</span> <span class="pre">multiplier</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The factor by which paxos service trim max will be multiplied
+to get a new upper bound when trim sizes are high (0 disables it)</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">20</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">mon</span> <span class="pre">mds</span> <span class="pre">force</span> <span class="pre">trim</span> <span class="pre">to</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Force monitor to trim mdsmaps to this point (0 disables it.
+dangerous, use with care)</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">0</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">mon_osd_force_trim_to</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Force monitor to trim osdmaps to this point, even if there is
+PGs not clean at the specified epoch (0 disables it. dangerous,
+use with care)</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">0</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">mon_osd_cache_size</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The size of osdmaps cache, not to rely on underlying store’s cache</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">500</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">mon_election_timeout</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>On election proposer, maximum waiting time for all ACKs in seconds.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Float</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">5.00</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">mon_lease</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The length (in seconds) of the lease on the monitor’s versions.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Float</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">5.00</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">mon_lease_renew_interval_factor</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">mon_lease</span></code> * <code class="docutils literal notranslate"><span class="pre">mon_lease_renew_interval_factor</span></code> will be the
+interval for the Leader to renew the other monitor’s leases. The
+factor should be less than <code class="docutils literal notranslate"><span class="pre">1.0</span></code>.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Float</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">0.60</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">mon_lease_ack_timeout_factor</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The Leader will wait <code class="docutils literal notranslate"><span class="pre">mon_lease</span></code> * <code class="docutils literal notranslate"><span class="pre">mon_lease_ack_timeout_factor</span></code>
+for the Providers to acknowledge the lease extension.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Float</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">2.00</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">mon_accept_timeout_factor</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The Leader will wait <code class="docutils literal notranslate"><span class="pre">mon_lease</span></code> * <code class="docutils literal notranslate"><span class="pre">mon_accept_timeout_factor</span></code>
+for the Requester(s) to accept a Paxos update. It is also used
+during the Paxos recovery phase for similar purposes.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Float</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">2.00</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">mon_min_osdmap_epochs</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Minimum number of OSD map epochs to keep at all times.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>32-bit Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">500</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">mon_max_log_epochs</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Maximum number of Log epochs the monitor should keep.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>32-bit Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">500</span></code></p>
+</dd>
+</dl>
+</section>
+<section id="clock">
+<span id="index-11"></span><h3>Clock<a class="headerlink" href="#clock" title="Permalink to this heading">¶</a></h3>
+<p>Ceph daemons pass critical messages to each other, which must be processed
+before daemons reach a timeout threshold. If the clocks in Ceph monitors
+are not synchronized, it can lead to a number of anomalies. For example:</p>
+<ul class="simple">
+<li><p>Daemons ignoring received messages (e.g., timestamps outdated)</p></li>
+<li><p>Timeouts triggered too soon/late when a message wasn’t received in time.</p></li>
+</ul>
+<p>See <a class="reference internal" href="#monitor-store-synchronization">Monitor Store Synchronization</a> for details.</p>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>You must configure NTP or PTP daemons on your Ceph monitor hosts to
+ensure that the monitor cluster operates with synchronized clocks.
+It can be advantageous to have monitor hosts sync with each other
+as well as with multiple quality upstream time sources.</p>
+</div>
+<p>Clock drift may still be noticeable with NTP even though the discrepancy is not
+yet harmful. Ceph’s clock drift / clock skew warnings may get triggered even
+though NTP maintains a reasonable level of synchronization. Increasing your
+clock drift may be tolerable under such circumstances; however, a number of
+factors such as workload, network latency, configuring overrides to default
+timeouts and the <a class="reference internal" href="#monitor-store-synchronization">Monitor Store Synchronization</a> settings may influence
+the level of acceptable clock drift without compromising Paxos guarantees.</p>
+<p>Ceph provides the following tunable options to allow you to find
+acceptable values.</p>
+<p><code class="docutils literal notranslate"><span class="pre">mon_tick_interval</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>A monitor’s tick interval in seconds.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>32-bit Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">5</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">mon_clock_drift_allowed</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The clock drift in seconds allowed between monitors.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Float</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">0.05</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">mon_clock_drift_warn_backoff</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Exponential backoff for clock drift warnings</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Float</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">5.00</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">mon_timecheck_interval</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The time check interval (clock drift check) in seconds
+for the Leader.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Float</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">300.00</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">mon_timecheck_skew_interval</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The time check interval (clock drift check) in seconds when in
+presence of a skew in seconds for the Leader.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Float</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">30.00</span></code></p>
+</dd>
+</dl>
+</section>
+<section id="client">
+<h3>Client<a class="headerlink" href="#client" title="Permalink to this heading">¶</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">mon_client_hunt_interval</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The client will try a new monitor every <code class="docutils literal notranslate"><span class="pre">N</span></code> seconds until it
+establishes a connection.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Double</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">3.00</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">mon_client_ping_interval</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The client will ping the monitor every <code class="docutils literal notranslate"><span class="pre">N</span></code> seconds.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Double</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">10.00</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">mon_client_max_log_entries_per_message</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The maximum number of log entries a monitor will generate
+per client message.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">1000</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">mon_client_bytes</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The amount of client message data allowed in memory (in bytes).</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>64-bit Integer Unsigned</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">100ul</span> <span class="pre">&lt;&lt;</span> <span class="pre">20</span></code></p>
+</dd>
+</dl>
+</section>
+</section>
+<section id="pool-settings">
+<span id="id3"></span><h2>Pool settings<a class="headerlink" href="#pool-settings" title="Permalink to this heading">¶</a></h2>
+<p>Since version v0.94 there is support for pool flags which allow or disallow changes to be made to pools.
+Monitors can also disallow removal of pools if appropriately configured. The inconvenience of this guardrail
+is far outweighed by the number of accidental pool (and thus data) deletions it prevents.</p>
+<p><code class="docutils literal notranslate"><span class="pre">mon_allow_pool_delete</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Should monitors allow pools to be removed, regardless of what the pool flags say?</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Boolean</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">false</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">osd_pool_default_ec_fast_read</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Whether to turn on fast read on the pool or not. It will be used as
+the default setting of newly created erasure coded pools if <code class="docutils literal notranslate"><span class="pre">fast_read</span></code>
+is not specified at create time.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Boolean</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">false</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">osd_pool_default_flag_hashpspool</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Set the hashpspool flag on new pools</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Boolean</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">true</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">osd_pool_default_flag_nodelete</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Set the <code class="docutils literal notranslate"><span class="pre">nodelete</span></code> flag on new pools, which prevents pool removal.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Boolean</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">false</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">osd_pool_default_flag_nopgchange</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Set the <code class="docutils literal notranslate"><span class="pre">nopgchange</span></code> flag on new pools. Does not allow the number of PGs to be changed.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Boolean</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">false</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">osd_pool_default_flag_nosizechange</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Set the <code class="docutils literal notranslate"><span class="pre">nosizechange</span></code> flag on new pools. Does not allow the <code class="docutils literal notranslate"><span class="pre">size</span></code> to be changed.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Boolean</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">false</span></code></p>
+</dd>
+</dl>
+<p>For more information about the pool flags see <a class="reference external" href="../../operations/pools/#set-pool-values">Pool values</a>.</p>
+</section>
+<section id="miscellaneous">
+<h2>Miscellaneous<a class="headerlink" href="#miscellaneous" title="Permalink to this heading">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">mon_max_osd</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The maximum number of OSDs allowed in the cluster.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>32-bit Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">10000</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">mon_globalid_prealloc</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The number of global IDs to pre-allocate for clients and daemons in the cluster.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>32-bit Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">10000</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">mon_subscribe_interval</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The refresh interval (in seconds) for subscriptions. The
+subscription mechanism enables obtaining cluster maps
+and log information.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Double</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">86400.00</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">mon_stat_smooth_intervals</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Ceph will smooth statistics over the last <code class="docutils literal notranslate"><span class="pre">N</span></code> PG maps.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">6</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">mon_probe_timeout</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Number of seconds the monitor will wait to find peers before bootstrapping.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Double</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">2.00</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">mon_daemon_bytes</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The message memory cap for metadata server and OSD messages (in bytes).</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>64-bit Integer Unsigned</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">400ul</span> <span class="pre">&lt;&lt;</span> <span class="pre">20</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">mon_max_log_entries_per_event</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The maximum number of log entries per event.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">4096</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">mon_osd_prime_pg_temp</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Enables or disables priming the PGMap with the previous OSDs when an <code class="docutils literal notranslate"><span class="pre">out</span></code>
+OSD comes back into the cluster. With the <code class="docutils literal notranslate"><span class="pre">true</span></code> setting, clients
+will continue to use the previous OSDs until the newly <code class="docutils literal notranslate"><span class="pre">in</span></code> OSDs for
+a PG have peered.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Boolean</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">true</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">mon_osd_prime</span> <span class="pre">pg</span> <span class="pre">temp</span> <span class="pre">max</span> <span class="pre">time</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>How much time in seconds the monitor should spend trying to prime the
+PGMap when an out OSD comes back into the cluster.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Float</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">0.50</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">mon_osd_prime_pg_temp_max_time_estimate</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Maximum estimate of time spent on each PG before we prime all PGs
+in parallel.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Float</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">0.25</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">mon_mds_skip_sanity</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Skip safety assertions on FSMap (in case of bugs where we want to
+continue anyway). Monitor terminates if the FSMap sanity check
+fails, but we can disable it by enabling this option.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Boolean</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">False</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">mon_max_mdsmap_epochs</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The maximum number of mdsmap epochs to trim during a single proposal.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">500</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">mon_config_key_max_entry_size</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The maximum size of config-key entry (in bytes)</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">65536</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">mon_scrub_interval</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>How often the monitor scrubs its store by comparing
+the stored checksums with the computed ones for all stored
+keys. (0 disables it. dangerous, use with care)</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Seconds</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">1</span> <span class="pre">day</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">mon_scrub_max_keys</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The maximum number of keys to scrub each time.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">100</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">mon_compact_on_start</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Compact the database used as Ceph Monitor store on
+<code class="docutils literal notranslate"><span class="pre">ceph-mon</span></code> start. A manual compaction helps to shrink the
+monitor database and improve the performance of it if the regular
+compaction fails to work.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Boolean</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">False</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">mon_compact_on_bootstrap</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Compact the database used as Ceph Monitor store
+on bootstrap. Monitors probe each other to establish
+a quorum after bootstrap. If a monitor times out before joining the
+quorum, it will start over and bootstrap again.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Boolean</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">False</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">mon_compact_on_trim</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Compact a certain prefix (including paxos) when we trim its old states.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Boolean</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">True</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">mon_cpu_threads</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Number of threads for performing CPU intensive work on monitor.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">4</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">mon_osd_mapping_pgs_per_chunk</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>We calculate the mapping from placement group to OSDs in chunks.
+This option specifies the number of placement groups per chunk.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">4096</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">mon_session_timeout</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Monitor will terminate inactive sessions stay idle over this
+time limit.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">300</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">mon_osd_cache_size_min</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The minimum amount of bytes to be kept mapped in memory for osd
+monitor caches.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>64-bit Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">134217728</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">mon_memory_target</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The amount of bytes pertaining to OSD monitor caches and KV cache
+to be kept mapped in memory with cache auto-tuning enabled.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>64-bit Integer</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">2147483648</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">mon_memory_autotune</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Autotune the cache memory used for OSD monitors and KV
+database.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Boolean</p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">True</span></code></p>
+</dd>
+</dl>
+</section>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../../">
+              <img class="logo" src="../../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../install/">Installing Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cephadm/">Cephadm</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../">Ceph Storage Cluster</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../">Configuration</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../storage-devices/">Storage devices</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../ceph-conf/">Configuring Ceph</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../common/">Common Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../common/#networks">Networks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../common/#monitors">Monitors</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../common/#authentication">Authentication</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../common/#osds">OSDs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../common/#heartbeats">Heartbeats</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../common/#logs-debugging">Logs / Debugging</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../common/#example-ceph-conf">Example ceph.conf</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../common/#running-multiple-clusters-deprecated">Running Multiple Clusters (DEPRECATED)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../network-config-ref/">Network Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../msgr2/">Messenger v2 protocol</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../auth-config-ref/">Auth Settings</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Monitor Settings</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#background">Background</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#cluster-maps">Cluster Maps</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#monitor-quorum">Monitor Quorum</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#consistency">Consistency</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#bootstrapping-monitors">Bootstrapping Monitors</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#configuring-monitors">Configuring Monitors</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#minimum-configuration">Minimum Configuration</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#cluster-id">Cluster ID</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#initial-members">Initial Members</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#data">Data</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#storage-capacity">Storage Capacity</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#heartbeat">Heartbeat</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#monitor-store-synchronization">Monitor Store Synchronization</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#clock">Clock</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#client">Client</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#pool-settings">Pool settings</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#miscellaneous">Miscellaneous</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../mon-lookup-dns/">Looking up Monitors through DNS</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../mon-osd-interaction/">Heartbeat Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../osd-config-ref/">OSD Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../mclock-config-ref/">DmClock Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../bluestore-config-ref/">BlueStore Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../filestore-config-ref/">FileStore Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../journal-ref/">Journal Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../pool-pg-config-ref/">Pool, PG &amp; CRUSH Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../ms-ref/">Messaging Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../general-config-ref/">General Settings</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../cephadm/">Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../operations/">Operations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../man/">Man Pages</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../troubleshooting/">Troubleshooting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/">APIs</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cephfs/">Ceph File System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../rbd/">Ceph Block Device</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../radosgw/">Ceph Object Gateway</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../mgr/">Ceph Manager Daemon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../mgr/dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dev/developer_guide/">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dev/internals/">Ceph Internals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../../../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../mon-lookup-dns/" title="Looking up Monitors through DNS"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../auth-config-ref/" title="CephX Config Reference"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../" >Ceph Storage Cluster</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../" >Configuration</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Monitor Config Reference</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

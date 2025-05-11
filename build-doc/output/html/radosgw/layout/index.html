@@ -1,0 +1,372 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Rados Gateway Data Layout &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css" />
+    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../genindex/" />
+    <link rel="search" title="Search" href="../../search/" />
+    <link rel="next" title="STS in Ceph" href="../STS/" />
+    <link rel="prev" title="Bucket Notifications" href="../notifications/" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../STS/" title="STS in Ceph"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../notifications/" title="Bucket Notifications"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../" accesskey="U">Ceph Object Gateway</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Rados Gateway Data Layout</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="rados-gateway-data-layout">
+<h1>Rados Gateway Data Layout<a class="headerlink" href="#rados-gateway-data-layout" title="Permalink to this heading">¶</a></h1>
+<p>Although the source code is the ultimate guide, this document helps
+new developers to get up to speed with the implementation details.</p>
+<section id="introduction">
+<h2>Introduction<a class="headerlink" href="#introduction" title="Permalink to this heading">¶</a></h2>
+<p>Swift offers something called a <em>container</em>, which we use interchangeably with
+the term <em>bucket</em>, so we say that RGW’s buckets implement Swift containers.</p>
+<p>This document does not consider how RGW operates on these structures,
+e.g. the use of encode() and decode() methods for serialization and so on.</p>
+</section>
+<section id="conceptual-view">
+<h2>Conceptual View<a class="headerlink" href="#conceptual-view" title="Permalink to this heading">¶</a></h2>
+<p>Although RADOS only knows about pools and objects with their xattrs and
+omap[1], conceptually RGW organizes its data into three different kinds:
+metadata, bucket index, and data.</p>
+<section id="metadata">
+<h3>Metadata<a class="headerlink" href="#metadata" title="Permalink to this heading">¶</a></h3>
+<p>We have 3 ‘sections’ of metadata: ‘user’, ‘bucket’, and ‘bucket.instance’.
+You can use the following commands to introspect metadata entries:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ radosgw-admin metadata list
+$ radosgw-admin metadata list bucket
+$ radosgw-admin metadata list bucket.instance
+$ radosgw-admin metadata list user
+
+$ radosgw-admin metadata get bucket:&lt;bucket&gt;
+$ radosgw-admin metadata get bucket.instance:&lt;bucket&gt;:&lt;bucket_id&gt;
+$ radosgw-admin metadata get user:&lt;user&gt;   # get or set
+</pre></div>
+</div>
+<p>Some variables have been used in above commands, they are:</p>
+<ul class="simple">
+<li><p>user: Holds user information</p></li>
+<li><p>bucket: Holds a mapping between bucket name and bucket instance id</p></li>
+<li><p>bucket.instance: Holds bucket instance information[2]</p></li>
+</ul>
+<p>Every metadata entry is kept on a single RADOS object. See below for implementation details.</p>
+<p>Note that the metadata is not indexed. When listing a metadata section we do a
+RADOS <code class="docutils literal notranslate"><span class="pre">pgls</span></code> operation on the containing pool.</p>
+</section>
+<section id="bucket-index">
+<h3>Bucket Index<a class="headerlink" href="#bucket-index" title="Permalink to this heading">¶</a></h3>
+<p>It’s a different kind of metadata, and kept separately. The bucket index holds
+a key-value map in RADOS objects. By default it is a single RADOS object per
+bucket, but it is possible since Hammer to shard that map over multiple RADOS
+objects. The map itself is kept in omap, associated with each RADOS object.
+The key of each omap is the name of the objects, and the value holds some basic
+metadata of that object – metadata that shows up when listing the bucket.
+Also, each omap holds a header, and we keep some bucket accounting metadata
+in that header (number of objects, total size, etc.).</p>
+<p>Note that we also hold other information in the bucket index, and it’s kept in
+other key namespaces. We can hold the bucket index log there, and for versioned
+objects there is more information that we keep on other keys.</p>
+</section>
+<section id="data">
+<h3>Data<a class="headerlink" href="#data" title="Permalink to this heading">¶</a></h3>
+<p>Objects data is kept in one or more RADOS objects for each rgw object.</p>
+</section>
+</section>
+<section id="object-lookup-path">
+<h2>Object Lookup Path<a class="headerlink" href="#object-lookup-path" title="Permalink to this heading">¶</a></h2>
+<p>When accessing objects, REST APIs come to RGW with three parameters:
+account information (access key in S3 or account name in Swift),
+bucket or container name, and object name (or key). At present, RGW only
+uses account information to find out the user ID and for access control.
+Only the bucket name and object key are used to address the object in a pool.</p>
+<p>The user ID in RGW is a string, typically the actual user name from the user
+credentials and not a hashed or mapped identifier.</p>
+<p>When accessing a user’s data, the user record is loaded from an object
+“&lt;user_id&gt;” in pool “default.rgw.meta” with namespace “users.uid”.</p>
+<p>Bucket names are represented in the pool “default.rgw.meta” with namespace
+“root”. Bucket record is
+loaded in order to obtain so-called marker, which serves as a bucket ID.</p>
+<p>The object is located in pool “default.rgw.buckets.data”.
+Object name is “&lt;marker&gt;_&lt;key&gt;”,
+for example “default.7593.4_image.png”, where the marker is “default.7593.4”
+and the key is “image.png”. Since these concatenated names are not parsed,
+only passed down to RADOS, the choice of the separator is not important and
+causes no ambiguity. For the same reason, slashes are permitted in object
+names (keys).</p>
+<p>It is also possible to create multiple data pools and make it so that
+different users buckets will be created in different RADOS pools by default,
+thus providing the necessary scaling. The layout and naming of these pools
+is controlled by a ‘policy’ setting.[3]</p>
+<p>An RGW object may consist of several RADOS objects, the first of which
+is the head that contains the metadata, such as manifest, ACLs, content type,
+ETag, and user-defined metadata. The metadata is stored in xattrs.
+The head may also contain up to 512 kilobytes of object data, for efficiency
+and atomicity. The manifest describes how each object is laid out in RADOS
+objects.</p>
+</section>
+<section id="bucket-and-object-listing">
+<h2>Bucket and Object Listing<a class="headerlink" href="#bucket-and-object-listing" title="Permalink to this heading">¶</a></h2>
+<p>Buckets that belong to a given user are listed in an omap of an object named
+“&lt;user_id&gt;.buckets” (for example, “foo.buckets”) in pool “default.rgw.meta”
+with namespace “users.uid”.
+These objects are accessed when listing buckets, when updating bucket
+contents, and updating and retrieving bucket statistics (e.g. for quota).</p>
+<p>See the user-visible, encoded class ‘cls_user_bucket_entry’ and its
+nested class ‘cls_user_bucket’ for the values of these omap entires.</p>
+<p>These listings are kept consistent with buckets in pool “.rgw”.</p>
+<p>Objects that belong to a given bucket are listed in a bucket index,
+as discussed in sub-section ‘Bucket Index’ above. The default naming
+for index objects is “.dir.&lt;marker&gt;” in pool “default.rgw.buckets.index”.</p>
+</section>
+<section id="footnotes">
+<h2>Footnotes<a class="headerlink" href="#footnotes" title="Permalink to this heading">¶</a></h2>
+<p>[1] Omap is a key-value store, associated with an object, in a way similar
+to how Extended Attributes associate with a POSIX file. An object’s omap
+is not physically located in the object’s storage, but its precise
+implementation is invisible and immaterial to RADOS Gateway.
+In Hammer, one LevelDB is used to store omap in each OSD.</p>
+<p>[2] Before the Dumpling release, the ‘bucket.instance’ metadata did not
+exist and the ‘bucket’ metadata contained its information. It is possible
+to encounter such buckets in old installations.</p>
+<p>[3] The pool names have been changed starting with the Infernalis release.
+If you are looking at an older setup, some details may be different. In
+particular there was a different pool for each of the namespaces that are
+now being used inside the default.root.meta pool.</p>
+</section>
+<section id="appendix-compendium">
+<h2>Appendix: Compendium<a class="headerlink" href="#appendix-compendium" title="Permalink to this heading">¶</a></h2>
+<p>Known pools:</p>
+<dl>
+<dt>.rgw.root</dt><dd><p>Unspecified region, zone, and global information records, one per object.</p>
+</dd>
+<dt>&lt;zone&gt;.rgw.control</dt><dd><p>notify.&lt;N&gt;</p>
+</dd>
+<dt>&lt;zone&gt;.rgw.meta</dt><dd><p>Multiple namespaces with different kinds of metadata:</p>
+<dl>
+<dt>namespace: root</dt><dd><p>&lt;bucket&gt;
+.bucket.meta.&lt;bucket&gt;:&lt;marker&gt;   # see put_bucket_instance_info()</p>
+<p>The tenant is used to disambiguate buckets, but not bucket instances.
+Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">.</span><span class="n">bucket</span><span class="o">.</span><span class="n">meta</span><span class="o">.</span><span class="n">prodtx</span><span class="p">:</span><span class="n">test</span><span class="o">%</span><span class="mi">25</span><span class="n">star</span><span class="p">:</span><span class="n">default</span><span class="mf">.84099.6</span>
+<span class="o">.</span><span class="n">bucket</span><span class="o">.</span><span class="n">meta</span><span class="o">.</span><span class="n">testcont</span><span class="p">:</span><span class="n">default</span><span class="mf">.4126.1</span>
+<span class="o">.</span><span class="n">bucket</span><span class="o">.</span><span class="n">meta</span><span class="o">.</span><span class="n">prodtx</span><span class="p">:</span><span class="n">testcont</span><span class="p">:</span><span class="n">default</span><span class="mf">.84099.4</span>
+<span class="n">prodtx</span><span class="o">/</span><span class="n">testcont</span>
+<span class="n">prodtx</span><span class="o">/</span><span class="n">test</span><span class="o">%</span><span class="mi">25</span><span class="n">star</span>
+<span class="n">testcont</span>
+</pre></div>
+</div>
+</dd>
+<dt>namespace: users.uid</dt><dd><p>Contains _both_ per-user information (RGWUserInfo) in “&lt;user&gt;” objects
+and per-user lists of buckets in omaps of “&lt;user&gt;.buckets” objects.
+The “&lt;user&gt;” may contain the tenant if non-empty, for example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>prodtx$prodt
+test2.buckets
+prodtx$prodt.buckets
+test2
+</pre></div>
+</div>
+</dd>
+<dt>namespace: users.email</dt><dd><p>Unimportant</p>
+</dd>
+<dt>namespace: users.keys</dt><dd><p>47UA98JSTJZ9YAN3OS3O</p>
+<p>This allows <code class="docutils literal notranslate"><span class="pre">radosgw</span></code> to look up users by their access keys during authentication.</p>
+</dd>
+<dt>namespace: users.swift</dt><dd><p>test:tester</p>
+</dd>
+</dl>
+</dd>
+<dt>&lt;zone&gt;.rgw.buckets.index</dt><dd><p>Objects are named “.dir.&lt;marker&gt;”, each contains a bucket index.
+If the index is sharded, each shard appends the shard index after
+the marker.</p>
+</dd>
+<dt>&lt;zone&gt;.rgw.buckets.data</dt><dd><p>default.7593.4__shadow_.488urDFerTYXavx4yAd-Op8mxehnvTI_1
+&lt;marker&gt;_&lt;key&gt;</p>
+</dd>
+</dl>
+<p>An example of a marker would be “default.16004.1” or “default.7593.4”.
+The current format is “&lt;zone&gt;.&lt;instance_id&gt;.&lt;bucket_id&gt;”. But once
+generated, a marker is not parsed again, so its format may change
+freely in the future.</p>
+</section>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../">
+              <img class="logo" src="../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../install/">Installing Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cephadm/">Cephadm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rados/">Ceph Storage Cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cephfs/">Ceph File System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rbd/">Ceph Block Device</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../">Ceph Object Gateway</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../frontends/">HTTP Frontends</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../placement/">Pool Placement and Storage Classes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../multisite/">Multisite Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../multisite-sync-policy/">Multisite Sync Policy Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pools/">Configuring Pools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../config-ref/">Config Reference</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../admin/">Admin Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../s3/">S3 API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rgw-cache/">Data caching and CDN</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../swift/">Swift API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../adminops/">Admin Ops API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/">Python binding</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../nfs/">Export over NFS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../keystone/">OpenStack Keystone Integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../barbican/">OpenStack Barbican Integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../vault/">HashiCorp Vault Integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../kmip/">KMIP Integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../opa/">Open Policy Agent Integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../multitenancy/">Multi-tenancy</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../compression/">Compression</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../ldap-auth/">LDAP Authentication</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../encryption/">Server-Side Encryption</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../bucketpolicy/">Bucket Policy</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../dynamicresharding/">Dynamic bucket index resharding</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../mfa/">Multi factor authentication</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../sync-modules/">Sync Modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../notifications/">Bucket Notifications</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Data Layout in RADOS</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#introduction">Introduction</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#conceptual-view">Conceptual View</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#metadata">Metadata</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#bucket-index">Bucket Index</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#data">Data</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#object-lookup-path">Object Lookup Path</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#bucket-and-object-listing">Bucket and Object Listing</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#footnotes">Footnotes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#appendix-compendium">Appendix: Compendium</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../STS/">STS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../STSLite/">STS Lite</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../keycloak/">Keycloak</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../session-tags/">Session Tags</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../role/">Role</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../orphans/">Orphan List and Associated Tooling</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../oidc/">OpenID Connect Provider</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../troubleshooting/">Troubleshooting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../man/8/radosgw/">Manpage radosgw</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../man/8/radosgw-admin/">Manpage radosgw-admin</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../qat-accel/">QAT Acceleration for Encryption and Compression</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../s3select/">S3-select</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../lua-scripting/">Lua Scripting</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/">Ceph Manager Daemon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dev/developer_guide/">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dev/internals/">Ceph Internals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../STS/" title="STS in Ceph"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../notifications/" title="Bucket Notifications"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../" >Ceph Object Gateway</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Rados Gateway Data Layout</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

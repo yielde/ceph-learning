@@ -1,0 +1,463 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Ceph Release Process &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css" />
+    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../genindex/" />
+    <link rel="search" title="Search" href="../../search/" />
+    <link rel="next" title="SeaStore" href="../seastore/" />
+    <link rel="prev" title="Release checklists" href="../release-checklists/" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../seastore/" title="SeaStore"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../release-checklists/" title="Release checklists"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../internals/" accesskey="U">Ceph Internals</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Ceph Release Process</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="ceph-release-process">
+<h1>Ceph Release Process<a class="headerlink" href="#ceph-release-process" title="Permalink to this heading">¶</a></h1>
+<section id="prerequisites">
+<h2>Prerequisites<a class="headerlink" href="#prerequisites" title="Permalink to this heading">¶</a></h2>
+<section id="signing-machine">
+<h3>Signing Machine<a class="headerlink" href="#signing-machine" title="Permalink to this heading">¶</a></h3>
+<p>The signing machine is a virtual machine in the <a class="reference external" href="https://wiki.sepia.ceph.com/doku.php?id=start">Sepia lab</a>. SSH access to the signing
+machine is limited to the usual Infrastructure Admins along with a few other
+component leads (e.g., nfs-ganesha, ceph-iscsi).</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">ubuntu</span></code> user on the machine has some <a class="reference external" href="https://github.com/ceph/ceph-build/tree/main/scripts">build scripts</a> that help with pulling, pushing, and signing packages.</p>
+<p>The GPG signing key permanently lives on a <a class="reference external" href="https://shop.nitrokey.com/shop/product/nkpr2-nitrokey-pro-2-3">Nitrokey Pro</a> and is passed through to the VM via RHV. This helps to ensure that the key cannot be exported or leave the datacenter in any way.</p>
+</section>
+<section id="new-major-releases">
+<h3>New Major Releases<a class="headerlink" href="#new-major-releases" title="Permalink to this heading">¶</a></h3>
+<p>For each new major (alphabetical) release, you must create one <code class="docutils literal notranslate"><span class="pre">ceph-release</span></code> RPM for each RPM repo (e.g., one for el8 and one for el9). <a class="reference external" href="https://github.com/ceph/chacra">chacra</a> is a python service we use to store DEB and RPM repos. The chacra repos are configured to include this ceph-release RPM, but it must be built separately. You must make sure that chacra is properly configured to include this RPM for each particular release.</p>
+<ol class="arabic simple">
+<li><p>Update chacra so it is aware of the new Ceph release.  See <a class="reference external" href="https://github.com/ceph/chacra/pull/219">this PR</a> for an example.</p></li>
+<li><p>Redeploy chacra (e.g., <code class="docutils literal notranslate"><span class="pre">ansible-playbook</span> <span class="pre">chacra.ceph.com.yml</span></code>)</p></li>
+<li><p>Run <a class="reference external" href="https://jenkins.ceph.com/view/all/job/ceph-release-rpm/">https://jenkins.ceph.com/view/all/job/ceph-release-rpm/</a></p></li>
+</ol>
+</section>
+</section>
+<section id="summarized-build-process">
+<h2>Summarized build process<a class="headerlink" href="#summarized-build-process" title="Permalink to this heading">¶</a></h2>
+<ol class="arabic simple">
+<li><p>QE finishes testing and finds a stopping point.  That commit is pushed to the <code class="docutils literal notranslate"><span class="pre">$release-release</span></code> branch in ceph.git (e.g., <code class="docutils literal notranslate"><span class="pre">quincy-release</span></code>).  This allows work to continue in the working <code class="docutils literal notranslate"><span class="pre">$release</span></code> branch without having to freeze it during the release process.</p></li>
+<li><p>The Ceph Council approves and notifies the “Build Lead”.</p></li>
+<li><p>The “Build Lead” starts the <a class="reference external" href="https://jenkins.ceph.com/view/all/job/ceph">Jenkins multijob</a>, which triggers all builds.</p></li>
+<li><p>Packages are pushed to chacra.ceph.com.</p></li>
+<li><p>Packages are pulled from chacra.ceph.com to the Signer VM.</p></li>
+<li><p>Packages are signed.</p></li>
+<li><p>Packages are pushed to download.ceph.com.</p></li>
+<li><p>Release containers are built and pushed to quay.io.</p></li>
+</ol>
+<section id="hotfix-release-process-deviation">
+<h3>Hotfix Release Process Deviation<a class="headerlink" href="#hotfix-release-process-deviation" title="Permalink to this heading">¶</a></h3>
+<p>A hotfix release has a couple differences.</p>
+<ol class="arabic simple">
+<li><p>Check out the most recent tag. For example, if we’re releasing a hotfix on top of 17.2.3, <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">checkout</span> <span class="pre">-f</span> <span class="pre">-B</span> <span class="pre">quincy-release</span> <span class="pre">origin/v17.2.3</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">cherry-pick</span> <span class="pre">-x</span></code> the necessary hotfix commits</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">push</span> <span class="pre">-f</span> <span class="pre">origin</span> <span class="pre">quincy-release</span></code></p></li>
+<li><p>Notify the “Build Lead” to start the build.</p></li>
+<li><p>The “Build Lead” should set <code class="docutils literal notranslate"><span class="pre">RELEASE_TYPE=HOTFIX</span></code> instead of <code class="docutils literal notranslate"><span class="pre">STABLE</span></code>.</p></li>
+</ol>
+</section>
+<section id="security-release-process-deviation">
+<h3>Security Release Process Deviation<a class="headerlink" href="#security-release-process-deviation" title="Permalink to this heading">¶</a></h3>
+<p>A security/CVE release is similar to a hotfix release with two differences:</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li><p>The fix should be pushed to the <a class="reference external" href="https://github.com/ceph/ceph-private">ceph-private</a> repo instead of ceph.git (requires GitHub Admin Role).</p></li>
+<li><p>The tags (e.g., v17.2.4) must be manually pushed to ceph.git by the “Build Lead.”</p></li>
+</ol>
+</div></blockquote>
+<ol class="arabic">
+<li><p>Check out the most recent tag. For example, if we’re releasing a security fix on top of 17.2.3, <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">checkout</span> <span class="pre">-f</span> <span class="pre">-B</span> <span class="pre">quincy-release</span> <span class="pre">origin/v17.2.3</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">cherry-pick</span> <span class="pre">-x</span></code> the necessary security fix commits</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">remote</span> <span class="pre">add</span> <span class="pre">security</span> <span class="pre">git&#64;github.com:ceph/ceph-private.git</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">push</span> <span class="pre">-f</span> <span class="pre">security</span> <span class="pre">quincy-release</span></code></p></li>
+<li><p>Notify the “Build Lead” to start the build.</p></li>
+<li><p>The “Build Lead” should set <code class="docutils literal notranslate"><span class="pre">RELEASE_TYPE=SECURITY</span></code> instead of <code class="docutils literal notranslate"><span class="pre">STABLE</span></code>.</p></li>
+<li><p>Finally, the <a class="reference external" href="https://github.com/ceph/ceph-build/blob/main/ansible/roles/ceph-release/tasks/push.yml">ceph-tag</a> steps need to be manually run by the “Build Lead” as close to the Announcement time as possible:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Example using quincy pretending 17.2.4 is the security release version</span>
+<span class="c1"># Add the ceph-releases repo (also requires GitHub Admin Role). The `ceph-setup &lt;https://jenkins.ceph.com/job/ceph-setup&gt;`_ job will have already created and pushed the tag to ceph-releases.git.</span>
+<span class="n">git</span> <span class="n">remote</span> <span class="n">add</span> <span class="n">releases</span> <span class="n">git</span><span class="nd">@github</span><span class="o">.</span><span class="n">com</span><span class="p">:</span><span class="n">ceph</span><span class="o">/</span><span class="n">ceph</span><span class="o">-</span><span class="n">releases</span><span class="o">.</span><span class="n">git</span>
+<span class="n">git</span> <span class="n">fetch</span> <span class="o">--</span><span class="nb">all</span>
+<span class="c1"># Check out the version commit</span>
+<span class="n">git</span> <span class="n">checkout</span> <span class="o">-</span><span class="n">f</span> <span class="o">-</span><span class="n">B</span> <span class="n">quincy</span><span class="o">-</span><span class="n">release</span> <span class="n">releases</span><span class="o">/</span><span class="n">quincy</span><span class="o">-</span><span class="n">release</span>
+<span class="n">git</span> <span class="n">push</span> <span class="o">-</span><span class="n">f</span> <span class="n">origin</span> <span class="n">quincy</span><span class="o">-</span><span class="n">release</span>
+<span class="n">git</span> <span class="n">push</span> <span class="n">origin</span> <span class="n">v17</span><span class="mf">.2.4</span>
+<span class="c1"># Now create a Pull Request of quincy-release targeting quincy to merge the version commit and security fixes back into the quincy branch</span>
+</pre></div>
+</div>
+</li>
+</ol>
+</section>
+</section>
+<section id="preparing-the-release-branch">
+<h2>1. Preparing the release branch<a class="headerlink" href="#preparing-the-release-branch" title="Permalink to this heading">¶</a></h2>
+<p>Once QE has determined a stopping point in the working (e.g., <code class="docutils literal notranslate"><span class="pre">quincy</span></code>) branch, that commit should be pushed to the corresponding <code class="docutils literal notranslate"><span class="pre">quincy-release</span></code> branch.</p>
+<p>Notify the “Build Lead” that the release branch is ready.</p>
+</section>
+<section id="starting-the-build">
+<h2>2. Starting the build<a class="headerlink" href="#starting-the-build" title="Permalink to this heading">¶</a></h2>
+<p>We’ll use a stable/regular 15.2.17 release of Octopus as an example throughout this document.</p>
+<ol class="arabic">
+<li><p>Browse to <a class="reference external" href="https://jenkins.ceph.com/view/all/job/ceph/build?delay=0sec">https://jenkins.ceph.com/view/all/job/ceph/build?delay=0sec</a></p></li>
+<li><p>Log in with GitHub OAuth</p></li>
+<li><p>Set the parameters as necessary:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">BRANCH</span><span class="o">=</span><span class="n">octopus</span>
+<span class="n">TAG</span><span class="o">=</span><span class="n">checked</span>
+<span class="n">VERSION</span><span class="o">=</span><span class="mf">15.2.17</span>
+<span class="n">RELEASE_TYPE</span><span class="o">=</span><span class="n">STABLE</span>
+<span class="n">ARCHS</span><span class="o">=</span><span class="n">x86_64</span> <span class="n">arm64</span>
+</pre></div>
+</div>
+</li>
+<li><p>Use <a class="reference external" href="https://docs.ceph.com/en/latest/start/os-recommendations/?highlight=debian#platforms">https://docs.ceph.com/en/latest/start/os-recommendations/?highlight=debian#platforms</a> to determine the <code class="docutils literal notranslate"><span class="pre">DISTROS</span></code> parameter.  For example,</p>
+<blockquote>
+<div><table class="docutils align-default">
+<colgroup>
+<col style="width: 31%" />
+<col style="width: 69%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Release</p></th>
+<th class="head"><p>Distro Codemap</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>octopus (15.X.X)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">focal</span> <span class="pre">bionic</span> <span class="pre">centos7</span> <span class="pre">centos8</span> <span class="pre">buster</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p>pacific (16.X.X)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">focal</span> <span class="pre">bionic</span> <span class="pre">centos8</span> <span class="pre">buster</span> <span class="pre">bullseye</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p>quincy (17.X.X)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">focal</span> <span class="pre">centos8</span> <span class="pre">centos9</span> <span class="pre">bullseye</span></code></p></td>
+</tr>
+</tbody>
+</table>
+</div></blockquote>
+</li>
+<li><p>Click <code class="docutils literal notranslate"><span class="pre">Build</span></code>.</p></li>
+</ol>
+</section>
+<section id="release-notes">
+<h2>3. Release Notes<a class="headerlink" href="#release-notes" title="Permalink to this heading">¶</a></h2>
+<p>Packages take hours to build. Use those hours to create the Release Notes and Announcements:</p>
+<ol class="arabic simple">
+<li><p>ceph.git Release Notes (e.g., <a class="reference external" href="https://github.com/ceph/ceph/pull/47198">v15.2.17’s ceph.git (docs.ceph.com) PR</a>)</p></li>
+<li><p>ceph.io Release Notes (e.g., <a class="reference external" href="https://github.com/ceph/ceph.io/pull/427">v15.2.17’s ceph.io.git (www.ceph.io) PR</a>)</p></li>
+<li><p>E-mail announcement</p></li>
+</ol>
+<p>See <a class="reference external" href="https://tracker.ceph.com/projects/ceph-releases/wiki/HOWTO_write_the_release_notes">the Ceph Tracker wiki page that explains how to write the release notes</a>.</p>
+</section>
+<section id="signing-and-publishing-the-build">
+<h2>4. Signing and Publishing the Build<a class="headerlink" href="#signing-and-publishing-the-build" title="Permalink to this heading">¶</a></h2>
+<ol class="arabic">
+<li><p>Obtain the sha1 of the version commit from the <a class="reference external" href="https://jenkins.ceph.com/view/all/job/ceph">build job</a> or the <code class="docutils literal notranslate"><span class="pre">sha1</span></code> file created by the <a class="reference external" href="https://jenkins.ceph.com/job/ceph-setup/">ceph-setup</a> job.</p></li>
+<li><p>Download the packages from chacra.ceph.com to the signing virtual machine. These packages get downloaded to <code class="docutils literal notranslate"><span class="pre">/opt/repos</span></code> where the <a class="reference external" href="https://wiki.sepia.ceph.com/doku.php?id=services:longrunningcluster">Sepia Lab Long Running (Ceph) Cluster</a> is mounted.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><style type="text/css">
+span.prompt1:before {
+  content: "$ ";
+}
+</style><span class="prompt1">ssh<span class="w"> </span>ubuntu@signer.front.sepia.ceph.com</span>
+<span class="prompt1">sync-pull<span class="w"> </span>ceph<span class="w"> </span><span class="o">[</span>pacific<span class="p">|</span>quincy<span class="p">|</span>etc<span class="o">]</span><span class="w"> </span>&lt;sha1&gt;</span>
+</pre></div></div><p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ sync-pull ceph octopus 8a82819d84cf884bd39c17e3236e0632ac146dc4
+sync for: ceph octopus
+********************************************
+Found the most packages (332) in ubuntu/bionic.
+No JSON object could be decoded
+No JSON object could be decoded
+ubuntu@chacra.ceph.com:/opt/repos/ceph/octopus/8a82819d84cf884bd39c17e3236e0632ac146dc4/ubuntu/bionic/flavors/default/* /opt/repos/ceph/octopus-15.2.17/debian/jessie/
+--------------------------------------------
+receiving incremental file list
+db/
+ db/checksums.db
+        180.22K 100%    2.23MB/s    0:00:00 (xfr#1, to-chk=463/467)
+db/contents.cache.db
+        507.90K 100%    1.95MB/s    0:00:00 (xfr#2, to-chk=462/467)
+db/packages.db
+
+etc...
+</pre></div>
+</div>
+</li>
+<li><p>Sign the DEBs:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">merfi<span class="w"> </span>gpg<span class="w"> </span>/opt/repos/ceph/octopus-15.2.17/debian</span>
+</pre></div></div><p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ merfi gpg /opt/repos/ceph/octopus-15.2.17/debian
+--&gt; Starting path collection, looking for files to sign
+--&gt; 18 matching paths found
+--&gt; will sign with the following commands:
+--&gt; gpg --batch --yes --armor --detach-sig --output Release.gpg Release
+--&gt; gpg --batch --yes --clearsign --output InRelease Release
+--&gt; signing: /opt/repos/ceph/octopus-15.2.17/debian/jessie/dists/bionic/Release
+--&gt; Running command: gpg --batch --yes --armor --detach-sig --output Release.gpg Release
+--&gt; Running command: gpg --batch --yes --clearsign --output InRelease Release
+--&gt; signing: /opt/repos/ceph/octopus-15.2.17/debian/jessie/dists/focal/Release
+--&gt; Running command: gpg --batch --yes --armor --detach-sig --output Release.gpg Release
+--&gt; Running command: gpg --batch --yes --clearsign --output InRelease Release
+
+etc...
+</pre></div>
+</div>
+</li>
+<li><p>Sign the RPMs:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">sign-rpms<span class="w"> </span>octopus</span>
+</pre></div></div><p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ sign-rpms octopus
+Checking packages in: /opt/repos/ceph/octopus-15.2.17/centos/7
+signing:  /opt/repos/ceph/octopus-15.2.17/centos/7/SRPMS/ceph-release-1-1.el7.src.rpm
+/opt/repos/ceph/octopus-15.2.17/centos/7/SRPMS/ceph-release-1-1.el7.src.rpm:
+signing:  /opt/repos/ceph/octopus-15.2.17/centos/7/SRPMS/ceph-15.2.17-0.el7.src.rpm
+/opt/repos/ceph/octopus-15.2.17/centos/7/SRPMS/ceph-15.2.17-0.el7.src.rpm:
+signing:  /opt/repos/ceph/octopus-15.2.17/centos/7/noarch/ceph-mgr-modules-core-15.2.17-0.el7.noarch.rpm
+
+etc...
+</pre></div>
+</div>
+</li>
+</ol>
+<ol class="arabic" start="5">
+<li><p>Publish the packages to download.ceph.com:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">sync-push<span class="w"> </span>octopus</span>
+</pre></div></div></li>
+</ol>
+</section>
+<section id="build-containers">
+<h2>5. Build Containers<a class="headerlink" href="#build-containers" title="Permalink to this heading">¶</a></h2>
+<p>Start the following two jobs:</p>
+<ol class="arabic simple">
+<li><p><a class="reference external" href="https://2.jenkins.ceph.com/job/ceph-container-build-ceph-base-push-imgs/">https://2.jenkins.ceph.com/job/ceph-container-build-ceph-base-push-imgs/</a></p></li>
+<li><p><a class="reference external" href="https://2.jenkins.ceph.com/job/ceph-container-build-ceph-base-push-imgs-arm64/">https://2.jenkins.ceph.com/job/ceph-container-build-ceph-base-push-imgs-arm64/</a></p></li>
+</ol>
+</section>
+<section id="announce-the-release">
+<h2>6. Announce the Release<a class="headerlink" href="#announce-the-release" title="Permalink to this heading">¶</a></h2>
+<section id="version-commit-pr">
+<h3>Version Commit PR<a class="headerlink" href="#version-commit-pr" title="Permalink to this heading">¶</a></h3>
+<p>The <a class="reference external" href="https://jenkins.ceph.com/job/ceph-tag">ceph-tag Jenkins job</a> creates a Pull Request in ceph.git that targets the release branch.</p>
+<p>If this was a regular release (not a hotfix release or a security release), the only commit in that Pull Request should be the version commit.  For example, see <a class="reference external" href="https://github.com/ceph/ceph/pull/47520">v15.2.17’s version commit PR</a>.</p>
+<p>Request a review and then merge the Pull Request.</p>
+</section>
+<section id="announcing">
+<h3>Announcing<a class="headerlink" href="#announcing" title="Permalink to this heading">¶</a></h3>
+<p>Publish the Release Notes on ceph.io before announcing the release by email, because the e-mail announcement references the ceph.io blog post.</p>
+</section>
+</section>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../">
+              <img class="logo" src="../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../install/">Installing Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cephadm/">Cephadm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rados/">Ceph Storage Cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cephfs/">Ceph File System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rbd/">Ceph Block Device</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../radosgw/">Ceph Object Gateway</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/">Ceph Manager Daemon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../developer_guide/">Developer Guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../internals/">Ceph Internals</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../blkin/">Tracing Ceph With Blkin</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../bluestore/">BlueStore Internals</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cache-pool/">Cache pool</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../ceph_krb_auth/">A Detailed Documentation on How to Set up Ceph Kerberos Authentication</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cephfs-mirroring/">CephFS Mirroring</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cephfs-reclaim/">CephFS Reclaim Interface</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cephfs-snapshots/">CephFS Snapshots</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cephx/">Cephx</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cephx_protocol/">A Detailed Description of the Cephx Authentication Protocol</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../config/">Configuration Management System</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../config-key/">config-key layout</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../context/">CephContext</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../continuous-integration/">Continuous Integration Architecture</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../corpus/">Corpus structure</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpu-profiler/">Installing Oprofile</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cxx/">C++17 and libstdc++ ABI</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../delayed-delete/">CephFS delayed deletion</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../dev_cluster_deployement/">Deploying a development cluster</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../dev_cluster_deployement/#deploying-multiple-development-clusters-on-the-same-machine">Deploying multiple development clusters on the same machine</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../development-workflow/">Development workflows</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../documenting/">Documenting Ceph</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../encoding/">Serialization (encode/decode)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../erasure-coded-pool/">Erasure Coded pool</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../file-striping/">File striping</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../freebsd/">FreeBSD Implementation details</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../generatedocs/">Building Ceph Documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../iana/">IANA Numbers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../kubernetes/">Hacking on Ceph in Kubernetes with Rook</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../libs/">Library architecture</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../logging/">Use of the cluster log</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../logs/">Debug logs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../macos/">build on MacOS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../messenger/">Messenger notes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../mon-bootstrap/">Monitor bootstrap</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../mon-elections/">Monitor Elections</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../mon-on-disk-formats/">ON-DISK FORMAT</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../mon-osdmap-prune/">FULL OSDMAP VERSION PRUNING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../msgr2/">msgr2 protocol (msgr2.0 and msgr2.1)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../network-encoding/">Network Encoding</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../network-protocol/">Network Protocol</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../object-store/">Object Store Architecture Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../osd-class-path/">OSD class path issues</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../peering/">Peering</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../perf/">Using perf</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../perf_counters/">Perf counters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../perf_histograms/">Perf histograms</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../placement-group/">PG (Placement Group) notes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../quick_guide/">Developer Guide (Quick)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rados-client-protocol/">RADOS client protocol</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rbd-diff/">RBD Incremental Backup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rbd-export/">RBD Export &amp; Import</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rbd-layering/">RBD Layering</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../release-checklists/">Release checklists</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Ceph Release Process</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#prerequisites">Prerequisites</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#signing-machine">Signing Machine</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#new-major-releases">New Major Releases</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#summarized-build-process">Summarized build process</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#hotfix-release-process-deviation">Hotfix Release Process Deviation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#security-release-process-deviation">Security Release Process Deviation</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#preparing-the-release-branch">1. Preparing the release branch</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#starting-the-build">2. Starting the build</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#release-notes">3. Release Notes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#signing-and-publishing-the-build">4. Signing and Publishing the Build</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#build-containers">5. Build Containers</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#announce-the-release">6. Announce the Release</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#version-commit-pr">Version Commit PR</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#announcing">Announcing</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../seastore/">SeaStore</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../sepia/">Sepia community test lab</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../session_authentication/">Session Authentication for the Cephx Protocol</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../testing/">Testing notes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../versions/">Public OSD Version</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../vstart-ganesha/">NFS CephFS-RGW Developer Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../wireshark/">Wireshark Dissector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../zoned-storage/">Zoned Storage Support</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../osd_internals/">OSD developer documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../mds_internals/">MDS developer documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../radosgw/">RADOS Gateway developer documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../ceph-volume/">ceph-volume developer documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../crimson/">Crimson developer documentation</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../seastore/" title="SeaStore"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../release-checklists/" title="Release checklists"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../internals/" >Ceph Internals</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Ceph Release Process</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

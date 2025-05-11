@@ -1,0 +1,219 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Handling a full Ceph file system &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css" />
+    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../genindex/" />
+    <link rel="search" title="Search" href="../../search/" />
+    <link rel="next" title="Advanced: Metadata repair tools" href="../disaster-recovery-experts/" />
+    <link rel="prev" title="Ceph File System Scrub" href="../scrub/" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../disaster-recovery-experts/" title="Advanced: Metadata repair tools"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../scrub/" title="Ceph File System Scrub"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../" accesskey="U">Ceph File System</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Handling a full Ceph file system</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="handling-a-full-ceph-file-system">
+<h1>Handling a full Ceph file system<a class="headerlink" href="#handling-a-full-ceph-file-system" title="Permalink to this heading">¶</a></h1>
+<p>When a RADOS cluster reaches its <code class="docutils literal notranslate"><span class="pre">mon_osd_full_ratio</span></code> (default
+95%) capacity, it is marked with the OSD full flag.  This flag causes
+most normal RADOS clients to pause all operations until it is resolved
+(for example by adding more capacity to the cluster).</p>
+<p>The file system has some special handling of the full flag, explained below.</p>
+<section id="hammer-and-later">
+<h2>Hammer and later<a class="headerlink" href="#hammer-and-later" title="Permalink to this heading">¶</a></h2>
+<p>Since the hammer release, a full file system will lead to ENOSPC
+results from:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>Data writes on the client</p></li>
+<li><p>Metadata operations other than deletes and truncates</p></li>
+</ul>
+</div></blockquote>
+<p>Because the full condition may not be encountered until
+data is flushed to disk (sometime after a <code class="docutils literal notranslate"><span class="pre">write</span></code> call has already
+returned 0), the ENOSPC error may not be seen until the application
+calls <code class="docutils literal notranslate"><span class="pre">fsync</span></code> or <code class="docutils literal notranslate"><span class="pre">fclose</span></code> (or equivalent) on the file handle.</p>
+<p>Calling <code class="docutils literal notranslate"><span class="pre">fsync</span></code> is guaranteed to reliably indicate whether the data
+made it to disk, and will return an error if it doesn’t.  <code class="docutils literal notranslate"><span class="pre">fclose</span></code> will
+only return an error if buffered data happened to be flushed since
+the last write – a successful <code class="docutils literal notranslate"><span class="pre">fclose</span></code> does not guarantee that the
+data made it to disk, and in a full-space situation, buffered data
+may be discarded after an <code class="docutils literal notranslate"><span class="pre">fclose</span></code> if no space is available to persist it.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>If an application appears to be misbehaving on a full file system,
+check that it is performing <code class="docutils literal notranslate"><span class="pre">fsync()</span></code> calls as necessary to ensure
+data is on disk before proceeding.</p>
+</div>
+<p>Data writes may be cancelled by the client if they are in flight at the
+time the OSD full flag is sent.  Clients update the <code class="docutils literal notranslate"><span class="pre">osd_epoch_barrier</span></code>
+when releasing capabilities on files affected by cancelled operations, in
+order to ensure that these cancelled operations do not interfere with
+subsequent access to the data objects by the MDS or other clients.  For
+more on the epoch barrier mechanism, see <a class="reference internal" href="../eviction/#background-blocklisting-and-osd-epoch-barrier"><span class="std std-ref">Background: Blocklisting and OSD epoch barrier</span></a>.</p>
+</section>
+<section id="legacy-pre-hammer-behavior">
+<h2>Legacy (pre-hammer) behavior<a class="headerlink" href="#legacy-pre-hammer-behavior" title="Permalink to this heading">¶</a></h2>
+<p>In versions of Ceph earlier than hammer, the MDS would ignore
+the full status of the RADOS cluster, and any data writes from
+clients would stall until the cluster ceased to be full.</p>
+<p>There are two dangerous conditions to watch for with this behaviour:</p>
+<ul class="simple">
+<li><p>If a client had pending writes to a file, then it was not possible
+for the client to release the file to the MDS for deletion: this could
+lead to difficulty clearing space on a full file system</p></li>
+<li><p>If clients continued to create a large number of empty files, the
+resulting metadata writes from the MDS could lead to total exhaustion
+of space on the OSDs such that no further deletions could be performed.</p></li>
+</ul>
+</section>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../">
+              <img class="logo" src="../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../install/">Installing Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cephadm/">Cephadm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rados/">Ceph Storage Cluster</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../">Ceph File System</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../#getting-started-with-cephfs">Getting Started with CephFS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../#administration">Administration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../#mounting-cephfs">Mounting CephFS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../#cephfs-concepts">CephFS Concepts</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../#troubleshooting-and-disaster-recovery">Troubleshooting and Disaster Recovery</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../eviction/"> Client eviction</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../scrub/"> Scrubbing the File System</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#"> Handling full file systems</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#hammer-and-later">Hammer and later</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#legacy-pre-hammer-behavior">Legacy (pre-hammer) behavior</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../disaster-recovery-experts/"> Metadata repair</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../troubleshooting/"> Troubleshooting</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../disaster-recovery/"> Disaster recovery</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../cephfs-journal-tool/"> cephfs-journal-tool</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../recover-fs-after-mon-store-loss/"> Recovering file system after monitor store loss</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../#developer-guides">Developer Guides</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../#additional-details">Additional Details</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../rbd/">Ceph Block Device</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../radosgw/">Ceph Object Gateway</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/">Ceph Manager Daemon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dev/developer_guide/">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dev/internals/">Ceph Internals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../disaster-recovery-experts/" title="Advanced: Metadata repair tools"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../scrub/" title="Ceph File System Scrub"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../" >Ceph File System</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Handling a full Ceph file system</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

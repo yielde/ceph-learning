@@ -1,0 +1,336 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Monitor Elections &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css" />
+    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../genindex/" />
+    <link rel="search" title="Search" href="../../search/" />
+    <link rel="next" title="ON-DISK FORMAT" href="../mon-on-disk-formats/" />
+    <link rel="prev" title="Monitor bootstrap" href="../mon-bootstrap/" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../mon-on-disk-formats/" title="ON-DISK FORMAT"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../mon-bootstrap/" title="Monitor bootstrap"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../internals/" accesskey="U">Ceph Internals</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Monitor Elections</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="monitor-elections">
+<h1>Monitor Elections<a class="headerlink" href="#monitor-elections" title="Permalink to this heading">¶</a></h1>
+<section id="the-original-algorithm">
+<h2>The Original Algorithm<a class="headerlink" href="#the-original-algorithm" title="Permalink to this heading">¶</a></h2>
+<p>Historically, monitor leader elections have been very simple: the lowest-ranked
+monitor wins!</p>
+<p>This is accomplished using a low-state “Elector” module (though it has now
+been split into an Elector that handles message-passing, and an ElectionLogic
+that makes the voting choices). It tracks the election epoch and not much
+else. Odd epochs are elections; even epochs have a leader and let the monitor
+do its ongoing work. When a timeout occurs or the monitor asks for a
+new election, we bump the epoch and send out Propose messages to all known
+monitors.
+In general, if we receive an old message we either drop it or trigger a new
+election (if we think the sender is newly-booted and needs to join quorum). If
+we receive a message from a newer epoch, we bump up our epoch to match and
+either Defer to the Proposer or else bump the epoch again and Propose
+ourselves if we expect to win over them. When we receive a Propose within
+our current epoch, we either Defer to the sender or ignore them (we ignore them
+if they are of a higher rank than us, or higher than the rank we have already
+deferred to).
+(Note that if we have the highest rank it is possible for us to defer to every
+other monitor in sequence within the same election epoch!)</p>
+<p>This resolves under normal circumstances because all monitors agree on the
+priority voting order, and epochs are only bumped when a monitor isn’t
+participating or sees a possible conflict with the known proposers.</p>
+</section>
+<section id="the-problems">
+<h2>The Problems<a class="headerlink" href="#the-problems" title="Permalink to this heading">¶</a></h2>
+<p>The original algorithm didn’t work at all under a variety of netsplit
+conditions. This didn’t manifest often in practice but has become
+important as the community and commercial vendors move Ceph into
+spaces requiring the use of “stretch clusters”.</p>
+</section>
+<section id="the-new-algorithms">
+<h2>The New Algorithms<a class="headerlink" href="#the-new-algorithms" title="Permalink to this heading">¶</a></h2>
+<p>We still default to the original (“classic”) election algorithm, but
+support letting users change to new ones via the CLI. These
+algorithms are implemented as different functions and switch statements
+within the ElectionLogic class.</p>
+<p>The first algorithm is very simple: “disallow” lets you add monitors
+to a list of disallowed leaders.
+The second, “connectivity”, incorporates connection score ratings
+and elects the monitor with the best score.</p>
+</section>
+<section id="algorithm-disallow">
+<h2>Algorithm: disallow<a class="headerlink" href="#algorithm-disallow" title="Permalink to this heading">¶</a></h2>
+<p>If a monitor is in the disallowed list, it always defers to another
+monitor, no matter the rank. Otherwise, it is the same as the classic
+algorithm is.
+Since changing the disallowed list requires a paxos update, monitors
+in an election together should always have the same set. This means
+the election order is constant and static across the full monitor set
+and elections resolve trivially (assuming a connected network).</p>
+<p>This algorithm really just exists as a demo and stepping-stone to
+the more advanced connectivity mode, but it may have utility in asymmetric
+networks and clusters.</p>
+</section>
+<section id="algorithm-connectivity">
+<h2>Algorithm: connectivity<a class="headerlink" href="#algorithm-connectivity" title="Permalink to this heading">¶</a></h2>
+<p>This algorithm takes as input scores for each connection
+(both ways, discussed in the next section) and attempts to elect the monitor
+with the highest total score. We keep the same basic message-passing flow as the
+classic algorithm, in which elections are driven by reacting to Propose messages.
+But this has several challenges since unlike ranks, scores are not static (and
+might change during an election!). To guarantee an election epoch does not
+produce multiple leaders, we must maintain two key invariants:
+* Monitors must maintain static scores during an election epoch
+* Any deferral must be transitive – if A defers to B and then to C,
+B had better defer to C as well!</p>
+<p>We handle these very explicitly: by branching a copy stable_peer_tracker
+of our peer_tracker scoring object whenever starting an election (or
+bumping the epoch), and by refusing to defer to a monitor if it won’t
+be deferred to by our current leader choice. (All Propose messages include
+a copy of the scores the leader is working from, so peers can evaluate them.)</p>
+<p>Of course, those modifications can easily block. To guarantee forward progress,
+we make several further adjustments:
+* If we want to defer to a new peer, but have already deferred to a peer
+whose scores don’t allow that, we bump the election epoch and start()
+the election over again.
+* All election messages include the scores the sender is aware of.</p>
+<p>This guarantees we will resolve the election as long as the network is
+reasonably stable (even if disconnected): As long as all score “views”
+result in the same deferral order, an election will complete normally. And by
+broadly sharing scores across the full set of monitors, monitors rapidly
+converge on the global newest state.</p>
+<p>This algorithm has one further important feature compared to the classic and
+disallowed handlers: it can ignore out-of-quorum peers. Normally, whenever
+a monitor B receives a Propose from an out-of-quorum peer C, B will itself trigger
+a new election to give C an opportunity to join. But because the
+highest-scoring monitor A may be netsplit from C, this is not desirable. So in
+the connectivity election algorithm, B only “forwards” Propose messages when B’s
+scores indicate the cluster would choose a leader other than A.</p>
+</section>
+<section id="connection-scoring">
+<h2>Connection Scoring<a class="headerlink" href="#connection-scoring" title="Permalink to this heading">¶</a></h2>
+<p>We implement scoring within the ConnectionTracker class, which is
+driven by the Elector and provided to ElectionLogic as a resource. Elector
+is responsible for sending out MMonPing messages, and for reporting the
+results in to the ConnectionTracker as calls to report_[live|dead]_connection
+with the relevant peer and the time units the call counts for. (These time units
+are seconds in the monitor, but the ConnectionTracker is agnostic and our unit
+tests count simple time steps.)</p>
+<p>We configure a “half life” and each report updates the peer’s current status
+(alive or dead) and its total score. The new score is current_score * (1 - units_alive / (2 * half_life)) + (units_alive / (2 * half_life)). (For a dead report, we of course
+subtract the new delta, rather than adding it).</p>
+<p>We can further encode and decode the ConnectionTracker for wire transmission,
+and receive_peer_report()s of a full ConnectionTracker (containing all
+known scores) or a ConnectionReport (representing a single peer’s scores)
+to slurp up the scores from peers. These scores are of course all versioned so
+we are in no danger of accidentally going backwards in time.
+We can query an individual connection score (if the connection is down, it’s 0)
+or the total score of a specific monitor, which is the connection score from all
+other monitors going in to that one.</p>
+<p>By default, we consider pings failed after 2 seconds (mon_elector_ping_timeout)
+and ping live connections every second (mon_elector_ping_divisor). The halflife
+is 12 hours (mon_con_tracker_score_halflife).</p>
+</section>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../">
+              <img class="logo" src="../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../install/">Installing Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cephadm/">Cephadm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rados/">Ceph Storage Cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cephfs/">Ceph File System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rbd/">Ceph Block Device</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../radosgw/">Ceph Object Gateway</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/">Ceph Manager Daemon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../developer_guide/">Developer Guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../internals/">Ceph Internals</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../blkin/">Tracing Ceph With Blkin</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../bluestore/">BlueStore Internals</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cache-pool/">Cache pool</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../ceph_krb_auth/">A Detailed Documentation on How to Set up Ceph Kerberos Authentication</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cephfs-mirroring/">CephFS Mirroring</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cephfs-reclaim/">CephFS Reclaim Interface</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cephfs-snapshots/">CephFS Snapshots</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cephx/">Cephx</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cephx_protocol/">A Detailed Description of the Cephx Authentication Protocol</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../config/">Configuration Management System</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../config-key/">config-key layout</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../context/">CephContext</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../continuous-integration/">Continuous Integration Architecture</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../corpus/">Corpus structure</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpu-profiler/">Installing Oprofile</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cxx/">C++17 and libstdc++ ABI</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../delayed-delete/">CephFS delayed deletion</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../dev_cluster_deployement/">Deploying a development cluster</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../dev_cluster_deployement/#deploying-multiple-development-clusters-on-the-same-machine">Deploying multiple development clusters on the same machine</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../development-workflow/">Development workflows</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../documenting/">Documenting Ceph</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../encoding/">Serialization (encode/decode)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../erasure-coded-pool/">Erasure Coded pool</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../file-striping/">File striping</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../freebsd/">FreeBSD Implementation details</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../generatedocs/">Building Ceph Documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../iana/">IANA Numbers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../kubernetes/">Hacking on Ceph in Kubernetes with Rook</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../libs/">Library architecture</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../logging/">Use of the cluster log</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../logs/">Debug logs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../macos/">build on MacOS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../messenger/">Messenger notes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../mon-bootstrap/">Monitor bootstrap</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Monitor Elections</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#the-original-algorithm">The Original Algorithm</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#the-problems">The Problems</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#the-new-algorithms">The New Algorithms</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#algorithm-disallow">Algorithm: disallow</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#algorithm-connectivity">Algorithm: connectivity</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#connection-scoring">Connection Scoring</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../mon-on-disk-formats/">ON-DISK FORMAT</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../mon-osdmap-prune/">FULL OSDMAP VERSION PRUNING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../msgr2/">msgr2 protocol (msgr2.0 and msgr2.1)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../network-encoding/">Network Encoding</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../network-protocol/">Network Protocol</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../object-store/">Object Store Architecture Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../osd-class-path/">OSD class path issues</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../peering/">Peering</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../perf/">Using perf</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../perf_counters/">Perf counters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../perf_histograms/">Perf histograms</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../placement-group/">PG (Placement Group) notes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../quick_guide/">Developer Guide (Quick)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rados-client-protocol/">RADOS client protocol</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rbd-diff/">RBD Incremental Backup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rbd-export/">RBD Export &amp; Import</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rbd-layering/">RBD Layering</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../release-checklists/">Release checklists</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../release-process/">Ceph Release Process</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../seastore/">SeaStore</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../sepia/">Sepia community test lab</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../session_authentication/">Session Authentication for the Cephx Protocol</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../testing/">Testing notes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../versions/">Public OSD Version</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../vstart-ganesha/">NFS CephFS-RGW Developer Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../wireshark/">Wireshark Dissector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../zoned-storage/">Zoned Storage Support</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../osd_internals/">OSD developer documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../mds_internals/">MDS developer documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../radosgw/">RADOS Gateway developer documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../ceph-volume/">ceph-volume developer documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../crimson/">Crimson developer documentation</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../mon-on-disk-formats/" title="ON-DISK FORMAT"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../mon-bootstrap/" title="Monitor bootstrap"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../internals/" >Ceph Internals</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Monitor Elections</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

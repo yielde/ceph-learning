@@ -1,0 +1,277 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>jerasure plugin &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/css/custom.css" />
+    <script data-url_root="../../../../" id="documentation_options" src="../../../../_static/documentation_options.js"></script>
+    <script src="../../../../_static/jquery.js"></script>
+    <script src="../../../../_static/underscore.js"></script>
+    <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../../../_static/doctools.js"></script>
+    <script src="../../../../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../../../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../../../genindex/" />
+    <link rel="search" title="Search" href="../../../../search/" />
+    <link rel="next" title="ECBackend Implementation Strategy" href="../ecbackend/" />
+    <link rel="prev" title="Erasure Code developer notes" href="../developer_notes/" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../ecbackend/" title="ECBackend Implementation Strategy"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../developer_notes/" title="Erasure Code developer notes"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../../internals/" >Ceph Internals</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../../" >OSD developer documentation</a> &#187;</li>
+          <li class="nav-item nav-item-3"><a href="../" accesskey="U">Erasure Coded Placement Groups</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">jerasure plugin</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="jerasure-plugin">
+<h1>jerasure plugin<a class="headerlink" href="#jerasure-plugin" title="Permalink to this heading">¶</a></h1>
+<section id="introduction">
+<h2>Introduction<a class="headerlink" href="#introduction" title="Permalink to this heading">¶</a></h2>
+<p>The parameters interpreted by the <code class="docutils literal notranslate"><span class="pre">jerasure</span></code> plugin are:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span> <span class="n">osd</span> <span class="n">erasure</span><span class="o">-</span><span class="n">code</span><span class="o">-</span><span class="n">profile</span> <span class="nb">set</span> <span class="n">myprofile</span> \
+   <span class="n">directory</span><span class="o">=&lt;</span><span class="nb">dir</span><span class="o">&gt;</span>         \ <span class="c1"># plugin directory absolute path</span>
+   <span class="n">plugin</span><span class="o">=</span><span class="n">jerasure</span>         \ <span class="c1"># plugin name (only jerasure)</span>
+   <span class="n">k</span><span class="o">=&lt;</span><span class="n">k</span><span class="o">&gt;</span>                   \ <span class="c1"># data chunks (default 2)</span>
+   <span class="n">m</span><span class="o">=&lt;</span><span class="n">m</span><span class="o">&gt;</span>                   \ <span class="c1"># coding chunks (default 2)</span>
+   <span class="n">technique</span><span class="o">=&lt;</span><span class="n">technique</span><span class="o">&gt;</span>   \ <span class="c1"># coding technique</span>
+</pre></div>
+</div>
+<p>The coding techniques can be chosen among <em>reed_sol_van</em>,
+<em>reed_sol_r6_op</em>, <em>cauchy_orig</em>, <em>cauchy_good</em>, <em>liberation</em>,
+<em>blaum_roth</em> and <em>liber8tion</em>.</p>
+<p>The <em>src/erasure-code/jerasure</em> directory contains the
+implementation. It is a wrapper around the code found at
+<a class="reference external" href="https://github.com/ceph/jerasure">https://github.com/ceph/jerasure</a>
+and <a class="reference external" href="https://github.com/ceph/gf-complete">https://github.com/ceph/gf-complete</a> , pinned to the latest stable
+version in <em>.gitmodules</em>. These repositories are copies of the
+upstream repositories <a class="reference external" href="http://jerasure.org/jerasure/jerasure">http://jerasure.org/jerasure/jerasure</a> and
+<a class="reference external" href="http://jerasure.org/jerasure/gf-complete">http://jerasure.org/jerasure/gf-complete</a> . The difference
+between the two, if any, should match pull requests against upstream.
+Note that as of 2023, the <code class="docutils literal notranslate"><span class="pre">jerasure.org</span></code> web site may no longer be
+legitimate and/or associated with the original project.</p>
+</section>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../../../">
+              <img class="logo" src="../../../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../../../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../../../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../install/">Installing Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../cephadm/">Cephadm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../rados/">Ceph Storage Cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../cephfs/">Ceph File System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../rbd/">Ceph Block Device</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../radosgw/">Ceph Object Gateway</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../mgr/">Ceph Manager Daemon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../mgr/dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../developer_guide/">Developer Guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../../internals/">Ceph Internals</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../../../blkin/">Tracing Ceph With Blkin</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../bluestore/">BlueStore Internals</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../cache-pool/">Cache pool</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../ceph_krb_auth/">A Detailed Documentation on How to Set up Ceph Kerberos Authentication</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../cephfs-mirroring/">CephFS Mirroring</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../cephfs-reclaim/">CephFS Reclaim Interface</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../cephfs-snapshots/">CephFS Snapshots</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../cephx/">Cephx</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../cephx_protocol/">A Detailed Description of the Cephx Authentication Protocol</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../config/">Configuration Management System</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../config-key/">config-key layout</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../context/">CephContext</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../continuous-integration/">Continuous Integration Architecture</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../corpus/">Corpus structure</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../cpu-profiler/">Installing Oprofile</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../cxx/">C++17 and libstdc++ ABI</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../delayed-delete/">CephFS delayed deletion</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../dev_cluster_deployement/">Deploying a development cluster</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../dev_cluster_deployement/#deploying-multiple-development-clusters-on-the-same-machine">Deploying multiple development clusters on the same machine</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../development-workflow/">Development workflows</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../documenting/">Documenting Ceph</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../encoding/">Serialization (encode/decode)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../erasure-coded-pool/">Erasure Coded pool</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../file-striping/">File striping</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../freebsd/">FreeBSD Implementation details</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../generatedocs/">Building Ceph Documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../iana/">IANA Numbers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../kubernetes/">Hacking on Ceph in Kubernetes with Rook</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../libs/">Library architecture</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../logging/">Use of the cluster log</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../logs/">Debug logs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../macos/">build on MacOS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../messenger/">Messenger notes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../mon-bootstrap/">Monitor bootstrap</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../mon-elections/">Monitor Elections</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../mon-on-disk-formats/">ON-DISK FORMAT</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../mon-osdmap-prune/">FULL OSDMAP VERSION PRUNING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../msgr2/">msgr2 protocol (msgr2.0 and msgr2.1)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../network-encoding/">Network Encoding</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../network-protocol/">Network Protocol</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../object-store/">Object Store Architecture Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../osd-class-path/">OSD class path issues</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../peering/">Peering</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../perf/">Using perf</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../perf_counters/">Perf counters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../perf_histograms/">Perf histograms</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../placement-group/">PG (Placement Group) notes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../quick_guide/">Developer Guide (Quick)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../rados-client-protocol/">RADOS client protocol</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../rbd-diff/">RBD Incremental Backup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../rbd-export/">RBD Export &amp; Import</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../rbd-layering/">RBD Layering</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../release-checklists/">Release checklists</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../release-process/">Ceph Release Process</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../seastore/">SeaStore</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../sepia/">Sepia community test lab</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../session_authentication/">Session Authentication for the Cephx Protocol</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../testing/">Testing notes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../versions/">Public OSD Version</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../vstart-ganesha/">NFS CephFS-RGW Developer Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../wireshark/">Wireshark Dissector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../zoned-storage/">Zoned Storage Support</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../../">OSD developer documentation</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../../async_recovery/">Asynchronous Recovery</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../backfill_reservation/">Backfill Reservation</a></li>
+<li class="toctree-l3 current"><a class="reference internal" href="../">Erasure Coded Placement Groups</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="../#glossary">Glossary</a></li>
+<li class="toctree-l4 current"><a class="reference internal" href="../#table-of-contents">Table of contents</a><ul class="current">
+<li class="toctree-l5"><a class="reference internal" href="../developer_notes/">Developer notes</a></li>
+<li class="toctree-l5 current"><a class="current reference internal" href="#">Jerasure plugin</a><ul>
+<li class="toctree-l6"><a class="reference internal" href="#introduction">Introduction</a></li>
+</ul>
+</li>
+<li class="toctree-l5"><a class="reference internal" href="../ecbackend/">ECBackend Implementation Strategy</a></li>
+<li class="toctree-l5"><a class="reference internal" href="../ecbackend/#ecbackend">ECBackend</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../last_epoch_started/">last_epoch_started</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../log_based_pg/">Log Based PG</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../manifest/">Manifest</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../map_message_handling/">Map and PG Message handling</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../osd_overview/">OSD</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../osd_throttles/">OSD Throttles</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../partial_object_recovery/">Partial Object Recovery</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../past_intervals/">PastIntervals</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../pg/">PG</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../pg_removal/">PG Removal</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../pgpool/">PGPool</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../recovery_reservation/">Recovery Reservation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../refcount/">Refcount</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../scrub/">Scrub internals and diagnostics</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../snaps/">Snaps</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../stale_read/">Preventing Stale Reads</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../watch_notify/">Watch Notify</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../wbthrottle/">Writeback Throttle</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../mds_internals/">MDS developer documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../radosgw/">RADOS Gateway developer documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../ceph-volume/">ceph-volume developer documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../crimson/">Crimson developer documentation</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../../../../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../ecbackend/" title="ECBackend Implementation Strategy"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../developer_notes/" title="Erasure Code developer notes"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../../internals/" >Ceph Internals</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../../" >OSD developer documentation</a> &#187;</li>
+          <li class="nav-item nav-item-3"><a href="../" >Erasure Coded Placement Groups</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">jerasure plugin</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

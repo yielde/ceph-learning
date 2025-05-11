@@ -1,0 +1,313 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Orphan List and Associated Tooling &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css" />
+    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../genindex/" />
+    <link rel="search" title="Search" href="../../search/" />
+    <link rel="next" title="OpenID Connect Provider in RGW" href="../oidc/" />
+    <link rel="prev" title="Role" href="../role/" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../oidc/" title="OpenID Connect Provider in RGW"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../role/" title="Role"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../" accesskey="U">Ceph Object Gateway</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Orphan List and Associated Tooling</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="orphan-list-and-associated-tooling">
+<h1><a class="toc-backref" href="#id1">Orphan List and Associated Tooling</a><a class="headerlink" href="#orphan-list-and-associated-tooling" title="Permalink to this heading">¶</a></h1>
+<div class="contents topic" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="#orphan-list-and-associated-tooling" id="id1">Orphan List and Associated Tooling</a></p>
+<ul>
+<li><p><a class="reference internal" href="#orphans-find-deprecated" id="id2">Orphans Find – DEPRECATED</a></p></li>
+<li><p><a class="reference internal" href="#orphan-list" id="id3">Orphan List</a></p>
+<ul>
+<li><p><a class="reference internal" href="#warning-experimental-status" id="id4">WARNING: Experimental Status</a></p></li>
+<li><p><a class="reference internal" href="#warning-specifying-a-data-pool" id="id5">WARNING: Specifying a Data Pool</a></p></li>
+<li><p><a class="reference internal" href="#warning-unindexed-buckets" id="id6">WARNING: Unindexed Buckets</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#rados-list" id="id7">RADOS List</a></p>
+<ul>
+<li><p><a class="reference internal" href="#note-shared-bucket-markers" id="id8">Note: Shared Bucket Markers</a></p></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+<p>Orphans are RADOS objects that are left behind after their associated
+RGW objects are removed. Normally these RADOS objects are removed
+automatically, either immediately or through a process known as
+“garbage collection”. Over the history of RGW, however, there may have
+been bugs that prevented these RADOS objects from being deleted, and
+these RADOS objects may be consuming space on the Ceph cluster without
+being of any use. From the perspective of RGW, we call such RADOS
+objects “orphans”.</p>
+<section id="orphans-find-deprecated">
+<h2><a class="toc-backref" href="#id2">Orphans Find – DEPRECATED</a><a class="headerlink" href="#orphans-find-deprecated" title="Permalink to this heading">¶</a></h2>
+<p>The <cite>radosgw-admin</cite> tool has/had three subcommands to help manage
+orphans, however these subcommands are (or will soon be)
+deprecated. These subcommands are:</p>
+<dl class="simple">
+<dt>::</dt><dd><p># radosgw-admin orphans find …
+# radosgw-admin orphans finish …
+# radosgw-admin orphans list-jobs …</p>
+</dd>
+</dl>
+<p>There are two key problems with these subcommands, however. First,
+these subcommands have not been actively maintained and therefore have
+not tracked RGW as it has evolved in terms of features and updates. As
+a result the confidence that these subcommands can accurately identify
+true orphans is presently low.</p>
+<p>Second, these subcommands store intermediate results on the cluster
+itself. This can be problematic when cluster administrators are
+confronting insufficient storage space and want to remove orphans as a
+means of addressing the issue. The intermediate results could strain
+the existing cluster storage capacity even further.</p>
+<p>For these reasons “orphans find” has been deprecated.</p>
+</section>
+<section id="orphan-list">
+<h2><a class="toc-backref" href="#id3">Orphan List</a><a class="headerlink" href="#orphan-list" title="Permalink to this heading">¶</a></h2>
+<p>Because “orphans find” has been deprecated, RGW now includes an
+additional tool – ‘rgw-orphan-list’. When run it will list the
+available pools and prompt the user to enter the name of the data
+pool. At that point the tool will, perhaps after an extended period of
+time, produce a local file containing the RADOS objects from the
+designated pool that appear to be orphans. The administrator is free
+to examine this file and the decide on a course of action, perhaps
+removing those RADOS objects from the designated pool.</p>
+<p>All intermediate results are stored on the local file system rather
+than the Ceph cluster. So running the ‘rgw-orphan-list’ tool should
+have no appreciable impact on the amount of cluster storage consumed.</p>
+<section id="warning-experimental-status">
+<h3><a class="toc-backref" href="#id4">WARNING: Experimental Status</a><a class="headerlink" href="#warning-experimental-status" title="Permalink to this heading">¶</a></h3>
+<p>The ‘rgw-orphan-list’ tool is new and therefore currently considered
+experimental. The list of orphans produced should be “sanity checked”
+before being used for a large delete operation.</p>
+</section>
+<section id="warning-specifying-a-data-pool">
+<h3><a class="toc-backref" href="#id5">WARNING: Specifying a Data Pool</a><a class="headerlink" href="#warning-specifying-a-data-pool" title="Permalink to this heading">¶</a></h3>
+<p>If a pool other than an RGW data pool is specified, the results of the
+tool will be erroneous. All RADOS objects found on such a pool will
+falsely be designated as orphans.</p>
+</section>
+<section id="warning-unindexed-buckets">
+<h3><a class="toc-backref" href="#id6">WARNING: Unindexed Buckets</a><a class="headerlink" href="#warning-unindexed-buckets" title="Permalink to this heading">¶</a></h3>
+<p>RGW allows for unindexed buckets, that is buckets that do not maintain
+an index of their contents. This is not a typical configuration, but
+it is supported. Because the ‘rgw-orphan-list’ tool uses the bucket
+indices to determine what RADOS objects should exist, objects in the
+unindexed buckets will falsely be listed as orphans.</p>
+</section>
+</section>
+<section id="rados-list">
+<h2><a class="toc-backref" href="#id7">RADOS List</a><a class="headerlink" href="#rados-list" title="Permalink to this heading">¶</a></h2>
+<p>One of the sub-steps in computing a list of orphans is to map each RGW
+object into its corresponding set of RADOS objects. This is done using
+a subcommand of ‘radosgw-admin’.</p>
+<dl class="simple">
+<dt>::</dt><dd><p># radosgw-admin bucket radoslist [–bucket={bucket-name}]</p>
+</dd>
+</dl>
+<p>The subcommand will produce a list of RADOS objects that support all
+of the RGW objects. If a bucket is specified then the subcommand will
+only produce a list of RADOS objects that correspond back the RGW
+objects in the specified bucket.</p>
+<section id="note-shared-bucket-markers">
+<h3><a class="toc-backref" href="#id8">Note: Shared Bucket Markers</a><a class="headerlink" href="#note-shared-bucket-markers" title="Permalink to this heading">¶</a></h3>
+<p>Some administrators will be aware of the coding schemes used to name
+the RADOS objects that correspond to RGW objects, which include a
+“marker” unique to a given bucket.</p>
+<p>RADOS objects that correspond with the contents of one RGW bucket,
+however, may contain a marker that specifies a different bucket. This
+behavior is a consequence of the “shallow copy” optimization used by
+RGW. When larger objects are copied from bucket to bucket, only the
+“head” objects are actually copied, and the tail objects are
+shared. Those shared objects will contain the marker of the original
+bucket.</p>
+</section>
+</section>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../">
+              <img class="logo" src="../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../install/">Installing Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cephadm/">Cephadm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rados/">Ceph Storage Cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cephfs/">Ceph File System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rbd/">Ceph Block Device</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../">Ceph Object Gateway</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../frontends/">HTTP Frontends</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../placement/">Pool Placement and Storage Classes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../multisite/">Multisite Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../multisite-sync-policy/">Multisite Sync Policy Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pools/">Configuring Pools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../config-ref/">Config Reference</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../admin/">Admin Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../s3/">S3 API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rgw-cache/">Data caching and CDN</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../swift/">Swift API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../adminops/">Admin Ops API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/">Python binding</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../nfs/">Export over NFS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../keystone/">OpenStack Keystone Integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../barbican/">OpenStack Barbican Integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../vault/">HashiCorp Vault Integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../kmip/">KMIP Integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../opa/">Open Policy Agent Integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../multitenancy/">Multi-tenancy</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../compression/">Compression</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../ldap-auth/">LDAP Authentication</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../encryption/">Server-Side Encryption</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../bucketpolicy/">Bucket Policy</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../dynamicresharding/">Dynamic bucket index resharding</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../mfa/">Multi factor authentication</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../sync-modules/">Sync Modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../notifications/">Bucket Notifications</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../layout/">Data Layout in RADOS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../STS/">STS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../STSLite/">STS Lite</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../keycloak/">Keycloak</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../session-tags/">Session Tags</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../role/">Role</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Orphan List and Associated Tooling</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#orphans-find-deprecated">Orphans Find – DEPRECATED</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#orphan-list">Orphan List</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#warning-experimental-status">WARNING: Experimental Status</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#warning-specifying-a-data-pool">WARNING: Specifying a Data Pool</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#warning-unindexed-buckets">WARNING: Unindexed Buckets</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#rados-list">RADOS List</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#note-shared-bucket-markers">Note: Shared Bucket Markers</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../oidc/">OpenID Connect Provider</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../troubleshooting/">Troubleshooting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../man/8/radosgw/">Manpage radosgw</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../man/8/radosgw-admin/">Manpage radosgw-admin</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../qat-accel/">QAT Acceleration for Encryption and Compression</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../s3select/">S3-select</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../lua-scripting/">Lua Scripting</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/">Ceph Manager Daemon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dev/developer_guide/">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dev/internals/">Ceph Internals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../oidc/" title="OpenID Connect Provider in RGW"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../role/" title="Role"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../" >Ceph Object Gateway</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Orphan List and Associated Tooling</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

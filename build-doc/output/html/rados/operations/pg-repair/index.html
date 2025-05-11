@@ -1,0 +1,275 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Repairing PG Inconsistencies &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/css/custom.css" />
+    <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/jquery.js"></script>
+    <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../../genindex/" />
+    <link rel="search" title="Search" href="../../../search/" />
+    <link rel="next" title="Data Placement Overview" href="../data-placement/" />
+    <link rel="prev" title="User Management" href="../user-management/" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../data-placement/" title="Data Placement Overview"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../user-management/" title="User Management"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../" >Ceph Storage Cluster</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../" accesskey="U">Cluster Operations</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Repairing PG Inconsistencies</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="repairing-pg-inconsistencies">
+<h1>Repairing PG Inconsistencies<a class="headerlink" href="#repairing-pg-inconsistencies" title="Permalink to this heading">¶</a></h1>
+<p>Sometimes a Placement Group (PG) might become <code class="docutils literal notranslate"><span class="pre">inconsistent</span></code>. To return the PG
+to an <code class="docutils literal notranslate"><span class="pre">active+clean</span></code> state, you must first determine which of the PGs has become
+inconsistent and then run the <code class="docutils literal notranslate"><span class="pre">pg</span> <span class="pre">repair</span></code> command on it. This page contains
+commands for diagnosing PGs and the command for repairing PGs that have become
+inconsistent.</p>
+<section id="commands-for-diagnosing-pg-problems">
+<h2>Commands for Diagnosing PG Problems<a class="headerlink" href="#commands-for-diagnosing-pg-problems" title="Permalink to this heading">¶</a></h2>
+<p>The commands in this section provide various ways of diagnosing broken PGs.</p>
+<p>To see a high-level (low-detail) overview of Ceph cluster health, run the
+following command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><style type="text/css">
+span.prompt1:before {
+  content: "# ";
+}
+</style><span class="prompt1">ceph<span class="w"> </span>health<span class="w"> </span>detail</span>
+</pre></div></div><p>To see more detail on the status of the PGs, run the following command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>pg<span class="w"> </span>dump<span class="w"> </span>--format<span class="o">=</span>json-pretty</span>
+</pre></div></div><p>To see a list of inconsistent PGs, run the following command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">rados<span class="w"> </span>list-inconsistent-pg<span class="w"> </span><span class="o">{</span>pool<span class="o">}</span></span>
+</pre></div></div><p>To see a list of inconsistent RADOS objects, run the following command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">rados<span class="w"> </span>list-inconsistent-obj<span class="w"> </span><span class="o">{</span>pgid<span class="o">}</span></span>
+</pre></div></div><p>To see a list of inconsistent snapsets in a specific PG, run the following
+commands:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">rados<span class="w"> </span>list-inconsistent-snapset<span class="w"> </span><span class="o">{</span>pgid<span class="o">}</span></span>
+</pre></div></div></section>
+<section id="commands-for-repairing-pgs">
+<h2>Commands for Repairing PGs<a class="headerlink" href="#commands-for-repairing-pgs" title="Permalink to this heading">¶</a></h2>
+<p>The form of the command to repair a broken PG is as follows:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>pg<span class="w"> </span>repair<span class="w"> </span><span class="o">{</span>pgid<span class="o">}</span></span>
+</pre></div></div><p>Here <code class="docutils literal notranslate"><span class="pre">{pgid}</span></code> represents the id of the affected PG.</p>
+<p>For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>pg<span class="w"> </span>repair<span class="w"> </span><span class="m">1</span>.4</span>
+</pre></div></div><div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>PG IDs have the form <code class="docutils literal notranslate"><span class="pre">N.xxxxx</span></code>, where <code class="docutils literal notranslate"><span class="pre">N</span></code> is the number of the
+pool that contains the PG. The command <code class="docutils literal notranslate"><span class="pre">ceph</span> <span class="pre">osd</span> <span class="pre">listpools</span></code> and the
+command <code class="docutils literal notranslate"><span class="pre">ceph</span> <span class="pre">osd</span> <span class="pre">dump</span> <span class="pre">|</span> <span class="pre">grep</span> <span class="pre">pool</span></code> return a list of pool numbers.</p>
+</div>
+</section>
+<section id="more-information-on-pg-repair">
+<h2>More Information on PG Repair<a class="headerlink" href="#more-information-on-pg-repair" title="Permalink to this heading">¶</a></h2>
+<p>Ceph stores and updates the checksums of objects stored in the cluster. When a
+scrub is performed on a PG, the OSD attempts to choose an authoritative copy
+from among its replicas. Only one of the possible cases is consistent. After
+performing a deep scrub, Ceph calculates the checksum of an object that is read
+from disk and compares it to the checksum that was previously recorded. If the
+current checksum and the previously recorded checksum do not match, that
+mismatch is considered to be an inconsistency. In the case of replicated pools,
+any mismatch between the checksum of any replica of an object and the checksum
+of the authoritative copy means that there is an inconsistency. The discovery
+of these inconsistencies cause a PG’s state to be set to <code class="docutils literal notranslate"><span class="pre">inconsistent</span></code>.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">pg</span> <span class="pre">repair</span></code> command attempts to fix inconsistencies of various kinds. If
+<code class="docutils literal notranslate"><span class="pre">pg</span> <span class="pre">repair</span></code> finds an inconsistent PG, it attempts to overwrite the digest of
+the inconsistent copy with the digest of the authoritative copy. If <code class="docutils literal notranslate"><span class="pre">pg</span>
+<span class="pre">repair</span></code> finds an inconsistent replicated pool, it marks the inconsistent copy
+as missing. In the case of replicated pools, recovery is beyond the scope of
+<code class="docutils literal notranslate"><span class="pre">pg</span> <span class="pre">repair</span></code>.</p>
+<p>In the case of erasure-coded and BlueStore pools, Ceph will automatically
+perform repairs if <code class="docutils literal notranslate"><span class="pre">osd_scrub_auto_repair</span></code> (default <code class="docutils literal notranslate"><span class="pre">false`)</span> <span class="pre">is</span> <span class="pre">set</span> <span class="pre">to</span>
+<span class="pre">``true</span></code> and if no more than <code class="docutils literal notranslate"><span class="pre">osd_scrub_auto_repair_num_errors</span></code> (default
+<code class="docutils literal notranslate"><span class="pre">5</span></code>) errors are found.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">pg</span> <span class="pre">repair</span></code> command will not solve every problem. Ceph does not
+automatically repair PGs when they are found to contain inconsistencies.</p>
+<p>The checksum of a RADOS object or an omap is not always available. Checksums
+are calculated incrementally. If a replicated object is updated
+non-sequentially, the write operation involved in the update changes the object
+and invalidates its checksum. The whole object is not read while the checksum
+is recalculated. The <code class="docutils literal notranslate"><span class="pre">pg</span> <span class="pre">repair</span></code> command is able to make repairs even when
+checksums are not available to it, as in the case of Filestore. Users working
+with replicated Filestore pools might prefer manual repair to <code class="docutils literal notranslate"><span class="pre">ceph</span> <span class="pre">pg</span>
+<span class="pre">repair</span></code>.</p>
+<p>This material is relevant for Filestore, but not for BlueStore, which has its
+own internal checksums. The matched-record checksum and the calculated checksum
+cannot prove that any specific copy is in fact authoritative. If there is no
+checksum available, <code class="docutils literal notranslate"><span class="pre">pg</span> <span class="pre">repair</span></code> favors the data on the primary, but this
+might not be the uncorrupted replica. Because of this uncertainty, human
+intervention is necessary when an inconsistency is discovered. This
+intervention sometimes involves use of <code class="docutils literal notranslate"><span class="pre">ceph-objectstore-tool</span></code>.</p>
+</section>
+<section id="external-links">
+<h2>External Links<a class="headerlink" href="#external-links" title="Permalink to this heading">¶</a></h2>
+<p><a class="reference external" href="https://ceph.io/geen-categorie/ceph-manually-repair-object/">https://ceph.io/geen-categorie/ceph-manually-repair-object/</a> - This page
+contains a walkthrough of the repair of a PG. It is recommended reading if you
+want to repair a PG but have never done so.</p>
+</section>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../../">
+              <img class="logo" src="../../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../install/">Installing Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cephadm/">Cephadm</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../">Ceph Storage Cluster</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../../configuration/">Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../cephadm/">Deployment</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../">Operations</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../operating/">Operating a Cluster</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../health-checks/">Health checks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../monitoring/">Monitoring a Cluster</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../monitoring-osd-pg/">Monitoring OSDs and PGs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../user-management/">User Management</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Repairing PG Inconsistencies</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#commands-for-diagnosing-pg-problems">Commands for Diagnosing PG Problems</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#commands-for-repairing-pgs">Commands for Repairing PGs</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#more-information-on-pg-repair">More Information on PG Repair</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#external-links">External Links</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../data-placement/">Data Placement Overview</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../pools/">Pools</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../erasure-code/">Erasure code</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../cache-tiering/">Cache Tiering</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../placement-groups/">Placement Groups</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../balancer/">Balancer</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../upmap/">Using pg-upmap</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../crush-map/">CRUSH Maps</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../crush-map-edits/">Manually editing a CRUSH Map</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../stretch-mode/">Stretch Clusters</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../change-mon-elections/">Configure Monitor Election Strategies</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../add-or-rm-osds/">Adding/Removing OSDs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../add-or-rm-mons/">Adding/Removing Monitors</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../devices/">Device Management</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../bluestore-migration/">BlueStore Migration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../control/">Command Reference</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../troubleshooting/community/">The Ceph Community</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../troubleshooting/troubleshooting-mon/">Troubleshooting Monitors</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../troubleshooting/troubleshooting-osd/">Troubleshooting OSDs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../troubleshooting/troubleshooting-pg/">Troubleshooting PGs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../troubleshooting/log-and-debug/">Logging and Debugging</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../troubleshooting/cpu-profiling/">CPU Profiling</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../troubleshooting/memory-profiling/">Memory Profiling</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../man/">Man Pages</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../troubleshooting/">Troubleshooting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/">APIs</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cephfs/">Ceph File System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../rbd/">Ceph Block Device</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../radosgw/">Ceph Object Gateway</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../mgr/">Ceph Manager Daemon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../mgr/dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dev/developer_guide/">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dev/internals/">Ceph Internals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../../../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../data-placement/" title="Data Placement Overview"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../user-management/" title="User Management"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../" >Ceph Storage Cluster</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../" >Cluster Operations</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Repairing PG Inconsistencies</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

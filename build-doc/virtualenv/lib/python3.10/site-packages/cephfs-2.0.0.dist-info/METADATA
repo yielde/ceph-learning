@@ -1,0 +1,16 @@
+Metadata-Version: 2.1
+Name: cephfs
+Version: 2.0.0
+Summary: Python bindings for the Ceph FS library
+Home-page: https://github.com/ceph/ceph/tree/master/src/pybind/cephfs
+License: LGPLv2+
+Platform: Linux
+Classifier: Intended Audience :: Developers
+Classifier: Intended Audience :: System Administrators
+Classifier: License :: OSI Approved :: GNU Lesser General Public License v2 or later (LGPLv2+)
+Classifier: Operating System :: POSIX :: Linux
+Classifier: Programming Language :: Cython
+Classifier: Programming Language :: Python :: 3
+
+This package contains Python bindings for interacting with the Ceph Filesystem (Ceph FS) library. Ceph FS is a POSIX-compliant filesystem that uses a Ceph Storage Cluster to store its data. The Ceph filesystem uses the same Ceph Storage Cluster system as Ceph Block Devices, Ceph Object Storage with its S3 and Swift APIs, or native bindings (librados).
+

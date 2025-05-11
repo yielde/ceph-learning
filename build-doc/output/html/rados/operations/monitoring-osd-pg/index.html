@@ -1,0 +1,616 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Monitoring OSDs and PGs &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/css/custom.css" />
+    <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/jquery.js"></script>
+    <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../../genindex/" />
+    <link rel="search" title="Search" href="../../../search/" />
+    <link rel="next" title="User Management" href="../user-management/" />
+    <link rel="prev" title="Monitoring a Cluster" href="../monitoring/" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../user-management/" title="User Management"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../monitoring/" title="Monitoring a Cluster"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../" >Ceph Storage Cluster</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../" accesskey="U">Cluster Operations</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Monitoring OSDs and PGs</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="monitoring-osds-and-pgs">
+<h1>Monitoring OSDs and PGs<a class="headerlink" href="#monitoring-osds-and-pgs" title="Permalink to this heading">¶</a></h1>
+<p>High availability and high reliability require a fault-tolerant approach to
+managing hardware and software issues. Ceph has no single point of failure and
+it can service requests for data even when in a “degraded” mode. Ceph’s <a class="reference external" href="../data-placement">data
+placement</a> introduces a layer of indirection to ensure that data doesn’t bind
+directly to specific OSDs. For this reason, tracking system faults
+requires finding the <a class="reference external" href="../placement-groups">placement group</a> (PG) and the underlying OSDs at the
+root of the problem.</p>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>A fault in one part of the cluster might prevent you from accessing a
+particular object, but that doesn’t mean that you are prevented from accessing other objects.
+When you run into a fault, don’t panic. Just follow the steps for monitoring
+your OSDs and placement groups, and then begin troubleshooting.</p>
+</div>
+<p>Ceph is self-repairing. However, when problems persist, monitoring OSDs and
+placement groups will help you identify the problem.</p>
+<section id="monitoring-osds">
+<h2>Monitoring OSDs<a class="headerlink" href="#monitoring-osds" title="Permalink to this heading">¶</a></h2>
+<p>An OSD’s status is as follows: it is either in the cluster (<code class="docutils literal notranslate"><span class="pre">in</span></code>) or out of the cluster
+(<code class="docutils literal notranslate"><span class="pre">out</span></code>); likewise, it is either up and running (<code class="docutils literal notranslate"><span class="pre">up</span></code>) or down and not
+running (<code class="docutils literal notranslate"><span class="pre">down</span></code>). If an OSD is <code class="docutils literal notranslate"><span class="pre">up</span></code>, it can be either <code class="docutils literal notranslate"><span class="pre">in</span></code> the cluster
+(if so, you can read and write data) or <code class="docutils literal notranslate"><span class="pre">out</span></code> of the cluster. If the OSD was previously
+<code class="docutils literal notranslate"><span class="pre">in</span></code> the cluster but was recently moved <code class="docutils literal notranslate"><span class="pre">out</span></code> of the cluster, Ceph will migrate its
+PGs to other OSDs. If an OSD is <code class="docutils literal notranslate"><span class="pre">out</span></code> of the cluster, CRUSH will
+not assign any PGs to that OSD. If an OSD is <code class="docutils literal notranslate"><span class="pre">down</span></code>, it should also be
+<code class="docutils literal notranslate"><span class="pre">out</span></code>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If an OSD is <code class="docutils literal notranslate"><span class="pre">down</span></code> and <code class="docutils literal notranslate"><span class="pre">in</span></code>, then there is a problem and the cluster
+is not in a healthy state.</p>
+</div>
+<p class="ditaa">
+<img src="../../../_images/ditaa-83a02a232b72a2f08fddcc5f7d697a751499f16c.png"/>
+</p>
+<p>If you run the commands <code class="docutils literal notranslate"><span class="pre">ceph</span> <span class="pre">health</span></code>, <code class="docutils literal notranslate"><span class="pre">ceph</span> <span class="pre">-s</span></code>, or <code class="docutils literal notranslate"><span class="pre">ceph</span> <span class="pre">-w</span></code>,
+you might notice that the cluster does not always show <code class="docutils literal notranslate"><span class="pre">HEALTH</span> <span class="pre">OK</span></code>. Don’t
+panic. There are certain circumstances in which it is expected and normal that
+the cluster will <strong>NOT</strong> show <code class="docutils literal notranslate"><span class="pre">HEALTH</span> <span class="pre">OK</span></code>:</p>
+<ol class="arabic simple">
+<li><p>You haven’t started the cluster yet.</p></li>
+<li><p>You have just started or restarted the cluster and it’s not ready to show
+health statuses yet, because the PGs are in the process of being created and
+the OSDs are in the process of peering.</p></li>
+<li><p>You have just added or removed an OSD.</p></li>
+<li><p>You have just have modified your cluster map.</p></li>
+</ol>
+<p>Checking to see if OSDs are <code class="docutils literal notranslate"><span class="pre">up</span></code> and running is an important aspect of monitoring them:
+whenever the cluster is up and running, every OSD that is <code class="docutils literal notranslate"><span class="pre">in</span></code> the cluster should also
+be <code class="docutils literal notranslate"><span class="pre">up</span></code> and running. To see if all of the cluster’s OSDs are running, run the following
+command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><style type="text/css">
+span.prompt1:before {
+  content: "$ ";
+}
+</style><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>stat</span>
+</pre></div></div><p>The output provides the following information: the total number of OSDs (x),
+how many OSDs are <code class="docutils literal notranslate"><span class="pre">up</span></code> (y), how many OSDs are <code class="docutils literal notranslate"><span class="pre">in</span></code> (z), and the map epoch (eNNNN).</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">x</span> <span class="n">osds</span><span class="p">:</span> <span class="n">y</span> <span class="n">up</span><span class="p">,</span> <span class="n">z</span> <span class="ow">in</span><span class="p">;</span> <span class="n">epoch</span><span class="p">:</span> <span class="n">eNNNN</span>
+</pre></div>
+</div>
+<p>If the number of OSDs that are <code class="docutils literal notranslate"><span class="pre">in</span></code> the cluster is greater than the number of
+OSDs that are <code class="docutils literal notranslate"><span class="pre">up</span></code>, run the following command to identify the <code class="docutils literal notranslate"><span class="pre">ceph-osd</span></code>
+daemons that are not running:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>tree</span>
+</pre></div></div><div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1">#ID CLASS WEIGHT  TYPE NAME             STATUS REWEIGHT PRI-AFF</span>
+ <span class="o">-</span><span class="mi">1</span>       <span class="mf">2.00000</span> <span class="n">pool</span> <span class="n">openstack</span>
+ <span class="o">-</span><span class="mi">3</span>       <span class="mf">2.00000</span> <span class="n">rack</span> <span class="n">dell</span><span class="o">-</span><span class="mi">2950</span><span class="o">-</span><span class="n">rack</span><span class="o">-</span><span class="n">A</span>
+ <span class="o">-</span><span class="mi">2</span>       <span class="mf">2.00000</span> <span class="n">host</span> <span class="n">dell</span><span class="o">-</span><span class="mi">2950</span><span class="o">-</span><span class="n">A1</span>
+  <span class="mi">0</span>   <span class="n">ssd</span> <span class="mf">1.00000</span>      <span class="n">osd</span><span class="mf">.0</span>                <span class="n">up</span>  <span class="mf">1.00000</span> <span class="mf">1.00000</span>
+  <span class="mi">1</span>   <span class="n">ssd</span> <span class="mf">1.00000</span>      <span class="n">osd</span><span class="mf">.1</span>              <span class="n">down</span>  <span class="mf">1.00000</span> <span class="mf">1.00000</span>
+</pre></div>
+</div>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>Searching through a well-designed CRUSH hierarchy to identify the physical
+locations of particular OSDs might help you troubleshoot your cluster.</p>
+</div>
+<p>If an OSD is <code class="docutils literal notranslate"><span class="pre">down</span></code>, start it by running the following command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">sudo<span class="w"> </span>systemctl<span class="w"> </span>start<span class="w"> </span>ceph-osd@1</span>
+</pre></div></div><p>For problems associated with OSDs that have stopped or won’t restart, see <a class="reference external" href="../../troubleshooting/troubleshooting-osd#osd-not-running">OSD Not Running</a>.</p>
+</section>
+<section id="pg-sets">
+<h2>PG Sets<a class="headerlink" href="#pg-sets" title="Permalink to this heading">¶</a></h2>
+<p>When CRUSH assigns a PG to OSDs, it takes note of how many replicas of the PG
+are required by the pool and then assigns each replica to a different OSD.
+For example, if the pool requires three replicas of a PG, CRUSH might assign
+them individually to <code class="docutils literal notranslate"><span class="pre">osd.1</span></code>, <code class="docutils literal notranslate"><span class="pre">osd.2</span></code> and <code class="docutils literal notranslate"><span class="pre">osd.3</span></code>. CRUSH seeks a
+pseudo-random placement that takes into account the failure domains that you
+have set in your <a class="reference external" href="../crush-map">CRUSH map</a>; for this reason, PGs are rarely assigned to
+immediately adjacent OSDs in a large cluster.</p>
+<p>Ceph processes client requests with the <strong>Acting Set</strong> of OSDs: this is the set
+of OSDs that currently have a full and working version of a PG shard and that
+are therefore responsible for handling requests. By contrast, the <strong>Up Set</strong> is
+the set of OSDs that contain a shard of a specific PG. Data is moved or copied
+to the <strong>Up Set</strong>, or planned to be moved or copied, to the <strong>Up Set</strong>. See
+<a class="reference internal" href="../pg-concepts/#rados-operations-pg-concepts"><span class="std std-ref">Placement Group Concepts</span></a>.</p>
+<p>Sometimes an OSD in the Acting Set is <code class="docutils literal notranslate"><span class="pre">down</span></code> or otherwise unable to
+service requests for objects in the PG. When this kind of situation
+arises, don’t panic. Common examples of such a situation include:</p>
+<ul class="simple">
+<li><p>You added or removed an OSD, CRUSH reassigned the PG to
+other OSDs, and this reassignment changed the composition of the Acting Set and triggered
+the migration of data by means of a “backfill” process.</p></li>
+<li><p>An OSD was <code class="docutils literal notranslate"><span class="pre">down</span></code>, was restarted, and is now <code class="docutils literal notranslate"><span class="pre">recovering</span></code>.</p></li>
+<li><p>An OSD in the Acting Set is <code class="docutils literal notranslate"><span class="pre">down</span></code> or unable to service requests,
+and another OSD has temporarily assumed its duties.</p></li>
+</ul>
+<p>Typically, the Up Set and the Acting Set are identical. When they are not, it
+might indicate that Ceph is migrating the PG (in other words, that the PG has
+been remapped), that an OSD is recovering, or that there is a problem with the
+cluster (in such scenarios, Ceph usually shows a “HEALTH WARN” state with a
+“stuck stale” message).</p>
+<p>To retrieve a list of PGs, run the following command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>pg<span class="w"> </span>dump</span>
+</pre></div></div><p>To see which OSDs are within the Acting Set and the Up Set for a specific PG, run the following command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>pg<span class="w"> </span>map<span class="w"> </span><span class="o">{</span>pg-num<span class="o">}</span></span>
+</pre></div></div><p>The output provides the following information: the osdmap epoch (eNNN), the PG number
+({pg-num}), the OSDs in the Up Set (up[]), and the OSDs in the Acting Set
+(acting[]):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">osdmap</span> <span class="n">eNNN</span> <span class="n">pg</span> <span class="p">{</span><span class="n">raw</span><span class="o">-</span><span class="n">pg</span><span class="o">-</span><span class="n">num</span><span class="p">}</span> <span class="p">({</span><span class="n">pg</span><span class="o">-</span><span class="n">num</span><span class="p">})</span> <span class="o">-&gt;</span> <span class="n">up</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">]</span> <span class="n">acting</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">]</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If the Up Set and the Acting Set do not match, this might indicate
+that the cluster is rebalancing itself or that there is a problem with
+the cluster.</p>
+</div>
+</section>
+<section id="peering">
+<h2>Peering<a class="headerlink" href="#peering" title="Permalink to this heading">¶</a></h2>
+<p>Before you can write data to a PG, it must be in an <code class="docutils literal notranslate"><span class="pre">active</span></code> state and it
+will preferably be in a <code class="docutils literal notranslate"><span class="pre">clean</span></code> state. For Ceph to determine the current
+state of a PG, peering must take place.  That is, the primary OSD of the PG
+(that is, the first OSD in the Acting Set) must peer with the secondary and
+OSDs so that consensus on the current state of the PG can be established. In
+the following diagram, we assume a pool with three replicas of the PG:</p>
+<p class="ditaa">
+<img src="../../../_images/ditaa-c534576b8b40a180628e34f649b6bfc104bc853d.png"/>
+</p>
+<p>The OSDs also report their status to the monitor. For details, see <a class="reference external" href="../../configuration/mon-osd-interaction/">Configuring
+Monitor/OSD Interaction</a>. To troubleshoot peering issues, see <a class="reference external" href="../../troubleshooting/troubleshooting-pg#failures-osd-peering">Peering
+Failure</a>.</p>
+</section>
+<section id="monitoring-pg-states">
+<h2>Monitoring PG States<a class="headerlink" href="#monitoring-pg-states" title="Permalink to this heading">¶</a></h2>
+<p>If you run the commands <code class="docutils literal notranslate"><span class="pre">ceph</span> <span class="pre">health</span></code>, <code class="docutils literal notranslate"><span class="pre">ceph</span> <span class="pre">-s</span></code>, or <code class="docutils literal notranslate"><span class="pre">ceph</span> <span class="pre">-w</span></code>,
+you might notice that the cluster does not always show <code class="docutils literal notranslate"><span class="pre">HEALTH</span> <span class="pre">OK</span></code>. After
+first checking to see if the OSDs are running, you should also check PG
+states. There are certain PG-peering-related circumstances in which it is expected
+and normal that the cluster will <strong>NOT</strong> show <code class="docutils literal notranslate"><span class="pre">HEALTH</span> <span class="pre">OK</span></code>:</p>
+<ol class="arabic simple">
+<li><p>You have just created a pool and the PGs haven’t peered yet.</p></li>
+<li><p>The PGs are recovering.</p></li>
+<li><p>You have just added an OSD to or removed an OSD from the cluster.</p></li>
+<li><p>You have just modified your CRUSH map and your PGs are migrating.</p></li>
+<li><p>There is inconsistent data in different replicas of a PG.</p></li>
+<li><p>Ceph is scrubbing a PG’s replicas.</p></li>
+<li><p>Ceph doesn’t have enough storage capacity to complete backfilling operations.</p></li>
+</ol>
+<p>If one of these circumstances causes Ceph to show <code class="docutils literal notranslate"><span class="pre">HEALTH</span> <span class="pre">WARN</span></code>, don’t
+panic. In many cases, the cluster will recover on its own. In some cases, however, you
+might need to take action. An important aspect of monitoring PGs is to check their
+status as <code class="docutils literal notranslate"><span class="pre">active</span></code> and <code class="docutils literal notranslate"><span class="pre">clean</span></code>: that is, it is important to ensure that, when the
+cluster is up and running, all PGs are <code class="docutils literal notranslate"><span class="pre">active</span></code> and (preferably) <code class="docutils literal notranslate"><span class="pre">clean</span></code>.
+To see the status of every PG, run the following command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>pg<span class="w"> </span>stat</span>
+</pre></div></div><p>The output provides the following information: the total number of PGs (x), how many
+PGs are in a particular state such as <code class="docutils literal notranslate"><span class="pre">active+clean</span></code> (y), and the
+amount of data stored (z).</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">x</span> <span class="n">pgs</span><span class="p">:</span> <span class="n">y</span> <span class="n">active</span><span class="o">+</span><span class="n">clean</span><span class="p">;</span> <span class="n">z</span> <span class="nb">bytes</span> <span class="n">data</span><span class="p">,</span> <span class="n">aa</span> <span class="n">MB</span> <span class="n">used</span><span class="p">,</span> <span class="n">bb</span> <span class="n">GB</span> <span class="o">/</span> <span class="n">cc</span> <span class="n">GB</span> <span class="n">avail</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>It is common for Ceph to report multiple states for PGs (for example,
+<code class="docutils literal notranslate"><span class="pre">active+clean</span></code>, <code class="docutils literal notranslate"><span class="pre">active+clean+remapped</span></code>, <code class="docutils literal notranslate"><span class="pre">active+clean+scrubbing</span></code>.</p>
+</div>
+<p>Here Ceph shows not only the PG states, but also storage capacity used (aa),
+the amount of storage capacity remaining (bb), and the total storage capacity
+of the PG. These values can be important in a few cases:</p>
+<ul class="simple">
+<li><p>The cluster is reaching its <code class="docutils literal notranslate"><span class="pre">near</span> <span class="pre">full</span> <span class="pre">ratio</span></code> or <code class="docutils literal notranslate"><span class="pre">full</span> <span class="pre">ratio</span></code>.</p></li>
+<li><p>Data is not being distributed across the cluster due to an error in the
+CRUSH configuration.</p></li>
+</ul>
+<div class="topic">
+<p class="topic-title">Placement Group IDs</p>
+<p>PG IDs consist of the pool number (not the pool name) followed by a period
+(.) and a hexadecimal number. You can view pool numbers and their names from
+in the output of <code class="docutils literal notranslate"><span class="pre">ceph</span> <span class="pre">osd</span> <span class="pre">lspools</span></code>. For example, the first pool that was
+created corresponds to pool number <code class="docutils literal notranslate"><span class="pre">1</span></code>. A fully qualified PG ID has the
+following form:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span><span class="n">pool</span><span class="o">-</span><span class="n">num</span><span class="p">}</span><span class="o">.</span><span class="p">{</span><span class="n">pg</span><span class="o">-</span><span class="nb">id</span><span class="p">}</span>
+</pre></div>
+</div>
+<p>It typically resembles the following:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="mf">1.1701</span><span class="n">b</span>
+</pre></div>
+</div>
+</div>
+<p>To retrieve a list of PGs, run the following command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>pg<span class="w"> </span>dump</span>
+</pre></div></div><p>To format the output in JSON format and save it to a file, run the following command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>pg<span class="w"> </span>dump<span class="w"> </span>-o<span class="w"> </span><span class="o">{</span>filename<span class="o">}</span><span class="w"> </span>--format<span class="o">=</span>json</span>
+</pre></div></div><p>To query a specific PG, run the following command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>pg<span class="w"> </span><span class="o">{</span>poolnum<span class="o">}</span>.<span class="o">{</span>pg-id<span class="o">}</span><span class="w"> </span>query</span>
+</pre></div></div><p>Ceph will output the query in JSON format.</p>
+<p>The following subsections describe the most common PG states in detail.</p>
+<section id="creating">
+<h3>Creating<a class="headerlink" href="#creating" title="Permalink to this heading">¶</a></h3>
+<p>PGs are created when you create a pool: the command that creates a pool
+specifies the total number of PGs for that pool, and when the pool is created
+all of those PGs are created as well. Ceph will echo <code class="docutils literal notranslate"><span class="pre">creating</span></code> while it is
+creating PGs. After the PG(s) are created, the OSDs that are part of a PG’s
+Acting Set will peer. Once peering is complete, the PG status should be
+<code class="docutils literal notranslate"><span class="pre">active+clean</span></code>. This status means that Ceph clients begin writing to the
+PG.</p>
+<p class="ditaa">
+<img src="../../../_images/ditaa-bfce6c25b264cd756b5f4cf49e07ce71ccd1f775.png"/>
+</p>
+</section>
+<section id="id1">
+<h3>Peering<a class="headerlink" href="#id1" title="Permalink to this heading">¶</a></h3>
+<p>When a PG peers, the OSDs that store the replicas of its data converge on an
+agreed state of the data and metadata within that PG. When peering is complete,
+those OSDs agree about the state of that PG. However, completion of the peering
+process does <strong>NOT</strong> mean that each replica has the latest contents.</p>
+<div class="topic">
+<p class="topic-title">Authoritative History</p>
+<p>Ceph will <strong>NOT</strong> acknowledge a write operation to a client until that write
+operation is persisted by every OSD in the Acting Set. This practice ensures
+that at least one member of the Acting Set will have a record of every
+acknowledged write operation since the last successful peering operation.</p>
+<p>Given an accurate record of each acknowledged write operation, Ceph can
+construct a new authoritative history of the PG–that is, a complete and
+fully ordered set of operations that, if performed, would bring an OSD’s
+copy of the PG up to date.</p>
+</div>
+</section>
+<section id="active">
+<h3>Active<a class="headerlink" href="#active" title="Permalink to this heading">¶</a></h3>
+<p>After Ceph has completed the peering process, a PG should become <code class="docutils literal notranslate"><span class="pre">active</span></code>.
+The <code class="docutils literal notranslate"><span class="pre">active</span></code> state means that the data in the PG is generally available for
+read and write operations in the primary and replica OSDs.</p>
+</section>
+<section id="clean">
+<h3>Clean<a class="headerlink" href="#clean" title="Permalink to this heading">¶</a></h3>
+<p>When a PG is in the <code class="docutils literal notranslate"><span class="pre">clean</span></code> state, all OSDs holding its data and metadata
+have successfully peered and there are no stray replicas. Ceph has replicated
+all objects in the PG the correct number of times.</p>
+</section>
+<section id="degraded">
+<h3>Degraded<a class="headerlink" href="#degraded" title="Permalink to this heading">¶</a></h3>
+<p>When a client writes an object to the primary OSD, the primary OSD is
+responsible for writing the replicas to the replica OSDs. After the primary OSD
+writes the object to storage, the PG will remain in a <code class="docutils literal notranslate"><span class="pre">degraded</span></code>
+state until the primary OSD has received an acknowledgement from the replica
+OSDs that Ceph created the replica objects successfully.</p>
+<p>The reason that a PG can be <code class="docutils literal notranslate"><span class="pre">active+degraded</span></code> is that an OSD can be
+<code class="docutils literal notranslate"><span class="pre">active</span></code> even if it doesn’t yet hold all of the PG’s objects. If an OSD goes
+<code class="docutils literal notranslate"><span class="pre">down</span></code>, Ceph marks each PG assigned to the OSD as <code class="docutils literal notranslate"><span class="pre">degraded</span></code>. The PGs must
+peer again when the OSD comes back online. However, a client can still write a
+new object to a <code class="docutils literal notranslate"><span class="pre">degraded</span></code> PG if it is <code class="docutils literal notranslate"><span class="pre">active</span></code>.</p>
+<p>If an OSD is <code class="docutils literal notranslate"><span class="pre">down</span></code> and the <code class="docutils literal notranslate"><span class="pre">degraded</span></code> condition persists, Ceph might mark the
+<code class="docutils literal notranslate"><span class="pre">down</span></code> OSD as <code class="docutils literal notranslate"><span class="pre">out</span></code> of the cluster and remap the data from the <code class="docutils literal notranslate"><span class="pre">down</span></code> OSD
+to another OSD. The time between being marked <code class="docutils literal notranslate"><span class="pre">down</span></code> and being marked <code class="docutils literal notranslate"><span class="pre">out</span></code>
+is determined by <code class="docutils literal notranslate"><span class="pre">mon_osd_down_out_interval</span></code>, which is set to <code class="docutils literal notranslate"><span class="pre">600</span></code> seconds
+by default.</p>
+<p>A PG can also be in the <code class="docutils literal notranslate"><span class="pre">degraded</span></code> state because there are one or more
+objects that Ceph expects to find in the PG but that Ceph cannot find. Although
+you cannot read or write to unfound objects, you can still access all of the other
+objects in the <code class="docutils literal notranslate"><span class="pre">degraded</span></code> PG.</p>
+</section>
+<section id="recovering">
+<h3>Recovering<a class="headerlink" href="#recovering" title="Permalink to this heading">¶</a></h3>
+<p>Ceph was designed for fault-tolerance, because hardware and other server
+problems are expected or even routine. When an OSD goes <code class="docutils literal notranslate"><span class="pre">down</span></code>, its contents
+might fall behind the current state of other replicas in the PGs. When the OSD
+has returned to the <code class="docutils literal notranslate"><span class="pre">up</span></code> state, the contents of the PGs must be updated to
+reflect that current state. During that time period, the OSD might be in a
+<code class="docutils literal notranslate"><span class="pre">recovering</span></code> state.</p>
+<p>Recovery is not always trivial, because a hardware failure might cause a
+cascading failure of multiple OSDs. For example, a network switch for a rack or
+cabinet might fail, which can cause the OSDs of a number of host machines to
+fall behind the current state of the cluster. In such a scenario, general
+recovery is possible only if each of the OSDs recovers after the fault has been
+resolved.]</p>
+<p>Ceph provides a number of settings that determine how the cluster balances the
+resource contention between the need to process new service requests and the
+need to recover data objects and restore the PGs to the current state. The
+<code class="docutils literal notranslate"><span class="pre">osd_recovery_delay_start</span></code> setting allows an OSD to restart, re-peer, and
+even process some replay requests before starting the recovery process. The
+<code class="docutils literal notranslate"><span class="pre">osd_recovery_thread_timeout</span></code> setting determines the duration of a thread
+timeout, because multiple OSDs might fail, restart, and re-peer at staggered
+rates.  The <code class="docutils literal notranslate"><span class="pre">osd_recovery_max_active</span></code> setting limits the number of recovery
+requests an OSD can entertain simultaneously, in order to prevent the OSD from
+failing to serve.  The <code class="docutils literal notranslate"><span class="pre">osd_recovery_max_chunk</span></code> setting limits the size of
+the recovered data chunks, in order to prevent network congestion.</p>
+</section>
+<section id="back-filling">
+<h3>Back Filling<a class="headerlink" href="#back-filling" title="Permalink to this heading">¶</a></h3>
+<p>When a new OSD joins the cluster, CRUSH will reassign PGs from OSDs that are
+already in the cluster to the newly added OSD. It can put excessive load on the
+new OSD to force it to immediately accept the reassigned PGs. Back filling the
+OSD with the PGs allows this process to begin in the background. After the
+backfill operations have completed, the new OSD will begin serving requests as
+soon as it is ready.</p>
+<p>During the backfill operations, you might see one of several states:
+<code class="docutils literal notranslate"><span class="pre">backfill_wait</span></code> indicates that a backfill operation is pending, but is not
+yet underway; <code class="docutils literal notranslate"><span class="pre">backfilling</span></code> indicates that a backfill operation is currently
+underway; and <code class="docutils literal notranslate"><span class="pre">backfill_toofull</span></code> indicates that a backfill operation was
+requested but couldn’t be completed due to insufficient storage capacity. When
+a PG cannot be backfilled, it might be considered <code class="docutils literal notranslate"><span class="pre">incomplete</span></code>.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">backfill_toofull</span></code> state might be transient. It might happen that, as PGs
+are moved around, space becomes available. The <code class="docutils literal notranslate"><span class="pre">backfill_toofull</span></code> state is
+similar to <code class="docutils literal notranslate"><span class="pre">backfill_wait</span></code> in that backfill operations can proceed as soon as
+conditions change.</p>
+<p>Ceph provides a number of settings to manage the load spike associated with the
+reassignment of PGs to an OSD (especially a new OSD). The <code class="docutils literal notranslate"><span class="pre">osd_max_backfills</span></code>
+setting specifies the maximum number of concurrent backfills to and from an OSD
+(default: 1). The <code class="docutils literal notranslate"><span class="pre">backfill_full_ratio</span></code> setting allows an OSD to refuse a
+backfill request if the OSD is approaching its full ratio (default: 90%). This
+setting can be changed with the <code class="docutils literal notranslate"><span class="pre">ceph</span> <span class="pre">osd</span> <span class="pre">set-backfillfull-ratio</span></code> command. If
+an OSD refuses a backfill request, the <code class="docutils literal notranslate"><span class="pre">osd_backfill_retry_interval</span></code> setting
+allows an OSD to retry the request after a certain interval (default: 30
+seconds). OSDs can also set <code class="docutils literal notranslate"><span class="pre">osd_backfill_scan_min</span></code> and
+<code class="docutils literal notranslate"><span class="pre">osd_backfill_scan_max</span></code> in order to manage scan intervals (default: 64 and
+512, respectively).</p>
+</section>
+<section id="remapped">
+<h3>Remapped<a class="headerlink" href="#remapped" title="Permalink to this heading">¶</a></h3>
+<p>When the Acting Set that services a PG changes, the data migrates from the old
+Acting Set to the new Acting Set. Because it might take time for the new
+primary OSD to begin servicing requests, the old primary OSD might be required
+to continue servicing requests until the PG data migration is complete. After
+data migration has completed, the mapping uses the primary OSD of the new
+Acting Set.</p>
+</section>
+<section id="stale">
+<h3>Stale<a class="headerlink" href="#stale" title="Permalink to this heading">¶</a></h3>
+<p>Although Ceph uses heartbeats in order to ensure that hosts and daemons are
+running, the <code class="docutils literal notranslate"><span class="pre">ceph-osd</span></code> daemons might enter a <code class="docutils literal notranslate"><span class="pre">stuck</span></code> state where they are
+not reporting statistics in a timely manner (for example, there might be a
+temporary network fault). By default, OSD daemons report their PG, up through,
+boot, and failure statistics every half second (that is, in accordance with a
+value of <code class="docutils literal notranslate"><span class="pre">0.5</span></code>), which is more frequent than the reports defined by the
+heartbeat thresholds. If the primary OSD of a PG’s Acting Set fails to report
+to the monitor or if other OSDs have reported the primary OSD <code class="docutils literal notranslate"><span class="pre">down</span></code>, the
+monitors will mark the PG <code class="docutils literal notranslate"><span class="pre">stale</span></code>.</p>
+<p>When you start your cluster, it is common to see the <code class="docutils literal notranslate"><span class="pre">stale</span></code> state until the
+peering process completes. After your cluster has been running for a while,
+however, seeing PGs in the <code class="docutils literal notranslate"><span class="pre">stale</span></code> state indicates that the primary OSD for
+those PGs is <code class="docutils literal notranslate"><span class="pre">down</span></code> or not reporting PG statistics to the monitor.</p>
+</section>
+</section>
+<section id="identifying-troubled-pgs">
+<h2>Identifying Troubled PGs<a class="headerlink" href="#identifying-troubled-pgs" title="Permalink to this heading">¶</a></h2>
+<p>As previously noted, a PG is not necessarily having problems just because its
+state is not <code class="docutils literal notranslate"><span class="pre">active+clean</span></code>. When PGs are stuck, this might indicate that
+Ceph cannot perform self-repairs. The stuck states include:</p>
+<ul class="simple">
+<li><p><strong>Unclean</strong>: PGs contain objects that have not been replicated the desired
+number of times. Under normal conditions, it can be assumed that these PGs
+are recovering.</p></li>
+<li><p><strong>Inactive</strong>: PGs cannot process reads or writes because they are waiting for
+an OSD that has the most up-to-date data to come back <code class="docutils literal notranslate"><span class="pre">up</span></code>.</p></li>
+<li><p><strong>Stale</strong>: PG are in an unknown state, because the OSDs that host them have
+not reported to the monitor cluster for a certain period of time (determined
+by <code class="docutils literal notranslate"><span class="pre">mon_osd_report_timeout</span></code>).</p></li>
+</ul>
+<p>To identify stuck PGs, run the following command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>pg<span class="w"> </span>dump_stuck<span class="w"> </span><span class="o">[</span>unclean<span class="p">|</span>inactive<span class="p">|</span>stale<span class="p">|</span>undersized<span class="p">|</span>degraded<span class="o">]</span></span>
+</pre></div></div><p>For more detail, see <a class="reference external" href="../control#placement-group-subsystem">Placement Group Subsystem</a>. To troubleshoot stuck PGs,
+see <a class="reference external" href="../../troubleshooting/troubleshooting-pg#troubleshooting-pg-errors">Troubleshooting PG Errors</a>.</p>
+</section>
+<section id="finding-an-object-location">
+<h2>Finding an Object Location<a class="headerlink" href="#finding-an-object-location" title="Permalink to this heading">¶</a></h2>
+<p>To store object data in the Ceph Object Store, a Ceph client must:</p>
+<ol class="arabic simple">
+<li><p>Set an object name</p></li>
+<li><p>Specify a <a class="reference external" href="../pools">pool</a></p></li>
+</ol>
+<p>The Ceph client retrieves the latest cluster map, the CRUSH algorithm
+calculates how to map the object to a PG, and then the algorithm calculates how
+to dynamically assign the PG to an OSD. To find the object location given only
+the object name and the pool name, run a command of the following form:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>map<span class="w"> </span><span class="o">{</span>poolname<span class="o">}</span><span class="w"> </span><span class="o">{</span>object-name<span class="o">}</span><span class="w"> </span><span class="o">[</span>namespace<span class="o">]</span></span>
+</pre></div></div><div class="topic">
+<p class="topic-title">Exercise: Locate an Object</p>
+<p>As an exercise, let’s create an object. We can specify an object name, a path
+to a test file that contains some object data, and a pool name by using the
+<code class="docutils literal notranslate"><span class="pre">rados</span> <span class="pre">put</span></code> command on the command line. For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">rados<span class="w"> </span>put<span class="w"> </span><span class="o">{</span>object-name<span class="o">}</span><span class="w"> </span><span class="o">{</span>file-path<span class="o">}</span><span class="w"> </span>--pool<span class="o">=</span>data</span>
+<span class="prompt1">rados<span class="w"> </span>put<span class="w"> </span>test-object-1<span class="w"> </span>testfile.txt<span class="w"> </span>--pool<span class="o">=</span>data</span>
+</pre></div></div><p>To verify that the Ceph Object Store stored the object, run the
+following command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">rados<span class="w"> </span>-p<span class="w"> </span>data<span class="w"> </span>ls</span>
+</pre></div></div><p>To identify the object location, run the following commands:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>map<span class="w"> </span><span class="o">{</span>pool-name<span class="o">}</span><span class="w"> </span><span class="o">{</span>object-name<span class="o">}</span></span>
+<span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>map<span class="w"> </span>data<span class="w"> </span>test-object-1</span>
+</pre></div></div><p>Ceph should output the object’s location. For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">osdmap</span> <span class="n">e537</span> <span class="n">pool</span> <span class="s1">&#39;data&#39;</span> <span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="nb">object</span> <span class="s1">&#39;test-object-1&#39;</span> <span class="o">-&gt;</span> <span class="n">pg</span> <span class="mf">1.</span><span class="n">d1743484</span> <span class="p">(</span><span class="mf">1.4</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">up</span> <span class="p">([</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">],</span> <span class="n">p0</span><span class="p">)</span> <span class="n">acting</span> <span class="p">([</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">],</span> <span class="n">p0</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>To remove the test object, simply delete it by running the <code class="docutils literal notranslate"><span class="pre">rados</span> <span class="pre">rm</span></code>
+command. For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">rados<span class="w"> </span>rm<span class="w"> </span>test-object-1<span class="w"> </span>--pool<span class="o">=</span>data</span>
+</pre></div></div></div>
+<p>As the cluster evolves, the object location may change dynamically. One benefit
+of Ceph’s dynamic rebalancing is that Ceph spares you the burden of manually
+performing the migration. For details, see the <a class="reference external" href="../../../architecture">Architecture</a> section.</p>
+</section>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../../">
+              <img class="logo" src="../../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../install/">Installing Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cephadm/">Cephadm</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../">Ceph Storage Cluster</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../../configuration/">Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../cephadm/">Deployment</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../">Operations</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../operating/">Operating a Cluster</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../health-checks/">Health checks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../monitoring/">Monitoring a Cluster</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Monitoring OSDs and PGs</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#monitoring-osds">Monitoring OSDs</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pg-sets">PG Sets</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#peering">Peering</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#monitoring-pg-states">Monitoring PG States</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#creating">Creating</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#id1">Peering</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#active">Active</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#clean">Clean</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#degraded">Degraded</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#recovering">Recovering</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#back-filling">Back Filling</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#remapped">Remapped</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#stale">Stale</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#identifying-troubled-pgs">Identifying Troubled PGs</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#finding-an-object-location">Finding an Object Location</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../user-management/">User Management</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../pg-repair/">Repairing PG Inconsistencies</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../data-placement/">Data Placement Overview</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../pools/">Pools</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../erasure-code/">Erasure code</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../cache-tiering/">Cache Tiering</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../placement-groups/">Placement Groups</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../balancer/">Balancer</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../upmap/">Using pg-upmap</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../crush-map/">CRUSH Maps</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../crush-map-edits/">Manually editing a CRUSH Map</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../stretch-mode/">Stretch Clusters</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../change-mon-elections/">Configure Monitor Election Strategies</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../add-or-rm-osds/">Adding/Removing OSDs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../add-or-rm-mons/">Adding/Removing Monitors</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../devices/">Device Management</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../bluestore-migration/">BlueStore Migration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../control/">Command Reference</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../troubleshooting/community/">The Ceph Community</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../troubleshooting/troubleshooting-mon/">Troubleshooting Monitors</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../troubleshooting/troubleshooting-osd/">Troubleshooting OSDs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../troubleshooting/troubleshooting-pg/">Troubleshooting PGs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../troubleshooting/log-and-debug/">Logging and Debugging</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../troubleshooting/cpu-profiling/">CPU Profiling</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../troubleshooting/memory-profiling/">Memory Profiling</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../man/">Man Pages</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../troubleshooting/">Troubleshooting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/">APIs</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cephfs/">Ceph File System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../rbd/">Ceph Block Device</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../radosgw/">Ceph Object Gateway</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../mgr/">Ceph Manager Daemon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../mgr/dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dev/developer_guide/">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dev/internals/">Ceph Internals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../../../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../user-management/" title="User Management"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../monitoring/" title="Monitoring a Cluster"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../" >Ceph Storage Cluster</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../" >Cluster Operations</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Monitoring OSDs and PGs</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

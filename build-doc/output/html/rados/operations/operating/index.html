@@ -1,0 +1,432 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Operating a Cluster &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/css/custom.css" />
+    <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/jquery.js"></script>
+    <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../../genindex/" />
+    <link rel="search" title="Search" href="../../../search/" />
+    <link rel="next" title="Health checks" href="../health-checks/" />
+    <link rel="prev" title="Cluster Operations" href="../" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../health-checks/" title="Health checks"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../" title="Cluster Operations"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../" >Ceph Storage Cluster</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../" accesskey="U">Cluster Operations</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Operating a Cluster</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="operating-a-cluster">
+<h1>Operating a Cluster<a class="headerlink" href="#operating-a-cluster" title="Permalink to this heading">¶</a></h1>
+<section id="running-ceph-with-systemd">
+<span id="index-0"></span><h2>Running Ceph with systemd<a class="headerlink" href="#running-ceph-with-systemd" title="Permalink to this heading">¶</a></h2>
+<p>In all distributions that support systemd (CentOS 7, Fedora, Debian
+Jessie 8 and later, and SUSE), systemd files (and NOT legacy SysVinit scripts)
+are used to manage Ceph daemons. Ceph daemons therefore behave like any other daemons
+that can be controlled by the <code class="docutils literal notranslate"><span class="pre">systemctl</span></code> command, as in the following examples:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><style type="text/css">
+span.prompt1:before {
+  content: "$ ";
+}
+</style><span class="prompt1">sudo<span class="w"> </span>systemctl<span class="w"> </span>start<span class="w"> </span>ceph.target<span class="w">       </span><span class="c1"># start all daemons</span></span>
+<span class="prompt1">sudo<span class="w"> </span>systemctl<span class="w"> </span>status<span class="w"> </span>ceph-osd@12<span class="w">      </span><span class="c1"># check status of osd.12</span></span>
+</pre></div></div><p>To list all of the Ceph systemd units on a node, run the following command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">sudo<span class="w"> </span>systemctl<span class="w"> </span>status<span class="w"> </span>ceph<span class="se">\*</span>.service<span class="w"> </span>ceph<span class="se">\*</span>.target</span>
+</pre></div></div><section id="starting-all-daemons">
+<h3>Starting all daemons<a class="headerlink" href="#starting-all-daemons" title="Permalink to this heading">¶</a></h3>
+<p>To start all of the daemons on a Ceph node (regardless of their type), run the
+following command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">sudo<span class="w"> </span>systemctl<span class="w"> </span>start<span class="w"> </span>ceph.target</span>
+</pre></div></div></section>
+<section id="stopping-all-daemons">
+<h3>Stopping all daemons<a class="headerlink" href="#stopping-all-daemons" title="Permalink to this heading">¶</a></h3>
+<p>To stop all of the daemons on a Ceph node (regardless of their type), run the
+following command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">sudo<span class="w"> </span>systemctl<span class="w"> </span>stop<span class="w"> </span>ceph<span class="se">\*</span>.service<span class="w"> </span>ceph<span class="se">\*</span>.target</span>
+</pre></div></div></section>
+<section id="starting-all-daemons-by-type">
+<h3>Starting all daemons by type<a class="headerlink" href="#starting-all-daemons-by-type" title="Permalink to this heading">¶</a></h3>
+<p>To start all of the daemons of a particular type on a Ceph node, run one of the
+following commands:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">sudo<span class="w"> </span>systemctl<span class="w"> </span>start<span class="w"> </span>ceph-osd.target</span>
+<span class="prompt1">sudo<span class="w"> </span>systemctl<span class="w"> </span>start<span class="w"> </span>ceph-mon.target</span>
+<span class="prompt1">sudo<span class="w"> </span>systemctl<span class="w"> </span>start<span class="w"> </span>ceph-mds.target</span>
+</pre></div></div></section>
+<section id="stopping-all-daemons-by-type">
+<h3>Stopping all daemons by type<a class="headerlink" href="#stopping-all-daemons-by-type" title="Permalink to this heading">¶</a></h3>
+<p>To stop all of the daemons of a particular type on a Ceph node, run one of the
+following commands:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">sudo<span class="w"> </span>systemctl<span class="w"> </span>stop<span class="w"> </span>ceph-osd<span class="se">\*</span>.service<span class="w"> </span>ceph-osd.target</span>
+<span class="prompt1">sudo<span class="w"> </span>systemctl<span class="w"> </span>stop<span class="w"> </span>ceph-mon<span class="se">\*</span>.service<span class="w"> </span>ceph-mon.target</span>
+<span class="prompt1">sudo<span class="w"> </span>systemctl<span class="w"> </span>stop<span class="w"> </span>ceph-mds<span class="se">\*</span>.service<span class="w"> </span>ceph-mds.target</span>
+</pre></div></div></section>
+<section id="starting-a-daemon">
+<h3>Starting a daemon<a class="headerlink" href="#starting-a-daemon" title="Permalink to this heading">¶</a></h3>
+<p>To start a specific daemon instance on a Ceph node, run one of the
+following commands:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">sudo<span class="w"> </span>systemctl<span class="w"> </span>start<span class="w"> </span>ceph-osd@<span class="o">{</span>id<span class="o">}</span></span>
+<span class="prompt1">sudo<span class="w"> </span>systemctl<span class="w"> </span>start<span class="w"> </span>ceph-mon@<span class="o">{</span>hostname<span class="o">}</span></span>
+<span class="prompt1">sudo<span class="w"> </span>systemctl<span class="w"> </span>start<span class="w"> </span>ceph-mds@<span class="o">{</span>hostname<span class="o">}</span></span>
+</pre></div></div><p>For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">sudo<span class="w"> </span>systemctl<span class="w"> </span>start<span class="w"> </span>ceph-osd@1</span>
+<span class="prompt1">sudo<span class="w"> </span>systemctl<span class="w"> </span>start<span class="w"> </span>ceph-mon@ceph-server</span>
+<span class="prompt1">sudo<span class="w"> </span>systemctl<span class="w"> </span>start<span class="w"> </span>ceph-mds@ceph-server</span>
+</pre></div></div></section>
+<section id="stopping-a-daemon">
+<h3>Stopping a daemon<a class="headerlink" href="#stopping-a-daemon" title="Permalink to this heading">¶</a></h3>
+<p>To stop a specific daemon instance on a Ceph node, run one of the
+following commands:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">sudo<span class="w"> </span>systemctl<span class="w"> </span>stop<span class="w"> </span>ceph-osd@<span class="o">{</span>id<span class="o">}</span></span>
+<span class="prompt1">sudo<span class="w"> </span>systemctl<span class="w"> </span>stop<span class="w"> </span>ceph-mon@<span class="o">{</span>hostname<span class="o">}</span></span>
+<span class="prompt1">sudo<span class="w"> </span>systemctl<span class="w"> </span>stop<span class="w"> </span>ceph-mds@<span class="o">{</span>hostname<span class="o">}</span></span>
+</pre></div></div><p>For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">sudo<span class="w"> </span>systemctl<span class="w"> </span>stop<span class="w"> </span>ceph-osd@1</span>
+<span class="prompt1">sudo<span class="w"> </span>systemctl<span class="w"> </span>stop<span class="w"> </span>ceph-mon@ceph-server</span>
+<span class="prompt1">sudo<span class="w"> </span>systemctl<span class="w"> </span>stop<span class="w"> </span>ceph-mds@ceph-server</span>
+</pre></div></div></section>
+</section>
+<section id="running-ceph-with-upstart">
+<span id="index-1"></span><h2>Running Ceph with Upstart<a class="headerlink" href="#running-ceph-with-upstart" title="Permalink to this heading">¶</a></h2>
+<section id="id1">
+<h3>Starting all Daemons<a class="headerlink" href="#id1" title="Permalink to this heading">¶</a></h3>
+<p>To start all daemons on a Ceph Node (irrespective of type), execute the
+following:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">sudo</span> <span class="n">start</span> <span class="n">ceph</span><span class="o">-</span><span class="nb">all</span>
+</pre></div>
+</div>
+</section>
+<section id="id2">
+<h3>Stopping all Daemons<a class="headerlink" href="#id2" title="Permalink to this heading">¶</a></h3>
+<p>To stop all daemons on a Ceph Node (irrespective of type), execute the
+following:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">sudo</span> <span class="n">stop</span> <span class="n">ceph</span><span class="o">-</span><span class="nb">all</span>
+</pre></div>
+</div>
+</section>
+<section id="id3">
+<h3>Starting all Daemons by Type<a class="headerlink" href="#id3" title="Permalink to this heading">¶</a></h3>
+<p>To start all daemons of a particular type on a Ceph Node, execute one of the
+following:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">sudo</span> <span class="n">start</span> <span class="n">ceph</span><span class="o">-</span><span class="n">osd</span><span class="o">-</span><span class="nb">all</span>
+<span class="n">sudo</span> <span class="n">start</span> <span class="n">ceph</span><span class="o">-</span><span class="n">mon</span><span class="o">-</span><span class="nb">all</span>
+<span class="n">sudo</span> <span class="n">start</span> <span class="n">ceph</span><span class="o">-</span><span class="n">mds</span><span class="o">-</span><span class="nb">all</span>
+</pre></div>
+</div>
+</section>
+<section id="id4">
+<h3>Stopping all Daemons by Type<a class="headerlink" href="#id4" title="Permalink to this heading">¶</a></h3>
+<p>To stop all daemons of a particular type on a Ceph Node, execute one of the
+following:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">sudo</span> <span class="n">stop</span> <span class="n">ceph</span><span class="o">-</span><span class="n">osd</span><span class="o">-</span><span class="nb">all</span>
+<span class="n">sudo</span> <span class="n">stop</span> <span class="n">ceph</span><span class="o">-</span><span class="n">mon</span><span class="o">-</span><span class="nb">all</span>
+<span class="n">sudo</span> <span class="n">stop</span> <span class="n">ceph</span><span class="o">-</span><span class="n">mds</span><span class="o">-</span><span class="nb">all</span>
+</pre></div>
+</div>
+</section>
+<section id="id5">
+<h3>Starting a Daemon<a class="headerlink" href="#id5" title="Permalink to this heading">¶</a></h3>
+<p>To start a specific daemon instance on a Ceph Node, execute one of the
+following:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">sudo</span> <span class="n">start</span> <span class="n">ceph</span><span class="o">-</span><span class="n">osd</span> <span class="nb">id</span><span class="o">=</span><span class="p">{</span><span class="nb">id</span><span class="p">}</span>
+<span class="n">sudo</span> <span class="n">start</span> <span class="n">ceph</span><span class="o">-</span><span class="n">mon</span> <span class="nb">id</span><span class="o">=</span><span class="p">{</span><span class="n">hostname</span><span class="p">}</span>
+<span class="n">sudo</span> <span class="n">start</span> <span class="n">ceph</span><span class="o">-</span><span class="n">mds</span> <span class="nb">id</span><span class="o">=</span><span class="p">{</span><span class="n">hostname</span><span class="p">}</span>
+</pre></div>
+</div>
+<p>For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">sudo</span> <span class="n">start</span> <span class="n">ceph</span><span class="o">-</span><span class="n">osd</span> <span class="nb">id</span><span class="o">=</span><span class="mi">1</span>
+<span class="n">sudo</span> <span class="n">start</span> <span class="n">ceph</span><span class="o">-</span><span class="n">mon</span> <span class="nb">id</span><span class="o">=</span><span class="n">ceph</span><span class="o">-</span><span class="n">server</span>
+<span class="n">sudo</span> <span class="n">start</span> <span class="n">ceph</span><span class="o">-</span><span class="n">mds</span> <span class="nb">id</span><span class="o">=</span><span class="n">ceph</span><span class="o">-</span><span class="n">server</span>
+</pre></div>
+</div>
+</section>
+<section id="id6">
+<h3>Stopping a Daemon<a class="headerlink" href="#id6" title="Permalink to this heading">¶</a></h3>
+<p>To stop a specific daemon instance on a Ceph Node, execute one of the
+following:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">sudo</span> <span class="n">stop</span> <span class="n">ceph</span><span class="o">-</span><span class="n">osd</span> <span class="nb">id</span><span class="o">=</span><span class="p">{</span><span class="nb">id</span><span class="p">}</span>
+<span class="n">sudo</span> <span class="n">stop</span> <span class="n">ceph</span><span class="o">-</span><span class="n">mon</span> <span class="nb">id</span><span class="o">=</span><span class="p">{</span><span class="n">hostname</span><span class="p">}</span>
+<span class="n">sudo</span> <span class="n">stop</span> <span class="n">ceph</span><span class="o">-</span><span class="n">mds</span> <span class="nb">id</span><span class="o">=</span><span class="p">{</span><span class="n">hostname</span><span class="p">}</span>
+</pre></div>
+</div>
+<p>For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">sudo</span> <span class="n">stop</span> <span class="n">ceph</span><span class="o">-</span><span class="n">osd</span> <span class="nb">id</span><span class="o">=</span><span class="mi">1</span>
+<span class="n">sudo</span> <span class="n">start</span> <span class="n">ceph</span><span class="o">-</span><span class="n">mon</span> <span class="nb">id</span><span class="o">=</span><span class="n">ceph</span><span class="o">-</span><span class="n">server</span>
+<span class="n">sudo</span> <span class="n">start</span> <span class="n">ceph</span><span class="o">-</span><span class="n">mds</span> <span class="nb">id</span><span class="o">=</span><span class="n">ceph</span><span class="o">-</span><span class="n">server</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="running-ceph-with-sysvinit">
+<span id="index-2"></span><h2>Running Ceph with SysVinit<a class="headerlink" href="#running-ceph-with-sysvinit" title="Permalink to this heading">¶</a></h2>
+<p>Each time you start, restart, or stop Ceph daemons, you must specify at least one option and one command.
+Likewise, each time you start, restart, or stop your entire cluster, you must specify at least one option and one command.
+In both cases, you can also specify a daemon type or a daemon instance.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span><span class="n">commandline</span><span class="p">}</span> <span class="p">[</span><span class="n">options</span><span class="p">]</span> <span class="p">[</span><span class="n">commands</span><span class="p">]</span> <span class="p">[</span><span class="n">daemons</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">ceph</span></code> options include:</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 22%" />
+<col style="width: 13%" />
+<col style="width: 64%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Option</p></th>
+<th class="head"><p>Shortcut</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--verbose</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">-v</span></code></p></td>
+<td><p>Use verbose logging.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--valgrind</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">N/A</span></code></p></td>
+<td><p>(Dev and QA only) Use <a class="reference external" href="http://www.valgrind.org/">Valgrind</a> debugging.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--allhosts</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">-a</span></code></p></td>
+<td><p>Execute on all nodes listed in <code class="docutils literal notranslate"><span class="pre">ceph.conf</span></code>.
+Otherwise, it only executes on <code class="docutils literal notranslate"><span class="pre">localhost</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--restart</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">N/A</span></code></p></td>
+<td><p>Automatically restart daemon if it core dumps.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--norestart</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">N/A</span></code></p></td>
+<td><p>Do not restart a daemon if it core dumps.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--conf</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">-c</span></code></p></td>
+<td><p>Use an alternate configuration file.</p></td>
+</tr>
+</tbody>
+</table>
+<p>The <code class="docutils literal notranslate"><span class="pre">ceph</span></code> commands include:</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 23%" />
+<col style="width: 77%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Command</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">start</span></code></p></td>
+<td><p>Start the daemon(s).</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">stop</span></code></p></td>
+<td><p>Stop the daemon(s).</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">forcestop</span></code></p></td>
+<td><p>Force the daemon(s) to stop. Same as <code class="docutils literal notranslate"><span class="pre">kill</span> <span class="pre">-9</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">killall</span></code></p></td>
+<td><p>Kill all daemons of a particular type.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">cleanlogs</span></code></p></td>
+<td><p>Cleans out the log directory.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">cleanalllogs</span></code></p></td>
+<td><p>Cleans out <strong>everything</strong> in the log directory.</p></td>
+</tr>
+</tbody>
+</table>
+<p>The <code class="docutils literal notranslate"><span class="pre">[daemons]</span></code> option allows the <code class="docutils literal notranslate"><span class="pre">ceph</span></code> service to target specific daemon types
+in order to perform subsystem operations. Daemon types include:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">mon</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">osd</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">mds</span></code></p></li>
+</ul>
+</section>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../../">
+              <img class="logo" src="../../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../install/">Installing Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cephadm/">Cephadm</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../">Ceph Storage Cluster</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../../configuration/">Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../cephadm/">Deployment</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../">Operations</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Operating a Cluster</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#running-ceph-with-systemd">Running Ceph with systemd</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#starting-all-daemons">Starting all daemons</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#stopping-all-daemons">Stopping all daemons</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#starting-all-daemons-by-type">Starting all daemons by type</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#stopping-all-daemons-by-type">Stopping all daemons by type</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#starting-a-daemon">Starting a daemon</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#stopping-a-daemon">Stopping a daemon</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#running-ceph-with-upstart">Running Ceph with Upstart</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#id1">Starting all Daemons</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#id2">Stopping all Daemons</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#id3">Starting all Daemons by Type</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#id4">Stopping all Daemons by Type</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#id5">Starting a Daemon</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#id6">Stopping a Daemon</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#running-ceph-with-sysvinit">Running Ceph with SysVinit</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../health-checks/">Health checks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../monitoring/">Monitoring a Cluster</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../monitoring-osd-pg/">Monitoring OSDs and PGs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../user-management/">User Management</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../pg-repair/">Repairing PG Inconsistencies</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../data-placement/">Data Placement Overview</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../pools/">Pools</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../erasure-code/">Erasure code</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../cache-tiering/">Cache Tiering</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../placement-groups/">Placement Groups</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../balancer/">Balancer</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../upmap/">Using pg-upmap</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../crush-map/">CRUSH Maps</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../crush-map-edits/">Manually editing a CRUSH Map</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../stretch-mode/">Stretch Clusters</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../change-mon-elections/">Configure Monitor Election Strategies</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../add-or-rm-osds/">Adding/Removing OSDs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../add-or-rm-mons/">Adding/Removing Monitors</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../devices/">Device Management</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../bluestore-migration/">BlueStore Migration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../control/">Command Reference</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../troubleshooting/community/">The Ceph Community</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../troubleshooting/troubleshooting-mon/">Troubleshooting Monitors</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../troubleshooting/troubleshooting-osd/">Troubleshooting OSDs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../troubleshooting/troubleshooting-pg/">Troubleshooting PGs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../troubleshooting/log-and-debug/">Logging and Debugging</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../troubleshooting/cpu-profiling/">CPU Profiling</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../troubleshooting/memory-profiling/">Memory Profiling</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../man/">Man Pages</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../troubleshooting/">Troubleshooting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/">APIs</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cephfs/">Ceph File System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../rbd/">Ceph Block Device</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../radosgw/">Ceph Object Gateway</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../mgr/">Ceph Manager Daemon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../mgr/dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dev/developer_guide/">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dev/internals/">Ceph Internals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../../../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../health-checks/" title="Health checks"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../" title="Cluster Operations"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../" >Ceph Storage Cluster</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../" >Cluster Operations</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Operating a Cluster</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

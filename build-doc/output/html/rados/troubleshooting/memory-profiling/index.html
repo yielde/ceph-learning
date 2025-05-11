@@ -1,0 +1,302 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Memory Profiling &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/css/custom.css" />
+    <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/jquery.js"></script>
+    <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../../genindex/" />
+    <link rel="search" title="Search" href="../../../search/" />
+    <link rel="next" title="Object Store Manpages" href="../../man/" />
+    <link rel="prev" title="CPU Profiling" href="../cpu-profiling/" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../../man/" title="Object Store Manpages"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../cpu-profiling/" title="CPU Profiling"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../" >Ceph Storage Cluster</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../../operations/" accesskey="U">Cluster Operations</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Memory Profiling</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="memory-profiling">
+<h1>Memory Profiling<a class="headerlink" href="#memory-profiling" title="Permalink to this heading">¶</a></h1>
+<p>Ceph MON, OSD and MDS can generate heap profiles using
+<code class="docutils literal notranslate"><span class="pre">tcmalloc</span></code>. To generate heap profiles, ensure you have
+<code class="docutils literal notranslate"><span class="pre">google-perftools</span></code> installed:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">sudo</span> <span class="n">apt</span><span class="o">-</span><span class="n">get</span> <span class="n">install</span> <span class="n">google</span><span class="o">-</span><span class="n">perftools</span>
+</pre></div>
+</div>
+<p>The profiler dumps output to your <code class="docutils literal notranslate"><span class="pre">log</span> <span class="pre">file</span></code> directory (i.e.,
+<code class="docutils literal notranslate"><span class="pre">/var/log/ceph</span></code>). See <a class="reference external" href="../log-and-debug">Logging and Debugging</a> for details.
+To view the profiler logs with Google’s performance tools, execute the
+following:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">google</span><span class="o">-</span><span class="n">pprof</span> <span class="o">--</span><span class="n">text</span> <span class="p">{</span><span class="n">path</span><span class="o">-</span><span class="n">to</span><span class="o">-</span><span class="n">daemon</span><span class="p">}</span>  <span class="p">{</span><span class="n">log</span><span class="o">-</span><span class="n">path</span><span class="o">/</span><span class="n">filename</span><span class="p">}</span>
+</pre></div>
+</div>
+<p>For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ ceph tell osd.0 heap start_profiler
+$ ceph tell osd.0 heap dump
+osd.0 tcmalloc heap stats:------------------------------------------------
+MALLOC:        2632288 (    2.5 MiB) Bytes in use by application
+MALLOC: +       499712 (    0.5 MiB) Bytes in page heap freelist
+MALLOC: +       543800 (    0.5 MiB) Bytes in central cache freelist
+MALLOC: +       327680 (    0.3 MiB) Bytes in transfer cache freelist
+MALLOC: +      1239400 (    1.2 MiB) Bytes in thread cache freelists
+MALLOC: +      1142936 (    1.1 MiB) Bytes in malloc metadata
+MALLOC:   ------------
+MALLOC: =      6385816 (    6.1 MiB) Actual memory used (physical + swap)
+MALLOC: +            0 (    0.0 MiB) Bytes released to OS (aka unmapped)
+MALLOC:   ------------
+MALLOC: =      6385816 (    6.1 MiB) Virtual address space used
+MALLOC:
+MALLOC:            231              Spans in use
+MALLOC:             56              Thread heaps in use
+MALLOC:           8192              Tcmalloc page size
+------------------------------------------------
+Call ReleaseFreeMemory() to release freelist memory to the OS (via madvise()).
+Bytes released to the OS take up virtual address space but no physical memory.
+$ google-pprof --text \
+               /usr/bin/ceph-osd  \
+               /var/log/ceph/ceph-osd.0.profile.0001.heap
+ Total: 3.7 MB
+ 1.9  51.1%  51.1%      1.9  51.1% ceph::log::Log::create_entry
+ 1.8  47.3%  98.4%      1.8  47.3% std::string::_Rep::_S_create
+ 0.0   0.4%  98.9%      0.0   0.6% SimpleMessenger::add_accept_pipe
+ 0.0   0.4%  99.2%      0.0   0.6% decode_message
+ ...
+</pre></div>
+</div>
+<p>Another heap dump on the same daemon will add another file. It is
+convenient to compare to a previous heap dump to show what has grown
+in the interval. For instance:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ google-pprof --text --base out/osd.0.profile.0001.heap \
+      ceph-osd out/osd.0.profile.0003.heap
+ Total: 0.2 MB
+ 0.1  50.3%  50.3%      0.1  50.3% ceph::log::Log::create_entry
+ 0.1  46.6%  96.8%      0.1  46.6% std::string::_Rep::_S_create
+ 0.0   0.9%  97.7%      0.0  26.1% ReplicatedPG::do_op
+ 0.0   0.8%  98.5%      0.0   0.8% __gnu_cxx::new_allocator::allocate
+</pre></div>
+</div>
+<p>Refer to <a class="reference external" href="http://goog-perftools.sourceforge.net/doc/heap_profiler.html">Google Heap Profiler</a> for additional details.</p>
+<p>Once you have the heap profiler installed, start your cluster and
+begin using the heap profiler. You may enable or disable the heap
+profiler at runtime, or ensure that it runs continuously. For the
+following commandline usage, replace <code class="docutils literal notranslate"><span class="pre">{daemon-type}</span></code> with <code class="docutils literal notranslate"><span class="pre">mon</span></code>,
+<code class="docutils literal notranslate"><span class="pre">osd</span></code> or <code class="docutils literal notranslate"><span class="pre">mds</span></code>, and replace <code class="docutils literal notranslate"><span class="pre">{daemon-id}</span></code> with the OSD number or
+the MON or MDS id.</p>
+<section id="starting-the-profiler">
+<h2>Starting the Profiler<a class="headerlink" href="#starting-the-profiler" title="Permalink to this heading">¶</a></h2>
+<p>To start the heap profiler, execute the following:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span> <span class="n">tell</span> <span class="p">{</span><span class="n">daemon</span><span class="o">-</span><span class="nb">type</span><span class="p">}</span><span class="o">.</span><span class="p">{</span><span class="n">daemon</span><span class="o">-</span><span class="nb">id</span><span class="p">}</span> <span class="n">heap</span> <span class="n">start_profiler</span>
+</pre></div>
+</div>
+<p>For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span> <span class="n">tell</span> <span class="n">osd</span><span class="mf">.1</span> <span class="n">heap</span> <span class="n">start_profiler</span>
+</pre></div>
+</div>
+<p>Alternatively the profile can be started when the daemon starts
+running if the <code class="docutils literal notranslate"><span class="pre">CEPH_HEAP_PROFILER_INIT=true</span></code> variable is found in
+the environment.</p>
+</section>
+<section id="printing-stats">
+<h2>Printing Stats<a class="headerlink" href="#printing-stats" title="Permalink to this heading">¶</a></h2>
+<p>To print out statistics, execute the following:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span>  <span class="n">tell</span> <span class="p">{</span><span class="n">daemon</span><span class="o">-</span><span class="nb">type</span><span class="p">}</span><span class="o">.</span><span class="p">{</span><span class="n">daemon</span><span class="o">-</span><span class="nb">id</span><span class="p">}</span> <span class="n">heap</span> <span class="n">stats</span>
+</pre></div>
+</div>
+<p>For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span> <span class="n">tell</span> <span class="n">osd</span><span class="mf">.0</span> <span class="n">heap</span> <span class="n">stats</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Printing stats does not require the profiler to be running and does
+not dump the heap allocation information to a file.</p>
+</div>
+</section>
+<section id="dumping-heap-information">
+<h2>Dumping Heap Information<a class="headerlink" href="#dumping-heap-information" title="Permalink to this heading">¶</a></h2>
+<p>To dump heap information, execute the following:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span> <span class="n">tell</span> <span class="p">{</span><span class="n">daemon</span><span class="o">-</span><span class="nb">type</span><span class="p">}</span><span class="o">.</span><span class="p">{</span><span class="n">daemon</span><span class="o">-</span><span class="nb">id</span><span class="p">}</span> <span class="n">heap</span> <span class="n">dump</span>
+</pre></div>
+</div>
+<p>For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span> <span class="n">tell</span> <span class="n">mds</span><span class="o">.</span><span class="n">a</span> <span class="n">heap</span> <span class="n">dump</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Dumping heap information only works when the profiler is running.</p>
+</div>
+</section>
+<section id="releasing-memory">
+<h2>Releasing Memory<a class="headerlink" href="#releasing-memory" title="Permalink to this heading">¶</a></h2>
+<p>To release memory that <code class="docutils literal notranslate"><span class="pre">tcmalloc</span></code> has allocated but which is not being used by
+the Ceph daemon itself, execute the following:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span> <span class="n">tell</span> <span class="p">{</span><span class="n">daemon</span><span class="o">-</span><span class="nb">type</span><span class="p">}{</span><span class="n">daemon</span><span class="o">-</span><span class="nb">id</span><span class="p">}</span> <span class="n">heap</span> <span class="n">release</span>
+</pre></div>
+</div>
+<p>For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span> <span class="n">tell</span> <span class="n">osd</span><span class="mf">.2</span> <span class="n">heap</span> <span class="n">release</span>
+</pre></div>
+</div>
+</section>
+<section id="stopping-the-profiler">
+<h2>Stopping the Profiler<a class="headerlink" href="#stopping-the-profiler" title="Permalink to this heading">¶</a></h2>
+<p>To stop the heap profiler, execute the following:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span> <span class="n">tell</span> <span class="p">{</span><span class="n">daemon</span><span class="o">-</span><span class="nb">type</span><span class="p">}</span><span class="o">.</span><span class="p">{</span><span class="n">daemon</span><span class="o">-</span><span class="nb">id</span><span class="p">}</span> <span class="n">heap</span> <span class="n">stop_profiler</span>
+</pre></div>
+</div>
+<p>For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span> <span class="n">tell</span> <span class="n">osd</span><span class="mf">.0</span> <span class="n">heap</span> <span class="n">stop_profiler</span>
+</pre></div>
+</div>
+</section>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../../">
+              <img class="logo" src="../../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../install/">Installing Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cephadm/">Cephadm</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../">Ceph Storage Cluster</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../../configuration/">Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../cephadm/">Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../operations/">Operations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../man/">Man Pages</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../">Troubleshooting</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../community/">The Ceph Community</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../log-and-debug/">Logging and Debugging</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../troubleshooting-mon/">Troubleshooting Monitors</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../troubleshooting-osd/">Troubleshooting OSDs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../troubleshooting-pg/">Troubleshooting PGs</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Memory Profiling</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#starting-the-profiler">Starting the Profiler</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#printing-stats">Printing Stats</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#dumping-heap-information">Dumping Heap Information</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#releasing-memory">Releasing Memory</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#stopping-the-profiler">Stopping the Profiler</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../cpu-profiling/">CPU Profiling</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/">APIs</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cephfs/">Ceph File System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../rbd/">Ceph Block Device</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../radosgw/">Ceph Object Gateway</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../mgr/">Ceph Manager Daemon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../mgr/dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dev/developer_guide/">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dev/internals/">Ceph Internals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../../../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../../man/" title="Object Store Manpages"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../cpu-profiling/" title="CPU Profiling"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../" >Ceph Storage Cluster</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../../operations/" >Cluster Operations</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Memory Profiling</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

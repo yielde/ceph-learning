@@ -1,0 +1,310 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>RBD on Windows &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css" />
+    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../genindex/" />
+    <link rel="search" title="Search" href="../../search/" />
+    <link rel="next" title="Ceph Block Device Manpages" href="../man/" />
+    <link rel="prev" title="Monitoring Ceph iSCSI gateways" href="../iscsi-monitoring/" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../man/" title="Ceph Block Device Manpages"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../iscsi-monitoring/" title="Monitoring Ceph iSCSI gateways"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../" >Ceph Block Device</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../rbd-integrations/" accesskey="U">Ceph Block Device 3rd Party Integration</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">RBD on Windows</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="rbd-on-windows">
+<h1>RBD on Windows<a class="headerlink" href="#rbd-on-windows" title="Permalink to this heading">¶</a></h1>
+<p>The <code class="docutils literal notranslate"><span class="pre">rbd</span></code> command can be used to create, remove, import, export, map or
+unmap images exactly like it would on Linux. Make sure to check the
+<a class="reference external" href="../rados-rbd-cmds">RBD basic commands</a> guide.</p>
+<p><code class="docutils literal notranslate"><span class="pre">librbd.dll</span></code> is also available for applications that can natively use Ceph.</p>
+<p>Please check the <a class="reference external" href="../../install/windows-install">installation guide</a> to get started.</p>
+<section id="windows-service">
+<h2>Windows service<a class="headerlink" href="#windows-service" title="Permalink to this heading">¶</a></h2>
+<p>On Windows, <code class="docutils literal notranslate"><span class="pre">rbd-wnbd</span></code> daemons are managed by a centralized service. This allows
+decoupling the daemons from the Windows session from which they originate. At
+the same time, the service is responsible of recreating persistent mappings,
+usually when the host boots.</p>
+<p>Note that only one such service may run per host.</p>
+<p>By default, all image mappings are persistent. Non-persistent mappings can be
+requested using the <code class="docutils literal notranslate"><span class="pre">-onon-persistent</span></code> <code class="docutils literal notranslate"><span class="pre">rbd</span></code> flag.</p>
+<p>Persistent mappings are recreated when the service starts, unless explicitly
+unmapped. The service disconnects the mappings when being stopped. This also
+allows adjusting the Windows service start order so that RBD images can be
+mapped before starting services that may depend on it, such as VMMS.</p>
+<p>In order to be able to reconnect the images, <code class="docutils literal notranslate"><span class="pre">rbd-wnbd</span></code> stores mapping
+information in the Windows registry at the following location:
+<code class="docutils literal notranslate"><span class="pre">SYSTEM\CurrentControlSet\Services\rbd-wnbd</span></code>.</p>
+<p>The following command can be used to configure the service. Please update
+the <code class="docutils literal notranslate"><span class="pre">rbd-wnbd.exe</span></code> path accordingly:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>New-Service -Name &quot;ceph-rbd&quot; `
+            -Description &quot;Ceph RBD Mapping Service&quot; `
+            -BinaryPathName &quot;c:\ceph\rbd-wnbd.exe service&quot; `
+            -StartupType Automatic
+</pre></div>
+</div>
+<p>Note that the Ceph MSI installer takes care of creating the <code class="docutils literal notranslate"><span class="pre">ceph-rbd</span></code>
+Windows service.</p>
+</section>
+<section id="usage">
+<h2>Usage<a class="headerlink" href="#usage" title="Permalink to this heading">¶</a></h2>
+<section id="integration">
+<h3>Integration<a class="headerlink" href="#integration" title="Permalink to this heading">¶</a></h3>
+<p>RBD images can be exposed to the OS and host Windows partitions or they can be
+attached to Hyper-V VMs in the same way as iSCSI disks.</p>
+<p>Starting with Openstack Wallaby, the Nova Hyper-V driver can attach RBD Cinder
+volumes to Hyper-V VMs.</p>
+</section>
+<section id="mapping-images">
+<h3>Mapping images<a class="headerlink" href="#mapping-images" title="Permalink to this heading">¶</a></h3>
+<p>The workflow and CLI is similar to the Linux counterpart, with a few
+notable differences:</p>
+<ul class="simple">
+<li><p>device paths cannot be requested. The disk number and path will be picked by
+Windows. If a device path is provided by the used when mapping an image, it
+will be used as an identifier, which can also be used when unmapping the
+image.</p></li>
+<li><p>the <code class="docutils literal notranslate"><span class="pre">show</span></code> command was added, which describes a specific mapping.
+This can be used for retrieving the disk path.</p></li>
+<li><p>the <code class="docutils literal notranslate"><span class="pre">service</span></code> command was added, allowing <code class="docutils literal notranslate"><span class="pre">rbd-wnbd</span></code> to run as a Windows service.
+All mappings are by default perisistent, being recreated when the service
+stops, unless explicitly unmapped. The service disconnects the mappings
+when being stopped.</p></li>
+<li><p>the <code class="docutils literal notranslate"><span class="pre">list</span></code> command also includes a <code class="docutils literal notranslate"><span class="pre">status</span></code> column.</p></li>
+</ul>
+<p>The purpose of the <code class="docutils literal notranslate"><span class="pre">service</span></code> mode is to ensure that mappings survive reboots
+and that the Windows service start order can be adjusted so that RBD images can
+be mapped before starting services that may depend on it, such as VMMS.</p>
+<p>The mapped images can either be consumed by the host directly or exposed to
+Hyper-V VMs.</p>
+</section>
+<section id="hyper-v-vm-disks">
+<h3>Hyper-V VM disks<a class="headerlink" href="#hyper-v-vm-disks" title="Permalink to this heading">¶</a></h3>
+<p>The following sample imports an RBD image and boots a Hyper-V VM using it:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span># Feel free to use any other image. This one is convenient to use for
+# testing purposes because it&#39;s very small (~15MB) and the login prompt
+# prints the pre-configured password.
+wget http://download.cirros-cloud.net/0.5.1/cirros-0.5.1-x86_64-disk.img `
+     -OutFile cirros-0.5.1-x86_64-disk.img
+
+# We&#39;ll need to make sure that the imported images are raw (so no qcow2 or vhdx).
+# You may get qemu-img from https://cloudbase.it/qemu-img-windows/
+# You can add the extracted location to $env:Path or update the path accordingly.
+qemu-img convert -O raw cirros-0.5.1-x86_64-disk.img cirros-0.5.1-x86_64-disk.raw
+
+rbd import cirros-0.5.1-x86_64-disk.raw
+# Let&#39;s give it a hefty 100MB size.
+rbd resize cirros-0.5.1-x86_64-disk.raw --size=100MB
+
+rbd device map cirros-0.5.1-x86_64-disk.raw
+
+# Let&#39;s have a look at the mappings.
+rbd device list
+Get-Disk
+
+$mappingJson = rbd-wnbd show cirros-0.5.1-x86_64-disk.raw --format=json
+$mappingJson = $mappingJson | ConvertFrom-Json
+
+$diskNumber = $mappingJson.disk_number
+
+New-VM -VMName BootFromRBD -MemoryStartupBytes 512MB
+# The disk must be turned offline before it can be passed to Hyper-V VMs
+Set-Disk -Number $diskNumber -IsOffline $true
+Add-VMHardDiskDrive -VMName BootFromRBD -DiskNumber $diskNumber
+Start-VM -VMName BootFromRBD
+</pre></div>
+</div>
+</section>
+<section id="windows-partitions">
+<h3>Windows partitions<a class="headerlink" href="#windows-partitions" title="Permalink to this heading">¶</a></h3>
+<p>The following sample creates an empty RBD image, attaches it to the host and
+initializes a partition:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>rbd create blank_image --size=1G
+rbd device map blank_image -onon-persistent
+
+$mappingJson = rbd-wnbd show blank_image --format=json
+$mappingJson = $mappingJson | ConvertFrom-Json
+
+$diskNumber = $mappingJson.disk_number
+
+# The disk must be online before creating or accessing partitions.
+Set-Disk -Number $diskNumber -IsOffline $false
+
+# Initialize the disk, partition it and create a fileystem.
+Get-Disk -Number $diskNumber | `
+    Initialize-Disk -PassThru | `
+    New-Partition -AssignDriveLetter -UseMaximumSize | `
+    Format-Volume -Force -Confirm:$false
+</pre></div>
+</div>
+</section>
+<section id="limitations">
+<h3>Limitations<a class="headerlink" href="#limitations" title="Permalink to this heading">¶</a></h3>
+<p>At the moment, the Microsoft Failover Cluster can’t use WNBD disks as
+Cluster Shared Volumes (CSVs) underlying storage. The main reason is that
+<code class="docutils literal notranslate"><span class="pre">WNBD</span></code> and <code class="docutils literal notranslate"><span class="pre">rbd-wnbd</span></code> don’t support the <em>SCSI Persistent Reservations</em>
+feature yet.</p>
+</section>
+</section>
+<section id="troubleshooting">
+<h2>Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permalink to this heading">¶</a></h2>
+<p>Please consult the <a class="reference external" href="../../install/windows-troubleshooting">Windows troubleshooting</a> page.</p>
+</section>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../">
+              <img class="logo" src="../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../install/">Installing Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cephadm/">Cephadm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rados/">Ceph Storage Cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cephfs/">Ceph File System</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../">Ceph Block Device</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../rados-rbd-cmds/">Basic Commands</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rbd-operations/">Operations</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../rbd-integrations/">Integrations</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../rbd-ko/">Kernel Modules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../qemu-rbd/">QEMU</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../libvirt/">libvirt</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rbd-kubernetes/">Kubernetes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rbd-openstack/">OpenStack</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rbd-cloudstack/">CloudStack</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../iscsi-overview/">LIO iSCSI Gateway</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Windows</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#windows-service">Windows service</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#usage">Usage</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#integration">Integration</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#mapping-images">Mapping images</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#hyper-v-vm-disks">Hyper-V VM disks</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#windows-partitions">Windows partitions</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#limitations">Limitations</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#troubleshooting">Troubleshooting</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../man/">Manpages</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/">APIs</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../radosgw/">Ceph Object Gateway</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/">Ceph Manager Daemon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dev/developer_guide/">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dev/internals/">Ceph Internals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../man/" title="Ceph Block Device Manpages"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../iscsi-monitoring/" title="Monitoring Ceph iSCSI gateways"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../" >Ceph Block Device</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../rbd-integrations/" >Ceph Block Device 3rd Party Integration</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">RBD on Windows</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

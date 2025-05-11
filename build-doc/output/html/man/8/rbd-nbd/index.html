@@ -1,0 +1,268 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>rbd-nbd – map rbd images to nbd device &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/css/custom.css" />
+    <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/jquery.js"></script>
+    <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../../genindex/" />
+    <link rel="search" title="Search" href="../../../search/" />
+    <link rel="next" title="rbd-ggate – map rbd images via FreeBSD GEOM Gate" href="../rbd-ggate/" />
+    <link rel="prev" title="rbd-fuse – expose rbd images as files" href="../rbd-fuse/" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../rbd-ggate/" title="rbd-ggate – map rbd images via FreeBSD GEOM Gate"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../rbd-fuse/" title="rbd-fuse – expose rbd images as files"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../../rbd/" >Ceph Block Device</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../../../rbd/man/" accesskey="U">Ceph Block Device Manpages</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">rbd-nbd – map rbd images to nbd device</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="rbd-nbd-map-rbd-images-to-nbd-device">
+<h1>rbd-nbd – map rbd images to nbd device<a class="headerlink" href="#rbd-nbd-map-rbd-images-to-nbd-device" title="Permalink to this heading">¶</a></h1>
+<section id="synopsis">
+<h2>Synopsis<a class="headerlink" href="#synopsis" title="Permalink to this heading">¶</a></h2>
+<div class="line-block">
+<div class="line"><strong>rbd-nbd</strong> [-c conf] [–read-only] [–device <em>nbd device</em>] [–nbds_max <em>limit</em>] [–max_part <em>limit</em>] [–exclusive] [–encryption-format <em>format</em>] [–encryption-passphrase-file <em>passphrase-file</em>] [–io-timeout <em>seconds</em>] [–reattach-timeout <em>seconds</em>] map <em>image-spec</em> | <em>snap-spec</em></div>
+<div class="line"><strong>rbd-nbd</strong> unmap <em>nbd device</em> | <em>image-spec</em> | <em>snap-spec</em></div>
+<div class="line"><strong>rbd-nbd</strong> list-mapped</div>
+<div class="line"><strong>rbd-nbd</strong> attach –device <em>nbd device</em> <em>image-spec</em> | <em>snap-spec</em></div>
+<div class="line"><strong>rbd-nbd</strong> detach <em>nbd device</em> | <em>image-spec</em> | <em>snap-spec</em></div>
+</div>
+</section>
+<section id="description">
+<h2>Description<a class="headerlink" href="#description" title="Permalink to this heading">¶</a></h2>
+<p><strong>rbd-nbd</strong> is a client for RADOS block device (rbd) images like rbd kernel module.
+It will map a rbd image to a nbd (Network Block Device) device, allowing access it
+as regular local block device.</p>
+</section>
+<section id="options">
+<h2>Options<a class="headerlink" href="#options" title="Permalink to this heading">¶</a></h2>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-rbd-nbd-c">
+<span class="sig-name descname"><span class="pre">-c</span></span><span class="sig-prename descclassname"> <span class="pre">ceph.conf</span></span><a class="headerlink" href="#cmdoption-rbd-nbd-c" title="Permalink to this definition">¶</a></dt>
+<dd><p>Use <em>ceph.conf</em> configuration file instead of the default
+<code class="docutils literal notranslate"><span class="pre">/etc/ceph/ceph.conf</span></code> to determine monitor addresses during startup.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-rbd-nbd-read-only">
+<span class="sig-name descname"><span class="pre">--read-only</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-rbd-nbd-read-only" title="Permalink to this definition">¶</a></dt>
+<dd><p>Map read-only.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-rbd-nbd-nbds_max">
+<span id="cmdoption-rbd-nbd-nbds-max"></span><span class="sig-name descname"><span class="pre">--nbds_max</span></span><span class="sig-prename descclassname"> <span class="pre">*limit*</span></span><a class="headerlink" href="#cmdoption-rbd-nbd-nbds_max" title="Permalink to this definition">¶</a></dt>
+<dd><p>Override the parameter nbds_max of NBD kernel module when modprobe, used to
+limit the count of nbd device.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-rbd-nbd-max_part">
+<span id="cmdoption-rbd-nbd-max-part"></span><span class="sig-name descname"><span class="pre">--max_part</span></span><span class="sig-prename descclassname"> <span class="pre">*limit*</span></span><a class="headerlink" href="#cmdoption-rbd-nbd-max_part" title="Permalink to this definition">¶</a></dt>
+<dd><p>Override for module param max_part.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-rbd-nbd-exclusive">
+<span class="sig-name descname"><span class="pre">--exclusive</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-rbd-nbd-exclusive" title="Permalink to this definition">¶</a></dt>
+<dd><p>Forbid writes by other clients.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-rbd-nbd-encryption-format">
+<span class="sig-name descname"><span class="pre">--encryption-format</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-rbd-nbd-encryption-format" title="Permalink to this definition">¶</a></dt>
+<dd><p>Image encryption format.
+Possible values: <em>luks1</em>, <em>luks2</em></p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-rbd-nbd-encryption-passphrase-file">
+<span class="sig-name descname"><span class="pre">--encryption-passphrase-file</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-rbd-nbd-encryption-passphrase-file" title="Permalink to this definition">¶</a></dt>
+<dd><p>Path of file containing a passphrase for unlocking image encryption.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-rbd-nbd-io-timeout">
+<span class="sig-name descname"><span class="pre">--io-timeout</span></span><span class="sig-prename descclassname"> <span class="pre">*seconds*</span></span><a class="headerlink" href="#cmdoption-rbd-nbd-io-timeout" title="Permalink to this definition">¶</a></dt>
+<dd><p>Override device timeout. Linux kernel will default to a 30 second request timeout.
+Allow the user to optionally specify an alternate timeout.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-rbd-nbd-reattach-timeout">
+<span class="sig-name descname"><span class="pre">--reattach-timeout</span></span><span class="sig-prename descclassname"> <span class="pre">*seconds*</span></span><a class="headerlink" href="#cmdoption-rbd-nbd-reattach-timeout" title="Permalink to this definition">¶</a></dt>
+<dd><p>Specify timeout for the kernel to wait for a new rbd-nbd process is
+attached after the old process is detached. The default is 30
+second.</p>
+</dd></dl>
+
+</section>
+<section id="image-and-snap-specs">
+<h2>Image and snap specs<a class="headerlink" href="#image-and-snap-specs" title="Permalink to this heading">¶</a></h2>
+<div class="line-block">
+<div class="line"><em>image-spec</em> is [<em>pool-name</em>]/<em>image-name</em></div>
+<div class="line"><em>snap-spec</em>  is [<em>pool-name</em>]/<em>image-name</em>&#64;<em>snap-name</em></div>
+</div>
+<p>The default for <em>pool-name</em> is “rbd”.  If an image name contains a slash
+character (‘/’), <em>pool-name</em> is required.</p>
+</section>
+<section id="availability">
+<h2>Availability<a class="headerlink" href="#availability" title="Permalink to this heading">¶</a></h2>
+<p><strong>rbd-nbd</strong> is part of Ceph, a massively scalable, open-source, distributed storage system. Please refer to
+the Ceph documentation at <a class="reference external" href="http://ceph.com/docs">http://ceph.com/docs</a> for more information.</p>
+</section>
+<section id="see-also">
+<h2>See also<a class="headerlink" href="#see-also" title="Permalink to this heading">¶</a></h2>
+<p><a class="reference internal" href="../rbd/"><span class="doc">rbd</span></a>(8)</p>
+</section>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../../">
+              <img class="logo" src="../../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../install/">Installing Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cephadm/">Cephadm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../rados/">Ceph Storage Cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cephfs/">Ceph File System</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../../rbd/">Ceph Block Device</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../../../rbd/rados-rbd-cmds/">Basic Commands</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../rbd/rbd-operations/">Operations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../rbd/rbd-integrations/">Integrations</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../../../rbd/man/">Manpages</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../rbd/">rbd</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rbd-fuse/">rbd-fuse</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">rbd-nbd</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#synopsis">Synopsis</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#description">Description</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#options">Options</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#image-and-snap-specs">Image and snap specs</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#availability">Availability</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#see-also">See also</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../rbd-ggate/">rbd-ggate</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rbdmap/">rbd-map</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../ceph-rbdnamer/">ceph-rbdnamer</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rbd-replay-prep/">rbd-replay-prep</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rbd-replay/">rbd-replay</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rbd-replay-many/">rbd-replay-many</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../rbd/api/">APIs</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../radosgw/">Ceph Object Gateway</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../mgr/">Ceph Manager Daemon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../mgr/dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dev/developer_guide/">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dev/internals/">Ceph Internals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../../../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../rbd-ggate/" title="rbd-ggate – map rbd images via FreeBSD GEOM Gate"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../rbd-fuse/" title="rbd-fuse – expose rbd images as files"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../../rbd/" >Ceph Block Device</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../../../rbd/man/" >Ceph Block Device Manpages</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">rbd-nbd – map rbd images to nbd device</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

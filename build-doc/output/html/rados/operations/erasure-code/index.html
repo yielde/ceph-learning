@@ -1,0 +1,373 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Erasure code &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/css/custom.css" />
+    <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/jquery.js"></script>
+    <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../../genindex/" />
+    <link rel="search" title="Search" href="../../../search/" />
+    <link rel="next" title="Erasure code profiles" href="../erasure-code-profile/" />
+    <link rel="prev" title="Pools" href="../pools/" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../erasure-code-profile/" title="Erasure code profiles"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../pools/" title="Pools"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../" >Ceph Storage Cluster</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../" accesskey="U">Cluster Operations</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Erasure code</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="erasure-code">
+<span id="ecpool"></span><h1>Erasure code<a class="headerlink" href="#erasure-code" title="Permalink to this heading">¶</a></h1>
+<p>By default, Ceph <a class="reference external" href="../pools">pools</a> are created with the type “replicated”. In
+replicated-type pools, every object is copied to multiple disks. This
+multiple copying is the method of data protection known as “replication”.</p>
+<p>By contrast, <a class="reference external" href="https://en.wikipedia.org/wiki/Erasure_code">erasure-coded</a>
+pools use a method of data protection that is different from replication. In
+erasure coding, data is broken into fragments of two kinds: data blocks and
+parity blocks. If a drive fails or becomes corrupted, the parity blocks are
+used to rebuild the data. At scale, erasure coding saves space relative to
+replication.</p>
+<p>In this documentation, data blocks are referred to as “data chunks”
+and parity blocks are referred to as “coding chunks”.</p>
+<p>Erasure codes are also called “forward error correction codes”. The
+first forward error correction code was developed in 1950 by Richard
+Hamming at Bell Laboratories.</p>
+<section id="creating-a-sample-erasure-coded-pool">
+<h2>Creating a sample erasure-coded pool<a class="headerlink" href="#creating-a-sample-erasure-coded-pool" title="Permalink to this heading">¶</a></h2>
+<p>The simplest erasure-coded pool is similar to <a class="reference external" href="https://en.wikipedia.org/wiki/Standard_RAID_levels#RAID_5">RAID5</a> and
+requires at least three hosts:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><style type="text/css">
+span.prompt1:before {
+  content: "$ ";
+}
+</style><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>pool<span class="w"> </span>create<span class="w"> </span>ecpool<span class="w"> </span>erasure</span>
+</pre></div></div><div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pool</span> <span class="s1">&#39;ecpool&#39;</span> <span class="n">created</span>
+</pre></div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1"><span class="nb">echo</span><span class="w"> </span>ABCDEFGHI<span class="w"> </span><span class="p">|</span><span class="w"> </span>rados<span class="w"> </span>--pool<span class="w"> </span>ecpool<span class="w"> </span>put<span class="w"> </span>NYAN<span class="w"> </span>-</span>
+<span class="prompt1">rados<span class="w"> </span>--pool<span class="w"> </span>ecpool<span class="w"> </span>get<span class="w"> </span>NYAN<span class="w"> </span>-</span>
+</pre></div></div><div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ABCDEFGHI</span>
+</pre></div>
+</div>
+</section>
+<section id="erasure-code-profiles">
+<h2>Erasure-code profiles<a class="headerlink" href="#erasure-code-profiles" title="Permalink to this heading">¶</a></h2>
+<p>The default erasure-code profile can sustain the overlapping loss of two OSDs
+without losing data. This erasure-code profile is equivalent to a replicated
+pool of size three, but with different storage requirements: instead of
+requiring 3TB to store 1TB, it requires only 2TB to store 1TB. The default
+profile can be displayed with this command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>erasure-code-profile<span class="w"> </span>get<span class="w"> </span>default</span>
+</pre></div></div><div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">k</span><span class="o">=</span><span class="mi">2</span>
+<span class="n">m</span><span class="o">=</span><span class="mi">2</span>
+<span class="n">plugin</span><span class="o">=</span><span class="n">jerasure</span>
+<span class="n">crush</span><span class="o">-</span><span class="n">failure</span><span class="o">-</span><span class="n">domain</span><span class="o">=</span><span class="n">host</span>
+<span class="n">technique</span><span class="o">=</span><span class="n">reed_sol_van</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The profile just displayed is for the <em>default</em> erasure-coded pool, not the
+<em>simplest</em> erasure-coded pool. These two pools are not the same:</p>
+<blockquote>
+<div><p>The default erasure-coded pool has two data chunks (K) and two coding chunks
+(M). The profile of the default erasure-coded pool is “k=2 m=2”.</p>
+<p>The simplest erasure-coded pool has two data chunks (K) and one coding chunk
+(M). The profile of the simplest erasure-coded pool is “k=2 m=1”.</p>
+</div></blockquote>
+</div>
+<p>Choosing the right profile is important because the profile cannot be modified
+after the pool is created. If you find that you need an erasure-coded pool with
+a profile different than the one you have created, you must create a new pool
+with a different (and presumably more carefully considered) profile. When the
+new pool is created, all objects from the wrongly configured pool must be moved
+to the newly created pool. There is no way to alter the profile of a pool after
+the pool has been created.</p>
+<p>The most important parameters of the profile are <em>K</em>, <em>M</em>, and
+<em>crush-failure-domain</em> because they define the storage overhead and
+the data durability. For example, if the desired architecture must
+sustain the loss of two racks with a storage overhead of 67%,
+the following profile can be defined:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>erasure-code-profile<span class="w"> </span><span class="nb">set</span><span class="w"> </span>myprofile<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span><span class="nv">k</span><span class="o">=</span><span class="m">3</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span><span class="nv">m</span><span class="o">=</span><span class="m">2</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>crush-failure-domain<span class="o">=</span>rack</span>
+<span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>pool<span class="w"> </span>create<span class="w"> </span>ecpool<span class="w"> </span>erasure<span class="w"> </span>myprofile</span>
+<span class="prompt1"><span class="nb">echo</span><span class="w"> </span>ABCDEFGHI<span class="w"> </span><span class="p">|</span><span class="w"> </span>rados<span class="w"> </span>--pool<span class="w"> </span>ecpool<span class="w"> </span>put<span class="w"> </span>NYAN<span class="w"> </span>-</span>
+<span class="prompt1">rados<span class="w"> </span>--pool<span class="w"> </span>ecpool<span class="w"> </span>get<span class="w"> </span>NYAN<span class="w"> </span>-</span>
+</pre></div></div><div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ABCDEFGHI</span>
+</pre></div>
+</div>
+<p>The <em>NYAN</em> object will be divided in three (<em>K=3</em>) and two additional
+<em>chunks</em> will be created (<em>M=2</em>). The value of <em>M</em> defines how many
+OSDs can be lost simultaneously without losing any data. The
+<em>crush-failure-domain=rack</em> will create a CRUSH rule that ensures
+no two <em>chunks</em> are stored in the same rack.</p>
+<p class="ditaa">
+<img src="../../../_images/ditaa-86952ee961bd79c367ecd85023e44450c2b55b0d.png"/>
+</p>
+<p>More information can be found in the <a class="reference external" href="../erasure-code-profile">erasure-code profiles</a> documentation.</p>
+</section>
+<section id="erasure-coding-with-overwrites">
+<h2>Erasure Coding with Overwrites<a class="headerlink" href="#erasure-coding-with-overwrites" title="Permalink to this heading">¶</a></h2>
+<p>By default, erasure-coded pools work only with operations that
+perform full object writes and appends (for example, RGW).</p>
+<p>Since Luminous, partial writes for an erasure-coded pool may be
+enabled with a per-pool setting. This lets RBD and CephFS store their
+data in an erasure-coded pool:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>pool<span class="w"> </span><span class="nb">set</span><span class="w"> </span>ec_pool<span class="w"> </span>allow_ec_overwrites<span class="w"> </span><span class="nb">true</span></span>
+</pre></div></div><p>This can be enabled only on a pool residing on BlueStore OSDs, since
+BlueStore’s checksumming is used during deep scrubs to detect bitrot
+or other corruption. Using Filestore with EC overwrites is not only
+unsafe, but it also results in lower performance compared to BlueStore.</p>
+<p>Erasure-coded pools do not support omap, so to use them with RBD and
+CephFS you must instruct them to store their data in an EC pool and
+their metadata in a replicated pool. For RBD, this means using the
+erasure-coded pool as the <code class="docutils literal notranslate"><span class="pre">--data-pool</span></code> during image creation:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">rbd<span class="w"> </span>create<span class="w"> </span>--size<span class="w"> </span>1G<span class="w"> </span>--data-pool<span class="w"> </span>ec_pool<span class="w"> </span>replicated_pool/image_name</span>
+</pre></div></div><p>For CephFS, an erasure-coded pool can be set as the default data pool during
+file system creation or via <a class="reference external" href="../../../cephfs/file-layouts">file layouts</a>.</p>
+</section>
+<section id="erasure-coded-pools-and-cache-tiering">
+<h2>Erasure-coded pools and cache tiering<a class="headerlink" href="#erasure-coded-pools-and-cache-tiering" title="Permalink to this heading">¶</a></h2>
+<p>Erasure-coded pools require more resources than replicated pools and
+lack some of the functionality supported by replicated pools (for example, omap).
+To overcome these limitations, one can set up a <a class="reference external" href="../cache-tiering">cache tier</a>
+before setting up the erasure-coded pool.</p>
+<p>For example, if the pool <em>hot-storage</em> is made of fast storage, the following commands
+will place the <em>hot-storage</em> pool as a tier of <em>ecpool</em> in <em>writeback</em>
+mode:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>tier<span class="w"> </span>add<span class="w"> </span>ecpool<span class="w"> </span>hot-storage</span>
+<span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>tier<span class="w"> </span>cache-mode<span class="w"> </span>hot-storage<span class="w"> </span>writeback</span>
+<span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>tier<span class="w"> </span>set-overlay<span class="w"> </span>ecpool<span class="w"> </span>hot-storage</span>
+</pre></div></div><p>The result is that every write and read to the <em>ecpool</em> actually uses
+the <em>hot-storage</em> pool and benefits from its flexibility and speed.</p>
+<p>More information can be found in the <a class="reference external" href="../cache-tiering">cache tiering</a> documentation. Note, however, that cache tiering
+is deprecated and may be removed completely in a future release.</p>
+</section>
+<section id="erasure-coded-pool-recovery">
+<h2>Erasure-coded pool recovery<a class="headerlink" href="#erasure-coded-pool-recovery" title="Permalink to this heading">¶</a></h2>
+<p>If an erasure-coded pool loses any data shards, it must recover them from others.
+This recovery involves reading from the remaining shards, reconstructing the data, and
+writing new shards.</p>
+<p>In Octopus and later releases, erasure-coded pools can recover as long as there are at least <em>K</em> shards
+available. (With fewer than <em>K</em> shards, you have actually lost data!)</p>
+<p>Prior to Octopus, erasure-coded pools required that at least <code class="docutils literal notranslate"><span class="pre">min_size</span></code> shards be
+available, even if <code class="docutils literal notranslate"><span class="pre">min_size</span></code> was greater than <code class="docutils literal notranslate"><span class="pre">K</span></code>. This was a conservative
+decision made out of an abundance of caution when designing the new pool
+mode. As a result, however, pools with lost OSDs but without complete data loss were
+unable to recover and go active without manual intervention to temporarily change
+the <code class="docutils literal notranslate"><span class="pre">min_size</span></code> setting.</p>
+<p>We recommend that <code class="docutils literal notranslate"><span class="pre">min_size</span></code> be <code class="docutils literal notranslate"><span class="pre">K+2</span></code> or greater to prevent loss of writes and
+loss of data.</p>
+</section>
+<section id="glossary">
+<h2>Glossary<a class="headerlink" href="#glossary" title="Permalink to this heading">¶</a></h2>
+<dl class="simple">
+<dt><em>chunk</em></dt><dd><p>When the encoding function is called, it returns chunks of the same size as each other. There are two
+kinds of chunks: (1) <em>data chunks</em>, which can be concatenated to reconstruct the original object, and
+(2) <em>coding chunks</em>, which can be used to rebuild a lost chunk.</p>
+</dd>
+<dt><em>K</em></dt><dd><p>The number of data chunks into which an object is divided. For example, if <em>K</em> = 2, then a 10KB object
+is divided into two objects of 5KB each.</p>
+</dd>
+<dt><em>M</em></dt><dd><p>The number of coding chunks computed by the encoding function. <em>M</em> is equal to the number of OSDs that can
+be missing from the cluster without the cluster suffering data loss. For example, if there are two coding
+chunks, then two OSDs can be missing without data loss.</p>
+</dd>
+</dl>
+</section>
+<section id="table-of-contents">
+<h2>Table of contents<a class="headerlink" href="#table-of-contents" title="Permalink to this heading">¶</a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../erasure-code-profile/">Erasure code profiles</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../erasure-code-jerasure/">Jerasure erasure code plugin</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../erasure-code-isa/">ISA erasure code plugin</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../erasure-code-lrc/">Locally repairable erasure code plugin</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../erasure-code-shec/">SHEC erasure code plugin</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../erasure-code-clay/">CLAY code plugin</a></li>
+</ul>
+</div>
+</section>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../../">
+              <img class="logo" src="../../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../install/">Installing Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cephadm/">Cephadm</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../">Ceph Storage Cluster</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../../configuration/">Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../cephadm/">Deployment</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../">Operations</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../operating/">Operating a Cluster</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../health-checks/">Health checks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../monitoring/">Monitoring a Cluster</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../monitoring-osd-pg/">Monitoring OSDs and PGs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../user-management/">User Management</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../pg-repair/">Repairing PG Inconsistencies</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../data-placement/">Data Placement Overview</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../pools/">Pools</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Erasure code</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#creating-a-sample-erasure-coded-pool">Creating a sample erasure-coded pool</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#erasure-code-profiles">Erasure-code profiles</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#erasure-coding-with-overwrites">Erasure Coding with Overwrites</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#erasure-coded-pools-and-cache-tiering">Erasure-coded pools and cache tiering</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#erasure-coded-pool-recovery">Erasure-coded pool recovery</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#glossary">Glossary</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#table-of-contents">Table of contents</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="../erasure-code-profile/">Erasure code profiles</a></li>
+<li class="toctree-l5"><a class="reference internal" href="../erasure-code-jerasure/">Jerasure erasure code plugin</a></li>
+<li class="toctree-l5"><a class="reference internal" href="../erasure-code-isa/">ISA erasure code plugin</a></li>
+<li class="toctree-l5"><a class="reference internal" href="../erasure-code-lrc/">Locally repairable erasure code plugin</a></li>
+<li class="toctree-l5"><a class="reference internal" href="../erasure-code-shec/">SHEC erasure code plugin</a></li>
+<li class="toctree-l5"><a class="reference internal" href="../erasure-code-clay/">CLAY code plugin</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../cache-tiering/">Cache Tiering</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../placement-groups/">Placement Groups</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../balancer/">Balancer</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../upmap/">Using pg-upmap</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../crush-map/">CRUSH Maps</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../crush-map-edits/">Manually editing a CRUSH Map</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../stretch-mode/">Stretch Clusters</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../change-mon-elections/">Configure Monitor Election Strategies</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../add-or-rm-osds/">Adding/Removing OSDs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../add-or-rm-mons/">Adding/Removing Monitors</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../devices/">Device Management</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../bluestore-migration/">BlueStore Migration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../control/">Command Reference</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../troubleshooting/community/">The Ceph Community</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../troubleshooting/troubleshooting-mon/">Troubleshooting Monitors</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../troubleshooting/troubleshooting-osd/">Troubleshooting OSDs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../troubleshooting/troubleshooting-pg/">Troubleshooting PGs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../troubleshooting/log-and-debug/">Logging and Debugging</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../troubleshooting/cpu-profiling/">CPU Profiling</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../troubleshooting/memory-profiling/">Memory Profiling</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../man/">Man Pages</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../troubleshooting/">Troubleshooting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/">APIs</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cephfs/">Ceph File System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../rbd/">Ceph Block Device</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../radosgw/">Ceph Object Gateway</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../mgr/">Ceph Manager Daemon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../mgr/dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dev/developer_guide/">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dev/internals/">Ceph Internals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../../../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../erasure-code-profile/" title="Erasure code profiles"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../pools/" title="Pools"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../" >Ceph Storage Cluster</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../" >Cluster Operations</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Erasure code</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

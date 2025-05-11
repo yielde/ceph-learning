@@ -1,0 +1,842 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Configuring Ceph &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/css/custom.css" />
+    <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/jquery.js"></script>
+    <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../../genindex/" />
+    <link rel="search" title="Search" href="../../../search/" />
+    <link rel="next" title="Common Settings" href="../common/" />
+    <link rel="prev" title="Storage Devices" href="../storage-devices/" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../common/" title="Common Settings"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../storage-devices/" title="Storage Devices"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../" >Ceph Storage Cluster</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../" accesskey="U">Configuration</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Configuring Ceph</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="configuring-ceph">
+<span id="id1"></span><h1>Configuring Ceph<a class="headerlink" href="#configuring-ceph" title="Permalink to this heading">¶</a></h1>
+<p>When Ceph services start, the initialization process activates a series
+of daemons that run in the background. A <a class="reference internal" href="../../../glossary/#term-Ceph-Storage-Cluster"><span class="xref std std-term">Ceph Storage Cluster</span></a> runs
+at a minimum three types of daemons:</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="../../../glossary/#term-Ceph-Monitor"><span class="xref std std-term">Ceph Monitor</span></a> (<code class="docutils literal notranslate"><span class="pre">ceph-mon</span></code>)</p></li>
+<li><p><a class="reference internal" href="../../../glossary/#term-Ceph-Manager"><span class="xref std std-term">Ceph Manager</span></a> (<code class="docutils literal notranslate"><span class="pre">ceph-mgr</span></code>)</p></li>
+<li><p><a class="reference internal" href="../../../glossary/#term-Ceph-OSD-Daemon"><span class="xref std std-term">Ceph OSD Daemon</span></a> (<code class="docutils literal notranslate"><span class="pre">ceph-osd</span></code>)</p></li>
+</ul>
+<p>Ceph Storage Clusters that support the <a class="reference internal" href="../../../glossary/#term-Ceph-File-System"><span class="xref std std-term">Ceph File System</span></a> also run at
+least one <a class="reference internal" href="../../../glossary/#term-Ceph-Metadata-Server"><span class="xref std std-term">Ceph Metadata Server</span></a> (<code class="docutils literal notranslate"><span class="pre">ceph-mds</span></code>). Clusters that
+support <a class="reference internal" href="../../../glossary/#term-Ceph-Object-Storage"><span class="xref std std-term">Ceph Object Storage</span></a> run Ceph RADOS Gateway daemons
+(<code class="docutils literal notranslate"><span class="pre">radosgw</span></code>) as well.</p>
+<p>Each daemon has a number of configuration options, each of which has a
+default value.  You may adjust the behavior of the system by changing these
+configuration options.  Be careful to understand the consequences before
+overriding default values, as it is possible to significantly degrade the
+performance and stability of your cluster.  Also note that default values
+sometimes change between releases, so it is best to review the version of
+this documentation that aligns with your Ceph release.</p>
+<section id="option-names">
+<h2>Option names<a class="headerlink" href="#option-names" title="Permalink to this heading">¶</a></h2>
+<p>All Ceph configuration options have a unique name consisting of words
+formed with lower-case characters and connected with underscore
+(<code class="docutils literal notranslate"><span class="pre">_</span></code>) characters.</p>
+<p>When option names are specified on the command line, either underscore
+(<code class="docutils literal notranslate"><span class="pre">_</span></code>) or dash (<code class="docutils literal notranslate"><span class="pre">-</span></code>) characters can be used interchangeable (e.g.,
+<code class="docutils literal notranslate"><span class="pre">--mon-host</span></code> is equivalent to <code class="docutils literal notranslate"><span class="pre">--mon_host</span></code>).</p>
+<p>When option names appear in configuration files, spaces can also be
+used in place of underscore or dash.  We suggest, though, that for
+clarity and convenience you consistently use underscores, as we do
+throughout this documentation.</p>
+</section>
+<section id="config-sources">
+<h2>Config sources<a class="headerlink" href="#config-sources" title="Permalink to this heading">¶</a></h2>
+<p>Each Ceph daemon, process, and library will pull its configuration
+from several sources, listed below.  Sources later in the list will
+override those earlier in the list when both are present.</p>
+<ul class="simple">
+<li><p>the compiled-in default value</p></li>
+<li><p>the monitor cluster’s centralized configuration database</p></li>
+<li><p>a configuration file stored on the local host</p></li>
+<li><p>environment variables</p></li>
+<li><p>command line arguments</p></li>
+<li><p>runtime overrides set by an administrator</p></li>
+</ul>
+<p>One of the first things a Ceph process does on startup is parse the
+configuration options provided via the command line, environment, and
+local configuration file.  The process will then contact the monitor
+cluster to retrieve configuration stored centrally for the entire
+cluster.  Once a complete view of the configuration is available, the
+daemon or process startup will proceed.</p>
+<section id="bootstrap-options">
+<span id="id2"></span><h3>Bootstrap options<a class="headerlink" href="#bootstrap-options" title="Permalink to this heading">¶</a></h3>
+<p>Because some configuration options affect the process’s ability to
+contact the monitors, authenticate, and retrieve the cluster-stored
+configuration, they may need to be stored locally on the node and set
+in a local configuration file.  These options include:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">mon_host</span></code>, the list of monitors for the cluster</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">mon_host_override</span></code>, the list of monitors for the cluster to
+<strong>initially</strong> contact when beginning a new instance of communication with the
+Ceph cluster.  This overrides the known monitor list derived from MonMap
+updates sent to older Ceph instances (like librados cluster handles).  It is
+expected this option is primarily useful for debugging.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">mon_dns_srv_name</span></code> (default: <cite>ceph-mon</cite>), the name of the DNS
+SRV record to check to identify the cluster monitors via DNS</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">mon_data</span></code>, <code class="docutils literal notranslate"><span class="pre">osd_data</span></code>, <code class="docutils literal notranslate"><span class="pre">mds_data</span></code>, <code class="docutils literal notranslate"><span class="pre">mgr_data</span></code>, and
+similar options that define which local directory the daemon
+stores its data in.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">keyring</span></code>, <code class="docutils literal notranslate"><span class="pre">keyfile</span></code>, and/or <code class="docutils literal notranslate"><span class="pre">key</span></code>, which can be used to
+specify the authentication credential to use to authenticate with
+the monitor.  Note that in most cases the default keyring location
+is in the data directory specified above.</p></li>
+</ul>
+</div></blockquote>
+<p>In the vast majority of cases the default values of these are
+appropriate, with the exception of the <code class="docutils literal notranslate"><span class="pre">mon_host</span></code> option that
+identifies the addresses of the cluster’s monitors.  When DNS is used
+to identify monitors a local ceph configuration file can be avoided
+entirely.</p>
+</section>
+<section id="skipping-monitor-config">
+<h3>Skipping monitor config<a class="headerlink" href="#skipping-monitor-config" title="Permalink to this heading">¶</a></h3>
+<p>Any process may be passed the option <code class="docutils literal notranslate"><span class="pre">--no-mon-config</span></code> to skip the
+step that retrieves configuration from the cluster monitors.  This is
+useful in cases where configuration is managed entirely via
+configuration files or where the monitor cluster is currently down but
+some maintenance activity needs to be done.</p>
+</section>
+</section>
+<section id="configuration-sections">
+<span id="ceph-conf-file"></span><h2>Configuration sections<a class="headerlink" href="#configuration-sections" title="Permalink to this heading">¶</a></h2>
+<p>Any given process or daemon has a single value for each configuration
+option.  However, values for an option may vary across different
+daemon types even daemons of the same type.  Ceph options that are
+stored in the monitor configuration database or in local configuration
+files are grouped into sections to indicate which daemons or clients
+they apply to.</p>
+<p>These sections include:</p>
+<p><code class="docutils literal notranslate"><span class="pre">global</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Settings under <code class="docutils literal notranslate"><span class="pre">global</span></code> affect all daemons and clients
+in a Ceph Storage Cluster.</p>
+</dd>
+<dt class="field-even">Example</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">log_file</span> <span class="pre">=</span> <span class="pre">/var/log/ceph/$cluster-$type.$id.log</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">mon</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Settings under <code class="docutils literal notranslate"><span class="pre">mon</span></code> affect all <code class="docutils literal notranslate"><span class="pre">ceph-mon</span></code> daemons in
+the Ceph Storage Cluster, and override the same setting in
+<code class="docutils literal notranslate"><span class="pre">global</span></code>.</p>
+</dd>
+<dt class="field-even">Example</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">mon_cluster_log_to_syslog</span> <span class="pre">=</span> <span class="pre">true</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">mgr</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Settings in the <code class="docutils literal notranslate"><span class="pre">mgr</span></code> section affect all <code class="docutils literal notranslate"><span class="pre">ceph-mgr</span></code> daemons in
+the Ceph Storage Cluster, and override the same setting in
+<code class="docutils literal notranslate"><span class="pre">global</span></code>.</p>
+</dd>
+<dt class="field-even">Example</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">mgr_stats_period</span> <span class="pre">=</span> <span class="pre">10</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">osd</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Settings under <code class="docutils literal notranslate"><span class="pre">osd</span></code> affect all <code class="docutils literal notranslate"><span class="pre">ceph-osd</span></code> daemons in
+the Ceph Storage Cluster, and override the same setting in
+<code class="docutils literal notranslate"><span class="pre">global</span></code>.</p>
+</dd>
+<dt class="field-even">Example</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">osd_op_queue</span> <span class="pre">=</span> <span class="pre">wpq</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">mds</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Settings in the <code class="docutils literal notranslate"><span class="pre">mds</span></code> section affect all <code class="docutils literal notranslate"><span class="pre">ceph-mds</span></code> daemons in
+the Ceph Storage Cluster, and override the same setting in
+<code class="docutils literal notranslate"><span class="pre">global</span></code>.</p>
+</dd>
+<dt class="field-even">Example</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">mds_cache_memory_limit</span> <span class="pre">=</span> <span class="pre">10G</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">client</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Settings under <code class="docutils literal notranslate"><span class="pre">client</span></code> affect all Ceph Clients
+(e.g., mounted Ceph File Systems, mounted Ceph Block Devices,
+etc.) as well as Rados Gateway (RGW) daemons.</p>
+</dd>
+<dt class="field-even">Example</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">objecter_inflight_ops</span> <span class="pre">=</span> <span class="pre">512</span></code></p>
+</dd>
+</dl>
+<p>Sections may also specify an individual daemon or client name.  For example,
+<code class="docutils literal notranslate"><span class="pre">mon.foo</span></code>, <code class="docutils literal notranslate"><span class="pre">osd.123</span></code>, and <code class="docutils literal notranslate"><span class="pre">client.smith</span></code> are all valid section names.</p>
+<p>Any given daemon will draw its settings from the global section, the
+daemon or client type section, and the section sharing its name.
+Settings in the most-specific section take precedence, so for example
+if the same option is specified in both <code class="docutils literal notranslate"><span class="pre">global</span></code>, <code class="docutils literal notranslate"><span class="pre">mon</span></code>, and
+<code class="docutils literal notranslate"><span class="pre">mon.foo</span></code> on the same source (i.e., in the same configurationfile),
+the <code class="docutils literal notranslate"><span class="pre">mon.foo</span></code> value will be used.</p>
+<p>If multiple values of the same configuration option are specified in the same
+section, the last value wins.</p>
+<p>Note that values from the local configuration file always take
+precedence over values from the monitor configuration database,
+regardless of which section they appear in.</p>
+</section>
+<section id="metavariables">
+<span id="ceph-metavariables"></span><h2>Metavariables<a class="headerlink" href="#metavariables" title="Permalink to this heading">¶</a></h2>
+<p>Metavariables simplify Ceph Storage Cluster configuration
+dramatically. When a metavariable is set in a configuration value,
+Ceph expands the metavariable into a concrete value at the time the
+configuration value is used. Ceph metavariables are similar to variable expansion in the Bash shell.</p>
+<p>Ceph supports the following metavariables:</p>
+<p><code class="docutils literal notranslate"><span class="pre">$cluster</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Expands to the Ceph Storage Cluster name. Useful when running
+multiple Ceph Storage Clusters on the same hardware.</p>
+</dd>
+<dt class="field-even">Example</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">/etc/ceph/$cluster.keyring</span></code></p>
+</dd>
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">ceph</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">$type</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Expands to a daemon or process type (e.g., <code class="docutils literal notranslate"><span class="pre">mds</span></code>, <code class="docutils literal notranslate"><span class="pre">osd</span></code>, or <code class="docutils literal notranslate"><span class="pre">mon</span></code>)</p>
+</dd>
+<dt class="field-even">Example</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">/var/lib/ceph/$type</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">$id</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Expands to the daemon or client identifier. For
+<code class="docutils literal notranslate"><span class="pre">osd.0</span></code>, this would be <code class="docutils literal notranslate"><span class="pre">0</span></code>; for <code class="docutils literal notranslate"><span class="pre">mds.a</span></code>, it would
+be <code class="docutils literal notranslate"><span class="pre">a</span></code>.</p>
+</dd>
+<dt class="field-even">Example</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">/var/lib/ceph/$type/$cluster-$id</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">$host</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Expands to the host name where the process is running.</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">$name</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Expands to <code class="docutils literal notranslate"><span class="pre">$type.$id</span></code>.</p>
+</dd>
+<dt class="field-even">Example</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">/var/run/ceph/$cluster-$name.asok</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">$pid</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Expands to daemon pid.</p>
+</dd>
+<dt class="field-even">Example</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">/var/run/ceph/$cluster-$name-$pid.asok</span></code></p>
+</dd>
+</dl>
+</section>
+<section id="the-configuration-file">
+<h2>The Configuration File<a class="headerlink" href="#the-configuration-file" title="Permalink to this heading">¶</a></h2>
+<p>On startup, Ceph processes search for a configuration file in the
+following locations:</p>
+<ol class="arabic simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">$CEPH_CONF</span></code> (<em>i.e.,</em> the path following the <code class="docutils literal notranslate"><span class="pre">$CEPH_CONF</span></code>
+environment variable)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">-c</span> <span class="pre">path/path</span></code>  (<em>i.e.,</em> the <code class="docutils literal notranslate"><span class="pre">-c</span></code> command line argument)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">/etc/ceph/$cluster.conf</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">~/.ceph/$cluster.conf</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">./$cluster.conf</span></code> (<em>i.e.,</em> in the current working directory)</p></li>
+<li><p>On FreeBSD systems only, <code class="docutils literal notranslate"><span class="pre">/usr/local/etc/ceph/$cluster.conf</span></code></p></li>
+</ol>
+<p>where <code class="docutils literal notranslate"><span class="pre">$cluster</span></code> is the cluster’s name (default <code class="docutils literal notranslate"><span class="pre">ceph</span></code>).</p>
+<p>The Ceph configuration file uses an <em>ini</em> style syntax. You can add comment
+text after a pound sign (#) or a semi-colon (;).  For example:</p>
+<div class="highlight-ini notranslate"><div class="highlight"><pre><span></span><span class="c1"># &lt;--A number (#) sign precedes a comment.</span>
+<span class="c1">; A comment may be anything.</span>
+<span class="c1"># Comments always follow a semi-colon (;) or a pound (#) on each line.</span>
+<span class="c1"># The end of the line terminates a comment.</span>
+<span class="c1"># We recommend that you provide comments in your configuration file(s).</span>
+</pre></div>
+</div>
+<section id="config-file-section-names">
+<span id="ceph-conf-settings"></span><h3>Config file section names<a class="headerlink" href="#config-file-section-names" title="Permalink to this heading">¶</a></h3>
+<p>The configuration file is divided into sections. Each section must begin with a
+valid configuration section name (see <a class="reference internal" href="#configuration-sections">Configuration sections</a>, above)
+surrounded by square brackets. For example,</p>
+<div class="highlight-ini notranslate"><div class="highlight"><pre><span></span><span class="k">[global]</span>
+<span class="na">debug_ms</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">0</span>
+
+<span class="k">[osd]</span>
+<span class="na">debug_ms</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">1</span>
+
+<span class="k">[osd.1]</span>
+<span class="na">debug_ms</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">10</span>
+
+<span class="k">[osd.2]</span>
+<span class="na">debug_ms</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">10</span>
+</pre></div>
+</div>
+</section>
+<section id="config-file-option-values">
+<h3>Config file option values<a class="headerlink" href="#config-file-option-values" title="Permalink to this heading">¶</a></h3>
+<p>The value of a configuration option is a string. If it is too long to
+fit in a single line, you can put a backslash (<code class="docutils literal notranslate"><span class="pre">\</span></code>) at the end of line
+as the line continuation marker, so the value of the option will be
+the string after <code class="docutils literal notranslate"><span class="pre">=</span></code> in current line combined with the string in the next
+line:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[</span><span class="k">global</span><span class="p">]</span>
+<span class="n">foo</span> <span class="o">=</span> <span class="n">long</span> <span class="n">long</span> <span class="n">ago</span>\
+<span class="n">long</span> <span class="n">ago</span>
+</pre></div>
+</div>
+<p>In the example above, the value of “<code class="docutils literal notranslate"><span class="pre">foo</span></code>” would be “<code class="docutils literal notranslate"><span class="pre">long</span> <span class="pre">long</span> <span class="pre">ago</span> <span class="pre">long</span> <span class="pre">ago</span></code>”.</p>
+<p>Normally, the option value ends with a new line, or a comment, like</p>
+<div class="highlight-ini notranslate"><div class="highlight"><pre><span></span><span class="k">[global]</span>
+<span class="na">obscure_one</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">difficult to explain</span><span class="w"> </span><span class="c1"># I will try harder in next release</span>
+<span class="na">simpler_one</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">nothing to explain</span>
+</pre></div>
+</div>
+<p>In the example above, the value of “<code class="docutils literal notranslate"><span class="pre">obscure</span> <span class="pre">one</span></code>” would be “<code class="docutils literal notranslate"><span class="pre">difficult</span> <span class="pre">to</span> <span class="pre">explain</span></code>”;
+and the value of “<code class="docutils literal notranslate"><span class="pre">simpler</span> <span class="pre">one</span></code> would be “<code class="docutils literal notranslate"><span class="pre">nothing</span> <span class="pre">to</span> <span class="pre">explain</span></code>”.</p>
+<p>If an option value contains spaces, and we want to make it explicit, we
+could quote the value using single or double quotes, like</p>
+<div class="highlight-ini notranslate"><div class="highlight"><pre><span></span><span class="k">[global]</span>
+<span class="na">line</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;to be, or not to be&quot;</span>
+</pre></div>
+</div>
+<p>Certain characters are not allowed to be present in the option values directly.
+They are <code class="docutils literal notranslate"><span class="pre">=</span></code>, <code class="docutils literal notranslate"><span class="pre">#</span></code>, <code class="docutils literal notranslate"><span class="pre">;</span></code> and <code class="docutils literal notranslate"><span class="pre">[</span></code>. If we have to, we need to escape them,
+like</p>
+<div class="highlight-ini notranslate"><div class="highlight"><pre><span></span><span class="k">[global]</span>
+<span class="na">secret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;i love \# and \[&quot;</span>
+</pre></div>
+</div>
+<p>Every configuration option is typed with one of the types below:</p>
+<p><code class="docutils literal notranslate"><span class="pre">int</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>64-bit signed integer, Some SI prefixes are supported, like “K”, “M”, “G”,
+“T”, “P”, “E”, meaning, respectively, 10<sup>3</sup>, 10<sup>6</sup>,
+10<sup>9</sup>, etc.  And “B” is the only supported unit. So, “1K”, “1M”, “128B” and “-1” are all valid
+option values. Some times, a negative value implies “unlimited” when it comes to
+an option for threshold or limit.</p>
+</dd>
+<dt class="field-even">Example</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">42</span></code>, <code class="docutils literal notranslate"><span class="pre">-1</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">uint</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>It is almost identical to <code class="docutils literal notranslate"><span class="pre">integer</span></code>. But a negative value will be rejected.</p>
+</dd>
+<dt class="field-even">Example</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">256</span></code>, <code class="docutils literal notranslate"><span class="pre">0</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Free style strings encoded in UTF-8, but some characters are not allowed. Please
+reference the above notes for the details.</p>
+</dd>
+<dt class="field-even">Example</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">&quot;hello</span> <span class="pre">world&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;i</span> <span class="pre">love</span> <span class="pre">\#&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">yet-another-name</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">boolean</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>one of the two values <code class="docutils literal notranslate"><span class="pre">true</span></code> or <code class="docutils literal notranslate"><span class="pre">false</span></code>. But an integer is also accepted,
+where “0” implies <code class="docutils literal notranslate"><span class="pre">false</span></code>, and any non-zero values imply <code class="docutils literal notranslate"><span class="pre">true</span></code>.</p>
+</dd>
+<dt class="field-even">Example</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">true</span></code>, <code class="docutils literal notranslate"><span class="pre">false</span></code>, <code class="docutils literal notranslate"><span class="pre">1</span></code>, <code class="docutils literal notranslate"><span class="pre">0</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">addr</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>a single address optionally prefixed with <code class="docutils literal notranslate"><span class="pre">v1</span></code>, <code class="docutils literal notranslate"><span class="pre">v2</span></code> or <code class="docutils literal notranslate"><span class="pre">any</span></code> for the messenger
+protocol. If the prefix is not specified, <code class="docutils literal notranslate"><span class="pre">v2</span></code> protocol is used. Please see
+<a class="reference internal" href="../msgr2/#address-formats"><span class="std std-ref">Address formats</span></a> for more details.</p>
+</dd>
+<dt class="field-even">Example</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">v1:1.2.3.4:567</span></code>, <code class="docutils literal notranslate"><span class="pre">v2:1.2.3.4:567</span></code>, <code class="docutils literal notranslate"><span class="pre">1.2.3.4:567</span></code>, <code class="docutils literal notranslate"><span class="pre">2409:8a1e:8fb6:aa20:1260:4bff:fe92:18f5::567</span></code>, <code class="docutils literal notranslate"><span class="pre">[::1]:6789</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">addrvec</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>a set of addresses separated by “,”. The addresses can be optionally quoted with <code class="docutils literal notranslate"><span class="pre">[</span></code> and <code class="docutils literal notranslate"><span class="pre">]</span></code>.</p>
+</dd>
+<dt class="field-even">Example</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">[v1:1.2.3.4:567,v2:1.2.3.4:568]</span></code>, <code class="docutils literal notranslate"><span class="pre">v1:1.2.3.4:567,v1:1.2.3.14:567</span></code>  <code class="docutils literal notranslate"><span class="pre">[2409:8a1e:8fb6:aa20:1260:4bff:fe92:18f5::567],</span> <span class="pre">[2409:8a1e:8fb6:aa20:1260:4bff:fe92:18f5::568]</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">uuid</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>the string format of a uuid defined by <a class="reference external" href="https://www.ietf.org/rfc/rfc4122.txt">RFC4122</a>.
+And some variants are also supported, for more details, see
+<a class="reference external" href="https://www.boost.org/doc/libs/1_74_0/libs/uuid/doc/uuid.html#String%20Generator">Boost document</a>.</p>
+</dd>
+<dt class="field-even">Example</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">f81d4fae-7dec-11d0-a765-00a0c91e6bf6</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">size</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>denotes a 64-bit unsigned integer. Both SI prefixes and IEC prefixes are
+supported. And “B” is the only supported unit. A negative value will be
+rejected.</p>
+</dd>
+<dt class="field-even">Example</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">1Ki</span></code>, <code class="docutils literal notranslate"><span class="pre">1K</span></code>, <code class="docutils literal notranslate"><span class="pre">1KiB</span></code> and <code class="docutils literal notranslate"><span class="pre">1B</span></code>.</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">secs</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>denotes a duration of time. By default the unit is second if not specified.
+Following units of time are supported:</p>
+<ul class="simple">
+<li><p>second: “s”, “sec”, “second”, “seconds”</p></li>
+<li><p>minute: “m”, “min”, “minute”, “minutes”</p></li>
+<li><p>hour: “hs”, “hr”, “hour”, “hours”</p></li>
+<li><p>day: “d”, “day”, “days”</p></li>
+<li><p>week: “w”, “wk”, “week”, “weeks”</p></li>
+<li><p>month: “mo”, “month”, “months”</p></li>
+<li><p>year: “y”, “yr”, “year”, “years”</p></li>
+</ul>
+</dd>
+<dt class="field-even">Example</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">1</span> <span class="pre">m</span></code>, <code class="docutils literal notranslate"><span class="pre">1m</span></code> and <code class="docutils literal notranslate"><span class="pre">1</span> <span class="pre">week</span></code></p>
+</dd>
+</dl>
+</section>
+</section>
+<section id="monitor-configuration-database">
+<span id="ceph-conf-database"></span><h2>Monitor configuration database<a class="headerlink" href="#monitor-configuration-database" title="Permalink to this heading">¶</a></h2>
+<p>The monitor cluster manages a database of configuration options that
+can be consumed by the entire cluster, enabling streamlined central
+configuration management for the entire system.  The vast majority of
+configuration options can and should be stored here for ease of
+administration and transparency.</p>
+<p>A handful of settings may still need to be stored in local
+configuration files because they affect the ability to connect to the
+monitors, authenticate, and fetch configuration information.  In most
+cases this is limited to the <code class="docutils literal notranslate"><span class="pre">mon_host</span></code> option, although this can
+also be avoided through the use of DNS SRV records.</p>
+<section id="sections-and-masks">
+<h3>Sections and masks<a class="headerlink" href="#sections-and-masks" title="Permalink to this heading">¶</a></h3>
+<p>Configuration options stored by the monitor can live in a global
+section, daemon type section, or specific daemon section, just like
+options in a configuration file can.</p>
+<p>In addition, options may also have a <em>mask</em> associated with them to
+further restrict which daemons or clients the option applies to.
+Masks take two forms:</p>
+<ol class="arabic simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">type:location</span></code> where <em>type</em> is a CRUSH property like <cite>rack</cite> or
+<cite>host</cite>, and <em>location</em> is a value for that property.  For example,
+<code class="docutils literal notranslate"><span class="pre">host:foo</span></code> would limit the option only to daemons or clients
+running on a particular host.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">class:device-class</span></code> where <em>device-class</em> is the name of a CRUSH
+device class (e.g., <code class="docutils literal notranslate"><span class="pre">hdd</span></code> or <code class="docutils literal notranslate"><span class="pre">ssd</span></code>).  For example,
+<code class="docutils literal notranslate"><span class="pre">class:ssd</span></code> would limit the option only to OSDs backed by SSDs.
+(This mask has no effect for non-OSD daemons or clients.)</p></li>
+</ol>
+<p>When setting a configuration option, the <cite>who</cite> may be a section name,
+a mask, or a combination of both separated by a slash (<code class="docutils literal notranslate"><span class="pre">/</span></code>)
+character.  For example, <code class="docutils literal notranslate"><span class="pre">osd/rack:foo</span></code> would mean all OSD daemons
+in the <code class="docutils literal notranslate"><span class="pre">foo</span></code> rack.</p>
+<p>When viewing configuration options, the section name and mask are
+generally separated out into separate fields or columns to ease readability.</p>
+</section>
+<section id="commands">
+<h3>Commands<a class="headerlink" href="#commands" title="Permalink to this heading">¶</a></h3>
+<p>The following CLI commands are used to configure the cluster:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">ceph</span> <span class="pre">config</span> <span class="pre">dump</span></code> will dump the entire configuration database for
+the cluster.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ceph</span> <span class="pre">config</span> <span class="pre">get</span> <span class="pre">&lt;who&gt;</span></code> will dump the configuration for a specific
+daemon or client (e.g., <code class="docutils literal notranslate"><span class="pre">mds.a</span></code>), as stored in the monitors’
+configuration database.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ceph</span> <span class="pre">config</span> <span class="pre">set</span> <span class="pre">&lt;who&gt;</span> <span class="pre">&lt;option&gt;</span> <span class="pre">&lt;value&gt;</span></code> will set a configuration
+option in the monitors’ configuration database.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ceph</span> <span class="pre">config</span> <span class="pre">show</span> <span class="pre">&lt;who&gt;</span></code> will show the reported running
+configuration for a running daemon.  These settings may differ from
+those stored by the monitors if there are also local configuration
+files in use or options have been overridden on the command line or
+at run time.  The source of the option values is reported as part
+of the output.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ceph</span> <span class="pre">config</span> <span class="pre">assimilate-conf</span> <span class="pre">-i</span> <span class="pre">&lt;input</span> <span class="pre">file&gt;</span> <span class="pre">-o</span> <span class="pre">&lt;output</span> <span class="pre">file&gt;</span></code>
+will ingest a configuration file from <em>input file</em> and move any
+valid options into the monitors’ configuration database.  Any
+settings that are unrecognized, invalid, or cannot be controlled by
+the monitor will be returned in an abbreviated config file stored in
+<em>output file</em>.  This command is useful for transitioning from legacy
+configuration files to centralized monitor-based configuration.</p></li>
+</ul>
+</section>
+</section>
+<section id="help">
+<h2>Help<a class="headerlink" href="#help" title="Permalink to this heading">¶</a></h2>
+<p>You can get help for a particular option with:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><style type="text/css">
+span.prompt1:before {
+  content: "$ ";
+}
+</style><span class="prompt1">ceph<span class="w"> </span>config<span class="w"> </span><span class="nb">help</span><span class="w"> </span>&lt;option&gt;</span>
+</pre></div></div><p>Note that this will use the configuration schema that is compiled into the running monitors.  If you have a mixed-version cluster (e.g., during an upgrade), you might also want to query the option schema from a specific running daemon:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>daemon<span class="w"> </span>&lt;name&gt;<span class="w"> </span>config<span class="w"> </span><span class="nb">help</span><span class="w"> </span><span class="o">[</span>option<span class="o">]</span></span>
+</pre></div></div><p>For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>config<span class="w"> </span><span class="nb">help</span><span class="w"> </span>log_file</span>
+</pre></div></div><div class="highlight-default notranslate"><div class="highlight"><pre><span></span>log_file - path to log file
+  (std::string, basic)
+  Default (non-daemon):
+  Default (daemon): /var/log/ceph/$cluster-$name.log
+  Can update at runtime: false
+  See also: [log_to_stderr,err_to_stderr,log_to_syslog,err_to_syslog]
+</pre></div>
+</div>
+<p>or:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>config<span class="w"> </span><span class="nb">help</span><span class="w"> </span>log_file<span class="w"> </span>-f<span class="w"> </span>json-pretty</span>
+</pre></div></div><div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+    <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;log_file&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;std::string&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;level&quot;</span><span class="p">:</span> <span class="s2">&quot;basic&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;desc&quot;</span><span class="p">:</span> <span class="s2">&quot;path to log file&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;long_desc&quot;</span><span class="p">:</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;default&quot;</span><span class="p">:</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;daemon_default&quot;</span><span class="p">:</span> <span class="s2">&quot;/var/log/ceph/$cluster-$name.log&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;tags&quot;</span><span class="p">:</span> <span class="p">[],</span>
+    <span class="s2">&quot;services&quot;</span><span class="p">:</span> <span class="p">[],</span>
+    <span class="s2">&quot;see_also&quot;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="s2">&quot;log_to_stderr&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;err_to_stderr&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;log_to_syslog&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;err_to_syslog&quot;</span>
+    <span class="p">],</span>
+    <span class="s2">&quot;enum_values&quot;</span><span class="p">:</span> <span class="p">[],</span>
+    <span class="s2">&quot;min&quot;</span><span class="p">:</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;max&quot;</span><span class="p">:</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;can_update_at_runtime&quot;</span><span class="p">:</span> <span class="n">false</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">level</span></code> property can be any of <cite>basic</cite>, <cite>advanced</cite>, or <cite>dev</cite>.
+The <cite>dev</cite> options are intended for use by developers, generally for
+testing purposes, and are not recommended for use by operators.</p>
+</section>
+<section id="runtime-changes">
+<h2>Runtime Changes<a class="headerlink" href="#runtime-changes" title="Permalink to this heading">¶</a></h2>
+<p>In most cases, Ceph permits changes to the configuration of a daemon at
+runtime. This can be used for increasing or decreasing the amount of logging
+output, for enabling or disabling debug settings, and for runtime optimization.</p>
+<p>Configuration options can be updated via the <code class="docutils literal notranslate"><span class="pre">ceph</span> <span class="pre">config</span> <span class="pre">set</span></code> command.  For
+example, to enable the debug log level on a specific OSD, run a command of this form:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>config<span class="w"> </span><span class="nb">set</span><span class="w"> </span>osd.123<span class="w"> </span>debug_ms<span class="w"> </span><span class="m">20</span></span>
+</pre></div></div><div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If an option has been customized in a local configuration file, the
+<a class="reference external" href="https://ceph.io/en/news/blog/2018/new-mimic-centralized-configuration-management/">central config</a>
+setting will be ignored (it has a lower priority than the local
+configuration file).</p>
+</div>
+<section id="override-values">
+<h3>Override values<a class="headerlink" href="#override-values" title="Permalink to this heading">¶</a></h3>
+<p>Options can be set temporarily by using the <cite>tell</cite> or <cite>daemon</cite> interfaces on
+the Ceph CLI. These <em>override</em> values are ephemeral, which means that they
+affect only the current instance of the daemon and revert to persistently
+configured values when the daemon restarts.</p>
+<p>Override values can be set in two ways:</p>
+<ol class="arabic">
+<li><p>From any host, send a message to a daemon with a command of the following
+form:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>tell<span class="w"> </span>&lt;name&gt;<span class="w"> </span>config<span class="w"> </span><span class="nb">set</span><span class="w"> </span>&lt;option&gt;<span class="w"> </span>&lt;value&gt;</span>
+</pre></div></div><p>For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>tell<span class="w"> </span>osd.123<span class="w"> </span>config<span class="w"> </span><span class="nb">set</span><span class="w"> </span>debug_osd<span class="w"> </span><span class="m">20</span></span>
+</pre></div></div><p>The <code class="docutils literal notranslate"><span class="pre">tell</span></code> command can also accept a wildcard as the daemon identifier.
+For example, to adjust the debug level on all OSD daemons, run a command of
+this form:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>tell<span class="w"> </span>osd.*<span class="w"> </span>config<span class="w"> </span><span class="nb">set</span><span class="w"> </span>debug_osd<span class="w"> </span><span class="m">20</span></span>
+</pre></div></div></li>
+<li><p>On the host where the daemon is running, connect to the daemon via a socket
+in <code class="docutils literal notranslate"><span class="pre">/var/run/ceph</span></code> by running a command of this form:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>daemon<span class="w"> </span>&lt;name&gt;<span class="w"> </span>config<span class="w"> </span><span class="nb">set</span><span class="w"> </span>&lt;option&gt;<span class="w"> </span>&lt;value&gt;</span>
+</pre></div></div><p>For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>daemon<span class="w"> </span>osd.4<span class="w"> </span>config<span class="w"> </span><span class="nb">set</span><span class="w"> </span>debug_osd<span class="w"> </span><span class="m">20</span></span>
+</pre></div></div></li>
+</ol>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>In the output of the <code class="docutils literal notranslate"><span class="pre">ceph</span> <span class="pre">config</span> <span class="pre">show</span></code> command, these temporary
+values are shown with a source of <code class="docutils literal notranslate"><span class="pre">override</span></code>.</p>
+</div>
+</section>
+</section>
+<section id="viewing-runtime-settings">
+<h2>Viewing runtime settings<a class="headerlink" href="#viewing-runtime-settings" title="Permalink to this heading">¶</a></h2>
+<p>You can see the current options set for a running daemon with the <code class="docutils literal notranslate"><span class="pre">ceph</span> <span class="pre">config</span> <span class="pre">show</span></code> command.  For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>config<span class="w"> </span>show<span class="w"> </span>osd.0</span>
+</pre></div></div><p>will show you the (non-default) options for that daemon.  You can also look at a specific option with:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>config<span class="w"> </span>show<span class="w"> </span>osd.0<span class="w"> </span>debug_osd</span>
+</pre></div></div><p>or view all options (even those with default values) with:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>config<span class="w"> </span>show-with-defaults<span class="w"> </span>osd.0</span>
+</pre></div></div><p>You can also observe settings for a running daemon by connecting to it from the local host via the admin socket.  For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>daemon<span class="w"> </span>osd.0<span class="w"> </span>config<span class="w"> </span>show</span>
+</pre></div></div><p>will dump all current settings:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>daemon<span class="w"> </span>osd.0<span class="w"> </span>config<span class="w"> </span>diff</span>
+</pre></div></div><p>will show only non-default settings (as well as where the value came from: a config file, the monitor, an override, etc.), and:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>daemon<span class="w"> </span>osd.0<span class="w"> </span>config<span class="w"> </span>get<span class="w"> </span>debug_osd</span>
+</pre></div></div><p>will report the value of a single option.</p>
+</section>
+<section id="changes-since-nautilus">
+<h2>Changes since Nautilus<a class="headerlink" href="#changes-since-nautilus" title="Permalink to this heading">¶</a></h2>
+<p>With the Octopus release We changed the way the configuration file is parsed.
+These changes are as follows:</p>
+<ul>
+<li><p>Repeated configuration options are allowed, and no warnings will be printed.
+The value of the last one is used, which means that the setting last in the file
+is the one that takes effect. Before this change, we would print warning messages
+when lines with duplicated options were encountered, like:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">warning</span> <span class="n">line</span> <span class="mi">42</span><span class="p">:</span> <span class="s1">&#39;foo&#39;</span> <span class="ow">in</span> <span class="n">section</span> <span class="s1">&#39;bar&#39;</span> <span class="n">redefined</span>
+</pre></div>
+</div>
+</li>
+<li><p>Invalid UTF-8 options were ignored with warning messages. But since Octopus,
+they are treated as fatal errors.</p></li>
+<li><p>Backslash <code class="docutils literal notranslate"><span class="pre">\</span></code> is used as the line continuation marker to combine the next
+line with current one. Before Octopus, it was required to follow a backslash with
+a non-empty line. But in Octopus, an empty line following a backslash is now allowed.</p></li>
+<li><p>In the configuration file, each line specifies an individual configuration
+option. The option’s name and its value are separated with <code class="docutils literal notranslate"><span class="pre">=</span></code>, and the
+value may be quoted using single or double quotes. If an invalid
+configuration is specified, we will treat it as an invalid configuration
+file</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">bad</span> <span class="n">option</span> <span class="o">====</span> <span class="n">bad</span> <span class="n">value</span>
+</pre></div>
+</div>
+</li>
+<li><p>Before Octopus, if no section name was specified in the configuration file,
+all options would be set as though they were within the <code class="docutils literal notranslate"><span class="pre">global</span></code> section. This is
+now discouraged. Since Octopus, only a single option is allowed for
+configuration files without a section name.</p></li>
+</ul>
+</section>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../../">
+              <img class="logo" src="../../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../install/">Installing Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cephadm/">Cephadm</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../">Ceph Storage Cluster</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../">Configuration</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../storage-devices/">Storage devices</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Configuring Ceph</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#option-names">Option names</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#config-sources">Config sources</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#bootstrap-options">Bootstrap options</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#skipping-monitor-config">Skipping monitor config</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#configuration-sections">Configuration sections</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#metavariables">Metavariables</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#the-configuration-file">The Configuration File</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#config-file-section-names">Config file section names</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#config-file-option-values">Config file option values</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#monitor-configuration-database">Monitor configuration database</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#sections-and-masks">Sections and masks</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#commands">Commands</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#help">Help</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#runtime-changes">Runtime Changes</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#override-values">Override values</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#viewing-runtime-settings">Viewing runtime settings</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#changes-since-nautilus">Changes since Nautilus</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../common/">Common Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../common/#networks">Networks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../common/#monitors">Monitors</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../common/#authentication">Authentication</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../common/#osds">OSDs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../common/#heartbeats">Heartbeats</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../common/#logs-debugging">Logs / Debugging</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../common/#example-ceph-conf">Example ceph.conf</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../common/#running-multiple-clusters-deprecated">Running Multiple Clusters (DEPRECATED)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../network-config-ref/">Network Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../msgr2/">Messenger v2 protocol</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../auth-config-ref/">Auth Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../mon-config-ref/">Monitor Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../mon-lookup-dns/">Looking up Monitors through DNS</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../mon-osd-interaction/">Heartbeat Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../osd-config-ref/">OSD Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../mclock-config-ref/">DmClock Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../bluestore-config-ref/">BlueStore Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../filestore-config-ref/">FileStore Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../journal-ref/">Journal Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../pool-pg-config-ref/">Pool, PG &amp; CRUSH Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../ms-ref/">Messaging Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../general-config-ref/">General Settings</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../cephadm/">Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../operations/">Operations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../man/">Man Pages</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../troubleshooting/">Troubleshooting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/">APIs</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cephfs/">Ceph File System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../rbd/">Ceph Block Device</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../radosgw/">Ceph Object Gateway</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../mgr/">Ceph Manager Daemon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../mgr/dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dev/developer_guide/">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dev/internals/">Ceph Internals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../../../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../common/" title="Common Settings"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../storage-devices/" title="Storage Devices"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../" >Ceph Storage Cluster</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../" >Configuration</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Configuring Ceph</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

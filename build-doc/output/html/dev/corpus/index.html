@@ -1,0 +1,314 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Corpus structure &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css" />
+    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../genindex/" />
+    <link rel="search" title="Search" href="../../search/" />
+    <link rel="next" title="Installing Oprofile" href="../cpu-profiler/" />
+    <link rel="prev" title="Continuous Integration Architecture" href="../continuous-integration/" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../cpu-profiler/" title="Installing Oprofile"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../continuous-integration/" title="Continuous Integration Architecture"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../internals/" accesskey="U">Ceph Internals</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Corpus structure</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="corpus-structure">
+<h1>Corpus structure<a class="headerlink" href="#corpus-structure" title="Permalink to this heading">¶</a></h1>
+<p>ceph.git/ceph-object-corpus is a submodule.:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>bin/   # misc scripts
+archive/$version/objects/$type/$hash  # a sample of encoded objects from a specific version
+</pre></div>
+</div>
+<p>You can also mark known or deliberate incompatibilities between versions with:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>archive/$version/forward_incompat/$type
+</pre></div>
+</div>
+<p>The presence of a file indicates that new versions of code cannot
+decode old objects across that <code class="docutils literal notranslate"><span class="pre">$version</span></code> (this is normally the case).</p>
+<section id="how-to-generate-an-object-corpus">
+<h2>How to generate an object corpus<a class="headerlink" href="#how-to-generate-an-object-corpus" title="Permalink to this heading">¶</a></h2>
+<p>We can generate an object corpus for a particular version of ceph using the
+script of <code class="docutils literal notranslate"><span class="pre">script/gen-corpus.sh</span></code>, or by following the instructions below:</p>
+<ol class="arabic">
+<li><p>Checkout a clean repo (best not to do this where you normally work):</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>clone<span class="w"> </span>ceph.git
+<span class="nb">cd</span><span class="w"> </span>ceph
+git<span class="w"> </span>submodule<span class="w"> </span>update<span class="w"> </span>--init<span class="w"> </span>--recursive
+</pre></div>
+</div>
+</li>
+<li><p>Build with flag to dump objects to <code class="docutils literal notranslate"><span class="pre">/tmp/foo</span></code>:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>rm<span class="w"> </span>-rf<span class="w"> </span>/tmp/foo<span class="w"> </span><span class="p">;</span><span class="w"> </span>mkdir<span class="w"> </span>/tmp/foo
+do_cmake.sh<span class="w"> </span>-DCMAKE_CXX_FLAGS<span class="o">=</span><span class="s2">&quot;-DENCODE_DUMP_PATH=/tmp/foo&quot;</span>
+<span class="nb">cd</span><span class="w"> </span>build
+make
+</pre></div>
+</div>
+</li>
+<li><p>Start via vstart:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>build
+<span class="nv">MON</span><span class="o">=</span><span class="m">3</span><span class="w"> </span><span class="nv">MGR</span><span class="o">=</span><span class="m">2</span><span class="w"> </span><span class="nv">OSD</span><span class="o">=</span><span class="m">3</span><span class="w"> </span><span class="nv">MDS</span><span class="o">=</span><span class="m">3</span><span class="w"> </span><span class="nv">RGW</span><span class="o">=</span><span class="m">1</span><span class="w"> </span>../src/vstart.sh<span class="w"> </span>-n<span class="w"> </span>-x
+</pre></div>
+</div>
+</li>
+<li><p>Use as much functionality of the cluster as you can, to exercise as many object encoder methods as possible:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>bin/ceph<span class="w"> </span>osd<span class="w"> </span>pool<span class="w"> </span>create<span class="w"> </span>mypool
+bin/rados<span class="w"> </span>-p<span class="w"> </span>mypool<span class="w"> </span>bench<span class="w"> </span><span class="m">10</span><span class="w"> </span>write<span class="w"> </span>-b<span class="w"> </span><span class="m">123</span>
+bin/ceph<span class="w"> </span>osd<span class="w"> </span>out<span class="w"> </span><span class="m">0</span>
+bin/ceph<span class="w"> </span>osd<span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="m">0</span>
+bin/init-ceph<span class="w"> </span>restart<span class="w"> </span>osd.1
+<span class="k">for</span><span class="w"> </span>f<span class="w"> </span><span class="k">in</span><span class="w"> </span>../qa/workunits/cls/*.sh<span class="w"> </span><span class="p">;</span><span class="w"> </span><span class="k">do</span><span class="w"> </span><span class="nv">PATH</span><span class="o">=</span><span class="s2">&quot;bin:</span><span class="nv">$PATH</span><span class="s2">&quot;</span><span class="w"> </span><span class="nv">$f</span><span class="w"> </span><span class="p">;</span><span class="w"> </span><span class="k">done</span>
+<span class="nv">PATH</span><span class="o">=</span><span class="s2">&quot;bin:</span><span class="nv">$PATH</span><span class="s2">&quot;</span><span class="w"> </span>../qa/workunits/rados/test.sh
+bin/ceph_test_librbd
+bin/ceph_test_libcephfs
+bin/init-ceph<span class="w"> </span>restart<span class="w"> </span>mds.a
+../qa/workunits/rgw/run-s3tests.sh
+</pre></div>
+</div>
+</li>
+<li><p>Stop:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>../src/stop.sh
+</pre></div>
+</div>
+</li>
+<li><p>Import the corpus (this will take a few minutes):</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>../src/test/encoding/import.sh<span class="w"> </span>/tmp/foo<span class="w"> </span><span class="sb">`</span>bin/ceph-dencoder<span class="w"> </span>version<span class="sb">`</span><span class="w"> </span>../ceph-object-corpus/archive
+../src/test/encoding/import-generated.sh<span class="w"> </span>../ceph-object-corpus/archive
+</pre></div>
+</div>
+</li>
+<li><p>Prune it!  There will be a bazillion copies of various objects, and we only want a representative sample.:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="nb">pushd</span><span class="w"> </span>../ceph-object-corpus
+bin/prune-archive.sh
+<span class="nb">popd</span>
+</pre></div>
+</div>
+</li>
+<li><p>Verify the tests pass:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>ctest<span class="w"> </span>-R<span class="w"> </span>readable.sh
+</pre></div>
+</div>
+</li>
+<li><p>Commit it to the corpus repo and push:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="nb">pushd</span><span class="w"> </span>../ceph-object-corpus
+git<span class="w"> </span>checkout<span class="w"> </span>-b<span class="w"> </span>wip-new
+git<span class="w"> </span>add<span class="w"> </span>archive/<span class="sb">`</span>../build/bin/ceph-dencoder<span class="w"> </span>version<span class="sb">`</span>
+git<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </span><span class="sb">`</span>../build/bin/ceph-dencoder<span class="w"> </span>version<span class="sb">`</span>
+git<span class="w"> </span>remote<span class="w"> </span>add<span class="w"> </span>cc<span class="w"> </span>git@github.com:ceph/ceph-object-corpus.git
+git<span class="w"> </span>push<span class="w"> </span>cc<span class="w"> </span>wip-new
+<span class="nb">popd</span>
+</pre></div>
+</div>
+</li>
+<li><p>Go test it out:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>my/regular/tree
+<span class="nb">cd</span><span class="w"> </span>ceph-object-corpus
+git<span class="w"> </span>fetch<span class="w"> </span>origin
+git<span class="w"> </span>checkout<span class="w"> </span>wip-new
+<span class="nb">cd</span><span class="w"> </span>../build
+ctest<span class="w"> </span>-R<span class="w"> </span>readable.sh
+</pre></div>
+</div>
+</li>
+<li><p>If everything looks good, update the submodule master branch, and commit the submodule in ceph.git.</p></li>
+</ol>
+</section>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../">
+              <img class="logo" src="../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../install/">Installing Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cephadm/">Cephadm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rados/">Ceph Storage Cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cephfs/">Ceph File System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rbd/">Ceph Block Device</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../radosgw/">Ceph Object Gateway</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/">Ceph Manager Daemon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../developer_guide/">Developer Guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../internals/">Ceph Internals</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../blkin/">Tracing Ceph With Blkin</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../bluestore/">BlueStore Internals</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cache-pool/">Cache pool</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../ceph_krb_auth/">A Detailed Documentation on How to Set up Ceph Kerberos Authentication</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cephfs-mirroring/">CephFS Mirroring</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cephfs-reclaim/">CephFS Reclaim Interface</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cephfs-snapshots/">CephFS Snapshots</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cephx/">Cephx</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cephx_protocol/">A Detailed Description of the Cephx Authentication Protocol</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../config/">Configuration Management System</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../config-key/">config-key layout</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../context/">CephContext</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../continuous-integration/">Continuous Integration Architecture</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Corpus structure</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#how-to-generate-an-object-corpus">How to generate an object corpus</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../cpu-profiler/">Installing Oprofile</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cxx/">C++17 and libstdc++ ABI</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../delayed-delete/">CephFS delayed deletion</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../dev_cluster_deployement/">Deploying a development cluster</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../dev_cluster_deployement/#deploying-multiple-development-clusters-on-the-same-machine">Deploying multiple development clusters on the same machine</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../development-workflow/">Development workflows</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../documenting/">Documenting Ceph</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../encoding/">Serialization (encode/decode)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../erasure-coded-pool/">Erasure Coded pool</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../file-striping/">File striping</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../freebsd/">FreeBSD Implementation details</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../generatedocs/">Building Ceph Documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../iana/">IANA Numbers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../kubernetes/">Hacking on Ceph in Kubernetes with Rook</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../libs/">Library architecture</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../logging/">Use of the cluster log</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../logs/">Debug logs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../macos/">build on MacOS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../messenger/">Messenger notes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../mon-bootstrap/">Monitor bootstrap</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../mon-elections/">Monitor Elections</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../mon-on-disk-formats/">ON-DISK FORMAT</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../mon-osdmap-prune/">FULL OSDMAP VERSION PRUNING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../msgr2/">msgr2 protocol (msgr2.0 and msgr2.1)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../network-encoding/">Network Encoding</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../network-protocol/">Network Protocol</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../object-store/">Object Store Architecture Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../osd-class-path/">OSD class path issues</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../peering/">Peering</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../perf/">Using perf</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../perf_counters/">Perf counters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../perf_histograms/">Perf histograms</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../placement-group/">PG (Placement Group) notes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../quick_guide/">Developer Guide (Quick)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rados-client-protocol/">RADOS client protocol</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rbd-diff/">RBD Incremental Backup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rbd-export/">RBD Export &amp; Import</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rbd-layering/">RBD Layering</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../release-checklists/">Release checklists</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../release-process/">Ceph Release Process</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../seastore/">SeaStore</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../sepia/">Sepia community test lab</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../session_authentication/">Session Authentication for the Cephx Protocol</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../testing/">Testing notes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../versions/">Public OSD Version</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../vstart-ganesha/">NFS CephFS-RGW Developer Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../wireshark/">Wireshark Dissector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../zoned-storage/">Zoned Storage Support</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../osd_internals/">OSD developer documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../mds_internals/">MDS developer documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../radosgw/">RADOS Gateway developer documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../ceph-volume/">ceph-volume developer documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../crimson/">Crimson developer documentation</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../cpu-profiler/" title="Installing Oprofile"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../continuous-integration/" title="Continuous Integration Architecture"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../internals/" >Ceph Internals</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Corpus structure</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

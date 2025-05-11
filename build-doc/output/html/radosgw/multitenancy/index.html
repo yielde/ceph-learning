@@ -1,0 +1,349 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>RGW Multi-tenancy &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css" />
+    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../genindex/" />
+    <link rel="search" title="Search" href="../../search/" />
+    <link rel="next" title="Compression" href="../compression/" />
+    <link rel="prev" title="Open Policy Agent Integration" href="../opa/" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../compression/" title="Compression"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../opa/" title="Open Policy Agent Integration"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../" accesskey="U">Ceph Object Gateway</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">RGW Multi-tenancy</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="rgw-multi-tenancy">
+<span id="rgw-multitenancy"></span><h1>RGW Multi-tenancy<a class="headerlink" href="#rgw-multi-tenancy" title="Permalink to this heading">¶</a></h1>
+<div class="versionadded">
+<p><span class="versionmodified added">New in version Jewel.</span></p>
+</div>
+<p>The multi-tenancy feature allows to use buckets and users of the same
+name simultaneously by segregating them under so-called <code class="docutils literal notranslate"><span class="pre">tenants</span></code>.
+This may be useful, for instance, to permit users of Swift API to
+create buckets with easily conflicting names such as “test” or “trove”.</p>
+<p>From the Jewel release onward, each user and bucket lies under a tenant.
+For compatibility, a “legacy” tenant with an empty name is provided.
+Whenever a bucket is referred without an explicit tenant, an implicit
+tenant is used, taken from the user performing the operation. Since
+the pre-existing users are under the legacy tenant, they continue
+to create and access buckets as before. The layout of objects in RADOS
+is extended in a compatible way, ensuring a smooth upgrade to Jewel.</p>
+<section id="administering-users-with-explicit-tenants">
+<h2>Administering Users With Explicit Tenants<a class="headerlink" href="#administering-users-with-explicit-tenants" title="Permalink to this heading">¶</a></h2>
+<p>Tenants as such do not have any operations on them. They appear and
+disappear as needed, when users are administered. In order to create,
+modify, and remove users with explicit tenants, either an additional
+option –tenant is supplied, or a syntax “&lt;tenant&gt;$&lt;user&gt;” is used
+in the parameters of the radosgw-admin command.</p>
+<section id="examples">
+<h3>Examples<a class="headerlink" href="#examples" title="Permalink to this heading">¶</a></h3>
+<p>Create a user testx$tester to be accessed with S3:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># radosgw-admin --tenant testx --uid tester --display-name &quot;Test User&quot; --access_key TESTER --secret test123 user create</span>
+</pre></div>
+</div>
+<p>Create a user testx$tester to be accessed with Swift:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># radosgw-admin --tenant testx --uid tester --display-name &quot;Test User&quot; --subuser tester:test --key-type swift --access full user create</span>
+<span class="c1"># radosgw-admin --subuser &#39;testx$tester:test&#39; --key-type swift --secret test123</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The subuser with explicit tenant has to be quoted in the shell.</p>
+<p>Tenant names may contain only alphanumeric characters and underscores.</p>
+</div>
+</section>
+</section>
+<section id="accessing-buckets-with-explicit-tenants">
+<h2>Accessing Buckets with Explicit Tenants<a class="headerlink" href="#accessing-buckets-with-explicit-tenants" title="Permalink to this heading">¶</a></h2>
+<p>When a client application accesses buckets, it always operates with
+credentials of a particular user. As mentioned above, every user belongs
+to a tenant. Therefore, every operation has an implicit tenant in its
+context, to be used if no tenant is specified explicitly. Thus a complete
+compatibility is maintained with previous releases, as long as the
+referred buckets and referring user belong to the same tenant.
+In other words, anything unusual occurs when accessing another tenant’s
+buckets <em>only</em>.</p>
+<p>Extensions employed to specify an explicit tenant differ according
+to the protocol and authentication system used.</p>
+<section id="s3">
+<h3>S3<a class="headerlink" href="#s3" title="Permalink to this heading">¶</a></h3>
+<p>In case of S3, a colon character is used to separate tenant and bucket.
+Thus a sample URL would be:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">ep</span><span class="o">.</span><span class="n">host</span><span class="o">.</span><span class="n">dom</span><span class="o">/</span><span class="n">tenant</span><span class="p">:</span><span class="n">bucket</span>
+</pre></div>
+</div>
+<p>Here’s a simple Python sample:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="linenos">1</span>     <span class="kn">from</span><span class="w"> </span><span class="nn">boto.s3.connection</span><span class="w"> </span><span class="kn">import</span> <span class="n">S3Connection</span><span class="p">,</span> <span class="n">OrdinaryCallingFormat</span>
+<span class="linenos">2</span>     <span class="n">c</span> <span class="o">=</span> <span class="n">S3Connection</span><span class="p">(</span>
+<span class="linenos">3</span>             <span class="n">aws_access_key_id</span><span class="o">=</span><span class="s2">&quot;TESTER&quot;</span><span class="p">,</span>
+<span class="linenos">4</span>             <span class="n">aws_secret_access_key</span><span class="o">=</span><span class="s2">&quot;test123&quot;</span><span class="p">,</span>
+<span class="linenos">5</span>             <span class="n">host</span><span class="o">=</span><span class="s2">&quot;ep.host.dom&quot;</span><span class="p">,</span>
+<span class="linenos">6</span>             <span class="n">calling_format</span> <span class="o">=</span> <span class="n">OrdinaryCallingFormat</span><span class="p">())</span>
+<span class="linenos">7</span>     <span class="n">bucket</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="n">get_bucket</span><span class="p">(</span><span class="s2">&quot;test5b:testbucket&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Note that it’s not possible to supply an explicit tenant using
+a hostname. Hostnames cannot contain colons, or any other separators
+that are not already valid in bucket names. Using a period creates an
+ambiguous syntax. Therefore, the bucket-in-URL-path format has to be
+used.</p>
+<p>Due to the fact that the native S3 API does not deal with
+multi-tenancy and radosgw’s implementation does, things get a bit
+involved when dealing with signed URLs and public read ACLs.</p>
+<ul>
+<li><p>A <strong>signed URL</strong> does contain the <code class="docutils literal notranslate"><span class="pre">AWSAccessKeyId</span></code> query
+parameters, from which radosgw is able to discern the correct user
+and tenant owning the bucket. In other words, an application
+generating signed URLs should be able to take just the un-prefixed
+bucket name, and produce a signed URL that itself contains the
+bucket name without the tenant prefix. However, it is <em>possible</em> to
+include the prefix if you so choose.</p>
+<p>Thus, accessing a signed URL of an object <code class="docutils literal notranslate"><span class="pre">bar</span></code> in a container
+<code class="docutils literal notranslate"><span class="pre">foo</span></code> belonging to the tenant <code class="docutils literal notranslate"><span class="pre">7188e165c0ae4424ac68ae2e89a05c50</span></code>
+would be possible either via
+<code class="docutils literal notranslate"><span class="pre">http://&lt;host&gt;:&lt;port&gt;/foo/bar?AWSAccessKeyId=b200fb6634c547199e436a0f93c0c46e&amp;Expires=1542890806&amp;Signature=eok6CYQC%2FDwmQQmqvY5jTg6ehXU%3D</span></code>,
+or via
+<code class="docutils literal notranslate"><span class="pre">http://&lt;host&gt;:&lt;port&gt;/7188e165c0ae4424ac68ae2e89a05c50:foo/bar?AWSAccessKeyId=b200fb6634c547199e436a0f93c0c46e&amp;Expires=1542890806&amp;Signature=eok6CYQC%2FDwmQQmqvY5jTg6ehXU%3D</span></code>,
+depending on whether or not the tenant prefix was passed in on
+signature generation.</p>
+</li>
+<li><p>A bucket with a <strong>public read ACL</strong> is meant to be read by an HTTP
+client <em>without</em> including any query parameters that would allow
+radosgw to discern tenants. Thus, publicly readable objects must
+always be accessed using the bucket name with the tenant prefix.</p>
+<p>Thus, if you set a public read ACL on an object <code class="docutils literal notranslate"><span class="pre">bar</span></code> in a
+container <code class="docutils literal notranslate"><span class="pre">foo</span></code> belonging to the tenant
+<code class="docutils literal notranslate"><span class="pre">7188e165c0ae4424ac68ae2e89a05c50</span></code>, you would need to access that
+object via the public URL
+<code class="docutils literal notranslate"><span class="pre">http://&lt;host&gt;:&lt;port&gt;/7188e165c0ae4424ac68ae2e89a05c50:foo/bar</span></code>.</p>
+</li>
+</ul>
+</section>
+<section id="swift-with-built-in-authenticator">
+<h3>Swift with built-in authenticator<a class="headerlink" href="#swift-with-built-in-authenticator" title="Permalink to this heading">¶</a></h3>
+<p>TBD – not in test_multen.py yet</p>
+</section>
+<section id="swift-with-keystone">
+<h3>Swift with Keystone<a class="headerlink" href="#swift-with-keystone" title="Permalink to this heading">¶</a></h3>
+<p>In the default configuration, although native Swift has inherent
+multi-tenancy, radosgw does not enable multi-tenancy for the Swift
+API. This is to ensure that a setup with legacy buckets — that is,
+buckets that were created before radosgw supported multitenancy —,
+those buckets retain their dual-API capability to be queried and
+modified using either S3 or Swift.</p>
+<p>If you want to enable multitenancy for Swift, particularly if your
+users only ever authenticate against OpenStack Keystone, you should
+enable Keystone-based multitenancy with the following <code class="docutils literal notranslate"><span class="pre">ceph.conf</span></code>
+configuration option:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">rgw</span> <span class="n">keystone</span> <span class="n">implicit</span> <span class="n">tenants</span> <span class="o">=</span> <span class="n">true</span>
+</pre></div>
+</div>
+<p>Once you enable this option, any newly connecting user (whether they
+are using the Swift API, or Keystone-authenticated S3) will prompt
+radosgw to create a user named <code class="docutils literal notranslate"><span class="pre">&lt;tenant_id&gt;$&lt;tenant_id</span></code>, where
+<code class="docutils literal notranslate"><span class="pre">&lt;tenant_id&gt;</span></code> is a Keystone tenant (project) UUID — for example,
+<code class="docutils literal notranslate"><span class="pre">7188e165c0ae4424ac68ae2e89a05c50$7188e165c0ae4424ac68ae2e89a05c50</span></code>.</p>
+<p>Whenever that user then creates an Swift container, radosgw internally
+translates the given container name into
+<code class="docutils literal notranslate"><span class="pre">&lt;tenant_id&gt;/&lt;container_name&gt;</span></code>, such as
+<code class="docutils literal notranslate"><span class="pre">7188e165c0ae4424ac68ae2e89a05c50/foo</span></code>. This ensures that if there
+are two or more different tenants all creating a container named
+<code class="docutils literal notranslate"><span class="pre">foo</span></code>, radosgw is able to transparently discern them by their tenant
+prefix.</p>
+<p>It is also possible to limit the effects of implicit tenants
+to only apply to swift or s3, by setting <code class="docutils literal notranslate"><span class="pre">rgw</span> <span class="pre">keystone</span> <span class="pre">implicit</span> <span class="pre">tenants</span></code>
+to either <code class="docutils literal notranslate"><span class="pre">s3</span></code> or <code class="docutils literal notranslate"><span class="pre">swift</span></code>.  This will likely primarily
+be of use to users who had previously used implicit tenants
+with older versions of ceph, where implicit tenants
+only applied to the swift protocol.</p>
+</section>
+<section id="notes-and-known-issues">
+<h3>Notes and known issues<a class="headerlink" href="#notes-and-known-issues" title="Permalink to this heading">¶</a></h3>
+<p>Just to be clear, it is not possible to create buckets in other
+tenants at present. The owner of newly created bucket is extracted
+from authentication information.</p>
+</section>
+</section>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../">
+              <img class="logo" src="../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../install/">Installing Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cephadm/">Cephadm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rados/">Ceph Storage Cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cephfs/">Ceph File System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rbd/">Ceph Block Device</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../">Ceph Object Gateway</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../frontends/">HTTP Frontends</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../placement/">Pool Placement and Storage Classes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../multisite/">Multisite Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../multisite-sync-policy/">Multisite Sync Policy Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pools/">Configuring Pools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../config-ref/">Config Reference</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../admin/">Admin Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../s3/">S3 API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rgw-cache/">Data caching and CDN</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../swift/">Swift API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../adminops/">Admin Ops API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/">Python binding</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../nfs/">Export over NFS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../keystone/">OpenStack Keystone Integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../barbican/">OpenStack Barbican Integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../vault/">HashiCorp Vault Integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../kmip/">KMIP Integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../opa/">Open Policy Agent Integration</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Multi-tenancy</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#administering-users-with-explicit-tenants">Administering Users With Explicit Tenants</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#examples">Examples</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#accessing-buckets-with-explicit-tenants">Accessing Buckets with Explicit Tenants</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#s3">S3</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#swift-with-built-in-authenticator">Swift with built-in authenticator</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#swift-with-keystone">Swift with Keystone</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#notes-and-known-issues">Notes and known issues</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../compression/">Compression</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../ldap-auth/">LDAP Authentication</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../encryption/">Server-Side Encryption</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../bucketpolicy/">Bucket Policy</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../dynamicresharding/">Dynamic bucket index resharding</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../mfa/">Multi factor authentication</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../sync-modules/">Sync Modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../notifications/">Bucket Notifications</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../layout/">Data Layout in RADOS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../STS/">STS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../STSLite/">STS Lite</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../keycloak/">Keycloak</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../session-tags/">Session Tags</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../role/">Role</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../orphans/">Orphan List and Associated Tooling</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../oidc/">OpenID Connect Provider</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../troubleshooting/">Troubleshooting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../man/8/radosgw/">Manpage radosgw</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../man/8/radosgw-admin/">Manpage radosgw-admin</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../qat-accel/">QAT Acceleration for Encryption and Compression</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../s3select/">S3-select</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../lua-scripting/">Lua Scripting</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/">Ceph Manager Daemon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dev/developer_guide/">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dev/internals/">Ceph Internals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../compression/" title="Compression"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../opa/" title="Open Policy Agent Integration"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../" >Ceph Object Gateway</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">RGW Multi-tenancy</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

@@ -1,0 +1,569 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>osdmaptool – ceph osd cluster map manipulation tool &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/css/custom.css" />
+    <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/jquery.js"></script>
+    <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../../genindex/" />
+    <link rel="search" title="Search" href="../../../search/" />
+    <link rel="next" title="rados – rados object storage utility" href="../rados/" />
+    <link rel="prev" title="monmaptool – ceph monitor cluster map manipulation tool" href="../monmaptool/" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../rados/" title="rados – rados object storage utility"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../monmaptool/" title="monmaptool – ceph monitor cluster map manipulation tool"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../../rados/" >Ceph Storage Cluster</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../../../rados/man/" accesskey="U">Object Store Manpages</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">osdmaptool – ceph osd cluster map manipulation tool</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="osdmaptool-ceph-osd-cluster-map-manipulation-tool">
+<span id="osdmaptool"></span><h1>osdmaptool – ceph osd cluster map manipulation tool<a class="headerlink" href="#osdmaptool-ceph-osd-cluster-map-manipulation-tool" title="Permalink to this heading">¶</a></h1>
+<section id="synopsis">
+<h2>Synopsis<a class="headerlink" href="#synopsis" title="Permalink to this heading">¶</a></h2>
+<div class="line-block">
+<div class="line"><strong>osdmaptool</strong> <em>mapfilename</em> [–print] [–createsimple <em>numosd</em>
+[–pgbits <em>bitsperosd</em> ] ] [–clobber]</div>
+<div class="line"><strong>osdmaptool</strong> <em>mapfilename</em> [–import-crush <em>crushmap</em>]</div>
+<div class="line"><strong>osdmaptool</strong> <em>mapfilename</em> [–export-crush <em>crushmap</em>]</div>
+<div class="line"><strong>osdmaptool</strong> <em>mapfilename</em> [–upmap <em>file</em>] [–upmap-max <em>max-optimizations</em>]
+[–upmap-deviation <em>max-deviation</em>] [–upmap-pool <em>poolname</em>]
+[–save] [–upmap-active]</div>
+<div class="line"><strong>osdmaptool</strong> <em>mapfilename</em> [–upmap-cleanup] [–upmap <em>file</em>]</div>
+</div>
+</section>
+<section id="description">
+<h2>Description<a class="headerlink" href="#description" title="Permalink to this heading">¶</a></h2>
+<p><strong>osdmaptool</strong> is a utility that lets you create, view, and manipulate
+OSD cluster maps from the Ceph distributed storage system. Notably, it
+lets you extract the embedded CRUSH map or import a new CRUSH map.
+It can also simulate the upmap balancer mode so you can get a sense of
+what is needed to balance your PGs.</p>
+</section>
+<section id="options">
+<h2>Options<a class="headerlink" href="#options" title="Permalink to this heading">¶</a></h2>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-osdmaptool-print">
+<span class="sig-name descname"><span class="pre">--print</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-osdmaptool-print" title="Permalink to this definition">¶</a></dt>
+<dd><p>will simply make the tool print a plaintext dump of the map, after
+any modifications are made.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-osdmaptool-dump">
+<span class="sig-name descname"><span class="pre">--dump</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;format&gt;</span></span><a class="headerlink" href="#cmdoption-osdmaptool-dump" title="Permalink to this definition">¶</a></dt>
+<dd><p>displays the map in plain text when &lt;format&gt; is ‘plain’, ‘json’ if specified
+format is not supported. This is an alternative to the print option.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-osdmaptool-clobber">
+<span class="sig-name descname"><span class="pre">--clobber</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-osdmaptool-clobber" title="Permalink to this definition">¶</a></dt>
+<dd><p>will allow osdmaptool to overwrite mapfilename if changes are made.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-osdmaptool-import-crush">
+<span class="sig-name descname"><span class="pre">--import-crush</span></span><span class="sig-prename descclassname"> <span class="pre">mapfile</span></span><a class="headerlink" href="#cmdoption-osdmaptool-import-crush" title="Permalink to this definition">¶</a></dt>
+<dd><p>will load the CRUSH map from mapfile and embed it in the OSD map.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-osdmaptool-export-crush">
+<span class="sig-name descname"><span class="pre">--export-crush</span></span><span class="sig-prename descclassname"> <span class="pre">mapfile</span></span><a class="headerlink" href="#cmdoption-osdmaptool-export-crush" title="Permalink to this definition">¶</a></dt>
+<dd><p>will extract the CRUSH map from the OSD map and write it to
+mapfile.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-osdmaptool-createsimple">
+<span class="sig-name descname"><span class="pre">--createsimple</span></span><span class="sig-prename descclassname"> <span class="pre">numosd</span> <span class="pre">[--pg-bits</span> <span class="pre">bitsperosd]</span> <span class="pre">[--pgp-bits</span> <span class="pre">bits]</span></span><a class="headerlink" href="#cmdoption-osdmaptool-createsimple" title="Permalink to this definition">¶</a></dt>
+<dd><p>will create a relatively generic OSD map with the numosd devices.
+If –pg-bits is specified, the initial placement group counts will
+be set with bitsperosd bits per OSD. That is, the pg_num map
+attribute will be set to numosd shifted by bitsperosd.
+If –pgp-bits is specified, then the pgp_num map attribute will
+be set to numosd shifted by bits.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-osdmaptool-create-from-conf">
+<span class="sig-name descname"><span class="pre">--create-from-conf</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-osdmaptool-create-from-conf" title="Permalink to this definition">¶</a></dt>
+<dd><p>creates an osd map with default configurations.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-osdmaptool-test-map-pgs">
+<span class="sig-name descname"><span class="pre">--test-map-pgs</span></span><span class="sig-prename descclassname"> <span class="pre">[--pool</span> <span class="pre">poolid]</span> <span class="pre">[--range-first</span> <span class="pre">&lt;first&gt;</span> <span class="pre">--range-last</span> <span class="pre">&lt;last&gt;]</span></span><a class="headerlink" href="#cmdoption-osdmaptool-test-map-pgs" title="Permalink to this definition">¶</a></dt>
+<dd><p>will print out the mappings from placement groups to OSDs.
+If range is specified, then it iterates from first to last in the directory
+specified by argument to osdmaptool.
+Eg: <strong>osdmaptool –test-map-pgs –range-first 0 –range-last 2 osdmap_dir</strong>.
+This will iterate through the files named 0,1,2 in osdmap_dir.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-osdmaptool-test-map-pgs-dump">
+<span class="sig-name descname"><span class="pre">--test-map-pgs-dump</span></span><span class="sig-prename descclassname"> <span class="pre">[--pool</span> <span class="pre">poolid]</span> <span class="pre">[--range-first</span> <span class="pre">&lt;first&gt;</span> <span class="pre">--range-last</span> <span class="pre">&lt;last&gt;]</span></span><a class="headerlink" href="#cmdoption-osdmaptool-test-map-pgs-dump" title="Permalink to this definition">¶</a></dt>
+<dd><p>will print out the summary of all placement groups and the mappings from them to the mapped OSDs.
+If range is specified, then it iterates from first to last in the directory
+specified by argument to osdmaptool.
+Eg: <strong>osdmaptool –test-map-pgs-dump –range-first 0 –range-last 2 osdmap_dir</strong>.
+This will iterate through the files named 0,1,2 in osdmap_dir.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-osdmaptool-test-map-pgs-dump-all">
+<span class="sig-name descname"><span class="pre">--test-map-pgs-dump-all</span></span><span class="sig-prename descclassname"> <span class="pre">[--pool</span> <span class="pre">poolid]</span> <span class="pre">[--range-first</span> <span class="pre">&lt;first&gt;</span> <span class="pre">--range-last</span> <span class="pre">&lt;last&gt;]</span></span><a class="headerlink" href="#cmdoption-osdmaptool-test-map-pgs-dump-all" title="Permalink to this definition">¶</a></dt>
+<dd><p>will print out the summary of all placement groups and the mappings
+from them to all the OSDs.
+If range is specified, then it iterates from first to last in the directory
+specified by argument to osdmaptool.
+Eg: <strong>osdmaptool –test-map-pgs-dump-all –range-first 0 –range-last 2 osdmap_dir</strong>.
+This will iterate through the files named 0,1,2 in osdmap_dir.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-osdmaptool-test-random">
+<span class="sig-name descname"><span class="pre">--test-random</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-osdmaptool-test-random" title="Permalink to this definition">¶</a></dt>
+<dd><p>does a random mapping of placement groups to the OSDs.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-osdmaptool-test-map-pg">
+<span class="sig-name descname"><span class="pre">--test-map-pg</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;pgid&gt;</span></span><a class="headerlink" href="#cmdoption-osdmaptool-test-map-pg" title="Permalink to this definition">¶</a></dt>
+<dd><p>map a particular placement group(specified by pgid) to the OSDs.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-osdmaptool-test-map-object">
+<span class="sig-name descname"><span class="pre">--test-map-object</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;objectname&gt;</span> <span class="pre">[--pool</span> <span class="pre">&lt;poolid&gt;]</span></span><a class="headerlink" href="#cmdoption-osdmaptool-test-map-object" title="Permalink to this definition">¶</a></dt>
+<dd><p>map a particular placement group(specified by objectname) to the OSDs.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-osdmaptool-test-crush">
+<span class="sig-name descname"><span class="pre">--test-crush</span></span><span class="sig-prename descclassname"> <span class="pre">[--range-first</span> <span class="pre">&lt;first&gt;</span> <span class="pre">--range-last</span> <span class="pre">&lt;last&gt;]</span></span><a class="headerlink" href="#cmdoption-osdmaptool-test-crush" title="Permalink to this definition">¶</a></dt>
+<dd><p>map placement groups to acting OSDs.
+If range is specified, then it iterates from first to last in the directory
+specified by argument to osdmaptool.
+Eg: <strong>osdmaptool –test-crush –range-first 0 –range-last 2 osdmap_dir</strong>.
+This will iterate through the files named 0,1,2 in osdmap_dir.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-osdmaptool-mark-up-in">
+<span class="sig-name descname"><span class="pre">--mark-up-in</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-osdmaptool-mark-up-in" title="Permalink to this definition">¶</a></dt>
+<dd><p>mark osds up and in (but do not persist).</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-osdmaptool-mark-out">
+<span class="sig-name descname"><span class="pre">--mark-out</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-osdmaptool-mark-out" title="Permalink to this definition">¶</a></dt>
+<dd><p>mark an osd as out (but do not persist)</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-osdmaptool-mark-up">
+<span class="sig-name descname"><span class="pre">--mark-up</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;osdid&gt;</span></span><a class="headerlink" href="#cmdoption-osdmaptool-mark-up" title="Permalink to this definition">¶</a></dt>
+<dd><p>mark an osd as up (but do not persist)</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-osdmaptool-mark-in">
+<span class="sig-name descname"><span class="pre">--mark-in</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;osdid&gt;</span></span><a class="headerlink" href="#cmdoption-osdmaptool-mark-in" title="Permalink to this definition">¶</a></dt>
+<dd><p>mark an osd as in (but do not persist)</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-osdmaptool-tree">
+<span class="sig-name descname"><span class="pre">--tree</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-osdmaptool-tree" title="Permalink to this definition">¶</a></dt>
+<dd><p>Displays a hierarchical tree of the map.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-osdmaptool-clear-temp">
+<span class="sig-name descname"><span class="pre">--clear-temp</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-osdmaptool-clear-temp" title="Permalink to this definition">¶</a></dt>
+<dd><p>clears pg_temp and primary_temp variables.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-osdmaptool-clean-temps">
+<span class="sig-name descname"><span class="pre">--clean-temps</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-osdmaptool-clean-temps" title="Permalink to this definition">¶</a></dt>
+<dd><p>clean pg_temps.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-osdmaptool-health">
+<span class="sig-name descname"><span class="pre">--health</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-osdmaptool-health" title="Permalink to this definition">¶</a></dt>
+<dd><p>dump health checks</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-osdmaptool-with-default-pool">
+<span class="sig-name descname"><span class="pre">--with-default-pool</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-osdmaptool-with-default-pool" title="Permalink to this definition">¶</a></dt>
+<dd><p>include default pool when creating map</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-osdmaptool-upmap-cleanup">
+<span class="sig-name descname"><span class="pre">--upmap-cleanup</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;file&gt;</span></span><a class="headerlink" href="#cmdoption-osdmaptool-upmap-cleanup" title="Permalink to this definition">¶</a></dt>
+<dd><p>clean up pg_upmap[_items] entries, writing commands to &lt;file&gt; [default: - for stdout]</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-osdmaptool-upmap">
+<span class="sig-name descname"><span class="pre">--upmap</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;file&gt;</span></span><a class="headerlink" href="#cmdoption-osdmaptool-upmap" title="Permalink to this definition">¶</a></dt>
+<dd><p>calculate pg upmap entries to balance pg layout writing commands to &lt;file&gt; [default: - for stdout]</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-osdmaptool-upmap-max">
+<span class="sig-name descname"><span class="pre">--upmap-max</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;max-optimizations&gt;</span></span><a class="headerlink" href="#cmdoption-osdmaptool-upmap-max" title="Permalink to this definition">¶</a></dt>
+<dd><p>set max upmap entries to calculate [default: 10]</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-osdmaptool-upmap-deviation">
+<span class="sig-name descname"><span class="pre">--upmap-deviation</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;max-deviation&gt;</span></span><a class="headerlink" href="#cmdoption-osdmaptool-upmap-deviation" title="Permalink to this definition">¶</a></dt>
+<dd><p>max deviation from target [default: 5]</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-osdmaptool-upmap-pool">
+<span class="sig-name descname"><span class="pre">--upmap-pool</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;poolname&gt;</span></span><a class="headerlink" href="#cmdoption-osdmaptool-upmap-pool" title="Permalink to this definition">¶</a></dt>
+<dd><p>restrict upmap balancing to 1 pool or the option can be repeated for multiple pools</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-osdmaptool-upmap-active">
+<span class="sig-name descname"><span class="pre">--upmap-active</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-osdmaptool-upmap-active" title="Permalink to this definition">¶</a></dt>
+<dd><p>Act like an active balancer, keep applying changes until balanced</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-osdmaptool-adjust-crush-weight">
+<span class="sig-name descname"><span class="pre">--adjust-crush-weight</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;osdid:weight&gt;[,&lt;osdid:weight&gt;,&lt;...&gt;]</span></span><a class="headerlink" href="#cmdoption-osdmaptool-adjust-crush-weight" title="Permalink to this definition">¶</a></dt>
+<dd><p>Change CRUSH weight of &lt;osdid&gt;</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-osdmaptool-save">
+<span class="sig-name descname"><span class="pre">--save</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-osdmaptool-save" title="Permalink to this definition">¶</a></dt>
+<dd><p>write modified osdmap with upmap or crush-adjust changes</p>
+</dd></dl>
+
+</section>
+<section id="example">
+<h2>Example<a class="headerlink" href="#example" title="Permalink to this heading">¶</a></h2>
+<p>To create a simple map with 16 devices:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">osdmaptool</span> <span class="o">--</span><span class="n">createsimple</span> <span class="mi">16</span> <span class="n">osdmap</span> <span class="o">--</span><span class="n">clobber</span>
+</pre></div>
+</div>
+<p>To view the result:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">osdmaptool</span> <span class="o">--</span><span class="nb">print</span> <span class="n">osdmap</span>
+</pre></div>
+</div>
+<p>To view the mappings of placement groups for pool 1:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">osdmaptool</span> <span class="n">osdmap</span> <span class="o">--</span><span class="n">test</span><span class="o">-</span><span class="nb">map</span><span class="o">-</span><span class="n">pgs</span><span class="o">-</span><span class="n">dump</span> <span class="o">--</span><span class="n">pool</span> <span class="mi">1</span>
+
+<span class="n">pool</span> <span class="mi">1</span> <span class="n">pg_num</span> <span class="mi">8</span>
+<span class="mf">1.0</span>     <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span> <span class="mi">0</span>
+<span class="mf">1.1</span>     <span class="p">[</span><span class="mi">2</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span> <span class="mi">2</span>
+<span class="mf">1.2</span>     <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">]</span> <span class="mi">0</span>
+<span class="mf">1.3</span>     <span class="p">[</span><span class="mi">2</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span> <span class="mi">2</span>
+<span class="mf">1.4</span>     <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span> <span class="mi">0</span>
+<span class="mf">1.5</span>     <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span> <span class="mi">0</span>
+<span class="mf">1.6</span>     <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">]</span> <span class="mi">0</span>
+<span class="mf">1.7</span>     <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">2</span><span class="p">]</span> <span class="mi">1</span>
+<span class="c1">#osd    count   first   primary c wt    wt</span>
+<span class="n">osd</span><span class="mf">.0</span>   <span class="mi">8</span>       <span class="mi">5</span>       <span class="mi">5</span>       <span class="mi">1</span>       <span class="mi">1</span>
+<span class="n">osd</span><span class="mf">.1</span>   <span class="mi">8</span>       <span class="mi">1</span>       <span class="mi">1</span>       <span class="mi">1</span>       <span class="mi">1</span>
+<span class="n">osd</span><span class="mf">.2</span>   <span class="mi">8</span>       <span class="mi">2</span>       <span class="mi">2</span>       <span class="mi">1</span>       <span class="mi">1</span>
+ <span class="ow">in</span> <span class="mi">3</span>
+ <span class="n">avg</span> <span class="mi">8</span> <span class="n">stddev</span> <span class="mi">0</span> <span class="p">(</span><span class="mi">0</span><span class="n">x</span><span class="p">)</span> <span class="p">(</span><span class="n">expected</span> <span class="mf">2.3094</span> <span class="mf">0.288675</span><span class="n">x</span><span class="p">))</span>
+ <span class="nb">min</span> <span class="n">osd</span><span class="mf">.0</span> <span class="mi">8</span>
+ <span class="nb">max</span> <span class="n">osd</span><span class="mf">.0</span> <span class="mi">8</span>
+<span class="n">size</span> <span class="mi">0</span>  <span class="mi">0</span>
+<span class="n">size</span> <span class="mi">1</span>  <span class="mi">0</span>
+<span class="n">size</span> <span class="mi">2</span>  <span class="mi">0</span>
+<span class="n">size</span> <span class="mi">3</span>  <span class="mi">8</span>
+</pre></div>
+</div>
+<dl class="simple">
+<dt>In which,</dt><dd><ol class="arabic simple">
+<li><p>pool 1 has 8 placement groups. And two tables follow:</p></li>
+<li><p>A table for placement groups. Each row presents a placement group. With columns of:</p>
+<ul class="simple">
+<li><p>placement group id,</p></li>
+<li><p>acting set, and</p></li>
+<li><p>primary OSD.</p></li>
+</ul>
+</li>
+<li><p>A table for all OSDs. Each row presents an OSD. With columns of:</p>
+<ul class="simple">
+<li><p>count of placement groups being mapped to this OSD,</p></li>
+<li><p>count of placement groups where this OSD is the first one in their acting sets,</p></li>
+<li><p>count of placement groups where this OSD is the primary of them,</p></li>
+<li><p>the CRUSH weight of this OSD, and</p></li>
+<li><p>the weight of this OSD.</p></li>
+</ul>
+</li>
+<li><p>Looking at the number of placement groups held by 3 OSDs. We have</p>
+<ul class="simple">
+<li><p>avarge, stddev, stddev/average, expected stddev, expected stddev / average</p></li>
+<li><p>min and max</p></li>
+</ul>
+</li>
+<li><p>The number of placement groups mapping to n OSDs. In this case, all 8 placement
+groups are mapping to 3 different OSDs.</p></li>
+</ol>
+</dd>
+</dl>
+<p>In a less-balanced cluster, we could have following output for the statistics of
+placement group distribution, whose standard deviation is 1.41421:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1">#osd    count   first   primary c wt    wt</span>
+<span class="n">osd</span><span class="mf">.0</span>   <span class="mi">8</span>       <span class="mi">5</span>       <span class="mi">5</span>       <span class="mi">1</span>       <span class="mi">1</span>
+<span class="n">osd</span><span class="mf">.1</span>   <span class="mi">8</span>       <span class="mi">1</span>       <span class="mi">1</span>       <span class="mi">1</span>       <span class="mi">1</span>
+<span class="n">osd</span><span class="mf">.2</span>   <span class="mi">8</span>       <span class="mi">2</span>       <span class="mi">2</span>       <span class="mi">1</span>       <span class="mi">1</span>
+
+<span class="c1">#osd    count   first    primary c wt    wt</span>
+<span class="n">osd</span><span class="mf">.0</span>   <span class="mi">33</span>      <span class="mi">9</span>        <span class="mi">9</span>       <span class="mf">0.0145874</span>     <span class="mi">1</span>
+<span class="n">osd</span><span class="mf">.1</span>   <span class="mi">34</span>      <span class="mi">14</span>       <span class="mi">14</span>      <span class="mf">0.0145874</span>     <span class="mi">1</span>
+<span class="n">osd</span><span class="mf">.2</span>   <span class="mi">31</span>      <span class="mi">7</span>        <span class="mi">7</span>       <span class="mf">0.0145874</span>     <span class="mi">1</span>
+<span class="n">osd</span><span class="mf">.3</span>   <span class="mi">31</span>      <span class="mi">13</span>       <span class="mi">13</span>      <span class="mf">0.0145874</span>     <span class="mi">1</span>
+<span class="n">osd</span><span class="mf">.4</span>   <span class="mi">30</span>      <span class="mi">14</span>       <span class="mi">14</span>      <span class="mf">0.0145874</span>     <span class="mi">1</span>
+<span class="n">osd</span><span class="mf">.5</span>   <span class="mi">33</span>      <span class="mi">7</span>        <span class="mi">7</span>       <span class="mf">0.0145874</span>     <span class="mi">1</span>
+ <span class="ow">in</span> <span class="mi">6</span>
+ <span class="n">avg</span> <span class="mi">32</span> <span class="n">stddev</span> <span class="mf">1.41421</span> <span class="p">(</span><span class="mf">0.0441942</span><span class="n">x</span><span class="p">)</span> <span class="p">(</span><span class="n">expected</span> <span class="mf">5.16398</span> <span class="mf">0.161374</span><span class="n">x</span><span class="p">))</span>
+ <span class="nb">min</span> <span class="n">osd</span><span class="mf">.4</span> <span class="mi">30</span>
+ <span class="nb">max</span> <span class="n">osd</span><span class="mf">.1</span> <span class="mi">34</span>
+<span class="n">size</span> <span class="mi">00</span>
+<span class="n">size</span> <span class="mi">10</span>
+<span class="n">size</span> <span class="mi">20</span>
+<span class="n">size</span> <span class="mi">364</span>
+</pre></div>
+</div>
+<p>To simulate the active balancer in upmap mode:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>     <span class="n">osdmaptool</span> <span class="o">--</span><span class="n">upmap</span> <span class="n">upmaps</span><span class="o">.</span><span class="n">out</span> <span class="o">--</span><span class="n">upmap</span><span class="o">-</span><span class="n">active</span> <span class="o">--</span><span class="n">upmap</span><span class="o">-</span><span class="n">deviation</span> <span class="mi">6</span> <span class="o">--</span><span class="n">upmap</span><span class="o">-</span><span class="nb">max</span> <span class="mi">11</span> <span class="n">osdmap</span>
+
+<span class="n">osdmaptool</span><span class="p">:</span> <span class="n">osdmap</span> <span class="n">file</span> <span class="s1">&#39;osdmap&#39;</span>
+<span class="n">writing</span> <span class="n">upmap</span> <span class="n">command</span> <span class="n">output</span> <span class="n">to</span><span class="p">:</span> <span class="n">upmaps</span><span class="o">.</span><span class="n">out</span>
+<span class="n">checking</span> <span class="k">for</span> <span class="n">upmap</span> <span class="n">cleanups</span>
+<span class="n">upmap</span><span class="p">,</span> <span class="nb">max</span><span class="o">-</span><span class="n">count</span> <span class="mi">11</span><span class="p">,</span> <span class="nb">max</span> <span class="n">deviation</span> <span class="mi">6</span>
+<span class="n">pools</span> <span class="n">movies</span> <span class="n">photos</span> <span class="n">metadata</span> <span class="n">data</span>
+<span class="n">prepared</span> <span class="mi">11</span><span class="o">/</span><span class="mi">11</span> <span class="n">changes</span>
+<span class="n">Time</span> <span class="n">elapsed</span> <span class="mf">0.00310404</span> <span class="n">secs</span>
+<span class="n">pools</span> <span class="n">movies</span> <span class="n">photos</span> <span class="n">metadata</span> <span class="n">data</span>
+<span class="n">prepared</span> <span class="mi">11</span><span class="o">/</span><span class="mi">11</span> <span class="n">changes</span>
+<span class="n">Time</span> <span class="n">elapsed</span> <span class="mf">0.00283402</span> <span class="n">secs</span>
+<span class="n">pools</span> <span class="n">data</span> <span class="n">metadata</span> <span class="n">movies</span> <span class="n">photos</span>
+<span class="n">prepared</span> <span class="mi">11</span><span class="o">/</span><span class="mi">11</span> <span class="n">changes</span>
+<span class="n">Time</span> <span class="n">elapsed</span> <span class="mf">0.003122</span> <span class="n">secs</span>
+<span class="n">pools</span> <span class="n">photos</span> <span class="n">metadata</span> <span class="n">data</span> <span class="n">movies</span>
+<span class="n">prepared</span> <span class="mi">11</span><span class="o">/</span><span class="mi">11</span> <span class="n">changes</span>
+<span class="n">Time</span> <span class="n">elapsed</span> <span class="mf">0.00324372</span> <span class="n">secs</span>
+<span class="n">pools</span> <span class="n">movies</span> <span class="n">metadata</span> <span class="n">data</span> <span class="n">photos</span>
+<span class="n">prepared</span> <span class="mi">1</span><span class="o">/</span><span class="mi">11</span> <span class="n">changes</span>
+<span class="n">Time</span> <span class="n">elapsed</span> <span class="mf">0.00222609</span> <span class="n">secs</span>
+<span class="n">pools</span> <span class="n">data</span> <span class="n">movies</span> <span class="n">photos</span> <span class="n">metadata</span>
+<span class="n">prepared</span> <span class="mi">0</span><span class="o">/</span><span class="mi">11</span> <span class="n">changes</span>
+<span class="n">Time</span> <span class="n">elapsed</span> <span class="mf">0.00209916</span> <span class="n">secs</span>
+<span class="n">Unable</span> <span class="n">to</span> <span class="n">find</span> <span class="n">further</span> <span class="n">optimization</span><span class="p">,</span> <span class="ow">or</span> <span class="n">distribution</span> <span class="ow">is</span> <span class="n">already</span> <span class="n">perfect</span>
+<span class="n">osd</span><span class="mf">.0</span> <span class="n">pgs</span> <span class="mi">41</span>
+<span class="n">osd</span><span class="mf">.1</span> <span class="n">pgs</span> <span class="mi">42</span>
+<span class="n">osd</span><span class="mf">.2</span> <span class="n">pgs</span> <span class="mi">42</span>
+<span class="n">osd</span><span class="mf">.3</span> <span class="n">pgs</span> <span class="mi">41</span>
+<span class="n">osd</span><span class="mf">.4</span> <span class="n">pgs</span> <span class="mi">46</span>
+<span class="n">osd</span><span class="mf">.5</span> <span class="n">pgs</span> <span class="mi">39</span>
+<span class="n">osd</span><span class="mf">.6</span> <span class="n">pgs</span> <span class="mi">39</span>
+<span class="n">osd</span><span class="mf">.7</span> <span class="n">pgs</span> <span class="mi">43</span>
+<span class="n">osd</span><span class="mf">.8</span> <span class="n">pgs</span> <span class="mi">41</span>
+<span class="n">osd</span><span class="mf">.9</span> <span class="n">pgs</span> <span class="mi">46</span>
+<span class="n">osd</span><span class="mf">.10</span> <span class="n">pgs</span> <span class="mi">46</span>
+<span class="n">osd</span><span class="mf">.11</span> <span class="n">pgs</span> <span class="mi">46</span>
+<span class="n">osd</span><span class="mf">.12</span> <span class="n">pgs</span> <span class="mi">46</span>
+<span class="n">osd</span><span class="mf">.13</span> <span class="n">pgs</span> <span class="mi">41</span>
+<span class="n">osd</span><span class="mf">.14</span> <span class="n">pgs</span> <span class="mi">40</span>
+<span class="n">osd</span><span class="mf">.15</span> <span class="n">pgs</span> <span class="mi">40</span>
+<span class="n">osd</span><span class="mf">.16</span> <span class="n">pgs</span> <span class="mi">39</span>
+<span class="n">osd</span><span class="mf">.17</span> <span class="n">pgs</span> <span class="mi">46</span>
+<span class="n">osd</span><span class="mf">.18</span> <span class="n">pgs</span> <span class="mi">46</span>
+<span class="n">osd</span><span class="mf">.19</span> <span class="n">pgs</span> <span class="mi">39</span>
+<span class="n">osd</span><span class="mf">.20</span> <span class="n">pgs</span> <span class="mi">42</span>
+<span class="n">Total</span> <span class="n">time</span> <span class="n">elapsed</span> <span class="mf">0.0167765</span> <span class="n">secs</span><span class="p">,</span> <span class="mi">5</span> <span class="n">rounds</span>
+</pre></div>
+</div>
+</section>
+<section id="availability">
+<h2>Availability<a class="headerlink" href="#availability" title="Permalink to this heading">¶</a></h2>
+<p><strong>osdmaptool</strong> is part of Ceph, a massively scalable, open-source, distributed storage system.  Please
+refer to the Ceph documentation at <a class="reference external" href="http://ceph.com/docs">http://ceph.com/docs</a> for more
+information.</p>
+</section>
+<section id="see-also">
+<h2>See also<a class="headerlink" href="#see-also" title="Permalink to this heading">¶</a></h2>
+<p><a class="reference internal" href="../ceph/"><span class="doc">ceph</span></a>(8),
+<a class="reference internal" href="../crushtool/"><span class="doc">crushtool</span></a>(8),</p>
+</section>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../../">
+              <img class="logo" src="../../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../install/">Installing Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cephadm/">Cephadm</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../../rados/">Ceph Storage Cluster</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../../../rados/configuration/">Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../cephadm/">Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../rados/operations/">Operations</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../../../rados/man/">Man Pages</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../ceph-volume/">ceph-volume – Ceph OSD deployment and inspection tool</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../ceph-volume-systemd/">ceph-volume-systemd – systemd ceph-volume helper tool</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../ceph/">ceph – ceph administration tool</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../ceph-authtool/">ceph-authtool – ceph keyring manipulation tool</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../ceph-clsinfo/">ceph-clsinfo – show class object information</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../ceph-conf/">ceph-conf – ceph conf file tool</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../ceph-debugpack/">ceph-debugpack – ceph debug packer utility</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../ceph-dencoder/">ceph-dencoder – ceph encoder/decoder utility</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../ceph-mon/">ceph-mon – ceph monitor daemon</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../ceph-osd/">ceph-osd – ceph object storage daemon</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../ceph-kvstore-tool/">ceph-kvstore-tool – ceph kvstore manipulation tool</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../ceph-run/">ceph-run – restart daemon on core dump</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../ceph-syn/">ceph-syn – ceph synthetic workload generator</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../crushtool/">crushtool – CRUSH map manipulation tool</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../librados-config/">librados-config – display information about librados</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../monmaptool/">monmaptool – ceph monitor cluster map manipulation tool</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">osdmaptool – ceph osd cluster map manipulation tool</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#synopsis">Synopsis</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#description">Description</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#options">Options</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#example">Example</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#availability">Availability</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#see-also">See also</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../rados/">rados – rados object storage utility</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../ceph-post-file/">ceph-post-file – post files for ceph developers</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../rados/troubleshooting/">Troubleshooting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../rados/api/">APIs</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cephfs/">Ceph File System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../rbd/">Ceph Block Device</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../radosgw/">Ceph Object Gateway</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../mgr/">Ceph Manager Daemon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../mgr/dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dev/developer_guide/">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dev/internals/">Ceph Internals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../../../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../rados/" title="rados – rados object storage utility"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../monmaptool/" title="monmaptool – ceph monitor cluster map manipulation tool"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../../rados/" >Ceph Storage Cluster</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../../../rados/man/" >Object Store Manpages</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">osdmaptool – ceph osd cluster map manipulation tool</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

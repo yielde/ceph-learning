@@ -1,0 +1,327 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Ceph file system client eviction &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css" />
+    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../genindex/" />
+    <link rel="search" title="Search" href="../../search/" />
+    <link rel="next" title="Ceph File System Scrub" href="../scrub/" />
+    <link rel="prev" title="Configuring multiple active MDS daemons" href="../multimds/" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../scrub/" title="Ceph File System Scrub"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../multimds/" title="Configuring multiple active MDS daemons"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../" accesskey="U">Ceph File System</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Ceph file system client eviction</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="ceph-file-system-client-eviction">
+<h1>Ceph file system client eviction<a class="headerlink" href="#ceph-file-system-client-eviction" title="Permalink to this heading">¶</a></h1>
+<p>When a file system client is unresponsive or otherwise misbehaving, it
+may be necessary to forcibly terminate its access to the file system.  This
+process is called <em>eviction</em>.</p>
+<p>Evicting a CephFS client prevents it from communicating further with MDS
+daemons and OSD daemons.  If a client was doing buffered IO to the file system,
+any un-flushed data will be lost.</p>
+<p>Clients may either be evicted automatically (if they fail to communicate
+promptly with the MDS), or manually (by the system administrator).</p>
+<p>The client eviction process applies to clients of all kinds, this includes
+FUSE mounts, kernel mounts, nfs-ganesha gateways, and any process using
+libcephfs.</p>
+<section id="automatic-client-eviction">
+<h2>Automatic client eviction<a class="headerlink" href="#automatic-client-eviction" title="Permalink to this heading">¶</a></h2>
+<p>There are three situations in which a client may be evicted automatically.</p>
+<ol class="arabic simple">
+<li><p>On an active MDS daemon, if a client has not communicated with the MDS for over
+<code class="docutils literal notranslate"><span class="pre">session_autoclose</span></code> (a file system variable) seconds (300 seconds by
+default), then it will be evicted automatically.</p></li>
+<li><p>On an active MDS daemon, if a client has not responded to cap revoke messages
+for over <code class="docutils literal notranslate"><span class="pre">mds_cap_revoke_eviction_timeout</span></code> (configuration option) seconds.
+This is disabled by default.</p></li>
+<li><p>During MDS startup (including on failover), the MDS passes through a
+state called <code class="docutils literal notranslate"><span class="pre">reconnect</span></code>.  During this state, it waits for all the
+clients to connect to the new MDS daemon.  If any clients fail to do
+so within the time window (<code class="docutils literal notranslate"><span class="pre">mds_reconnect_timeout</span></code>, 45 seconds by default)
+then they will be evicted.</p></li>
+</ol>
+<p>A warning message is sent to the cluster log if either of these situations
+arises.</p>
+</section>
+<section id="manual-client-eviction">
+<h2>Manual client eviction<a class="headerlink" href="#manual-client-eviction" title="Permalink to this heading">¶</a></h2>
+<p>Sometimes, the administrator may want to evict a client manually.  This
+could happen if a client has died and the administrator does not
+want to wait for its session to time out, or it could happen if
+a client is misbehaving and the administrator does not have access to
+the client node to unmount it.</p>
+<p>It is useful to inspect the list of clients first:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span> <span class="n">tell</span> <span class="n">mds</span><span class="mf">.0</span> <span class="n">client</span> <span class="n">ls</span>
+
+<span class="p">[</span>
+    <span class="p">{</span>
+        <span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="mi">4305</span><span class="p">,</span>
+        <span class="s2">&quot;num_leases&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="s2">&quot;num_caps&quot;</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span>
+        <span class="s2">&quot;state&quot;</span><span class="p">:</span> <span class="s2">&quot;open&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;replay_requests&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="s2">&quot;completed_requests&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="s2">&quot;reconnecting&quot;</span><span class="p">:</span> <span class="n">false</span><span class="p">,</span>
+        <span class="s2">&quot;inst&quot;</span><span class="p">:</span> <span class="s2">&quot;client.4305 172.21.9.34:0/422650892&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;client_metadata&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;ceph_sha1&quot;</span><span class="p">:</span> <span class="s2">&quot;ae81e49d369875ac8b569ff3e3c456a31b8f3af5&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;ceph_version&quot;</span><span class="p">:</span> <span class="s2">&quot;ceph version 12.0.0-1934-gae81e49 (ae81e49d369875ac8b569ff3e3c456a31b8f3af5)&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;entity_id&quot;</span><span class="p">:</span> <span class="s2">&quot;0&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;hostname&quot;</span><span class="p">:</span> <span class="s2">&quot;senta04&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;mount_point&quot;</span><span class="p">:</span> <span class="s2">&quot;/tmp/tmpcMpF1b/mnt.0&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;pid&quot;</span><span class="p">:</span> <span class="s2">&quot;29377&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;root&quot;</span><span class="p">:</span> <span class="s2">&quot;/&quot;</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">]</span>
+</pre></div>
+</div>
+<p>Once you have identified the client you want to evict, you can
+do that using its unique ID, or various other attributes to identify it:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># These all work</span>
+<span class="n">ceph</span> <span class="n">tell</span> <span class="n">mds</span><span class="mf">.0</span> <span class="n">client</span> <span class="n">evict</span> <span class="nb">id</span><span class="o">=</span><span class="mi">4305</span>
+<span class="n">ceph</span> <span class="n">tell</span> <span class="n">mds</span><span class="mf">.0</span> <span class="n">client</span> <span class="n">evict</span> <span class="n">client_metadata</span><span class="o">.=</span><span class="mi">4305</span>
+</pre></div>
+</div>
+</section>
+<section id="advanced-un-blocklisting-a-client">
+<h2>Advanced: Un-blocklisting a client<a class="headerlink" href="#advanced-un-blocklisting-a-client" title="Permalink to this heading">¶</a></h2>
+<p>Ordinarily, a blocklisted client may not reconnect to the servers: it
+must be unmounted and then mounted anew.</p>
+<p>However, in some situations it may be useful to permit a client that
+was evicted to attempt to reconnect.</p>
+<p>Because CephFS uses the RADOS OSD blocklist to control client eviction,
+CephFS clients can be permitted to reconnect by removing them from
+the blocklist:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ ceph osd blocklist ls
+listed 1 entries
+127.0.0.1:0/3710147553 2018-03-19 11:32:24.716146
+$ ceph osd blocklist rm 127.0.0.1:0/3710147553
+un-blocklisting 127.0.0.1:0/3710147553
+</pre></div>
+</div>
+<p>Doing this may put data integrity at risk if other clients have accessed
+files that the blocklisted client was doing buffered IO to.  It is also not
+guaranteed to result in a fully functional client – the best way to get
+a fully healthy client back after an eviction is to unmount the client
+and do a fresh mount.</p>
+<p>If you are trying to reconnect clients in this way, you may also
+find it useful to set <code class="docutils literal notranslate"><span class="pre">client_reconnect_stale</span></code> to true in the
+FUSE client, to prompt the client to try to reconnect.</p>
+</section>
+<section id="advanced-configuring-blocklisting">
+<h2>Advanced: Configuring blocklisting<a class="headerlink" href="#advanced-configuring-blocklisting" title="Permalink to this heading">¶</a></h2>
+<p>If you are experiencing frequent client evictions, due to slow
+client hosts or an unreliable network, and you cannot fix the underlying
+issue, then you may want to ask the MDS to be less strict.</p>
+<p>It is possible to respond to slow clients by simply dropping their
+MDS sessions, but permit them to re-open sessions and permit them
+to continue talking to OSDs.  To enable this mode, set
+<code class="docutils literal notranslate"><span class="pre">mds_session_blocklist_on_timeout</span></code> to false on your MDS nodes.</p>
+<p>For the equivalent behaviour on manual evictions, set
+<code class="docutils literal notranslate"><span class="pre">mds_session_blocklist_on_evict</span></code> to false.</p>
+<p>Note that if blocklisting is disabled, then evicting a client will
+only have an effect on the MDS you send the command to.  On a system
+with multiple active MDS daemons, you would need to send an
+eviction command to each active daemon.  When blocklisting is enabled
+(the default), sending an eviction command to just a single
+MDS is sufficient, because the blocklist propagates it to the others.</p>
+</section>
+<section id="background-blocklisting-and-osd-epoch-barrier">
+<span id="id1"></span><h2>Background: Blocklisting and OSD epoch barrier<a class="headerlink" href="#background-blocklisting-and-osd-epoch-barrier" title="Permalink to this heading">¶</a></h2>
+<p>After a client is blocklisted, it is necessary to make sure that
+other clients and MDS daemons have the latest OSDMap (including
+the blocklist entry) before they try to access any data objects
+that the blocklisted client might have been accessing.</p>
+<p>This is ensured using an internal “osdmap epoch barrier” mechanism.</p>
+<p>The purpose of the barrier is to ensure that when we hand out any
+capabilities which might allow touching the same RADOS objects, the
+clients we hand out the capabilities to must have a sufficiently recent
+OSD map to not race with cancelled operations (from ENOSPC) or
+blocklisted clients (from evictions).</p>
+<p>More specifically, the cases where an epoch barrier is set are:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>Client eviction (where the client is blocklisted and other clients
+must wait for a post-blocklist epoch to touch the same objects).</p></li>
+<li><p>OSD map full flag handling in the client (where the client may
+cancel some OSD ops from a pre-full epoch, so other clients must
+wait until the full epoch or later before touching the same objects).</p></li>
+<li><p>MDS startup, because we don’t persist the barrier epoch, so must
+assume that latest OSD map is always required after a restart.</p></li>
+</ul>
+</div></blockquote>
+<p>Note that this is a global value for simplicity. We could maintain this on
+a per-inode basis. But we don’t, because:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>It would be more complicated.</p></li>
+<li><p>It would use an extra 4 bytes of memory for every inode.</p></li>
+<li><p>It would not be much more efficient as, almost always, everyone has
+the latest OSD map. And, in most cases everyone will breeze through this
+barrier rather than waiting.</p></li>
+<li><p>This barrier is done in very rare cases, so any benefit from per-inode
+granularity would only very rarely be seen.</p></li>
+</ul>
+</div></blockquote>
+<p>The epoch barrier is transmitted along with all capability messages, and
+instructs the receiver of the message to avoid sending any more RADOS
+operations to OSDs until it has seen this OSD epoch.  This mainly applies
+to clients (doing their data writes directly to files), but also applies
+to the MDS because things like file size probing and file deletion are
+done directly from the MDS.</p>
+</section>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../">
+              <img class="logo" src="../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../install/">Installing Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cephadm/">Cephadm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rados/">Ceph Storage Cluster</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../">Ceph File System</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../#getting-started-with-cephfs">Getting Started with CephFS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../#administration">Administration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../#mounting-cephfs">Mounting CephFS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../#cephfs-concepts">CephFS Concepts</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../#troubleshooting-and-disaster-recovery">Troubleshooting and Disaster Recovery</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#"> Client eviction</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#automatic-client-eviction">Automatic client eviction</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#manual-client-eviction">Manual client eviction</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#advanced-un-blocklisting-a-client">Advanced: Un-blocklisting a client</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#advanced-configuring-blocklisting">Advanced: Configuring blocklisting</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#background-blocklisting-and-osd-epoch-barrier">Background: Blocklisting and OSD epoch barrier</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../scrub/"> Scrubbing the File System</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../full/"> Handling full file systems</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../disaster-recovery-experts/"> Metadata repair</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../troubleshooting/"> Troubleshooting</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../disaster-recovery/"> Disaster recovery</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../cephfs-journal-tool/"> cephfs-journal-tool</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../recover-fs-after-mon-store-loss/"> Recovering file system after monitor store loss</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../#developer-guides">Developer Guides</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../#additional-details">Additional Details</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../rbd/">Ceph Block Device</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../radosgw/">Ceph Object Gateway</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/">Ceph Manager Daemon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dev/developer_guide/">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dev/internals/">Ceph Internals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../scrub/" title="Ceph File System Scrub"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../multimds/" title="Configuring multiple active MDS daemons"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../" >Ceph File System</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Ceph file system client eviction</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

@@ -1,0 +1,413 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>CephFS Client Capabilities &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css" />
+    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../genindex/" />
+    <link rel="search" title="Search" href="../../search/" />
+    <link rel="next" title="Mount CephFS: Prerequisites" href="../mount-prerequisites/" />
+    <link rel="prev" title="Client Configuration" href="../client-config-ref/" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../mount-prerequisites/" title="Mount CephFS: Prerequisites"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../client-config-ref/" title="Client Configuration"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../" accesskey="U">Ceph File System</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">CephFS Client Capabilities</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="cephfs-client-capabilities">
+<h1>CephFS Client Capabilities<a class="headerlink" href="#cephfs-client-capabilities" title="Permalink to this heading">¶</a></h1>
+<p>Use Ceph authentication capabilities to restrict your file system clients
+to the lowest possible level of authority needed.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Path restriction and layout modification restriction are new features
+in the Jewel release of Ceph.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Using Erasure Coded(EC) pools with CephFS is supported only with the
+BlueStore Backend. They cannot be used as metadata pools and overwrites must
+be enabled on the data pools.</p>
+</div>
+<section id="path-restriction">
+<h2>Path restriction<a class="headerlink" href="#path-restriction" title="Permalink to this heading">¶</a></h2>
+<p>By default, clients are not restricted in what paths they are allowed to
+mount. Further, when clients mount a subdirectory, e.g., <code class="docutils literal notranslate"><span class="pre">/home/user</span></code>, the
+MDS does not by default verify that subsequent operations are ‘locked’ within
+that directory.</p>
+<p>To restrict clients to only mount and work within a certain directory, use
+path-based MDS authentication capabilities.</p>
+<p>Note that this restriction <em>only</em> impacts the filesystem hierarchy – the metadata
+tree managed by the MDS. Clients will still be able to access the underlying
+file data in RADOS directly. To segregate clients fully, you must also isolate
+untrusted clients in their own RADOS namespace. You can place a client’s
+filesystem subtree in a particular namespace using <a class="reference external" href="./file-layouts">file layouts</a> and then
+restrict their RADOS access to that namespace using <a class="reference external" href="../rados/operations/user-management/#authorization-capabilities">OSD capabilities</a></p>
+<section id="syntax">
+<h3>Syntax<a class="headerlink" href="#syntax" title="Permalink to this heading">¶</a></h3>
+<p>To grant rw access to the specified directory only, we mention the specified
+directory while creating key for a client using the following syntax:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span> <span class="n">fs</span> <span class="n">authorize</span> <span class="o">&lt;</span><span class="n">fs_name</span><span class="o">&gt;</span> <span class="n">client</span><span class="o">.&lt;</span><span class="n">client_id</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">path</span><span class="o">-</span><span class="ow">in</span><span class="o">-</span><span class="n">cephfs</span><span class="o">&gt;</span> <span class="n">rw</span>
+</pre></div>
+</div>
+<p>For example, to restrict client <code class="docutils literal notranslate"><span class="pre">foo</span></code> to writing only in the <code class="docutils literal notranslate"><span class="pre">bar</span></code>
+directory of file system <code class="docutils literal notranslate"><span class="pre">cephfs_a</span></code>, use</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span> <span class="n">fs</span> <span class="n">authorize</span> <span class="n">cephfs_a</span> <span class="n">client</span><span class="o">.</span><span class="n">foo</span> <span class="o">/</span> <span class="n">r</span> <span class="o">/</span><span class="n">bar</span> <span class="n">rw</span>
+
+<span class="n">results</span> <span class="ow">in</span><span class="p">:</span>
+
+<span class="n">client</span><span class="o">.</span><span class="n">foo</span>
+  <span class="n">key</span><span class="p">:</span> <span class="o">*</span><span class="n">key</span><span class="o">*</span>
+  <span class="n">caps</span><span class="p">:</span> <span class="p">[</span><span class="n">mds</span><span class="p">]</span> <span class="n">allow</span> <span class="n">r</span><span class="p">,</span> <span class="n">allow</span> <span class="n">rw</span> <span class="n">path</span><span class="o">=/</span><span class="n">bar</span>
+  <span class="n">caps</span><span class="p">:</span> <span class="p">[</span><span class="n">mon</span><span class="p">]</span> <span class="n">allow</span> <span class="n">r</span>
+  <span class="n">caps</span><span class="p">:</span> <span class="p">[</span><span class="n">osd</span><span class="p">]</span> <span class="n">allow</span> <span class="n">rw</span> <span class="n">tag</span> <span class="n">cephfs</span> <span class="n">data</span><span class="o">=</span><span class="n">cephfs_a</span>
+</pre></div>
+</div>
+<p>To completely restrict the client to the <code class="docutils literal notranslate"><span class="pre">bar</span></code> directory, omit the
+root directory</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span> <span class="n">fs</span> <span class="n">authorize</span> <span class="n">cephfs_a</span> <span class="n">client</span><span class="o">.</span><span class="n">foo</span> <span class="o">/</span><span class="n">bar</span> <span class="n">rw</span>
+</pre></div>
+</div>
+<p>Note that if a client’s read access is restricted to a path, they will only
+be able to mount the file system when specifying a readable path in the
+mount command (see below).</p>
+<p>Supplying <code class="docutils literal notranslate"><span class="pre">all</span></code> or <code class="docutils literal notranslate"><span class="pre">*</span></code> as the file system name will grant access to every
+file system. Note that it is usually necessary to quote <code class="docutils literal notranslate"><span class="pre">*</span></code> to protect it
+from the shell.</p>
+<p>See <a class="reference external" href="../../rados/operations/user-management/#add-a-user-to-a-keyring">User Management - Add a User to a Keyring</a>. for additional details on
+user management</p>
+<p>To restrict a client to the specified sub-directory only, we mention the
+specified directory while mounting using the following syntax:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span><span class="o">-</span><span class="n">fuse</span> <span class="o">-</span><span class="n">n</span> <span class="n">client</span><span class="o">.&lt;</span><span class="n">client_id</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">mount</span><span class="o">-</span><span class="n">path</span><span class="o">&gt;</span> <span class="o">-</span><span class="n">r</span> <span class="o">*</span><span class="n">directory_to_be_mounted</span><span class="o">*</span>
+</pre></div>
+</div>
+<p>For example, to restrict client <code class="docutils literal notranslate"><span class="pre">foo</span></code> to <code class="docutils literal notranslate"><span class="pre">mnt/bar</span></code> directory, we will
+use:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span><span class="o">-</span><span class="n">fuse</span> <span class="o">-</span><span class="n">n</span> <span class="n">client</span><span class="o">.</span><span class="n">foo</span> <span class="n">mnt</span> <span class="o">-</span><span class="n">r</span> <span class="o">/</span><span class="n">bar</span>
+</pre></div>
+</div>
+</section>
+<section id="free-space-reporting">
+<h3>Free space reporting<a class="headerlink" href="#free-space-reporting" title="Permalink to this heading">¶</a></h3>
+<p>By default, when a client is mounting a sub-directory, the used space (<code class="docutils literal notranslate"><span class="pre">df</span></code>)
+will be calculated from the quota on that sub-directory, rather than reporting
+the overall amount of space used on the cluster.</p>
+<p>If you would like the client to report the overall usage of the file system,
+and not just the quota usage on the sub-directory mounted, then set the
+following config option on the client:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">client</span> <span class="n">quota</span> <span class="n">df</span> <span class="o">=</span> <span class="n">false</span>
+</pre></div>
+</div>
+<p>If quotas are not enabled, or no quota is set on the sub-directory mounted,
+then the overall usage of the file system will be reported irrespective of
+the value of this setting.</p>
+</section>
+</section>
+<section id="layout-and-quota-restriction-the-p-flag">
+<h2>Layout and Quota restriction (the ‘p’ flag)<a class="headerlink" href="#layout-and-quota-restriction-the-p-flag" title="Permalink to this heading">¶</a></h2>
+<p>To set layouts or quotas, clients require the ‘p’ flag in addition to ‘rw’.
+This restricts all the attributes that are set by special extended attributes
+with a “ceph.” prefix, as well as restricting other means of setting
+these fields (such as openc operations with layouts).</p>
+<p>For example, in the following snippet client.0 can modify layouts and quotas
+on the file system cephfs_a, but client.1 cannot:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">client</span><span class="mf">.0</span>
+    <span class="n">key</span><span class="p">:</span> <span class="n">AQAz7EVWygILFRAAdIcuJ12opU</span><span class="o">/</span><span class="n">JKyfFmxhuaw</span><span class="o">==</span>
+    <span class="n">caps</span><span class="p">:</span> <span class="p">[</span><span class="n">mds</span><span class="p">]</span> <span class="n">allow</span> <span class="n">rwp</span>
+    <span class="n">caps</span><span class="p">:</span> <span class="p">[</span><span class="n">mon</span><span class="p">]</span> <span class="n">allow</span> <span class="n">r</span>
+    <span class="n">caps</span><span class="p">:</span> <span class="p">[</span><span class="n">osd</span><span class="p">]</span> <span class="n">allow</span> <span class="n">rw</span> <span class="n">tag</span> <span class="n">cephfs</span> <span class="n">data</span><span class="o">=</span><span class="n">cephfs_a</span>
+
+<span class="n">client</span><span class="mf">.1</span>
+    <span class="n">key</span><span class="p">:</span> <span class="n">AQAz7EVWygILFRAAdIcuJ12opU</span><span class="o">/</span><span class="n">JKyfFmxhuaw</span><span class="o">==</span>
+    <span class="n">caps</span><span class="p">:</span> <span class="p">[</span><span class="n">mds</span><span class="p">]</span> <span class="n">allow</span> <span class="n">rw</span>
+    <span class="n">caps</span><span class="p">:</span> <span class="p">[</span><span class="n">mon</span><span class="p">]</span> <span class="n">allow</span> <span class="n">r</span>
+    <span class="n">caps</span><span class="p">:</span> <span class="p">[</span><span class="n">osd</span><span class="p">]</span> <span class="n">allow</span> <span class="n">rw</span> <span class="n">tag</span> <span class="n">cephfs</span> <span class="n">data</span><span class="o">=</span><span class="n">cephfs_a</span>
+</pre></div>
+</div>
+</section>
+<section id="snapshot-restriction-the-s-flag">
+<h2>Snapshot restriction (the ‘s’ flag)<a class="headerlink" href="#snapshot-restriction-the-s-flag" title="Permalink to this heading">¶</a></h2>
+<p>To create or delete snapshots, clients require the ‘s’ flag in addition to
+‘rw’. Note that when capability string also contains the ‘p’ flag, the ‘s’
+flag must appear after it (all flags except ‘rw’ must be specified in
+alphabetical order).</p>
+<p>For example, in the following snippet client.0 can create or delete snapshots
+in the <code class="docutils literal notranslate"><span class="pre">bar</span></code> directory of file system <code class="docutils literal notranslate"><span class="pre">cephfs_a</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">client</span><span class="mf">.0</span>
+    <span class="n">key</span><span class="p">:</span> <span class="n">AQAz7EVWygILFRAAdIcuJ12opU</span><span class="o">/</span><span class="n">JKyfFmxhuaw</span><span class="o">==</span>
+    <span class="n">caps</span><span class="p">:</span> <span class="p">[</span><span class="n">mds</span><span class="p">]</span> <span class="n">allow</span> <span class="n">rw</span><span class="p">,</span> <span class="n">allow</span> <span class="n">rws</span> <span class="n">path</span><span class="o">=/</span><span class="n">bar</span>
+    <span class="n">caps</span><span class="p">:</span> <span class="p">[</span><span class="n">mon</span><span class="p">]</span> <span class="n">allow</span> <span class="n">r</span>
+    <span class="n">caps</span><span class="p">:</span> <span class="p">[</span><span class="n">osd</span><span class="p">]</span> <span class="n">allow</span> <span class="n">rw</span> <span class="n">tag</span> <span class="n">cephfs</span> <span class="n">data</span><span class="o">=</span><span class="n">cephfs_a</span>
+</pre></div>
+</div>
+</section>
+<section id="network-restriction">
+<h2>Network restriction<a class="headerlink" href="#network-restriction" title="Permalink to this heading">¶</a></h2>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">client</span><span class="o">.</span><span class="n">foo</span>
+  <span class="n">key</span><span class="p">:</span> <span class="o">*</span><span class="n">key</span><span class="o">*</span>
+  <span class="n">caps</span><span class="p">:</span> <span class="p">[</span><span class="n">mds</span><span class="p">]</span> <span class="n">allow</span> <span class="n">r</span> <span class="n">network</span> <span class="mf">10.0.0.0</span><span class="o">/</span><span class="mi">8</span><span class="p">,</span> <span class="n">allow</span> <span class="n">rw</span> <span class="n">path</span><span class="o">=/</span><span class="n">bar</span> <span class="n">network</span> <span class="mf">10.0.0.0</span><span class="o">/</span><span class="mi">8</span>
+  <span class="n">caps</span><span class="p">:</span> <span class="p">[</span><span class="n">mon</span><span class="p">]</span> <span class="n">allow</span> <span class="n">r</span> <span class="n">network</span> <span class="mf">10.0.0.0</span><span class="o">/</span><span class="mi">8</span>
+  <span class="n">caps</span><span class="p">:</span> <span class="p">[</span><span class="n">osd</span><span class="p">]</span> <span class="n">allow</span> <span class="n">rw</span> <span class="n">tag</span> <span class="n">cephfs</span> <span class="n">data</span><span class="o">=</span><span class="n">cephfs_a</span> <span class="n">network</span> <span class="mf">10.0.0.0</span><span class="o">/</span><span class="mi">8</span>
+</pre></div>
+</div>
+<p>The optional <code class="docutils literal notranslate"><span class="pre">{network/prefix}</span></code> is a standard network name and
+prefix length in CIDR notation (e.g., <code class="docutils literal notranslate"><span class="pre">10.3.0.0/16</span></code>).  If present,
+the use of this capability is restricted to clients connecting from
+this network.</p>
+</section>
+<section id="file-system-information-restriction">
+<span id="fs-authorize-multifs"></span><h2>File system Information Restriction<a class="headerlink" href="#file-system-information-restriction" title="Permalink to this heading">¶</a></h2>
+<p>If desired, the monitor cluster can present a limited view of the file systems
+available. In this case, the monitor cluster will only inform clients about
+file systems specified by the administrator. Other file systems will not be
+reported and commands affecting them will fail as if the file systems do
+not exist.</p>
+<p>Consider following example. The Ceph cluster has 2 FSs:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ ceph fs ls
+name: cephfs, metadata pool: cephfs_metadata, data pools: [cephfs_data ]
+name: cephfs2, metadata pool: cephfs2_metadata, data pools: [cephfs2_data ]
+</pre></div>
+</div>
+<p>But we authorize client <code class="docutils literal notranslate"><span class="pre">someuser</span></code> for only one FS:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ ceph fs authorize cephfs client.someuser / rw
+[client.someuser]
+    key = AQAmthpf89M+JhAAiHDYQkMiCq3x+J0n9e8REQ==
+$ cat ceph.client.someuser.keyring
+[client.someuser]
+    key = AQAmthpf89M+JhAAiHDYQkMiCq3x+J0n9e8REQ==
+    caps mds = &quot;allow rw fsname=cephfs&quot;
+    caps mon = &quot;allow r fsname=cephfs&quot;
+    caps osd = &quot;allow rw tag cephfs data=cephfs&quot;
+</pre></div>
+</div>
+<p>And the client can only see the FS that it has authorization for:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ ceph fs ls -n client.someuser -k ceph.client.someuser.keyring
+name: cephfs, metadata pool: cephfs_metadata, data pools: [cephfs_data ]
+</pre></div>
+</div>
+<p>Standby MDS daemons will always be displayed. Note that the information about
+restricted MDS daemons and file systems may become available by other means,
+such as <code class="docutils literal notranslate"><span class="pre">ceph</span> <span class="pre">health</span> <span class="pre">detail</span></code>.</p>
+</section>
+<section id="mds-communication-restriction">
+<h2>MDS communication restriction<a class="headerlink" href="#mds-communication-restriction" title="Permalink to this heading">¶</a></h2>
+<p>By default, user applications may communicate with any MDS, whether or not
+they are allowed to modify data on an associated file system (see
+<cite>Path restriction</cite> above). Client’s communication can be restricted to MDS
+daemons associated with particular file system(s) by adding MDS caps for that
+particular file system. Consider the following example where the Ceph cluster
+has 2 FSs:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ ceph fs ls
+name: cephfs, metadata pool: cephfs_metadata, data pools: [cephfs_data ]
+name: cephfs2, metadata pool: cephfs2_metadata, data pools: [cephfs2_data ]
+</pre></div>
+</div>
+<p>Client <code class="docutils literal notranslate"><span class="pre">someuser</span></code> is authorized only for one FS:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ ceph fs authorize cephfs client.someuser / rw
+[client.someuser]
+    key = AQBPSARfg8hCJRAAEegIxjlm7VkHuiuntm6wsA==
+$ ceph auth get client.someuser &gt; ceph.client.someuser.keyring
+exported keyring for client.someuser
+$ cat ceph.client.someuser.keyring
+[client.someuser]
+    key = AQBPSARfg8hCJRAAEegIxjlm7VkHuiuntm6wsA==
+    caps mds = &quot;allow rw fsname=cephfs&quot;
+    caps mon = &quot;allow r&quot;
+    caps osd = &quot;allow rw tag cephfs data=cephfs&quot;
+</pre></div>
+</div>
+<p>Mounting <code class="docutils literal notranslate"><span class="pre">cephfs1</span></code> with <code class="docutils literal notranslate"><span class="pre">someuser</span></code> works:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ sudo ceph-fuse /mnt/cephfs1 -n client.someuser -k ceph.client.someuser.keyring --client-fs=cephfs
+ceph-fuse[96634]: starting ceph client
+ceph-fuse[96634]: starting fuse
+$ mount | grep ceph-fuse
+ceph-fuse on /mnt/cephfs1 type fuse.ceph-fuse (rw,nosuid,nodev,relatime,user_id=0,group_id=0,allow_other)
+</pre></div>
+</div>
+<p>But mounting <code class="docutils literal notranslate"><span class="pre">cephfs2</span></code> does not:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ sudo ceph-fuse /mnt/cephfs2 -n client.someuser -k ceph.client.someuser.keyring --client-fs=cephfs2
+ceph-fuse[96599]: starting ceph client
+ceph-fuse[96599]: ceph mount failed with (1) Operation not permitted
+</pre></div>
+</div>
+</section>
+<section id="root-squash">
+<h2>Root squash<a class="headerlink" href="#root-squash" title="Permalink to this heading">¶</a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">root</span> <span class="pre">squash</span></code> feature is implemented as a safety measure to prevent
+scenarios such as accidental <code class="docutils literal notranslate"><span class="pre">sudo</span> <span class="pre">rm</span> <span class="pre">-rf</span> <span class="pre">/path</span></code>. You can enable
+<code class="docutils literal notranslate"><span class="pre">root_squash</span></code> mode in MDS caps to disallow clients with uid=0 or gid=0 to
+perform write access operations – e.g., rm, rmdir, rmsnap, mkdir, mksnap.
+However, the mode allows the read operations of a root client unlike in
+other file systems.</p>
+<p>Following is an example of enabling root_squash in a filesystem except within
+‘/volumes’ directory tree in the filesystem:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ ceph fs authorize a client.test_a / rw root_squash /volumes rw
+$ ceph auth get client.test_a
+[client.test_a]
+    key = AQBZcDpfEbEUKxAADk14VflBXt71rL9D966mYA==
+    caps mds = &quot;allow rw fsname=a root_squash, allow rw fsname=a path=/volumes&quot;
+    caps mon = &quot;allow r fsname=a&quot;
+    caps osd = &quot;allow rw tag cephfs data=a&quot;
+</pre></div>
+</div>
+</section>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../">
+              <img class="logo" src="../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../install/">Installing Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cephadm/">Cephadm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rados/">Ceph Storage Cluster</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../">Ceph File System</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../#getting-started-with-cephfs">Getting Started with CephFS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../#administration">Administration</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../#mounting-cephfs">Mounting CephFS</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../client-config-ref/"> Client Configuration Settings</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#"> Client Authentication</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#path-restriction">Path restriction</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#syntax">Syntax</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#free-space-reporting">Free space reporting</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#layout-and-quota-restriction-the-p-flag">Layout and Quota restriction (the ‘p’ flag)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#snapshot-restriction-the-s-flag">Snapshot restriction (the ‘s’ flag)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#network-restriction">Network restriction</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#file-system-information-restriction">File system Information Restriction</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#mds-communication-restriction">MDS communication restriction</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#root-squash">Root squash</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../mount-prerequisites/"> Mount CephFS: Prerequisites</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../mount-using-kernel-driver/"> Mount CephFS using Kernel Driver</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../mount-using-fuse/"> Mount CephFS using FUSE</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../ceph-dokan/"> Mount CephFS on Windows</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../cephfs-shell/"> Use the CephFS Shell</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../kernel-features/"> Supported Features of Kernel Driver</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../man/8/ceph-fuse/"> Manual: ceph-fuse</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../man/8/mount.ceph/"> Manual: mount.ceph</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../man/8/mount.fuse.ceph/"> Manual: mount.fuse.ceph</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../#cephfs-concepts">CephFS Concepts</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../#troubleshooting-and-disaster-recovery">Troubleshooting and Disaster Recovery</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../#developer-guides">Developer Guides</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../#additional-details">Additional Details</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../rbd/">Ceph Block Device</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../radosgw/">Ceph Object Gateway</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/">Ceph Manager Daemon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dev/developer_guide/">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dev/internals/">Ceph Internals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../mount-prerequisites/" title="Mount CephFS: Prerequisites"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../client-config-ref/" title="Client Configuration"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../" >Ceph File System</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">CephFS Client Capabilities</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

@@ -1,0 +1,1285 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>CRUSH Maps &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/css/custom.css" />
+    <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/jquery.js"></script>
+    <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../../genindex/" />
+    <link rel="search" title="Search" href="../../../search/" />
+    <link rel="next" title="Manually editing a CRUSH Map" href="../crush-map-edits/" />
+    <link rel="prev" title="Using pg-upmap" href="../upmap/" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../crush-map-edits/" title="Manually editing a CRUSH Map"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../upmap/" title="Using pg-upmap"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../" >Ceph Storage Cluster</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../" accesskey="U">Cluster Operations</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">CRUSH Maps</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="crush-maps">
+<h1>CRUSH Maps<a class="headerlink" href="#crush-maps" title="Permalink to this heading">¶</a></h1>
+<p>The <abbr title="Controlled Replication Under Scalable Hashing">CRUSH</abbr> algorithm
+determines how to store and retrieve data by computing storage locations.
+CRUSH empowers Ceph clients to communicate with OSDs directly rather than
+through a centralized server or broker. With an algorithmically determined
+method of storing and retrieving data, Ceph avoids a single point of failure, a
+performance bottleneck, and a physical limit to its scalability.</p>
+<p>CRUSH uses a map of your cluster (the CRUSH map) to pseudo-randomly
+map data to OSDs, distributing it across the cluster according to configured
+replication policy and failure domain.  For a detailed discussion of CRUSH, see
+<a class="reference external" href="https://ceph.io/assets/pdfs/weil-crush-sc06.pdf">CRUSH - Controlled, Scalable, Decentralized Placement of Replicated Data</a></p>
+<p>CRUSH maps contain a list of <abbr title="Object Storage Devices">OSDs</abbr>, a hierarchy
+of ‘buckets’ for aggregating devices and buckets, and
+rules that govern how CRUSH replicates data within the cluster’s pools. By
+reflecting the underlying physical organization of the installation, CRUSH can
+model (and thereby address) the potential for correlated device failures.
+Typical factors include chassis, racks, physical proximity, a shared power
+source, and shared networking. By encoding this information into the cluster
+map, CRUSH placement
+policies distribute object replicas across failure domains while
+maintaining the desired distribution. For example, to address the
+possibility of concurrent failures, it may be desirable to ensure that data
+replicas are on devices using different shelves, racks, power supplies,
+controllers, and/or physical locations.</p>
+<p>When you deploy OSDs they are automatically added to the CRUSH map under a
+<code class="docutils literal notranslate"><span class="pre">host</span></code> bucket named for the node on which they run.  This,
+combined with the configured CRUSH failure domain, ensures that replicas or
+erasure code shards are distributed across hosts and that a single host or other
+failure will not affect availability.  For larger clusters, administrators must
+carefully consider their choice of failure domain.  Separating replicas across racks,
+for example, is typical for mid- to large-sized clusters.</p>
+<section id="crush-location">
+<h2>CRUSH Location<a class="headerlink" href="#crush-location" title="Permalink to this heading">¶</a></h2>
+<p>The location of an OSD within the CRUSH map’s hierarchy is
+referred to as a <code class="docutils literal notranslate"><span class="pre">CRUSH</span> <span class="pre">location</span></code>.  This location specifier takes the
+form of a list of key and value pairs.  For
+example, if an OSD is in a particular row, rack, chassis and host, and
+is part of the ‘default’ CRUSH root (which is the case for most
+clusters), its CRUSH location could be described as:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">root</span><span class="o">=</span><span class="n">default</span> <span class="n">row</span><span class="o">=</span><span class="n">a</span> <span class="n">rack</span><span class="o">=</span><span class="n">a2</span> <span class="n">chassis</span><span class="o">=</span><span class="n">a2a</span> <span class="n">host</span><span class="o">=</span><span class="n">a2a1</span>
+</pre></div>
+</div>
+<p>Note:</p>
+<ol class="arabic simple">
+<li><p>Note that the order of the keys does not matter.</p></li>
+<li><p>The key name (left of <code class="docutils literal notranslate"><span class="pre">=</span></code>) must be a valid CRUSH <code class="docutils literal notranslate"><span class="pre">type</span></code>.  By default
+these include <code class="docutils literal notranslate"><span class="pre">root</span></code>, <code class="docutils literal notranslate"><span class="pre">datacenter</span></code>, <code class="docutils literal notranslate"><span class="pre">room</span></code>, <code class="docutils literal notranslate"><span class="pre">row</span></code>, <code class="docutils literal notranslate"><span class="pre">pod</span></code>, <code class="docutils literal notranslate"><span class="pre">pdu</span></code>,
+<code class="docutils literal notranslate"><span class="pre">rack</span></code>, <code class="docutils literal notranslate"><span class="pre">chassis</span></code> and <code class="docutils literal notranslate"><span class="pre">host</span></code>.
+These defined types suffice for almost all clusters, but can be customized
+by modifying the CRUSH map.</p></li>
+<li><p>Not all keys need to be specified.  For example, by default, Ceph
+automatically sets an <code class="docutils literal notranslate"><span class="pre">OSD</span></code>’s location to be
+<code class="docutils literal notranslate"><span class="pre">root=default</span> <span class="pre">host=HOSTNAME</span></code> (based on the output from <code class="docutils literal notranslate"><span class="pre">hostname</span> <span class="pre">-s</span></code>).</p></li>
+</ol>
+<p>The CRUSH location for an OSD can be defined by adding the <code class="docutils literal notranslate"><span class="pre">crush</span> <span class="pre">location</span></code>
+option in <code class="docutils literal notranslate"><span class="pre">ceph.conf</span></code>.  Each time the OSD starts,
+it verifies it is in the correct location in the CRUSH map and, if it is not,
+it moves itself.  To disable this automatic CRUSH map management, add the
+following to your configuration file in the <code class="docutils literal notranslate"><span class="pre">[osd]</span></code> section:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">osd</span> <span class="n">crush</span> <span class="n">update</span> <span class="n">on</span> <span class="n">start</span> <span class="o">=</span> <span class="n">false</span>
+</pre></div>
+</div>
+<p>Note that in most cases you will not need to manually configure this.</p>
+<section id="custom-location-hooks">
+<h3>Custom location hooks<a class="headerlink" href="#custom-location-hooks" title="Permalink to this heading">¶</a></h3>
+<p>A customized location hook can be used to generate a more complete
+CRUSH location on startup.  The CRUSH location is based on, in order
+of preference:</p>
+<ol class="arabic simple">
+<li><p>A <code class="docutils literal notranslate"><span class="pre">crush</span> <span class="pre">location</span></code> option in <code class="docutils literal notranslate"><span class="pre">ceph.conf</span></code></p></li>
+<li><p>A default of <code class="docutils literal notranslate"><span class="pre">root=default</span> <span class="pre">host=HOSTNAME</span></code> where the hostname is
+derived from the <code class="docutils literal notranslate"><span class="pre">hostname</span> <span class="pre">-s</span></code> command</p></li>
+</ol>
+<p>A script can be written to provide additional
+location fields (for example, <code class="docutils literal notranslate"><span class="pre">rack</span></code> or <code class="docutils literal notranslate"><span class="pre">datacenter</span></code>) and the
+hook enabled via the config option:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">crush</span> <span class="n">location</span> <span class="n">hook</span> <span class="o">=</span> <span class="o">/</span><span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">customized</span><span class="o">-</span><span class="n">ceph</span><span class="o">-</span><span class="n">crush</span><span class="o">-</span><span class="n">location</span>
+</pre></div>
+</div>
+<p>This hook is passed several arguments (below) and should output a single line
+to <code class="docutils literal notranslate"><span class="pre">stdout</span></code> with the CRUSH location description.:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">--</span><span class="n">cluster</span> <span class="n">CLUSTER</span> <span class="o">--</span><span class="nb">id</span> <span class="n">ID</span> <span class="o">--</span><span class="nb">type</span> <span class="n">TYPE</span>
+</pre></div>
+</div>
+<p>where the cluster name is typically <code class="docutils literal notranslate"><span class="pre">ceph</span></code>, the <code class="docutils literal notranslate"><span class="pre">id</span></code> is the daemon
+identifier (e.g., the OSD number or daemon identifier), and the daemon
+type is <code class="docutils literal notranslate"><span class="pre">osd</span></code>, <code class="docutils literal notranslate"><span class="pre">mds</span></code>, etc.</p>
+<p>For example, a simple hook that additionally specifies a rack location
+based on a value in the file <code class="docutils literal notranslate"><span class="pre">/etc/rack</span></code> might be:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="ch">#!/bin/sh</span>
+<span class="n">echo</span> <span class="s2">&quot;host=$(hostname -s) rack=$(cat /etc/rack) root=default&quot;</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="crush-structure">
+<h2>CRUSH structure<a class="headerlink" href="#crush-structure" title="Permalink to this heading">¶</a></h2>
+<p>The CRUSH map consists of a hierarchy that describes
+the physical topology of the cluster and a set of rules defining
+data placement policy.  The hierarchy has
+devices (OSDs) at the leaves, and internal nodes
+corresponding to other physical features or groupings: hosts, racks,
+rows, datacenters, and so on.  The rules describe how replicas are
+placed in terms of that hierarchy (e.g., ‘three replicas in different
+racks’).</p>
+<section id="devices">
+<h3>Devices<a class="headerlink" href="#devices" title="Permalink to this heading">¶</a></h3>
+<p>Devices are individual OSDs that store data, usually one for each storage drive.
+Devices are identified by an <code class="docutils literal notranslate"><span class="pre">id</span></code>
+(a non-negative integer) and a <code class="docutils literal notranslate"><span class="pre">name</span></code>, normally <code class="docutils literal notranslate"><span class="pre">osd.N</span></code> where <code class="docutils literal notranslate"><span class="pre">N</span></code> is the device id.</p>
+<p>Since the Luminous release, devices may also have a <em>device class</em> assigned (e.g.,
+<code class="docutils literal notranslate"><span class="pre">hdd</span></code> or <code class="docutils literal notranslate"><span class="pre">ssd</span></code> or <code class="docutils literal notranslate"><span class="pre">nvme</span></code>), allowing them to be conveniently targeted by
+CRUSH rules.  This is especially useful when mixing device types within hosts.</p>
+</section>
+<section id="types-and-buckets">
+<span id="crush-map-default-types"></span><h3>Types and Buckets<a class="headerlink" href="#types-and-buckets" title="Permalink to this heading">¶</a></h3>
+<p>A bucket is the CRUSH term for internal nodes in the hierarchy: hosts,
+racks, rows, etc.  The CRUSH map defines a series of <em>types</em> that are
+used to describe these nodes.  Default types include:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">osd</span></code> (or <code class="docutils literal notranslate"><span class="pre">device</span></code>)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">host</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">chassis</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">rack</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">row</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">pdu</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">pod</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">room</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">datacenter</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">zone</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">region</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">root</span></code></p></li>
+</ul>
+<p>Most clusters use only a handful of these types, and others
+can be defined as needed.</p>
+<p>The hierarchy is built with devices (normally type <code class="docutils literal notranslate"><span class="pre">osd</span></code>) at the
+leaves, interior nodes with non-device types, and a root node of type
+<code class="docutils literal notranslate"><span class="pre">root</span></code>.  For example,</p>
+<p class="ditaa">
+<img src="../../../_images/ditaa-c6820cb15c82bde8e462dfb2ed29fa0ffaa542fe.png"/>
+</p>
+<p>Each node (device or bucket) in the hierarchy has a <em>weight</em>
+that indicates the relative proportion of the total
+data that device or hierarchy subtree should store.  Weights are set
+at the leaves, indicating the size of the device, and automatically
+sum up the tree, such that the weight of the <code class="docutils literal notranslate"><span class="pre">root</span></code> node
+will be the total of all devices contained beneath it.  Normally
+weights are in units of terabytes (TB).</p>
+<p>You can get a simple view the of CRUSH hierarchy for your cluster,
+including weights, with:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><style type="text/css">
+span.prompt1:before {
+  content: "$ ";
+}
+</style><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>tree</span>
+</pre></div></div></section>
+<section id="rules">
+<h3>Rules<a class="headerlink" href="#rules" title="Permalink to this heading">¶</a></h3>
+<p>CRUSH Rules define policy about how data is distributed across the devices
+in the hierarchy. They define placement and replication strategies or
+distribution policies that allow you to specify exactly how CRUSH
+places data replicas. For example, you might create a rule selecting
+a pair of targets for two-way mirroring, another rule for selecting
+three targets in two different data centers for three-way mirroring, and
+yet another rule for erasure coding (EC) across six storage devices. For a
+detailed discussion of CRUSH rules, refer to <a class="reference external" href="https://ceph.io/assets/pdfs/weil-crush-sc06.pdf">CRUSH - Controlled,
+Scalable, Decentralized Placement of Replicated Data</a>, and more
+specifically to <strong>Section 3.2</strong>.</p>
+<p>CRUSH rules can be created via the CLI by
+specifying the <em>pool type</em> they will be used for (replicated or
+erasure coded), the <em>failure domain</em>, and optionally a <em>device class</em>.
+In rare cases rules must be written by hand by manually editing the
+CRUSH map.</p>
+<p>You can see what rules are defined for your cluster with:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>crush<span class="w"> </span>rule<span class="w"> </span>ls</span>
+</pre></div></div><p>You can view the contents of the rules with:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>crush<span class="w"> </span>rule<span class="w"> </span>dump</span>
+</pre></div></div></section>
+<section id="device-classes">
+<h3>Device classes<a class="headerlink" href="#device-classes" title="Permalink to this heading">¶</a></h3>
+<p>Each device can optionally have a <em>class</em> assigned.  By
+default, OSDs automatically set their class at startup to
+<cite>hdd</cite>, <cite>ssd</cite>, or <cite>nvme</cite> based on the type of device they are backed
+by.</p>
+<p>The device class for one or more OSDs can be explicitly set with:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>crush<span class="w"> </span>set-device-class<span class="w"> </span>&lt;class&gt;<span class="w"> </span>&lt;osd-name&gt;<span class="w"> </span><span class="o">[</span>...<span class="o">]</span></span>
+</pre></div></div><p>Once a device class is set, it cannot be changed to another class
+until the old class is unset with:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>crush<span class="w"> </span>rm-device-class<span class="w"> </span>&lt;osd-name&gt;<span class="w"> </span><span class="o">[</span>...<span class="o">]</span></span>
+</pre></div></div><p>This allows administrators to set device classes without the class
+being changed on OSD restart or by some other script.</p>
+<p>A placement rule that targets a specific device class can be created with:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>crush<span class="w"> </span>rule<span class="w"> </span>create-replicated<span class="w"> </span>&lt;rule-name&gt;<span class="w"> </span>&lt;root&gt;<span class="w"> </span>&lt;failure-domain&gt;<span class="w"> </span>&lt;class&gt;</span>
+</pre></div></div><p>A pool can then be changed to use the new rule with:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>pool<span class="w"> </span><span class="nb">set</span><span class="w"> </span>&lt;pool-name&gt;<span class="w"> </span>crush_rule<span class="w"> </span>&lt;rule-name&gt;</span>
+</pre></div></div><p>Device classes are implemented by creating a “shadow” CRUSH hierarchy
+for each device class in use that contains only devices of that class.
+CRUSH rules can then distribute data over the shadow hierarchy.
+This approach is fully backward compatible with
+old Ceph clients.  You can view the CRUSH hierarchy with shadow items
+with:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>crush<span class="w"> </span>tree<span class="w"> </span>--show-shadow</span>
+</pre></div></div><p>For older clusters created before Luminous that relied on manually
+crafted CRUSH maps to maintain per-device-type hierarchies, there is a
+<em>reclassify</em> tool available to help transition to device classes
+without triggering data movement (see <a class="reference internal" href="../crush-map-edits/#crush-reclassify"><span class="std std-ref">Migrating from a legacy SSD rule to device classes</span></a>).</p>
+</section>
+<section id="weights-sets">
+<h3>Weights sets<a class="headerlink" href="#weights-sets" title="Permalink to this heading">¶</a></h3>
+<p>A <em>weight set</em> is an alternative set of weights to use when
+calculating data placement.  The normal weights associated with each
+device in the CRUSH map are set based on the device size and indicate
+how much data we <em>should</em> be storing where.  However, because CRUSH is
+a “probabilistic” pseudorandom placement process, there is always some
+variation from this ideal distribution, in the same way that rolling a
+die sixty times will not result in rolling exactly 10 ones and 10
+sixes.  Weight sets allow the cluster to perform numerical optimization
+based on the specifics of your cluster (hierarchy, pools, etc.) to achieve
+a balanced distribution.</p>
+<p>There are two types of weight sets supported:</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li><p>A <strong>compat</strong> weight set is a single alternative set of weights for
+each device and node in the cluster.  This is not well-suited for
+correcting for all anomalies (for example, placement groups for
+different pools may be different sizes and have different load
+levels, but will be mostly treated the same by the balancer).
+However, compat weight sets have the huge advantage that they are
+<em>backward compatible</em> with previous versions of Ceph, which means
+that even though weight sets were first introduced in Luminous
+v12.2.z, older clients (e.g., firefly) can still connect to the
+cluster when a compat weight set is being used to balance data.</p></li>
+<li><p>A <strong>per-pool</strong> weight set is more flexible in that it allows
+placement to be optimized for each data pool.  Additionally,
+weights can be adjusted for each position of placement, allowing
+the optimizer to correct for a subtle skew of data toward devices
+with small weights relative to their peers (and effect that is
+usually only apparently in very large clusters but which can cause
+balancing problems).</p></li>
+</ol>
+</div></blockquote>
+<p>When weight sets are in use, the weights associated with each node in
+the hierarchy is visible as a separate column (labeled either
+<code class="docutils literal notranslate"><span class="pre">(compat)</span></code> or the pool name) from the command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>crush<span class="w"> </span>tree</span>
+</pre></div></div><p>When both <em>compat</em> and <em>per-pool</em> weight sets are in use, data
+placement for a particular pool will use its own per-pool weight set
+if present.  If not, it will use the compat weight set if present.  If
+neither are present, it will use the normal CRUSH weights.</p>
+<p>Although weight sets can be set up and manipulated by hand, it is
+recommended that the <code class="docutils literal notranslate"><span class="pre">ceph-mgr</span></code> <em>balancer</em> module be enabled to do so
+automatically when running Luminous or later releases.</p>
+</section>
+</section>
+<section id="modifying-the-crush-map">
+<h2>Modifying the CRUSH map<a class="headerlink" href="#modifying-the-crush-map" title="Permalink to this heading">¶</a></h2>
+<section id="add-move-an-osd">
+<span id="addosd"></span><h3>Add/Move an OSD<a class="headerlink" href="#add-move-an-osd" title="Permalink to this heading">¶</a></h3>
+<p>To add or move an OSD in the CRUSH map of a running cluster:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>crush<span class="w"> </span><span class="nb">set</span><span class="w"> </span><span class="o">{</span>name<span class="o">}</span><span class="w"> </span><span class="o">{</span>weight<span class="o">}</span><span class="w"> </span><span class="nv">root</span><span class="o">={</span>root<span class="o">}</span><span class="w"> </span><span class="o">[{</span>bucket-type<span class="o">}={</span>bucket-name<span class="o">}</span><span class="w"> </span>...<span class="o">]</span></span>
+</pre></div></div><p>Where:</p>
+<p><code class="docutils literal notranslate"><span class="pre">name</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The full name of the OSD.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Required</dt>
+<dd class="field-odd"><p>Yes</p>
+</dd>
+<dt class="field-even">Example</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">osd.0</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">weight</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The CRUSH weight for the OSD, normally its size measure in terabytes (TB).</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Double</p>
+</dd>
+<dt class="field-odd">Required</dt>
+<dd class="field-odd"><p>Yes</p>
+</dd>
+<dt class="field-even">Example</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">2.0</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">root</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The root node of the tree in which the OSD resides (normally <code class="docutils literal notranslate"><span class="pre">default</span></code>)</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Key/value pair.</p>
+</dd>
+<dt class="field-odd">Required</dt>
+<dd class="field-odd"><p>Yes</p>
+</dd>
+<dt class="field-even">Example</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">root=default</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">bucket-type</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>You may specify the OSD’s location in the CRUSH hierarchy.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Key/value pairs.</p>
+</dd>
+<dt class="field-odd">Required</dt>
+<dd class="field-odd"><p>No</p>
+</dd>
+<dt class="field-even">Example</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">datacenter=dc1</span> <span class="pre">room=room1</span> <span class="pre">row=foo</span> <span class="pre">rack=bar</span> <span class="pre">host=foo-bar-1</span></code></p>
+</dd>
+</dl>
+<p>The following example adds <code class="docutils literal notranslate"><span class="pre">osd.0</span></code> to the hierarchy, or moves the
+OSD from a previous location:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>crush<span class="w"> </span><span class="nb">set</span><span class="w"> </span>osd.0<span class="w"> </span><span class="m">1</span>.0<span class="w"> </span><span class="nv">root</span><span class="o">=</span>default<span class="w"> </span><span class="nv">datacenter</span><span class="o">=</span>dc1<span class="w"> </span><span class="nv">room</span><span class="o">=</span>room1<span class="w"> </span><span class="nv">row</span><span class="o">=</span>foo<span class="w"> </span><span class="nv">rack</span><span class="o">=</span>bar<span class="w"> </span><span class="nv">host</span><span class="o">=</span>foo-bar-1</span>
+</pre></div></div></section>
+<section id="adjust-osd-weight">
+<h3>Adjust OSD weight<a class="headerlink" href="#adjust-osd-weight" title="Permalink to this heading">¶</a></h3>
+<p>To adjust an OSD’s CRUSH weight in the CRUSH map of a running cluster, execute
+the following:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>crush<span class="w"> </span>reweight<span class="w"> </span><span class="o">{</span>name<span class="o">}</span><span class="w"> </span><span class="o">{</span>weight<span class="o">}</span></span>
+</pre></div></div><p>Where:</p>
+<p><code class="docutils literal notranslate"><span class="pre">name</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The full name of the OSD.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Required</dt>
+<dd class="field-odd"><p>Yes</p>
+</dd>
+<dt class="field-even">Example</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">osd.0</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">weight</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The CRUSH weight for the OSD.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Double</p>
+</dd>
+<dt class="field-odd">Required</dt>
+<dd class="field-odd"><p>Yes</p>
+</dd>
+<dt class="field-even">Example</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">2.0</span></code></p>
+</dd>
+</dl>
+</section>
+<section id="remove-an-osd">
+<span id="removeosd"></span><h3>Remove an OSD<a class="headerlink" href="#remove-an-osd" title="Permalink to this heading">¶</a></h3>
+<p>To remove an OSD from the CRUSH map of a running cluster, execute the
+following:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>crush<span class="w"> </span>remove<span class="w"> </span><span class="o">{</span>name<span class="o">}</span></span>
+</pre></div></div><p>Where:</p>
+<p><code class="docutils literal notranslate"><span class="pre">name</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The full name of the OSD.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Required</dt>
+<dd class="field-odd"><p>Yes</p>
+</dd>
+<dt class="field-even">Example</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">osd.0</span></code></p>
+</dd>
+</dl>
+</section>
+<section id="add-a-bucket">
+<h3>Add a Bucket<a class="headerlink" href="#add-a-bucket" title="Permalink to this heading">¶</a></h3>
+<p>To add a bucket in the CRUSH map of a running cluster, execute the
+<code class="docutils literal notranslate"><span class="pre">ceph</span> <span class="pre">osd</span> <span class="pre">crush</span> <span class="pre">add-bucket</span></code> command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>crush<span class="w"> </span>add-bucket<span class="w"> </span><span class="o">{</span>bucket-name<span class="o">}</span><span class="w"> </span><span class="o">{</span>bucket-type<span class="o">}</span></span>
+</pre></div></div><p>Where:</p>
+<p><code class="docutils literal notranslate"><span class="pre">bucket-name</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The full name of the bucket.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Required</dt>
+<dd class="field-odd"><p>Yes</p>
+</dd>
+<dt class="field-even">Example</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">rack12</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">bucket-type</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The type of the bucket. The type must already exist in the hierarchy.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Required</dt>
+<dd class="field-odd"><p>Yes</p>
+</dd>
+<dt class="field-even">Example</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">rack</span></code></p>
+</dd>
+</dl>
+<p>The following example adds the <code class="docutils literal notranslate"><span class="pre">rack12</span></code> bucket to the hierarchy:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>crush<span class="w"> </span>add-bucket<span class="w"> </span>rack12<span class="w"> </span>rack</span>
+</pre></div></div></section>
+<section id="move-a-bucket">
+<h3>Move a Bucket<a class="headerlink" href="#move-a-bucket" title="Permalink to this heading">¶</a></h3>
+<p>To move a bucket to a different location or position in the CRUSH map
+hierarchy, execute the following:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>crush<span class="w"> </span>move<span class="w"> </span><span class="o">{</span>bucket-name<span class="o">}</span><span class="w"> </span><span class="o">{</span>bucket-type<span class="o">}={</span>bucket-name<span class="o">}</span>,<span class="w"> </span><span class="o">[</span>...<span class="o">]</span></span>
+</pre></div></div><p>Where:</p>
+<p><code class="docutils literal notranslate"><span class="pre">bucket-name</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The name of the bucket to move/reposition.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Required</dt>
+<dd class="field-odd"><p>Yes</p>
+</dd>
+<dt class="field-even">Example</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">foo-bar-1</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">bucket-type</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>You may specify the bucket’s location in the CRUSH hierarchy.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Key/value pairs.</p>
+</dd>
+<dt class="field-odd">Required</dt>
+<dd class="field-odd"><p>No</p>
+</dd>
+<dt class="field-even">Example</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">datacenter=dc1</span> <span class="pre">room=room1</span> <span class="pre">row=foo</span> <span class="pre">rack=bar</span> <span class="pre">host=foo-bar-1</span></code></p>
+</dd>
+</dl>
+</section>
+<section id="remove-a-bucket">
+<h3>Remove a Bucket<a class="headerlink" href="#remove-a-bucket" title="Permalink to this heading">¶</a></h3>
+<p>To remove a bucket from the CRUSH hierarchy, execute the following:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>crush<span class="w"> </span>remove<span class="w"> </span><span class="o">{</span>bucket-name<span class="o">}</span></span>
+</pre></div></div><div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>A bucket must be empty before removing it from the CRUSH hierarchy.</p>
+</div>
+<p>Where:</p>
+<p><code class="docutils literal notranslate"><span class="pre">bucket-name</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The name of the bucket that you’d like to remove.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Required</dt>
+<dd class="field-odd"><p>Yes</p>
+</dd>
+<dt class="field-even">Example</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">rack12</span></code></p>
+</dd>
+</dl>
+<p>The following example removes the <code class="docutils literal notranslate"><span class="pre">rack12</span></code> bucket from the hierarchy:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>crush<span class="w"> </span>remove<span class="w"> </span>rack12</span>
+</pre></div></div></section>
+<section id="creating-a-compat-weight-set">
+<h3>Creating a compat weight set<a class="headerlink" href="#creating-a-compat-weight-set" title="Permalink to this heading">¶</a></h3>
+<p>To create a <em>compat</em> weight set:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>crush<span class="w"> </span>weight-set<span class="w"> </span>create-compat</span>
+</pre></div></div><p>Weights for the compat weight set can be adjusted with:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>crush<span class="w"> </span>weight-set<span class="w"> </span>reweight-compat<span class="w"> </span><span class="o">{</span>name<span class="o">}</span><span class="w"> </span><span class="o">{</span>weight<span class="o">}</span></span>
+</pre></div></div><p>The compat weight set can be destroyed with:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>crush<span class="w"> </span>weight-set<span class="w"> </span>rm-compat</span>
+</pre></div></div></section>
+<section id="creating-per-pool-weight-sets">
+<h3>Creating per-pool weight sets<a class="headerlink" href="#creating-per-pool-weight-sets" title="Permalink to this heading">¶</a></h3>
+<p>To create a weight set for a specific pool:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>crush<span class="w"> </span>weight-set<span class="w"> </span>create<span class="w"> </span><span class="o">{</span>pool-name<span class="o">}</span><span class="w"> </span><span class="o">{</span>mode<span class="o">}</span></span>
+</pre></div></div><div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Per-pool weight sets require that all servers and daemons
+run Luminous v12.2.z or later.</p>
+</div>
+<p>Where:</p>
+<p><code class="docutils literal notranslate"><span class="pre">pool-name</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The name of a RADOS pool</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Required</dt>
+<dd class="field-odd"><p>Yes</p>
+</dd>
+<dt class="field-even">Example</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">rbd</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">mode</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Either <code class="docutils literal notranslate"><span class="pre">flat</span></code> or <code class="docutils literal notranslate"><span class="pre">positional</span></code>.  A <em>flat</em> weight set
+has a single weight for each device or bucket.  A
+<em>positional</em> weight set has a potentially different
+weight for each position in the resulting placement
+mapping.  For example, if a pool has a replica count of
+3, then a positional weight set will have three weights
+for each device and bucket.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Required</dt>
+<dd class="field-odd"><p>Yes</p>
+</dd>
+<dt class="field-even">Example</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">flat</span></code></p>
+</dd>
+</dl>
+<p>To adjust the weight of an item in a weight set:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>crush<span class="w"> </span>weight-set<span class="w"> </span>reweight<span class="w"> </span><span class="o">{</span>pool-name<span class="o">}</span><span class="w"> </span><span class="o">{</span>item-name<span class="o">}</span><span class="w"> </span><span class="o">{</span>weight<span class="w"> </span><span class="o">[</span>...<span class="o">]}</span></span>
+</pre></div></div><p>To list existing weight sets:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>crush<span class="w"> </span>weight-set<span class="w"> </span>ls</span>
+</pre></div></div><p>To remove a weight set:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>crush<span class="w"> </span>weight-set<span class="w"> </span>rm<span class="w"> </span><span class="o">{</span>pool-name<span class="o">}</span></span>
+</pre></div></div></section>
+<section id="creating-a-rule-for-a-replicated-pool">
+<h3>Creating a rule for a replicated pool<a class="headerlink" href="#creating-a-rule-for-a-replicated-pool" title="Permalink to this heading">¶</a></h3>
+<p>For a replicated pool, the primary decision when creating the CRUSH
+rule is what the failure domain is going to be.  For example, if a
+failure domain of <code class="docutils literal notranslate"><span class="pre">host</span></code> is selected, then CRUSH will ensure that
+each replica of the data is stored on a unique host.  If <code class="docutils literal notranslate"><span class="pre">rack</span></code>
+is selected, then each replica will be stored in a different rack.
+What failure domain you choose primarily depends on the size and
+topology of your cluster.</p>
+<p>In most cases the entire cluster hierarchy is nested beneath a root node
+named <code class="docutils literal notranslate"><span class="pre">default</span></code>.  If you have customized your hierarchy, you may
+want to create a rule nested at some other node in the hierarchy.  It
+doesn’t matter what type is associated with that node (it doesn’t have
+to be a <code class="docutils literal notranslate"><span class="pre">root</span></code> node).</p>
+<p>It is also possible to create a rule that restricts data placement to
+a specific <em>class</em> of device.  By default, Ceph OSDs automatically
+classify themselves as either <code class="docutils literal notranslate"><span class="pre">hdd</span></code> or <code class="docutils literal notranslate"><span class="pre">ssd</span></code>, depending on the
+underlying type of device being used.  These classes can also be
+customized.</p>
+<p>To create a replicated rule:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>crush<span class="w"> </span>rule<span class="w"> </span>create-replicated<span class="w"> </span><span class="o">{</span>name<span class="o">}</span><span class="w"> </span><span class="o">{</span>root<span class="o">}</span><span class="w"> </span><span class="o">{</span>failure-domain-type<span class="o">}</span><span class="w"> </span><span class="o">[{</span>class<span class="o">}]</span></span>
+</pre></div></div><p>Where:</p>
+<p><code class="docutils literal notranslate"><span class="pre">name</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The name of the rule</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Required</dt>
+<dd class="field-odd"><p>Yes</p>
+</dd>
+<dt class="field-even">Example</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">rbd-rule</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">root</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The name of the node under which data should be placed.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Required</dt>
+<dd class="field-odd"><p>Yes</p>
+</dd>
+<dt class="field-even">Example</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">default</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">failure-domain-type</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The type of CRUSH nodes across which we should separate replicas.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Required</dt>
+<dd class="field-odd"><p>Yes</p>
+</dd>
+<dt class="field-even">Example</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">rack</span></code></p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">class</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The device class on which data should be placed.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Required</dt>
+<dd class="field-odd"><p>No</p>
+</dd>
+<dt class="field-even">Example</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">ssd</span></code></p>
+</dd>
+</dl>
+</section>
+<section id="creating-a-rule-for-an-erasure-coded-pool">
+<h3>Creating a rule for an erasure coded pool<a class="headerlink" href="#creating-a-rule-for-an-erasure-coded-pool" title="Permalink to this heading">¶</a></h3>
+<p>For an erasure-coded (EC) pool, the same basic decisions need to be made:
+what is the failure domain, which node in the
+hierarchy will data be placed under (usually <code class="docutils literal notranslate"><span class="pre">default</span></code>), and will
+placement be restricted to a specific device class.  Erasure code
+pools are created a bit differently, however, because they need to be
+constructed carefully based on the erasure code being used.  For this reason,
+you must include this information in the <em>erasure code profile</em>.  A CRUSH
+rule will then be created from that either explicitly or automatically when
+the profile is used to create a pool.</p>
+<p>The erasure code profiles can be listed with:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>erasure-code-profile<span class="w"> </span>ls</span>
+</pre></div></div><p>An existing profile can be viewed with:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>erasure-code-profile<span class="w"> </span>get<span class="w"> </span><span class="o">{</span>profile-name<span class="o">}</span></span>
+</pre></div></div><p>Normally profiles should never be modified; instead, a new profile
+should be created and used when creating a new pool or creating a new
+rule for an existing pool.</p>
+<p>An erasure code profile consists of a set of key=value pairs.  Most of
+these control the behavior of the erasure code that is encoding data
+in the pool.  Those that begin with <code class="docutils literal notranslate"><span class="pre">crush-</span></code>, however, affect the
+CRUSH rule that is created.</p>
+<p>The erasure code profile properties of interest are:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><strong>crush-root</strong>: the name of the CRUSH node under which to place data [default: <code class="docutils literal notranslate"><span class="pre">default</span></code>].</p></li>
+<li><p><strong>crush-failure-domain</strong>: the CRUSH bucket type across which to distribute erasure-coded shards [default: <code class="docutils literal notranslate"><span class="pre">host</span></code>].</p></li>
+<li><p><strong>crush-device-class</strong>: the device class on which to place data [default: none, meaning all devices are used].</p></li>
+<li><p><strong>k</strong> and <strong>m</strong> (and, for the <code class="docutils literal notranslate"><span class="pre">lrc</span></code> plugin, <strong>l</strong>): these determine the number of erasure code shards, affecting the resulting CRUSH rule.</p></li>
+</ul>
+</div></blockquote>
+<p>Once a profile is defined, you can create a CRUSH rule with:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>crush<span class="w"> </span>rule<span class="w"> </span>create-erasure<span class="w"> </span><span class="o">{</span>name<span class="o">}</span><span class="w"> </span><span class="o">{</span>profile-name<span class="o">}</span></span>
+</pre></div></div></section>
+<section id="deleting-rules">
+<h3>Deleting rules<a class="headerlink" href="#deleting-rules" title="Permalink to this heading">¶</a></h3>
+<p>Rules that are not in use by pools can be deleted with:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>crush<span class="w"> </span>rule<span class="w"> </span>rm<span class="w"> </span><span class="o">{</span>rule-name<span class="o">}</span></span>
+</pre></div></div></section>
+</section>
+<section id="tunables">
+<span id="crush-map-tunables"></span><h2>Tunables<a class="headerlink" href="#tunables" title="Permalink to this heading">¶</a></h2>
+<p>Over time, we have made (and continue to make) improvements to the
+CRUSH algorithm used to calculate the placement of data.  In order to
+support the change in behavior, we have introduced a series of tunable
+options that control whether the legacy or improved variation of the
+algorithm is used.</p>
+<p>In order to use newer tunables, both clients and servers must support
+the new version of CRUSH.  For this reason, we have created
+<code class="docutils literal notranslate"><span class="pre">profiles</span></code> that are named after the Ceph version in which they were
+introduced.  For example, the <code class="docutils literal notranslate"><span class="pre">firefly</span></code> tunables are first supported
+by the Firefly release, and will not work with older (e.g., Dumpling)
+clients.  Once a given set of tunables are changed from the legacy
+default behavior, the <code class="docutils literal notranslate"><span class="pre">ceph-mon</span></code> and <code class="docutils literal notranslate"><span class="pre">ceph-osd</span></code> will prevent older
+clients who do not support the new CRUSH features from connecting to
+the cluster.</p>
+<section id="argonaut-legacy">
+<h3>argonaut (legacy)<a class="headerlink" href="#argonaut-legacy" title="Permalink to this heading">¶</a></h3>
+<p>The legacy CRUSH behavior used by Argonaut and older releases works
+fine for most clusters, provided there are not many OSDs that have
+been marked out.</p>
+</section>
+<section id="bobtail-crush-tunables2">
+<h3>bobtail (CRUSH_TUNABLES2)<a class="headerlink" href="#bobtail-crush-tunables2" title="Permalink to this heading">¶</a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">bobtail</span></code> tunable profile fixes a few key misbehaviors:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>For hierarchies with a small number of devices in the leaf buckets,
+some PGs map to fewer than the desired number of replicas.  This
+commonly happens for hierarchies with “host” nodes with a small
+number (1-3) of OSDs nested beneath each one.</p></li>
+<li><p>For large clusters, some small percentages of PGs map to fewer than
+the desired number of OSDs.  This is more prevalent when there are
+mutiple hierarchy layers in use (e.g., <code class="docutils literal notranslate"><span class="pre">row</span></code>, <code class="docutils literal notranslate"><span class="pre">rack</span></code>, <code class="docutils literal notranslate"><span class="pre">host</span></code>, <code class="docutils literal notranslate"><span class="pre">osd</span></code>).</p></li>
+<li><p>When some OSDs are marked out, the data tends to get redistributed
+to nearby OSDs instead of across the entire hierarchy.</p></li>
+</ul>
+</div></blockquote>
+<p>The new tunables are:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">choose_local_tries</span></code>: Number of local retries.  Legacy value is
+2, optimal value is 0.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">choose_local_fallback_tries</span></code>: Legacy value is 5, optimal value
+is 0.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">choose_total_tries</span></code>: Total number of attempts to choose an item.
+Legacy value was 19, subsequent testing indicates that a value of
+50 is more appropriate for typical clusters.  For extremely large
+clusters, a larger value might be necessary.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">chooseleaf_descend_once</span></code>: Whether a recursive chooseleaf attempt
+will retry, or only try once and allow the original placement to
+retry.  Legacy default is 0, optimal value is 1.</p></li>
+</ul>
+</div></blockquote>
+<p>Migration impact:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>Moving from <code class="docutils literal notranslate"><span class="pre">argonaut</span></code> to <code class="docutils literal notranslate"><span class="pre">bobtail</span></code> tunables triggers a moderate amount
+of data movement.  Use caution on a cluster that is already
+populated with data.</p></li>
+</ul>
+</div></blockquote>
+</section>
+<section id="firefly-crush-tunables3">
+<h3>firefly (CRUSH_TUNABLES3)<a class="headerlink" href="#firefly-crush-tunables3" title="Permalink to this heading">¶</a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">firefly</span></code> tunable profile fixes a problem
+with <code class="docutils literal notranslate"><span class="pre">chooseleaf</span></code> CRUSH rule behavior that tends to result in PG
+mappings with too few results when too many OSDs have been marked out.</p>
+<p>The new tunable is:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">chooseleaf_vary_r</span></code>: Whether a recursive chooseleaf attempt will
+start with a non-zero value of <code class="docutils literal notranslate"><span class="pre">r</span></code>, based on how many attempts the
+parent has already made.  Legacy default is <code class="docutils literal notranslate"><span class="pre">0</span></code>, but with this value
+CRUSH is sometimes unable to find a mapping.  The optimal value (in
+terms of computational cost and correctness) is <code class="docutils literal notranslate"><span class="pre">1</span></code>.</p></li>
+</ul>
+</div></blockquote>
+<p>Migration impact:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>For existing clusters that house lots of data, changing
+from <code class="docutils literal notranslate"><span class="pre">0</span></code> to <code class="docutils literal notranslate"><span class="pre">1</span></code> will cause a lot of data to move; a value of <code class="docutils literal notranslate"><span class="pre">4</span></code> or <code class="docutils literal notranslate"><span class="pre">5</span></code>
+will allow CRUSH to still find a valid mapping but will cause less data
+to move.</p></li>
+</ul>
+</div></blockquote>
+</section>
+<section id="straw-calc-version-tunable-introduced-with-firefly-too">
+<h3>straw_calc_version tunable (introduced with Firefly too)<a class="headerlink" href="#straw-calc-version-tunable-introduced-with-firefly-too" title="Permalink to this heading">¶</a></h3>
+<p>There were some problems with the internal weights calculated and
+stored in the CRUSH map for <code class="docutils literal notranslate"><span class="pre">straw</span></code> algorithm buckets.  Specifically, when
+there were items with a CRUSH weight of <code class="docutils literal notranslate"><span class="pre">0</span></code>, or both a mix of different and
+unique weights, CRUSH would distribute data incorrectly (i.e.,
+not in proportion to the weights).</p>
+<p>The new tunable is:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">straw_calc_version</span></code>: A value of <code class="docutils literal notranslate"><span class="pre">0</span></code> preserves the old, broken
+internal weight calculation; a value of <code class="docutils literal notranslate"><span class="pre">1</span></code> fixes the behavior.</p></li>
+</ul>
+</div></blockquote>
+<p>Migration impact:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>Moving to straw_calc_version <code class="docutils literal notranslate"><span class="pre">1</span></code> and then adjusting a straw bucket
+(by adding, removing, or reweighting an item, or by using the
+reweight-all command) can trigger a small to moderate amount of
+data movement <em>if</em> the cluster has hit one of the problematic
+conditions.</p></li>
+</ul>
+</div></blockquote>
+<p>This tunable option is special because it has absolutely no impact
+concerning the required kernel version in the client side.</p>
+</section>
+<section id="hammer-crush-v4">
+<h3>hammer (CRUSH_V4)<a class="headerlink" href="#hammer-crush-v4" title="Permalink to this heading">¶</a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">hammer</span></code> tunable profile does not affect the
+mapping of existing CRUSH maps simply by changing the profile.  However:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>There is a new bucket algorithm (<code class="docutils literal notranslate"><span class="pre">straw2</span></code>) supported.  The new
+<code class="docutils literal notranslate"><span class="pre">straw2</span></code> bucket algorithm fixes several limitations in the original
+<code class="docutils literal notranslate"><span class="pre">straw</span></code>.  Specifically, the old <code class="docutils literal notranslate"><span class="pre">straw</span></code> buckets would
+change some mappings that should have changed when a weight was
+adjusted, while <code class="docutils literal notranslate"><span class="pre">straw2</span></code> achieves the original goal of only
+changing mappings to or from the bucket item whose weight has
+changed.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">straw2</span></code> is the default for any newly created buckets.</p></li>
+</ul>
+</div></blockquote>
+<p>Migration impact:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>Changing a bucket type from <code class="docutils literal notranslate"><span class="pre">straw</span></code> to <code class="docutils literal notranslate"><span class="pre">straw2</span></code> will result in
+a reasonably small amount of data movement, depending on how much
+the bucket item weights vary from each other.  When the weights are
+all the same no data will move, and when item weights vary
+significantly there will be more movement.</p></li>
+</ul>
+</div></blockquote>
+</section>
+<section id="jewel-crush-tunables5">
+<h3>jewel (CRUSH_TUNABLES5)<a class="headerlink" href="#jewel-crush-tunables5" title="Permalink to this heading">¶</a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">jewel</span></code> tunable profile improves the
+overall behavior of CRUSH such that significantly fewer mappings
+change when an OSD is marked out of the cluster.  This results in
+significantly less data movement.</p>
+<p>The new tunable is:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">chooseleaf_stable</span></code>: Whether a recursive chooseleaf attempt will
+use a better value for an inner loop that greatly reduces the number
+of mapping changes when an OSD is marked out.  The legacy value is <code class="docutils literal notranslate"><span class="pre">0</span></code>,
+while the new value of <code class="docutils literal notranslate"><span class="pre">1</span></code> uses the new approach.</p></li>
+</ul>
+</div></blockquote>
+<p>Migration impact:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>Changing this value on an existing cluster will result in a very
+large amount of data movement as almost every PG mapping is likely
+to change.</p></li>
+</ul>
+</div></blockquote>
+</section>
+<section id="which-client-versions-support-crush-tunables">
+<h3>Which client versions support CRUSH_TUNABLES<a class="headerlink" href="#which-client-versions-support-crush-tunables" title="Permalink to this heading">¶</a></h3>
+<blockquote>
+<div><ul class="simple">
+<li><p>argonaut series, v0.48.1 or later</p></li>
+<li><p>v0.49 or later</p></li>
+<li><p>Linux kernel version v3.6 or later (for the file system and RBD kernel clients)</p></li>
+</ul>
+</div></blockquote>
+</section>
+<section id="which-client-versions-support-crush-tunables2">
+<h3>Which client versions support CRUSH_TUNABLES2<a class="headerlink" href="#which-client-versions-support-crush-tunables2" title="Permalink to this heading">¶</a></h3>
+<blockquote>
+<div><ul class="simple">
+<li><p>v0.55 or later, including bobtail series (v0.56.x)</p></li>
+<li><p>Linux kernel version v3.9 or later (for the file system and RBD kernel clients)</p></li>
+</ul>
+</div></blockquote>
+</section>
+<section id="which-client-versions-support-crush-tunables3">
+<h3>Which client versions support CRUSH_TUNABLES3<a class="headerlink" href="#which-client-versions-support-crush-tunables3" title="Permalink to this heading">¶</a></h3>
+<blockquote>
+<div><ul class="simple">
+<li><p>v0.78 (firefly) or later</p></li>
+<li><p>Linux kernel version v3.15 or later (for the file system and RBD kernel clients)</p></li>
+</ul>
+</div></blockquote>
+</section>
+<section id="which-client-versions-support-crush-v4">
+<h3>Which client versions support CRUSH_V4<a class="headerlink" href="#which-client-versions-support-crush-v4" title="Permalink to this heading">¶</a></h3>
+<blockquote>
+<div><ul class="simple">
+<li><p>v0.94 (hammer) or later</p></li>
+<li><p>Linux kernel version v4.1 or later (for the file system and RBD kernel clients)</p></li>
+</ul>
+</div></blockquote>
+</section>
+<section id="which-client-versions-support-crush-tunables5">
+<h3>Which client versions support CRUSH_TUNABLES5<a class="headerlink" href="#which-client-versions-support-crush-tunables5" title="Permalink to this heading">¶</a></h3>
+<blockquote>
+<div><ul class="simple">
+<li><p>v10.0.2 (jewel) or later</p></li>
+<li><p>Linux kernel version v4.5 or later (for the file system and RBD kernel clients)</p></li>
+</ul>
+</div></blockquote>
+</section>
+<section id="warning-when-tunables-are-non-optimal">
+<h3>Warning when tunables are non-optimal<a class="headerlink" href="#warning-when-tunables-are-non-optimal" title="Permalink to this heading">¶</a></h3>
+<p>Starting with version v0.74, Ceph will issue a health warning if the
+current CRUSH tunables don’t include all the optimal values from the
+<code class="docutils literal notranslate"><span class="pre">default</span></code> profile (see below for the meaning of the <code class="docutils literal notranslate"><span class="pre">default</span></code> profile).
+To make this warning go away, you have two options:</p>
+<ol class="arabic">
+<li><p>Adjust the tunables on the existing cluster.  Note that this will
+result in some data movement (possibly as much as 10%).  This is the
+preferred route, but should be taken with care on a production cluster
+where the data movement may affect performance.  You can enable optimal
+tunables with:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>crush<span class="w"> </span>tunables<span class="w"> </span>optimal</span>
+</pre></div></div><p>If things go poorly (e.g., too much load) and not very much
+progress has been made, or there is a client compatibility problem
+(old kernel CephFS or RBD clients, or pre-Bobtail <code class="docutils literal notranslate"><span class="pre">librados</span></code>
+clients), you can switch back with:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>crush<span class="w"> </span>tunables<span class="w"> </span>legacy</span>
+</pre></div></div></li>
+<li><p>You can make the warning go away without making any changes to CRUSH by
+adding the following option to your ceph.conf <code class="docutils literal notranslate"><span class="pre">[mon]</span></code> section:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">mon</span> <span class="n">warn</span> <span class="n">on</span> <span class="n">legacy</span> <span class="n">crush</span> <span class="n">tunables</span> <span class="o">=</span> <span class="n">false</span>
+</pre></div>
+</div>
+<p>For the change to take effect, you will need to restart the monitors, or
+apply the option to running monitors with:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>tell<span class="w"> </span>mon.<span class="se">\*</span><span class="w"> </span>config<span class="w"> </span><span class="nb">set</span><span class="w"> </span>mon_warn_on_legacy_crush_tunables<span class="w"> </span><span class="nb">false</span></span>
+</pre></div></div></li>
+</ol>
+</section>
+<section id="a-few-important-points">
+<h3>A few important points<a class="headerlink" href="#a-few-important-points" title="Permalink to this heading">¶</a></h3>
+<blockquote>
+<div><ul class="simple">
+<li><p>Adjusting these values will result in the shift of some PGs between
+storage nodes.  If the Ceph cluster is already storing a lot of
+data, be prepared for some fraction of the data to move.</p></li>
+<li><p>The <code class="docutils literal notranslate"><span class="pre">ceph-osd</span></code> and <code class="docutils literal notranslate"><span class="pre">ceph-mon</span></code> daemons will start requiring the
+feature bits of new connections as soon as they get
+the updated map.  However, already-connected clients are
+effectively grandfathered in, and will misbehave if they do not
+support the new feature.</p></li>
+<li><p>If the CRUSH tunables are set to non-legacy values and then later
+changed back to the default values, <code class="docutils literal notranslate"><span class="pre">ceph-osd</span></code> daemons will not be
+required to support the feature.  However, the OSD peering process
+requires examining and understanding old maps.  Therefore, you
+should not run old versions of the <code class="docutils literal notranslate"><span class="pre">ceph-osd</span></code> daemon
+if the cluster has previously used non-legacy CRUSH values, even if
+the latest version of the map has been switched back to using the
+legacy defaults.</p></li>
+</ul>
+</div></blockquote>
+</section>
+<section id="tuning-crush">
+<h3>Tuning CRUSH<a class="headerlink" href="#tuning-crush" title="Permalink to this heading">¶</a></h3>
+<p>The simplest way to adjust CRUSH tunables is by applying them in matched
+sets known as <em>profiles</em>.  As of the Octopus release these are:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">legacy</span></code>: the legacy behavior from argonaut and earlier.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">argonaut</span></code>: the legacy values supported by the original argonaut release</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">bobtail</span></code>: the values supported by the bobtail release</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">firefly</span></code>: the values supported by the firefly release</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">hammer</span></code>: the values supported by the hammer release</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">jewel</span></code>: the values supported by the jewel release</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">optimal</span></code>: the best (i.e. optimal) values of the current version of Ceph</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">default</span></code>: the default values of a new cluster installed from
+scratch. These values, which depend on the current version of Ceph,
+are hardcoded and are generally a mix of optimal and legacy values.
+These values generally match the <code class="docutils literal notranslate"><span class="pre">optimal</span></code> profile of the previous
+LTS release, or the most recent release for which we generally expect
+most users to have up-to-date clients for.</p></li>
+</ul>
+</div></blockquote>
+<p>You can apply a profile to a running cluster with the command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>crush<span class="w"> </span>tunables<span class="w"> </span><span class="o">{</span>PROFILE<span class="o">}</span></span>
+</pre></div></div><p>Note that this may result in data movement, potentially quite a bit.  Study
+release notes and documentation carefully before changing the profile on a
+running cluster, and consider throttling recovery/backfill parameters to
+limit the impact of a bolus of backfill.</p>
+</section>
+</section>
+<section id="primary-affinity">
+<h2>Primary Affinity<a class="headerlink" href="#primary-affinity" title="Permalink to this heading">¶</a></h2>
+<p>When a Ceph Client reads or writes data, it first contacts the primary OSD in
+each affected PG’s acting set. By default, the first OSD in the acting set is
+the primary.  For example, in the acting set <code class="docutils literal notranslate"><span class="pre">[2,</span> <span class="pre">3,</span> <span class="pre">4]</span></code>, <code class="docutils literal notranslate"><span class="pre">osd.2</span></code> is
+listed first and thus is the primary (aka lead) OSD. Sometimes we know that an
+OSD is less well suited to act as the lead than are other OSDs (e.g., it has
+a slow drive or a slow controller). To prevent performance bottlenecks
+(especially on read operations) while maximizing utilization of your hardware,
+you can influence the selection of primary OSDs by adjusting primary affinity
+values, or by crafting a CRUSH rule that selects preferred OSDs first.</p>
+<p>Tuning primary OSD selection is mainly useful for replicated pools, because
+by default read operations are served from the primary OSD for each PG.
+For erasure coded (EC) pools, a way to speed up read operations is to enable
+<strong>fast read</strong> as described in <a class="reference internal" href="../../configuration/mon-config-ref/#pool-settings"><span class="std std-ref">Pool settings</span></a>.</p>
+<p>A common scenario for primary affinity is when a cluster contains
+a mix of drive sizes, for example older racks with 1.9 TB SATA SSDS and newer racks with
+3.84TB SATA SSDs.  On average the latter will be assigned double the number of
+PGs and thus will serve double the number of write and read operations, thus
+they’ll be busier than the former.  A rough assignment of primary affinity
+inversely proportional to OSD size won’t be 100% optimal, but it can readily
+achieve a 15% improvement in overall read throughput by utilizing SATA
+interface bandwidth and CPU cycles more evenly.</p>
+<p>By default, all ceph OSDs have primary affinity of <code class="docutils literal notranslate"><span class="pre">1</span></code>, which indicates that
+any OSD may act as a primary with equal probability.</p>
+<p>You can reduce a Ceph OSD’s primary affinity so that CRUSH is less likely to
+choose the OSD as primary in a PG’s acting set.:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>primary-affinity<span class="w"> </span>&lt;osd-id&gt;<span class="w"> </span>&lt;weight&gt;</span>
+</pre></div></div><p>You may set an OSD’s primary affinity to a real number in the range <code class="docutils literal notranslate"><span class="pre">[0-1]</span></code>,
+where <code class="docutils literal notranslate"><span class="pre">0</span></code> indicates that the OSD may <strong>NOT</strong> be used as a primary and <code class="docutils literal notranslate"><span class="pre">1</span></code>
+indicates that an OSD may be used as a primary.  When the weight is between
+these extremes, it is less likely that CRUSH will select that OSD as a primary.
+The process for selecting the lead OSD is more nuanced than a simple
+probability based on relative affinity values, but measurable results can be
+achieved even with first-order approximations of desirable values.</p>
+<section id="custom-crush-rules">
+<h3>Custom CRUSH Rules<a class="headerlink" href="#custom-crush-rules" title="Permalink to this heading">¶</a></h3>
+<p>There are occasional clusters that balance cost and performance by mixing SSDs
+and HDDs in the same replicated pool. By setting the primary affinity of HDD
+OSDs to <code class="docutils literal notranslate"><span class="pre">0</span></code> one can direct operations to the SSD in each acting set. An
+alternative is to define a CRUSH rule that always selects an SSD OSD as the
+first OSD, then selects HDDs for the remaining OSDs. Thus, each PG’s acting
+set will contain exactly one SSD OSD as the primary with the balance on HDDs.</p>
+<p>For example, the CRUSH rule below:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">rule</span> <span class="n">mixed_replicated_rule</span> <span class="p">{</span>
+        <span class="nb">id</span> <span class="mi">11</span>
+        <span class="nb">type</span> <span class="n">replicated</span>
+        <span class="n">min_size</span> <span class="mi">1</span>
+        <span class="n">max_size</span> <span class="mi">10</span>
+        <span class="n">step</span> <span class="n">take</span> <span class="n">default</span> <span class="k">class</span><span class="w"> </span><span class="nc">ssd</span>
+        <span class="n">step</span> <span class="n">chooseleaf</span> <span class="n">firstn</span> <span class="mi">1</span> <span class="nb">type</span> <span class="n">host</span>
+        <span class="n">step</span> <span class="n">emit</span>
+        <span class="n">step</span> <span class="n">take</span> <span class="n">default</span> <span class="k">class</span><span class="w"> </span><span class="nc">hdd</span>
+        <span class="n">step</span> <span class="n">chooseleaf</span> <span class="n">firstn</span> <span class="mi">0</span> <span class="nb">type</span> <span class="n">host</span>
+        <span class="n">step</span> <span class="n">emit</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>chooses an SSD as the first OSD.  Note that for an <code class="docutils literal notranslate"><span class="pre">N</span></code>-times replicated pool
+this rule selects <code class="docutils literal notranslate"><span class="pre">N+1</span></code> OSDs to guarantee that <code class="docutils literal notranslate"><span class="pre">N</span></code> copies are on different
+hosts, because the first SSD OSD might be co-located with any of the <code class="docutils literal notranslate"><span class="pre">N</span></code> HDD
+OSDs.</p>
+<p>This extra storage requirement can be avoided by placing SSDs and HDDs in
+different hosts with the tradeoff that hosts with SSDs will receive all client
+requests.  You may thus consider faster CPU(s) for SSD hosts and more modest
+ones for HDD nodes, since the latter will normally only service recovery
+operations.  Here the CRUSH roots <code class="docutils literal notranslate"><span class="pre">ssd_hosts</span></code> and <code class="docutils literal notranslate"><span class="pre">hdd_hosts</span></code> strictly
+must not contain the same servers:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">rule</span> <span class="n">mixed_replicated_rule_two</span> <span class="p">{</span>
+       <span class="nb">id</span> <span class="mi">1</span>
+       <span class="nb">type</span> <span class="n">replicated</span>
+       <span class="n">min_size</span> <span class="mi">1</span>
+       <span class="n">max_size</span> <span class="mi">10</span>
+       <span class="n">step</span> <span class="n">take</span> <span class="n">ssd_hosts</span> <span class="k">class</span><span class="w"> </span><span class="nc">ssd</span>
+       <span class="n">step</span> <span class="n">chooseleaf</span> <span class="n">firstn</span> <span class="mi">1</span> <span class="nb">type</span> <span class="n">host</span>
+       <span class="n">step</span> <span class="n">emit</span>
+       <span class="n">step</span> <span class="n">take</span> <span class="n">hdd_hosts</span> <span class="k">class</span><span class="w"> </span><span class="nc">hdd</span>
+       <span class="n">step</span> <span class="n">chooseleaf</span> <span class="n">firstn</span> <span class="o">-</span><span class="mi">1</span> <span class="nb">type</span> <span class="n">host</span>
+       <span class="n">step</span> <span class="n">emit</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>Note also that on failure of an SSD, requests to a PG will be served temporarily
+from a (slower) HDD OSD until the PG’s data has been replicated onto the replacement
+primary SSD OSD.</p>
+</section>
+</section>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../../">
+              <img class="logo" src="../../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../install/">Installing Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cephadm/">Cephadm</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../">Ceph Storage Cluster</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../../configuration/">Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../cephadm/">Deployment</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../">Operations</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../operating/">Operating a Cluster</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../health-checks/">Health checks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../monitoring/">Monitoring a Cluster</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../monitoring-osd-pg/">Monitoring OSDs and PGs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../user-management/">User Management</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../pg-repair/">Repairing PG Inconsistencies</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../data-placement/">Data Placement Overview</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../pools/">Pools</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../erasure-code/">Erasure code</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../cache-tiering/">Cache Tiering</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../placement-groups/">Placement Groups</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../balancer/">Balancer</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../upmap/">Using pg-upmap</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">CRUSH Maps</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#crush-location">CRUSH Location</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#custom-location-hooks">Custom location hooks</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#crush-structure">CRUSH structure</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#devices">Devices</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#types-and-buckets">Types and Buckets</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#rules">Rules</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#device-classes">Device classes</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#weights-sets">Weights sets</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#modifying-the-crush-map">Modifying the CRUSH map</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#add-move-an-osd">Add/Move an OSD</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#adjust-osd-weight">Adjust OSD weight</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#remove-an-osd">Remove an OSD</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#add-a-bucket">Add a Bucket</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#move-a-bucket">Move a Bucket</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#remove-a-bucket">Remove a Bucket</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#creating-a-compat-weight-set">Creating a compat weight set</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#creating-per-pool-weight-sets">Creating per-pool weight sets</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#creating-a-rule-for-a-replicated-pool">Creating a rule for a replicated pool</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#creating-a-rule-for-an-erasure-coded-pool">Creating a rule for an erasure coded pool</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#deleting-rules">Deleting rules</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#tunables">Tunables</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#argonaut-legacy">argonaut (legacy)</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#bobtail-crush-tunables2">bobtail (CRUSH_TUNABLES2)</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#firefly-crush-tunables3">firefly (CRUSH_TUNABLES3)</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#straw-calc-version-tunable-introduced-with-firefly-too">straw_calc_version tunable (introduced with Firefly too)</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#hammer-crush-v4">hammer (CRUSH_V4)</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#jewel-crush-tunables5">jewel (CRUSH_TUNABLES5)</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#which-client-versions-support-crush-tunables">Which client versions support CRUSH_TUNABLES</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#which-client-versions-support-crush-tunables2">Which client versions support CRUSH_TUNABLES2</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#which-client-versions-support-crush-tunables3">Which client versions support CRUSH_TUNABLES3</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#which-client-versions-support-crush-v4">Which client versions support CRUSH_V4</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#which-client-versions-support-crush-tunables5">Which client versions support CRUSH_TUNABLES5</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#warning-when-tunables-are-non-optimal">Warning when tunables are non-optimal</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#a-few-important-points">A few important points</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#tuning-crush">Tuning CRUSH</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#primary-affinity">Primary Affinity</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#custom-crush-rules">Custom CRUSH Rules</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../crush-map-edits/">Manually editing a CRUSH Map</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../stretch-mode/">Stretch Clusters</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../change-mon-elections/">Configure Monitor Election Strategies</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../add-or-rm-osds/">Adding/Removing OSDs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../add-or-rm-mons/">Adding/Removing Monitors</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../devices/">Device Management</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../bluestore-migration/">BlueStore Migration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../control/">Command Reference</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../troubleshooting/community/">The Ceph Community</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../troubleshooting/troubleshooting-mon/">Troubleshooting Monitors</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../troubleshooting/troubleshooting-osd/">Troubleshooting OSDs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../troubleshooting/troubleshooting-pg/">Troubleshooting PGs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../troubleshooting/log-and-debug/">Logging and Debugging</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../troubleshooting/cpu-profiling/">CPU Profiling</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../troubleshooting/memory-profiling/">Memory Profiling</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../man/">Man Pages</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../troubleshooting/">Troubleshooting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/">APIs</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cephfs/">Ceph File System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../rbd/">Ceph Block Device</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../radosgw/">Ceph Object Gateway</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../mgr/">Ceph Manager Daemon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../mgr/dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dev/developer_guide/">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dev/internals/">Ceph Internals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../../../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../crush-map-edits/" title="Manually editing a CRUSH Map"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../upmap/" title="Using pg-upmap"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../" >Ceph Storage Cluster</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../" >Cluster Operations</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">CRUSH Maps</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

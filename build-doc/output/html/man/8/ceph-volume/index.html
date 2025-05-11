@@ -1,0 +1,602 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>ceph-volume – Ceph OSD deployment and inspection tool &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/css/custom.css" />
+    <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/jquery.js"></script>
+    <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../../genindex/" />
+    <link rel="search" title="Search" href="../../../search/" />
+    <link rel="next" title="ceph-volume-systemd – systemd ceph-volume helper tool" href="../ceph-volume-systemd/" />
+    <link rel="prev" title="Object Store Manpages" href="../../../rados/man/" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../ceph-volume-systemd/" title="ceph-volume-systemd – systemd ceph-volume helper tool"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../../../rados/man/" title="Object Store Manpages"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../../rados/" >Ceph Storage Cluster</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../../../rados/man/" accesskey="U">Object Store Manpages</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">ceph-volume – Ceph OSD deployment and inspection tool</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="ceph-volume-ceph-osd-deployment-and-inspection-tool">
+<h1>ceph-volume – Ceph OSD deployment and inspection tool<a class="headerlink" href="#ceph-volume-ceph-osd-deployment-and-inspection-tool" title="Permalink to this heading">¶</a></h1>
+<section id="synopsis">
+<h2>Synopsis<a class="headerlink" href="#synopsis" title="Permalink to this heading">¶</a></h2>
+<div class="line-block">
+<div class="line"><strong>ceph-volume</strong> [-h] [–cluster CLUSTER] [–log-level LOG_LEVEL]</div>
+<div class="line-block">
+<div class="line">[–log-path LOG_PATH]</div>
+</div>
+</div>
+<div class="line-block">
+<div class="line"><strong>ceph-volume</strong> <strong>inventory</strong></div>
+</div>
+<div class="line-block">
+<div class="line"><strong>ceph-volume</strong> <strong>lvm</strong> [ <em>trigger</em> | <em>create</em> | <em>activate</em> | <em>prepare</em></div>
+<div class="line"><em>zap</em> | <em>list</em> | <em>batch</em> | <em>new-wal</em> | <em>new-db</em> | <em>migrate</em> ]</div>
+</div>
+<div class="line-block">
+<div class="line"><strong>ceph-volume</strong> <strong>simple</strong> [ <em>trigger</em> | <em>scan</em> | <em>activate</em> ]</div>
+</div>
+</section>
+<section id="description">
+<h2>Description<a class="headerlink" href="#description" title="Permalink to this heading">¶</a></h2>
+<p><strong class="program">ceph-volume</strong> is a single purpose command line tool to deploy logical
+volumes as OSDs, trying to maintain a similar API to <code class="docutils literal notranslate"><span class="pre">ceph-disk</span></code> when
+preparing, activating, and creating OSDs.</p>
+<p>It deviates from <code class="docutils literal notranslate"><span class="pre">ceph-disk</span></code> by not interacting or relying on the udev rules
+that come installed for Ceph. These rules allow automatic detection of
+previously setup devices that are in turn fed into <code class="docutils literal notranslate"><span class="pre">ceph-disk</span></code> to activate
+them.</p>
+</section>
+<section id="commands">
+<h2>Commands<a class="headerlink" href="#commands" title="Permalink to this heading">¶</a></h2>
+<section id="inventory">
+<h3>inventory<a class="headerlink" href="#inventory" title="Permalink to this heading">¶</a></h3>
+<p>This subcommand provides information about a host’s physical disc inventory and
+reports metadata about these discs. Among this metadata one can find disc
+specific data items (like model, size, rotational or solid state) as well as
+data items specific to ceph using a device, such as if it is available for
+use with ceph or if logical volumes are present.</p>
+<p>Examples:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span><span class="o">-</span><span class="n">volume</span> <span class="n">inventory</span>
+<span class="n">ceph</span><span class="o">-</span><span class="n">volume</span> <span class="n">inventory</span> <span class="o">/</span><span class="n">dev</span><span class="o">/</span><span class="n">sda</span>
+<span class="n">ceph</span><span class="o">-</span><span class="n">volume</span> <span class="n">inventory</span> <span class="o">--</span><span class="nb">format</span> <span class="n">json</span><span class="o">-</span><span class="n">pretty</span>
+</pre></div>
+</div>
+<p>Optional arguments:</p>
+<ul class="simple">
+<li><p>[-h, –help]          show the help message and exit</p></li>
+<li><dl class="simple">
+<dt>[–format]            report format, valid values are <code class="docutils literal notranslate"><span class="pre">plain</span></code> (default),</dt><dd><p><code class="docutils literal notranslate"><span class="pre">json</span></code> and <code class="docutils literal notranslate"><span class="pre">json-pretty</span></code></p>
+</dd>
+</dl>
+</li>
+</ul>
+</section>
+<section id="lvm">
+<h3>lvm<a class="headerlink" href="#lvm" title="Permalink to this heading">¶</a></h3>
+<p>By making use of LVM tags, the <code class="docutils literal notranslate"><span class="pre">lvm</span></code> sub-command is able to store and later
+re-discover and query devices associated with OSDs so that they can later
+activated.</p>
+<p>Subcommands:</p>
+<p><strong>batch</strong>
+Creates OSDs from a list of devices using a <code class="docutils literal notranslate"><span class="pre">filestore</span></code>
+or <code class="docutils literal notranslate"><span class="pre">bluestore</span></code> (default) setup. It will create all necessary volume groups
+and logical volumes required to have a working OSD.</p>
+<p>Example usage with three devices:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span><span class="o">-</span><span class="n">volume</span> <span class="n">lvm</span> <span class="n">batch</span> <span class="o">--</span><span class="n">bluestore</span> <span class="o">/</span><span class="n">dev</span><span class="o">/</span><span class="n">sda</span> <span class="o">/</span><span class="n">dev</span><span class="o">/</span><span class="n">sdb</span> <span class="o">/</span><span class="n">dev</span><span class="o">/</span><span class="n">sdc</span>
+</pre></div>
+</div>
+<p>Optional arguments:</p>
+<ul class="simple">
+<li><p>[-h, –help]          show the help message and exit</p></li>
+<li><p>[–bluestore]         Use the bluestore objectstore (default)</p></li>
+<li><p>[–filestore]         Use the filestore objectstore</p></li>
+<li><p>[–yes]               Skip the report and prompt to continue provisioning</p></li>
+<li><p>[–prepare]           Only prepare OSDs, do not activate</p></li>
+<li><p>[–dmcrypt]           Enable encryption for the underlying OSD devices</p></li>
+<li><p>[–crush-device-class] Define a CRUSH device class to assign the OSD to</p></li>
+<li><p>[–no-systemd]         Do not enable or create any systemd units</p></li>
+<li><p>[–osds-per-device]   Provision more than 1 (the default) OSD per device</p></li>
+<li><p>[–report]         Report what the potential outcome would be for the current input (requires devices to be passed in)</p></li>
+<li><p>[–format]         Output format when reporting (used along with –report), can be one of ‘pretty’ (default) or ‘json’</p></li>
+<li><p>[–block-db-size]     Set (or override) the “bluestore_block_db_size” value, in bytes</p></li>
+<li><p>[–journal-size]      Override the “osd_journal_size” value, in megabytes</p></li>
+</ul>
+<p>Required positional arguments:</p>
+<ul class="simple">
+<li><dl class="simple">
+<dt>&lt;DEVICE&gt;    Full path to a raw device, like <code class="docutils literal notranslate"><span class="pre">/dev/sda</span></code>. Multiple</dt><dd><p><code class="docutils literal notranslate"><span class="pre">&lt;DEVICE&gt;</span></code> paths can be passed in.</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p><strong>activate</strong>
+Enables a systemd unit that persists the OSD ID and its UUID (also called
+<code class="docutils literal notranslate"><span class="pre">fsid</span></code> in Ceph CLI tools), so that at boot time it can understand what OSD is
+enabled and needs to be mounted.</p>
+<p>Usage:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span><span class="o">-</span><span class="n">volume</span> <span class="n">lvm</span> <span class="n">activate</span> <span class="o">--</span><span class="n">bluestore</span> <span class="o">&lt;</span><span class="n">osd</span> <span class="nb">id</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">osd</span> <span class="n">fsid</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<p>Optional Arguments:</p>
+<ul class="simple">
+<li><p>[-h, –help]  show the help message and exit</p></li>
+<li><p>[–auto-detect-objectstore] Automatically detect the objectstore by inspecting
+the OSD</p></li>
+<li><p>[–bluestore] bluestore objectstore (default)</p></li>
+<li><p>[–filestore] filestore objectstore</p></li>
+<li><p>[–all] Activate all OSDs found in the system</p></li>
+<li><p>[–no-systemd] Skip creating and enabling systemd units and starting of OSD
+services</p></li>
+</ul>
+<p>Multiple OSDs can be activated at once by using the (idempotent) <code class="docutils literal notranslate"><span class="pre">--all</span></code> flag:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span><span class="o">-</span><span class="n">volume</span> <span class="n">lvm</span> <span class="n">activate</span> <span class="o">--</span><span class="nb">all</span>
+</pre></div>
+</div>
+<p><strong>prepare</strong>
+Prepares a logical volume to be used as an OSD and journal using a <code class="docutils literal notranslate"><span class="pre">filestore</span></code>
+or <code class="docutils literal notranslate"><span class="pre">bluestore</span></code> (default) setup. It will not create or modify the logical volumes
+except for adding extra metadata.</p>
+<p>Usage:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span><span class="o">-</span><span class="n">volume</span> <span class="n">lvm</span> <span class="n">prepare</span> <span class="o">--</span><span class="n">filestore</span> <span class="o">--</span><span class="n">data</span> <span class="o">&lt;</span><span class="n">data</span> <span class="n">lv</span><span class="o">&gt;</span> <span class="o">--</span><span class="n">journal</span> <span class="o">&lt;</span><span class="n">journal</span> <span class="n">device</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<p>Optional arguments:</p>
+<ul class="simple">
+<li><p>[-h, –help]          show the help message and exit</p></li>
+<li><p>[–journal JOURNAL]   A logical group name, path to a logical volume, or path to a device</p></li>
+<li><p>[–bluestore]         Use the bluestore objectstore (default)</p></li>
+<li><p>[–block.wal]         Path to a bluestore block.wal logical volume or partition</p></li>
+<li><p>[–block.db]          Path to a bluestore block.db logical volume or partition</p></li>
+<li><p>[–filestore]         Use the filestore objectstore</p></li>
+<li><p>[–dmcrypt]           Enable encryption for the underlying OSD devices</p></li>
+<li><p>[–osd-id OSD_ID]     Reuse an existing OSD id</p></li>
+<li><p>[–osd-fsid OSD_FSID] Reuse an existing OSD fsid</p></li>
+<li><p>[–crush-device-class] Define a CRUSH device class to assign the OSD to</p></li>
+</ul>
+<p>Required arguments:</p>
+<ul>
+<li><dl class="option-list">
+<dt><kbd><span class="option">--data</span></kbd></dt>
+<dd><p>A logical group name or a path to a logical volume</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>For encrypting an OSD, the <code class="docutils literal notranslate"><span class="pre">--dmcrypt</span></code> flag must be added when preparing
+(also supported in the <code class="docutils literal notranslate"><span class="pre">create</span></code> sub-command).</p>
+<p><strong>create</strong>
+Wraps the two-step process to provision a new osd (calling <code class="docutils literal notranslate"><span class="pre">prepare</span></code> first
+and then <code class="docutils literal notranslate"><span class="pre">activate</span></code>) into a single one. The reason to prefer <code class="docutils literal notranslate"><span class="pre">prepare</span></code> and
+then <code class="docutils literal notranslate"><span class="pre">activate</span></code> is to gradually introduce new OSDs into a cluster, and
+avoiding large amounts of data being rebalanced.</p>
+<p>The single-call process unifies exactly what <code class="docutils literal notranslate"><span class="pre">prepare</span></code> and <code class="docutils literal notranslate"><span class="pre">activate</span></code> do,
+with the convenience of doing it all at once. Flags and general usage are
+equivalent to those of the <code class="docutils literal notranslate"><span class="pre">prepare</span></code> and <code class="docutils literal notranslate"><span class="pre">activate</span></code> subcommand.</p>
+<p><strong>trigger</strong>
+This subcommand is not meant to be used directly, and it is used by systemd so
+that it proxies input to <code class="docutils literal notranslate"><span class="pre">ceph-volume</span> <span class="pre">lvm</span> <span class="pre">activate</span></code> by parsing the
+input from systemd, detecting the UUID and ID associated with an OSD.</p>
+<p>Usage:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span><span class="o">-</span><span class="n">volume</span> <span class="n">lvm</span> <span class="n">trigger</span> <span class="o">&lt;</span><span class="n">SYSTEMD</span><span class="o">-</span><span class="n">DATA</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<p>The systemd “data” is expected to be in the format of:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">&lt;</span><span class="n">OSD</span> <span class="n">ID</span><span class="o">&gt;-&lt;</span><span class="n">OSD</span> <span class="n">UUID</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<p>The lvs associated with the OSD need to have been prepared previously,
+so that all needed tags and metadata exist.</p>
+<p>Positional arguments:</p>
+<ul class="simple">
+<li><p>&lt;SYSTEMD_DATA&gt;  Data from a systemd unit containing ID and UUID of the OSD.</p></li>
+</ul>
+<p><strong>list</strong>
+List devices or logical volumes associated with Ceph. An association is
+determined if a device has information relating to an OSD. This is
+verified by querying LVM’s metadata and correlating it with devices.</p>
+<p>The lvs associated with the OSD need to have been prepared previously by
+ceph-volume so that all needed tags and metadata exist.</p>
+<p>Usage:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span><span class="o">-</span><span class="n">volume</span> <span class="n">lvm</span> <span class="nb">list</span>
+</pre></div>
+</div>
+<p>List a particular device, reporting all metadata about it:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span><span class="o">-</span><span class="n">volume</span> <span class="n">lvm</span> <span class="nb">list</span> <span class="o">/</span><span class="n">dev</span><span class="o">/</span><span class="n">sda1</span>
+</pre></div>
+</div>
+<p>List a logical volume, along with all its metadata (vg is a volume
+group, and lv the logical volume name):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span><span class="o">-</span><span class="n">volume</span> <span class="n">lvm</span> <span class="nb">list</span> <span class="p">{</span><span class="n">vg</span><span class="o">/</span><span class="n">lv</span><span class="p">}</span>
+</pre></div>
+</div>
+<p>Positional arguments:</p>
+<ul class="simple">
+<li><p>&lt;DEVICE&gt;  Either in the form of <code class="docutils literal notranslate"><span class="pre">vg/lv</span></code> for logical volumes,
+<code class="docutils literal notranslate"><span class="pre">/path/to/sda1</span></code> or <code class="docutils literal notranslate"><span class="pre">/path/to/sda</span></code> for regular devices.</p></li>
+</ul>
+<p><strong>zap</strong>
+Zaps the given logical volume or partition. If given a path to a logical
+volume it must be in the format of vg/lv. Any file systems present
+on the given lv or partition will be removed and all data will be purged.</p>
+<p>However, the lv or partition will be kept intact.</p>
+<p>Usage, for logical volumes:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span><span class="o">-</span><span class="n">volume</span> <span class="n">lvm</span> <span class="n">zap</span> <span class="p">{</span><span class="n">vg</span><span class="o">/</span><span class="n">lv</span><span class="p">}</span>
+</pre></div>
+</div>
+<p>Usage, for logical partitions:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span><span class="o">-</span><span class="n">volume</span> <span class="n">lvm</span> <span class="n">zap</span> <span class="o">/</span><span class="n">dev</span><span class="o">/</span><span class="n">sdc1</span>
+</pre></div>
+</div>
+<p>For full removal of the device use the <code class="docutils literal notranslate"><span class="pre">--destroy</span></code> flag (allowed for all
+device types):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span><span class="o">-</span><span class="n">volume</span> <span class="n">lvm</span> <span class="n">zap</span> <span class="o">--</span><span class="n">destroy</span> <span class="o">/</span><span class="n">dev</span><span class="o">/</span><span class="n">sdc1</span>
+</pre></div>
+</div>
+<p>Multiple devices can be removed by specifying the OSD ID and/or the OSD FSID:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span><span class="o">-</span><span class="n">volume</span> <span class="n">lvm</span> <span class="n">zap</span> <span class="o">--</span><span class="n">destroy</span> <span class="o">--</span><span class="n">osd</span><span class="o">-</span><span class="nb">id</span> <span class="mi">1</span>
+<span class="n">ceph</span><span class="o">-</span><span class="n">volume</span> <span class="n">lvm</span> <span class="n">zap</span> <span class="o">--</span><span class="n">destroy</span> <span class="o">--</span><span class="n">osd</span><span class="o">-</span><span class="nb">id</span> <span class="mi">1</span> <span class="o">--</span><span class="n">osd</span><span class="o">-</span><span class="n">fsid</span> <span class="n">C9605912</span><span class="o">-</span><span class="mi">8395</span><span class="o">-</span><span class="mi">4</span><span class="n">D76</span><span class="o">-</span><span class="n">AFC0</span><span class="o">-</span><span class="mi">7</span><span class="n">DFDAC315D59</span>
+</pre></div>
+</div>
+<p>Positional arguments:</p>
+<ul class="simple">
+<li><p>&lt;DEVICE&gt;  Either in the form of <code class="docutils literal notranslate"><span class="pre">vg/lv</span></code> for logical volumes,
+<code class="docutils literal notranslate"><span class="pre">/path/to/sda1</span></code> or <code class="docutils literal notranslate"><span class="pre">/path/to/sda</span></code> for regular devices.</p></li>
+</ul>
+<section id="new-wal">
+<h4>new-wal<a class="headerlink" href="#new-wal" title="Permalink to this heading">¶</a></h4>
+<p>Attaches the given logical volume to OSD as a WAL. Logical volume
+name format is vg/lv. Fails if OSD has already got attached WAL.</p>
+<p>Usage:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span><span class="o">-</span><span class="n">volume</span> <span class="n">lvm</span> <span class="n">new</span><span class="o">-</span><span class="n">wal</span> <span class="o">--</span><span class="n">osd</span><span class="o">-</span><span class="nb">id</span> <span class="n">OSD_ID</span> <span class="o">--</span><span class="n">osd</span><span class="o">-</span><span class="n">fsid</span> <span class="n">OSD_FSID</span> <span class="o">--</span><span class="n">target</span> <span class="o">&lt;</span><span class="n">target</span> <span class="n">lv</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<p>Optional arguments:</p>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-ceph-volume-h">
+<span id="cmdoption-ceph-volume-help"></span><span class="sig-name descname"><span class="pre">-h</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--help</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-ceph-volume-h" title="Permalink to this definition">¶</a></dt>
+<dd><p>show the help message and exit</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-ceph-volume-no-systemd">
+<span class="sig-name descname"><span class="pre">--no-systemd</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-ceph-volume-no-systemd" title="Permalink to this definition">¶</a></dt>
+<dd><p>Skip checking OSD systemd unit</p>
+</dd></dl>
+
+<p>Required arguments:</p>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-ceph-volume-target">
+<span class="sig-name descname"><span class="pre">--target</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-ceph-volume-target" title="Permalink to this definition">¶</a></dt>
+<dd><p>logical volume name to attach as WAL</p>
+</dd></dl>
+
+</section>
+<section id="new-db">
+<h4>new-db<a class="headerlink" href="#new-db" title="Permalink to this heading">¶</a></h4>
+<p>Attaches the given logical volume to OSD as a DB. Logical volume
+name format is vg/lv. Fails if OSD has already got attached DB.</p>
+<p>Usage:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span><span class="o">-</span><span class="n">volume</span> <span class="n">lvm</span> <span class="n">new</span><span class="o">-</span><span class="n">db</span> <span class="o">--</span><span class="n">osd</span><span class="o">-</span><span class="nb">id</span> <span class="n">OSD_ID</span> <span class="o">--</span><span class="n">osd</span><span class="o">-</span><span class="n">fsid</span> <span class="n">OSD_FSID</span> <span class="o">--</span><span class="n">target</span> <span class="o">&lt;</span><span class="n">target</span> <span class="n">lv</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<p>Optional arguments:</p>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-ceph-volume-0">
+<span id="cmdoption-ceph-volume-1"></span><span class="sig-name descname"><span class="pre">-h</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--help</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-ceph-volume-0" title="Permalink to this definition">¶</a></dt>
+<dd><p>show the help message and exit</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-ceph-volume-2">
+<span class="sig-name descname"><span class="pre">--no-systemd</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-ceph-volume-2" title="Permalink to this definition">¶</a></dt>
+<dd><p>Skip checking OSD systemd unit</p>
+</dd></dl>
+
+<p>Required arguments:</p>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-ceph-volume-3">
+<span class="sig-name descname"><span class="pre">--target</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-ceph-volume-3" title="Permalink to this definition">¶</a></dt>
+<dd><p>logical volume name to attach as DB</p>
+</dd></dl>
+
+</section>
+<section id="migrate">
+<h4>migrate<a class="headerlink" href="#migrate" title="Permalink to this heading">¶</a></h4>
+<p>Moves BlueFS data from source volume(s) to the target one, source volumes
+(except the main, i.e. data or block one) are removed on success. LVM volumes
+are permitted for Target only, both already attached or new one. In the latter
+case it is attached to the OSD replacing one of the source devices. Following
+replacement rules apply (in the order of precedence, stop on the first match):</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>if source list has DB volume - target device replaces it.</p></li>
+<li><p>if source list has WAL volume - target device replace it.</p></li>
+<li><p>if source list has slow volume only - operation is not permitted,
+requires explicit allocation via new-db/new-wal command.</p></li>
+</ul>
+</div></blockquote>
+<p>Usage:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span><span class="o">-</span><span class="n">volume</span> <span class="n">lvm</span> <span class="n">migrate</span> <span class="o">--</span><span class="n">osd</span><span class="o">-</span><span class="nb">id</span> <span class="n">OSD_ID</span> <span class="o">--</span><span class="n">osd</span><span class="o">-</span><span class="n">fsid</span> <span class="n">OSD_FSID</span> <span class="o">--</span><span class="n">target</span> <span class="o">&lt;</span><span class="n">target</span> <span class="n">lv</span><span class="o">&gt;</span> <span class="o">--</span><span class="kn">from</span><span class="w"> </span><span class="p">{</span><span class="n">data</span><span class="o">|</span><span class="n">db</span><span class="o">|</span><span class="n">wal</span><span class="p">}</span> <span class="p">[{</span><span class="n">data</span><span class="o">|</span><span class="n">db</span><span class="o">|</span><span class="n">wal</span><span class="p">}</span> <span class="o">...</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>Optional arguments:</p>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-ceph-volume-4">
+<span id="cmdoption-ceph-volume-5"></span><span class="sig-name descname"><span class="pre">-h</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--help</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-ceph-volume-4" title="Permalink to this definition">¶</a></dt>
+<dd><p>show the help message and exit</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-ceph-volume-6">
+<span class="sig-name descname"><span class="pre">--no-systemd</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-ceph-volume-6" title="Permalink to this definition">¶</a></dt>
+<dd><p>Skip checking OSD systemd unit</p>
+</dd></dl>
+
+<p>Required arguments:</p>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-ceph-volume-from">
+<span class="sig-name descname"><span class="pre">--from</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-ceph-volume-from" title="Permalink to this definition">¶</a></dt>
+<dd><p>list of source device type names</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-ceph-volume-7">
+<span class="sig-name descname"><span class="pre">--target</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-ceph-volume-7" title="Permalink to this definition">¶</a></dt>
+<dd><p>logical volume to move data to</p>
+</dd></dl>
+
+</section>
+</section>
+<section id="simple">
+<h3>simple<a class="headerlink" href="#simple" title="Permalink to this heading">¶</a></h3>
+<p>Scan legacy OSD directories or data devices that may have been created by
+ceph-disk, or manually.</p>
+<p>Subcommands:</p>
+<p><strong>activate</strong>
+Enables a systemd unit that persists the OSD ID and its UUID (also called
+<code class="docutils literal notranslate"><span class="pre">fsid</span></code> in Ceph CLI tools), so that at boot time it can understand what OSD is
+enabled and needs to be mounted, while reading information that was previously
+created and persisted at <code class="docutils literal notranslate"><span class="pre">/etc/ceph/osd/</span></code> in JSON format.</p>
+<p>Usage:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span><span class="o">-</span><span class="n">volume</span> <span class="n">simple</span> <span class="n">activate</span> <span class="o">--</span><span class="n">bluestore</span> <span class="o">&lt;</span><span class="n">osd</span> <span class="nb">id</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">osd</span> <span class="n">fsid</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<p>Optional Arguments:</p>
+<ul class="simple">
+<li><p>[-h, –help]  show the help message and exit</p></li>
+<li><p>[–bluestore] bluestore objectstore (default)</p></li>
+<li><p>[–filestore] filestore objectstore</p></li>
+</ul>
+<p>Note: It requires a matching JSON file with the following format:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">/</span><span class="n">etc</span><span class="o">/</span><span class="n">ceph</span><span class="o">/</span><span class="n">osd</span><span class="o">/&lt;</span><span class="n">osd</span> <span class="nb">id</span><span class="o">&gt;-&lt;</span><span class="n">osd</span> <span class="n">fsid</span><span class="o">&gt;.</span><span class="n">json</span>
+</pre></div>
+</div>
+<p><strong>scan</strong>
+Scan a running OSD or data device for an OSD for metadata that can later be
+used to activate and manage the OSD with ceph-volume. The scan method will
+create a JSON file with the required information plus anything found in the OSD
+directory as well.</p>
+<p>Optionally, the JSON blob can be sent to stdout for further inspection.</p>
+<p>Usage on all running OSDs:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span><span class="o">-</span><span class="n">volume</span> <span class="n">simple</span> <span class="n">scan</span>
+</pre></div>
+</div>
+<p>Usage on data devices:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span><span class="o">-</span><span class="n">volume</span> <span class="n">simple</span> <span class="n">scan</span> <span class="o">&lt;</span><span class="n">data</span> <span class="n">device</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<p>Running OSD directories:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span><span class="o">-</span><span class="n">volume</span> <span class="n">simple</span> <span class="n">scan</span> <span class="o">&lt;</span><span class="n">path</span> <span class="n">to</span> <span class="n">osd</span> <span class="nb">dir</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<p>Optional arguments:</p>
+<ul class="simple">
+<li><p>[-h, –help]          show the help message and exit</p></li>
+<li><p>[–stdout]            Send the JSON blob to stdout</p></li>
+<li><p>[–force]             If the JSON file exists at destination, overwrite it</p></li>
+</ul>
+<p>Optional Positional arguments:</p>
+<ul class="simple">
+<li><p>&lt;DATA DEVICE or OSD DIR&gt;  Actual data partition or a path to the running OSD</p></li>
+</ul>
+<p><strong>trigger</strong>
+This subcommand is not meant to be used directly, and it is used by systemd so
+that it proxies input to <code class="docutils literal notranslate"><span class="pre">ceph-volume</span> <span class="pre">simple</span> <span class="pre">activate</span></code> by parsing the
+input from systemd, detecting the UUID and ID associated with an OSD.</p>
+<p>Usage:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span><span class="o">-</span><span class="n">volume</span> <span class="n">simple</span> <span class="n">trigger</span> <span class="o">&lt;</span><span class="n">SYSTEMD</span><span class="o">-</span><span class="n">DATA</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<p>The systemd “data” is expected to be in the format of:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">&lt;</span><span class="n">OSD</span> <span class="n">ID</span><span class="o">&gt;-&lt;</span><span class="n">OSD</span> <span class="n">UUID</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<p>The JSON file associated with the OSD need to have been persisted previously by
+a scan (or manually), so that all needed metadata can be used.</p>
+<p>Positional arguments:</p>
+<ul class="simple">
+<li><p>&lt;SYSTEMD_DATA&gt;  Data from a systemd unit containing ID and UUID of the OSD.</p></li>
+</ul>
+</section>
+</section>
+<section id="availability">
+<h2>Availability<a class="headerlink" href="#availability" title="Permalink to this heading">¶</a></h2>
+<p><strong class="program">ceph-volume</strong> is part of Ceph, a massively scalable, open-source, distributed storage system. Please refer to
+the documentation at <a class="reference external" href="http://docs.ceph.com/">http://docs.ceph.com/</a> for more information.</p>
+</section>
+<section id="see-also">
+<h2>See also<a class="headerlink" href="#see-also" title="Permalink to this heading">¶</a></h2>
+<p><a class="reference internal" href="../ceph-osd/"><span class="doc">ceph-osd</span></a>(8),</p>
+</section>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../../">
+              <img class="logo" src="../../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../install/">Installing Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cephadm/">Cephadm</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../../rados/">Ceph Storage Cluster</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../../../rados/configuration/">Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../cephadm/">Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../rados/operations/">Operations</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../../../rados/man/">Man Pages</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">ceph-volume – Ceph OSD deployment and inspection tool</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#synopsis">Synopsis</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#description">Description</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#commands">Commands</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#inventory">inventory</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#lvm">lvm</a><ul>
+<li class="toctree-l6"><a class="reference internal" href="#new-wal">new-wal</a></li>
+<li class="toctree-l6"><a class="reference internal" href="#new-db">new-db</a></li>
+<li class="toctree-l6"><a class="reference internal" href="#migrate">migrate</a></li>
+</ul>
+</li>
+<li class="toctree-l5"><a class="reference internal" href="#simple">simple</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#availability">Availability</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#see-also">See also</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../ceph-volume-systemd/">ceph-volume-systemd – systemd ceph-volume helper tool</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../ceph/">ceph – ceph administration tool</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../ceph-authtool/">ceph-authtool – ceph keyring manipulation tool</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../ceph-clsinfo/">ceph-clsinfo – show class object information</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../ceph-conf/">ceph-conf – ceph conf file tool</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../ceph-debugpack/">ceph-debugpack – ceph debug packer utility</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../ceph-dencoder/">ceph-dencoder – ceph encoder/decoder utility</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../ceph-mon/">ceph-mon – ceph monitor daemon</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../ceph-osd/">ceph-osd – ceph object storage daemon</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../ceph-kvstore-tool/">ceph-kvstore-tool – ceph kvstore manipulation tool</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../ceph-run/">ceph-run – restart daemon on core dump</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../ceph-syn/">ceph-syn – ceph synthetic workload generator</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../crushtool/">crushtool – CRUSH map manipulation tool</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../librados-config/">librados-config – display information about librados</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../monmaptool/">monmaptool – ceph monitor cluster map manipulation tool</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../osdmaptool/">osdmaptool – ceph osd cluster map manipulation tool</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rados/">rados – rados object storage utility</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../ceph-post-file/">ceph-post-file – post files for ceph developers</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../rados/troubleshooting/">Troubleshooting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../rados/api/">APIs</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cephfs/">Ceph File System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../rbd/">Ceph Block Device</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../radosgw/">Ceph Object Gateway</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../mgr/">Ceph Manager Daemon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../mgr/dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dev/developer_guide/">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dev/internals/">Ceph Internals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../../../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../ceph-volume-systemd/" title="ceph-volume-systemd – systemd ceph-volume helper tool"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../../../rados/man/" title="Object Store Manpages"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../../rados/" >Ceph Storage Cluster</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../../../rados/man/" >Object Store Manpages</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">ceph-volume – Ceph OSD deployment and inspection tool</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

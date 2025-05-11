@@ -1,0 +1,285 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Host Maintenance &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/css/custom.css" />
+    <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/jquery.js"></script>
+    <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../../genindex/" />
+    <link rel="search" title="Search" href="../../../search/" />
+    <link rel="next" title="Compliance Check" href="../compliance-check/" />
+    <link rel="prev" title="Developing with cephadm" href="../developing-cephadm/" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../compliance-check/" title="Compliance Check"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../developing-cephadm/" title="Developing with cephadm"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../../cephadm/" >Cephadm</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../" accesskey="U">CEPHADM Developer Documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Host Maintenance</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="host-maintenance">
+<h1>Host Maintenance<a class="headerlink" href="#host-maintenance" title="Permalink to this heading">¶</a></h1>
+<p>All hosts that support Ceph daemons need to support maintenance activity, whether the host
+is physical or virtual. This means that management workflows should provide
+a simple and consistent way to support this operational requirement. This document defines
+the maintenance strategy that could be implemented in cephadm and mgr/cephadm.</p>
+<section id="high-level-design">
+<h2>High Level Design<a class="headerlink" href="#high-level-design" title="Permalink to this heading">¶</a></h2>
+<p>Placing a host into maintenance, adopts the following workflow;</p>
+<ol class="arabic simple">
+<li><p>confirm that the removal of the host does not impact data availability (the following
+steps will assume it is safe to proceed)</p>
+<ul class="simple">
+<li><p>orch host ok-to-stop &lt;host&gt; would be used here</p></li>
+</ul>
+</li>
+<li><p>if the host has osd daemons, apply noout to the host subtree to prevent data migration
+from triggering during the planned maintenance slot.</p></li>
+<li><p>Stop the ceph target (all daemons stop)</p></li>
+<li><p>Disable the ceph target on that host, to prevent a reboot from automatically starting
+ceph services again)</p></li>
+</ol>
+<p>Exiting Maintenance, is basically the reverse of the above sequence</p>
+</section>
+<section id="admin-interaction">
+<h2>Admin Interaction<a class="headerlink" href="#admin-interaction" title="Permalink to this heading">¶</a></h2>
+<p>The ceph orch command will be extended to support maintenance.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span> <span class="n">orch</span> <span class="n">host</span> <span class="n">maintenance</span> <span class="n">enter</span> <span class="o">&lt;</span><span class="n">host</span><span class="o">&gt;</span> <span class="p">[</span> <span class="o">--</span><span class="n">force</span> <span class="p">]</span>
+<span class="n">ceph</span> <span class="n">orch</span> <span class="n">host</span> <span class="n">maintenance</span> <span class="n">exit</span> <span class="o">&lt;</span><span class="n">host</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>In addition, the host’s status should be updated to reflect whether it
+is in maintenance or not.</p>
+</div>
+<section id="the-check-option">
+<h3>The ‘check’ Option<a class="headerlink" href="#the-check-option" title="Permalink to this heading">¶</a></h3>
+<p>The orch host ok-to-stop command focuses on ceph daemons (mon, osd, mds), which
+provides the first check. However, a ceph cluster also uses other types of daemons
+for monitoring, management and non-native protocol support which means the
+logic will need to consider service impact too. The ‘check’ option provides
+this additional layer to alert the user of service impact to <em>secondary</em>
+daemons.</p>
+<p>The list below shows some of these additional daemons.</p>
+<ul class="simple">
+<li><p>mgr (not included in ok-to-stop checks)</p></li>
+<li><p>prometheus, grafana, alertmanager</p></li>
+<li><p>rgw</p></li>
+<li><p>haproxy</p></li>
+<li><p>iscsi gateways</p></li>
+<li><p>ganesha gateways</p></li>
+</ul>
+<p>By using the –check option first, the Admin can choose whether to proceed. This
+workflow is obviously optional for the CLI user, but could be integrated into the
+UI workflow to help less experienced Administators manage the cluster.</p>
+<p>By adopting this two-phase approach, a UI based workflow would look something
+like this.</p>
+<ol class="arabic simple">
+<li><p>User selects a host to place into maintenance</p>
+<ul class="simple">
+<li><p>orchestrator checks for data <strong>and</strong> service impact</p></li>
+</ul>
+</li>
+<li><p>If potential impact is shown, the next steps depend on the impact type</p>
+<ul class="simple">
+<li><p><strong>data availability</strong> : maintenance is denied, informing the user of the issue</p></li>
+<li><p><strong>service availability</strong> : user is provided a list of affected services and
+asked to confirm</p></li>
+</ul>
+</li>
+</ol>
+</section>
+</section>
+<section id="components-impacted">
+<h2>Components Impacted<a class="headerlink" href="#components-impacted" title="Permalink to this heading">¶</a></h2>
+<p>Implementing this capability will require changes to the following;</p>
+<ul class="simple">
+<li><p>cephadm</p>
+<ul>
+<li><p>Add maintenance subcommand with the following ‘verbs’; enter, exit, check</p></li>
+</ul>
+</li>
+<li><p>mgr/cephadm</p>
+<ul>
+<li><p>add methods to CephadmOrchestrator for enter/exit and check</p></li>
+<li><p>data gathering would be skipped for hosts in a maintenance state</p></li>
+</ul>
+</li>
+<li><p>mgr/orchestrator</p>
+<ul>
+<li><p>add CLI commands to OrchestratorCli which expose the enter/exit and check interaction</p></li>
+</ul>
+</li>
+</ul>
+</section>
+<section id="ideas-for-future-work">
+<h2>Ideas for Future Work<a class="headerlink" href="#ideas-for-future-work" title="Permalink to this heading">¶</a></h2>
+<ol class="arabic simple">
+<li><p>When a host is placed into maintenance, the time of the event could be persisted. This
+would allow the orchestrator layer to establish a maintenance window for the task and
+alert if the maintenance window has been exceeded.</p></li>
+<li><p>The maintenance process could support plugins to allow other integration tasks to be
+initiated as part of the transition to and from maintenance. This plugin capability could
+support actions like;</p>
+<ul class="simple">
+<li><p>alert suppression to 3rd party monitoring framework(s)</p></li>
+<li><p>service level reporting, to record outage windows</p></li>
+</ul>
+</li>
+</ol>
+</section>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../../">
+              <img class="logo" src="../../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../install/">Installing Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cephadm/">Cephadm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../rados/">Ceph Storage Cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cephfs/">Ceph File System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../rbd/">Ceph Block Device</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../radosgw/">Ceph Object Gateway</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../mgr/">Ceph Manager Daemon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../mgr/dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../architecture/">Architecture</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../developer_guide/">Developer Guide</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../../developer_guide/intro/">Introduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../developer_guide/essentials/">Essentials</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../developer_guide/merging/">What is Merged and When</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../developer_guide/issue-tracker/">Issue tracker</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../developer_guide/basic-workflow/">Basic workflow</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../developer_guide/tests-unit-tests/">Tests: Unit Tests</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../developer_guide/tests-integration-tests/">Tests: Integration Tests</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../developer_guide/running-tests-locally/">Running Tests Locally</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../developer_guide/running-tests-using-teuth/">Running Integration Tests using Teuthology</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../developer_guide/running-tests-in-cloud/">Running Tests in the Cloud</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../developer_guide/dash-devel/">Ceph Dashboard Developer Documentation (formerly HACKING.rst)</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../">cephadm Developer Documentation</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../developing-cephadm/">Developing with cephadm</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Host Maintenance</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#high-level-design">High Level Design</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#admin-interaction">Admin Interaction</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#the-check-option">The ‘check’ Option</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#components-impacted">Components Impacted</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#ideas-for-future-work">Ideas for Future Work</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../compliance-check/">Compliance Check</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../cephadm-exporter/">cephadm Exporter</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../scalability-notes/">Notes and Thoughts on Cephadm’s scalability</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../internals/">Ceph Internals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../../../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../compliance-check/" title="Compliance Check"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../developing-cephadm/" title="Developing with cephadm"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../../cephadm/" >Cephadm</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../" >CEPHADM Developer Documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Host Maintenance</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

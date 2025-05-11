@@ -1,0 +1,651 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Locally repairable erasure code plugin &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/css/custom.css" />
+    <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/jquery.js"></script>
+    <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../../genindex/" />
+    <link rel="search" title="Search" href="../../../search/" />
+    <link rel="next" title="SHEC erasure code plugin" href="../erasure-code-shec/" />
+    <link rel="prev" title="ISA erasure code plugin" href="../erasure-code-isa/" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../erasure-code-shec/" title="SHEC erasure code plugin"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../erasure-code-isa/" title="ISA erasure code plugin"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../" >Ceph Storage Cluster</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../" >Cluster Operations</a> &#187;</li>
+          <li class="nav-item nav-item-3"><a href="../erasure-code/" >Erasure code</a> &#187;</li>
+          <li class="nav-item nav-item-4"><a href="../erasure-code-profile/" accesskey="U">Erasure code profiles</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Locally repairable erasure code plugin</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="locally-repairable-erasure-code-plugin">
+<h1>Locally repairable erasure code plugin<a class="headerlink" href="#locally-repairable-erasure-code-plugin" title="Permalink to this heading">¶</a></h1>
+<p>With the <em>jerasure</em> plugin, when an erasure coded object is stored on
+multiple OSDs, recovering from the loss of one OSD requires reading
+from <em>k</em> others. For instance if <em>jerasure</em> is configured with
+<em>k=8</em> and <em>m=4</em>, recovering from the loss of one OSD requires reading
+from eight others.</p>
+<p>The <em>lrc</em> erasure code plugin creates local parity chunks to enable
+recovery using fewer surviving OSDs. For instance if <em>lrc</em> is configured with
+<em>k=8</em>, <em>m=4</em> and <em>l=4</em>, it will create an additional parity chunk for
+every four OSDs. When a single OSD is lost, it can be recovered with
+only four OSDs instead of eight.</p>
+<section id="erasure-code-profile-examples">
+<h2>Erasure code profile examples<a class="headerlink" href="#erasure-code-profile-examples" title="Permalink to this heading">¶</a></h2>
+<section id="reduce-recovery-bandwidth-between-hosts">
+<h3>Reduce recovery bandwidth between hosts<a class="headerlink" href="#reduce-recovery-bandwidth-between-hosts" title="Permalink to this heading">¶</a></h3>
+<p>Although it is probably not an interesting use case when all hosts are
+connected to the same switch, reduced bandwidth usage can actually be
+observed.:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><style type="text/css">
+span.prompt1:before {
+  content: "$ ";
+}
+</style><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>erasure-code-profile<span class="w"> </span><span class="nb">set</span><span class="w"> </span>LRCprofile<span class="w"> </span><span class="se">\</span>
+<span class="w">   </span><span class="nv">plugin</span><span class="o">=</span>lrc<span class="w"> </span><span class="se">\</span>
+<span class="w">   </span><span class="nv">k</span><span class="o">=</span><span class="m">4</span><span class="w"> </span><span class="nv">m</span><span class="o">=</span><span class="m">2</span><span class="w"> </span><span class="nv">l</span><span class="o">=</span><span class="m">3</span><span class="w"> </span><span class="se">\</span>
+<span class="w">   </span>crush-failure-domain<span class="o">=</span>host</span>
+<span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>pool<span class="w"> </span>create<span class="w"> </span>lrcpool<span class="w"> </span>erasure<span class="w"> </span>LRCprofile</span>
+</pre></div></div></section>
+<section id="reduce-recovery-bandwidth-between-racks">
+<h3>Reduce recovery bandwidth between racks<a class="headerlink" href="#reduce-recovery-bandwidth-between-racks" title="Permalink to this heading">¶</a></h3>
+<p>In Firefly the bandwidth reduction will only be observed if the primary
+OSD is in the same rack as the lost chunk.:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>erasure-code-profile<span class="w"> </span><span class="nb">set</span><span class="w"> </span>LRCprofile<span class="w"> </span><span class="se">\</span>
+<span class="w">   </span><span class="nv">plugin</span><span class="o">=</span>lrc<span class="w"> </span><span class="se">\</span>
+<span class="w">   </span><span class="nv">k</span><span class="o">=</span><span class="m">4</span><span class="w"> </span><span class="nv">m</span><span class="o">=</span><span class="m">2</span><span class="w"> </span><span class="nv">l</span><span class="o">=</span><span class="m">3</span><span class="w"> </span><span class="se">\</span>
+<span class="w">   </span>crush-locality<span class="o">=</span>rack<span class="w"> </span><span class="se">\</span>
+<span class="w">   </span>crush-failure-domain<span class="o">=</span>host</span>
+<span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>pool<span class="w"> </span>create<span class="w"> </span>lrcpool<span class="w"> </span>erasure<span class="w"> </span>LRCprofile</span>
+</pre></div></div></section>
+</section>
+<section id="create-an-lrc-profile">
+<h2>Create an lrc profile<a class="headerlink" href="#create-an-lrc-profile" title="Permalink to this heading">¶</a></h2>
+<p>To create a new lrc erasure code profile:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>erasure-code-profile<span class="w"> </span><span class="nb">set</span><span class="w"> </span><span class="o">{</span>name<span class="o">}</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span><span class="nv">plugin</span><span class="o">=</span>lrc<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span><span class="nv">k</span><span class="o">={</span>data-chunks<span class="o">}</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span><span class="nv">m</span><span class="o">={</span>coding-chunks<span class="o">}</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span><span class="nv">l</span><span class="o">={</span>locality<span class="o">}</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span><span class="o">[</span>crush-root<span class="o">={</span>root<span class="o">}]</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span><span class="o">[</span>crush-locality<span class="o">={</span>bucket-type<span class="o">}]</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span><span class="o">[</span>crush-failure-domain<span class="o">={</span>bucket-type<span class="o">}]</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span><span class="o">[</span>crush-device-class<span class="o">={</span>device-class<span class="o">}]</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span><span class="o">[</span><span class="nv">directory</span><span class="o">={</span>directory<span class="o">}]</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span><span class="o">[</span>--force<span class="o">]</span></span>
+</pre></div></div><p>Where:</p>
+<p><code class="docutils literal notranslate"><span class="pre">k={data</span> <span class="pre">chunks}</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Each object is split in <strong>data-chunks</strong> parts,
+each stored on a different OSD.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Integer</p>
+</dd>
+<dt class="field-odd">Required</dt>
+<dd class="field-odd"><p>Yes.</p>
+</dd>
+<dt class="field-even">Example</dt>
+<dd class="field-even"><p>4</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">m={coding-chunks}</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Compute <strong>coding chunks</strong> for each object and store them
+on different OSDs. The number of coding chunks is also
+the number of OSDs that can be down without losing data.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Integer</p>
+</dd>
+<dt class="field-odd">Required</dt>
+<dd class="field-odd"><p>Yes.</p>
+</dd>
+<dt class="field-even">Example</dt>
+<dd class="field-even"><p>2</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">l={locality}</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Group the coding and data chunks into sets of size
+<strong>locality</strong>. For instance, for <strong>k=4</strong> and <strong>m=2</strong>,
+when <strong>locality=3</strong> two groups of three are created.
+Each set can be recovered without reading chunks
+from another set.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Integer</p>
+</dd>
+<dt class="field-odd">Required</dt>
+<dd class="field-odd"><p>Yes.</p>
+</dd>
+<dt class="field-even">Example</dt>
+<dd class="field-even"><p>3</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">crush-root={root}</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The name of the crush bucket used for the first step of
+the CRUSH rule. For instance <strong>step take default</strong>.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Required</dt>
+<dd class="field-odd"><p>No.</p>
+</dd>
+<dt class="field-even">Default</dt>
+<dd class="field-even"><p>default</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">crush-locality={bucket-type}</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The type of the CRUSH bucket in which each set of chunks
+defined by <strong>l</strong> will be stored. For instance, if it is
+set to <strong>rack</strong>, each group of <strong>l</strong> chunks will be
+placed in a different rack. It is used to create a
+CRUSH rule step such as <strong>step choose rack</strong>. If it is not
+set, no such grouping is done.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Required</dt>
+<dd class="field-odd"><p>No.</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">crush-failure-domain={bucket-type}</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Ensure that no two chunks are in a bucket with the same
+failure domain. For instance, if the failure domain is
+<strong>host</strong> no two chunks will be stored on the same
+host. It is used to create a CRUSH rule step such as <strong>step
+chooseleaf host</strong>.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Required</dt>
+<dd class="field-odd"><p>No.</p>
+</dd>
+<dt class="field-even">Default</dt>
+<dd class="field-even"><p>host</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">crush-device-class={device-class}</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Restrict placement to devices of a specific class (e.g.,
+<code class="docutils literal notranslate"><span class="pre">ssd</span></code> or <code class="docutils literal notranslate"><span class="pre">hdd</span></code>), using the crush device class names
+in the CRUSH map.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Required</dt>
+<dd class="field-odd"><p>No.</p>
+</dd>
+<dt class="field-even">Default</dt>
+<dd class="field-even"><p></p></dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">directory={directory}</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Set the <strong>directory</strong> name from which the erasure code
+plugin is loaded.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Required</dt>
+<dd class="field-odd"><p>No.</p>
+</dd>
+<dt class="field-even">Default</dt>
+<dd class="field-even"><p>/usr/lib/ceph/erasure-code</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">--force</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Override an existing profile by the same name.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Required</dt>
+<dd class="field-odd"><p>No.</p>
+</dd>
+</dl>
+</section>
+<section id="low-level-plugin-configuration">
+<h2>Low level plugin configuration<a class="headerlink" href="#low-level-plugin-configuration" title="Permalink to this heading">¶</a></h2>
+<p>The sum of <strong>k</strong> and <strong>m</strong> must be a multiple of the <strong>l</strong> parameter.
+The low level configuration parameters however do not enforce this
+restriction and it may be advantageous to use them for specific
+purposes. It is for instance possible to define two groups, one with 4
+chunks and another with 3 chunks. It is also possible to recursively
+define locality sets, for instance datacenters and racks into
+datacenters. The <strong>k/m/l</strong> are implemented by generating a low level
+configuration.</p>
+<p>The <em>lrc</em> erasure code plugin recursively applies erasure code
+techniques so that recovering from the loss of some chunks only
+requires a subset of the available chunks, most of the time.</p>
+<p>For instance, when three coding steps are described as:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">chunk</span> <span class="n">nr</span>    <span class="mi">01234567</span>
+<span class="n">step</span> <span class="mi">1</span>      <span class="n">_cDD_cDD</span>
+<span class="n">step</span> <span class="mi">2</span>      <span class="n">cDDD____</span>
+<span class="n">step</span> <span class="mi">3</span>      <span class="n">____cDDD</span>
+</pre></div>
+</div>
+<p>where <em>c</em> are coding chunks calculated from the data chunks <em>D</em>, the
+loss of chunk <em>7</em> can be recovered with the last four chunks. And the
+loss of chunk <em>2</em> chunk can be recovered with the first four
+chunks.</p>
+</section>
+<section id="erasure-code-profile-examples-using-low-level-configuration">
+<h2>Erasure code profile examples using low level configuration<a class="headerlink" href="#erasure-code-profile-examples-using-low-level-configuration" title="Permalink to this heading">¶</a></h2>
+<section id="minimal-testing">
+<h3>Minimal testing<a class="headerlink" href="#minimal-testing" title="Permalink to this heading">¶</a></h3>
+<p>It is strictly equivalent to using a <em>K=2</em> <em>M=1</em> erasure code profile. The <em>DD</em>
+implies <em>K=2</em>, the <em>c</em> implies <em>M=1</em> and the <em>jerasure</em> plugin is used
+by default.:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>erasure-code-profile<span class="w"> </span><span class="nb">set</span><span class="w"> </span>LRCprofile<span class="w"> </span><span class="se">\</span>
+<span class="w">   </span><span class="nv">plugin</span><span class="o">=</span>lrc<span class="w"> </span><span class="se">\</span>
+<span class="w">   </span><span class="nv">mapping</span><span class="o">=</span>DD_<span class="w"> </span><span class="se">\</span>
+<span class="w">   </span><span class="nv">layers</span><span class="o">=</span><span class="s1">&#39;[ [ &quot;DDc&quot;, &quot;&quot; ] ]&#39;</span></span>
+<span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>pool<span class="w"> </span>create<span class="w"> </span>lrcpool<span class="w"> </span>erasure<span class="w"> </span>LRCprofile</span>
+</pre></div></div></section>
+<section id="id1">
+<h3>Reduce recovery bandwidth between hosts<a class="headerlink" href="#id1" title="Permalink to this heading">¶</a></h3>
+<p>Although it is probably not an interesting use case when all hosts are
+connected to the same switch, reduced bandwidth usage can actually be
+observed. It is equivalent to <strong>k=4</strong>, <strong>m=2</strong> and <strong>l=3</strong> although
+the layout of the chunks is different. <strong>WARNING: PROMPTS ARE SELECTABLE</strong></p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ ceph osd erasure-code-profile set LRCprofile \
+     plugin=lrc \
+     mapping=__DD__DD \
+     layers=&#39;[
+               [ &quot;_cDD_cDD&quot;, &quot;&quot; ],
+               [ &quot;cDDD____&quot;, &quot;&quot; ],
+               [ &quot;____cDDD&quot;, &quot;&quot; ],
+             ]&#39;
+$ ceph osd pool create lrcpool erasure LRCprofile
+</pre></div>
+</div>
+</section>
+<section id="id2">
+<h3>Reduce recovery bandwidth between racks<a class="headerlink" href="#id2" title="Permalink to this heading">¶</a></h3>
+<p>In Firefly the reduced bandwidth will only be observed if the primary OSD is in
+the same rack as the lost chunk. <strong>WARNING: PROMPTS ARE SELECTABLE</strong></p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ ceph osd erasure-code-profile set LRCprofile \
+    plugin=lrc \
+    mapping=__DD__DD \
+    layers=&#39;[
+              [ &quot;_cDD_cDD&quot;, &quot;&quot; ],
+              [ &quot;cDDD____&quot;, &quot;&quot; ],
+              [ &quot;____cDDD&quot;, &quot;&quot; ],
+            ]&#39; \
+    crush-steps=&#39;[
+                    [ &quot;choose&quot;, &quot;rack&quot;, 2 ],
+                    [ &quot;chooseleaf&quot;, &quot;host&quot;, 4 ],
+                   ]&#39;
+
+$ ceph osd pool create lrcpool erasure LRCprofile
+</pre></div>
+</div>
+</section>
+<section id="testing-with-different-erasure-code-backends">
+<h3>Testing with different Erasure Code backends<a class="headerlink" href="#testing-with-different-erasure-code-backends" title="Permalink to this heading">¶</a></h3>
+<p>LRC now uses jerasure as the default EC backend. It is possible to
+specify the EC backend/algorithm on a per layer basis using the low
+level configuration. The second argument in layers=’[ [ “DDc”, “” ] ]’
+is actually an erasure code profile to be used for this level. The
+example below specifies the ISA backend with the cauchy technique to
+be used in the lrcpool.:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>erasure-code-profile<span class="w"> </span><span class="nb">set</span><span class="w"> </span>LRCprofile<span class="w"> </span><span class="se">\</span>
+<span class="w">   </span><span class="nv">plugin</span><span class="o">=</span>lrc<span class="w"> </span><span class="se">\</span>
+<span class="w">   </span><span class="nv">mapping</span><span class="o">=</span>DD_<span class="w"> </span><span class="se">\</span>
+<span class="w">   </span><span class="nv">layers</span><span class="o">=</span><span class="s1">&#39;[ [ &quot;DDc&quot;, &quot;plugin=isa technique=cauchy&quot; ] ]&#39;</span></span>
+<span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>pool<span class="w"> </span>create<span class="w"> </span>lrcpool<span class="w"> </span>erasure<span class="w"> </span>LRCprofile</span>
+</pre></div></div><p>You could also use a different erasure code profile for each
+layer. <strong>WARNING: PROMPTS ARE SELECTABLE</strong></p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ ceph osd erasure-code-profile set LRCprofile \
+     plugin=lrc \
+     mapping=__DD__DD \
+     layers=&#39;[
+               [ &quot;_cDD_cDD&quot;, &quot;plugin=isa technique=cauchy&quot; ],
+               [ &quot;cDDD____&quot;, &quot;plugin=isa&quot; ],
+               [ &quot;____cDDD&quot;, &quot;plugin=jerasure&quot; ],
+             ]&#39;
+$ ceph osd pool create lrcpool erasure LRCprofile
+</pre></div>
+</div>
+</section>
+</section>
+<section id="erasure-coding-and-decoding-algorithm">
+<h2>Erasure coding and decoding algorithm<a class="headerlink" href="#erasure-coding-and-decoding-algorithm" title="Permalink to this heading">¶</a></h2>
+<p>The steps found in the layers description:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">chunk</span> <span class="n">nr</span>    <span class="mi">01234567</span>
+
+<span class="n">step</span> <span class="mi">1</span>      <span class="n">_cDD_cDD</span>
+<span class="n">step</span> <span class="mi">2</span>      <span class="n">cDDD____</span>
+<span class="n">step</span> <span class="mi">3</span>      <span class="n">____cDDD</span>
+</pre></div>
+</div>
+<p>are applied in order. For instance, if a 4K object is encoded, it will
+first go through <em>step 1</em> and be divided in four 1K chunks (the four
+uppercase D). They are stored in the chunks 2, 3, 6 and 7, in
+order. From these, two coding chunks are calculated (the two lowercase
+c). The coding chunks are stored in the chunks 1 and 5, respectively.</p>
+<p>The <em>step 2</em> re-uses the content created by <em>step 1</em> in a similar
+fashion and stores a single coding chunk <em>c</em> at position 0. The last four
+chunks, marked with an underscore (<em>_</em>) for readability, are ignored.</p>
+<p>The <em>step 3</em> stores a single coding chunk <em>c</em> at position 4. The three
+chunks created by <em>step 1</em> are used to compute this coding chunk,
+i.e. the coding chunk from <em>step 1</em> becomes a data chunk in <em>step 3</em>.</p>
+<p>If chunk <em>2</em> is lost:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">chunk</span> <span class="n">nr</span>    <span class="mi">01234567</span>
+
+<span class="n">step</span> <span class="mi">1</span>      <span class="n">_c</span> <span class="n">D_cDD</span>
+<span class="n">step</span> <span class="mi">2</span>      <span class="n">cD</span> <span class="n">D____</span>
+<span class="n">step</span> <span class="mi">3</span>      <span class="n">__</span> <span class="n">_cDDD</span>
+</pre></div>
+</div>
+<p>decoding will attempt to recover it by walking the steps in reverse
+order: <em>step 3</em> then <em>step 2</em> and finally <em>step 1</em>.</p>
+<p>The <em>step 3</em> knows nothing about chunk <em>2</em> (i.e. it is an underscore)
+and is skipped.</p>
+<p>The coding chunk from <em>step 2</em>, stored in chunk <em>0</em>, allows it to
+recover the content of chunk <em>2</em>. There are no more chunks to recover
+and the process stops, without considering <em>step 1</em>.</p>
+<p>Recovering chunk <em>2</em> requires reading chunks <em>0, 1, 3</em> and writing
+back chunk <em>2</em>.</p>
+<p>If chunk <em>2, 3, 6</em> are lost:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">chunk</span> <span class="n">nr</span>    <span class="mi">01234567</span>
+
+<span class="n">step</span> <span class="mi">1</span>      <span class="n">_c</span>  <span class="n">_c</span> <span class="n">D</span>
+<span class="n">step</span> <span class="mi">2</span>      <span class="n">cD</span>  <span class="n">__</span> <span class="n">_</span>
+<span class="n">step</span> <span class="mi">3</span>      <span class="n">__</span>  <span class="n">cD</span> <span class="n">D</span>
+</pre></div>
+</div>
+<p>The <em>step 3</em> can recover the content of chunk <em>6</em>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">chunk</span> <span class="n">nr</span>    <span class="mi">01234567</span>
+
+<span class="n">step</span> <span class="mi">1</span>      <span class="n">_c</span>  <span class="n">_cDD</span>
+<span class="n">step</span> <span class="mi">2</span>      <span class="n">cD</span>  <span class="n">____</span>
+<span class="n">step</span> <span class="mi">3</span>      <span class="n">__</span>  <span class="n">cDDD</span>
+</pre></div>
+</div>
+<p>The <em>step 2</em> fails to recover and is skipped because there are two
+chunks missing (<em>2, 3</em>) and it can only recover from one missing
+chunk.</p>
+<p>The coding chunk from <em>step 1</em>, stored in chunk <em>1, 5</em>, allows it to
+recover the content of chunk <em>2, 3</em>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">chunk</span> <span class="n">nr</span>    <span class="mi">01234567</span>
+
+<span class="n">step</span> <span class="mi">1</span>      <span class="n">_cDD_cDD</span>
+<span class="n">step</span> <span class="mi">2</span>      <span class="n">cDDD____</span>
+<span class="n">step</span> <span class="mi">3</span>      <span class="n">____cDDD</span>
+</pre></div>
+</div>
+</section>
+<section id="controlling-crush-placement">
+<h2>Controlling CRUSH placement<a class="headerlink" href="#controlling-crush-placement" title="Permalink to this heading">¶</a></h2>
+<p>The default CRUSH rule provides OSDs that are on different hosts. For instance:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">chunk</span> <span class="n">nr</span>    <span class="mi">01234567</span>
+
+<span class="n">step</span> <span class="mi">1</span>      <span class="n">_cDD_cDD</span>
+<span class="n">step</span> <span class="mi">2</span>      <span class="n">cDDD____</span>
+<span class="n">step</span> <span class="mi">3</span>      <span class="n">____cDDD</span>
+</pre></div>
+</div>
+<p>needs exactly <em>8</em> OSDs, one for each chunk. If the hosts are in two
+adjacent racks, the first four chunks can be placed in the first rack
+and the last four in the second rack. So that recovering from the loss
+of a single OSD does not require using bandwidth between the two
+racks.</p>
+<p>For instance:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">crush</span><span class="o">-</span><span class="n">steps</span><span class="o">=</span><span class="s1">&#39;[ [ &quot;choose&quot;, &quot;rack&quot;, 2 ], [ &quot;chooseleaf&quot;, &quot;host&quot;, 4 ] ]&#39;</span>
+</pre></div>
+</div>
+<p>will create a rule that will select two crush buckets of type
+<em>rack</em> and for each of them choose four OSDs, each of them located in
+different buckets of type <em>host</em>.</p>
+<p>The CRUSH rule can also be manually crafted for finer control.</p>
+</section>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../../">
+              <img class="logo" src="../../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../install/">Installing Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cephadm/">Cephadm</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../">Ceph Storage Cluster</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../../configuration/">Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../cephadm/">Deployment</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../">Operations</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../operating/">Operating a Cluster</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../health-checks/">Health checks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../monitoring/">Monitoring a Cluster</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../monitoring-osd-pg/">Monitoring OSDs and PGs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../user-management/">User Management</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../pg-repair/">Repairing PG Inconsistencies</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../data-placement/">Data Placement Overview</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../pools/">Pools</a></li>
+<li class="toctree-l3 current"><a class="reference internal" href="../erasure-code/">Erasure code</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="../erasure-code/#creating-a-sample-erasure-coded-pool">Creating a sample erasure-coded pool</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../erasure-code/#erasure-code-profiles">Erasure-code profiles</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../erasure-code/#erasure-coding-with-overwrites">Erasure Coding with Overwrites</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../erasure-code/#erasure-coded-pools-and-cache-tiering">Erasure-coded pools and cache tiering</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../erasure-code/#erasure-coded-pool-recovery">Erasure-coded pool recovery</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../erasure-code/#glossary">Glossary</a></li>
+<li class="toctree-l4 current"><a class="reference internal" href="../erasure-code/#table-of-contents">Table of contents</a><ul class="current">
+<li class="toctree-l5 current"><a class="reference internal" href="../erasure-code-profile/">Erasure code profiles</a><ul class="current">
+<li class="toctree-l6"><a class="reference internal" href="../erasure-code-jerasure/">Jerasure erasure code plugin</a></li>
+<li class="toctree-l6"><a class="reference internal" href="../erasure-code-isa/">ISA erasure code plugin</a></li>
+<li class="toctree-l6 current"><a class="current reference internal" href="#">Locally repairable erasure code plugin</a><ul>
+<li class="toctree-l7"><a class="reference internal" href="#erasure-code-profile-examples">Erasure code profile examples</a><ul>
+<li class="toctree-l8"><a class="reference internal" href="#reduce-recovery-bandwidth-between-hosts">Reduce recovery bandwidth between hosts</a></li>
+<li class="toctree-l8"><a class="reference internal" href="#reduce-recovery-bandwidth-between-racks">Reduce recovery bandwidth between racks</a></li>
+</ul>
+</li>
+<li class="toctree-l7"><a class="reference internal" href="#create-an-lrc-profile">Create an lrc profile</a></li>
+<li class="toctree-l7"><a class="reference internal" href="#low-level-plugin-configuration">Low level plugin configuration</a></li>
+<li class="toctree-l7"><a class="reference internal" href="#erasure-code-profile-examples-using-low-level-configuration">Erasure code profile examples using low level configuration</a><ul>
+<li class="toctree-l8"><a class="reference internal" href="#minimal-testing">Minimal testing</a></li>
+<li class="toctree-l8"><a class="reference internal" href="#id1">Reduce recovery bandwidth between hosts</a></li>
+<li class="toctree-l8"><a class="reference internal" href="#id2">Reduce recovery bandwidth between racks</a></li>
+<li class="toctree-l8"><a class="reference internal" href="#testing-with-different-erasure-code-backends">Testing with different Erasure Code backends</a></li>
+</ul>
+</li>
+<li class="toctree-l7"><a class="reference internal" href="#erasure-coding-and-decoding-algorithm">Erasure coding and decoding algorithm</a></li>
+<li class="toctree-l7"><a class="reference internal" href="#controlling-crush-placement">Controlling CRUSH placement</a></li>
+</ul>
+</li>
+<li class="toctree-l6"><a class="reference internal" href="../erasure-code-shec/">SHEC erasure code plugin</a></li>
+<li class="toctree-l6"><a class="reference internal" href="../erasure-code-clay/">CLAY code plugin</a></li>
+<li class="toctree-l6"><a class="reference internal" href="../erasure-code-profile/#osd-erasure-code-profile-set">osd erasure-code-profile set</a></li>
+<li class="toctree-l6"><a class="reference internal" href="../erasure-code-profile/#osd-erasure-code-profile-rm">osd erasure-code-profile rm</a></li>
+<li class="toctree-l6"><a class="reference internal" href="../erasure-code-profile/#osd-erasure-code-profile-get">osd erasure-code-profile get</a></li>
+<li class="toctree-l6"><a class="reference internal" href="../erasure-code-profile/#osd-erasure-code-profile-ls">osd erasure-code-profile ls</a></li>
+</ul>
+</li>
+<li class="toctree-l5"><a class="reference internal" href="../erasure-code-jerasure/">Jerasure erasure code plugin</a></li>
+<li class="toctree-l5"><a class="reference internal" href="../erasure-code-isa/">ISA erasure code plugin</a></li>
+<li class="toctree-l5 current"><a class="current reference internal" href="#">Locally repairable erasure code plugin</a><ul>
+<li class="toctree-l6"><a class="reference internal" href="#erasure-code-profile-examples">Erasure code profile examples</a><ul>
+<li class="toctree-l7"><a class="reference internal" href="#reduce-recovery-bandwidth-between-hosts">Reduce recovery bandwidth between hosts</a></li>
+<li class="toctree-l7"><a class="reference internal" href="#reduce-recovery-bandwidth-between-racks">Reduce recovery bandwidth between racks</a></li>
+</ul>
+</li>
+<li class="toctree-l6"><a class="reference internal" href="#create-an-lrc-profile">Create an lrc profile</a></li>
+<li class="toctree-l6"><a class="reference internal" href="#low-level-plugin-configuration">Low level plugin configuration</a></li>
+<li class="toctree-l6"><a class="reference internal" href="#erasure-code-profile-examples-using-low-level-configuration">Erasure code profile examples using low level configuration</a><ul>
+<li class="toctree-l7"><a class="reference internal" href="#minimal-testing">Minimal testing</a></li>
+<li class="toctree-l7"><a class="reference internal" href="#id1">Reduce recovery bandwidth between hosts</a></li>
+<li class="toctree-l7"><a class="reference internal" href="#id2">Reduce recovery bandwidth between racks</a></li>
+<li class="toctree-l7"><a class="reference internal" href="#testing-with-different-erasure-code-backends">Testing with different Erasure Code backends</a></li>
+</ul>
+</li>
+<li class="toctree-l6"><a class="reference internal" href="#erasure-coding-and-decoding-algorithm">Erasure coding and decoding algorithm</a></li>
+<li class="toctree-l6"><a class="reference internal" href="#controlling-crush-placement">Controlling CRUSH placement</a></li>
+</ul>
+</li>
+<li class="toctree-l5"><a class="reference internal" href="../erasure-code-shec/">SHEC erasure code plugin</a></li>
+<li class="toctree-l5"><a class="reference internal" href="../erasure-code-clay/">CLAY code plugin</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../cache-tiering/">Cache Tiering</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../placement-groups/">Placement Groups</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../balancer/">Balancer</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../upmap/">Using pg-upmap</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../crush-map/">CRUSH Maps</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../crush-map-edits/">Manually editing a CRUSH Map</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../stretch-mode/">Stretch Clusters</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../change-mon-elections/">Configure Monitor Election Strategies</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../add-or-rm-osds/">Adding/Removing OSDs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../add-or-rm-mons/">Adding/Removing Monitors</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../devices/">Device Management</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../bluestore-migration/">BlueStore Migration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../control/">Command Reference</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../troubleshooting/community/">The Ceph Community</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../troubleshooting/troubleshooting-mon/">Troubleshooting Monitors</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../troubleshooting/troubleshooting-osd/">Troubleshooting OSDs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../troubleshooting/troubleshooting-pg/">Troubleshooting PGs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../troubleshooting/log-and-debug/">Logging and Debugging</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../troubleshooting/cpu-profiling/">CPU Profiling</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../troubleshooting/memory-profiling/">Memory Profiling</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../man/">Man Pages</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../troubleshooting/">Troubleshooting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/">APIs</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cephfs/">Ceph File System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../rbd/">Ceph Block Device</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../radosgw/">Ceph Object Gateway</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../mgr/">Ceph Manager Daemon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../mgr/dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dev/developer_guide/">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dev/internals/">Ceph Internals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../../../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../erasure-code-shec/" title="SHEC erasure code plugin"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../erasure-code-isa/" title="ISA erasure code plugin"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../" >Ceph Storage Cluster</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../" >Cluster Operations</a> &#187;</li>
+          <li class="nav-item nav-item-3"><a href="../erasure-code/" >Erasure code</a> &#187;</li>
+          <li class="nav-item nav-item-4"><a href="../erasure-code-profile/" >Erasure code profiles</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Locally repairable erasure code plugin</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

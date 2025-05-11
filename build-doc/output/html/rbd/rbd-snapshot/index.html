@@ -1,0 +1,419 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Snapshots &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css" />
+    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../genindex/" />
+    <link rel="search" title="Search" href="../../search/" />
+    <link rel="next" title="RBD Exclusive Locks" href="../rbd-exclusive-locks/" />
+    <link rel="prev" title="Ceph Block Device Operations" href="../rbd-operations/" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../rbd-exclusive-locks/" title="RBD Exclusive Locks"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../rbd-operations/" title="Ceph Block Device Operations"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../" >Ceph Block Device</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../rbd-operations/" accesskey="U">Ceph Block Device Operations</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Snapshots</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="snapshots">
+<h1>Snapshots<a class="headerlink" href="#snapshots" title="Permalink to this heading">¶</a></h1>
+<p id="index-0">A snapshot is a read-only logical copy of an image at a particular point in
+time: a checkpoint. One of the advanced features of Ceph block devices is that
+you can create snapshots of images to retain point-in-time state history.  Ceph
+also supports snapshot layering, which allows you to clone images (for example,
+VM images) quickly and easily. Ceph block device snapshots are managed using
+the <code class="docutils literal notranslate"><span class="pre">rbd</span></code> command and several higher-level interfaces, including <a class="reference external" href="../qemu-rbd/">QEMU</a>,
+<a class="reference external" href="../libvirt/">libvirt</a>, <a class="reference external" href="../rbd-openstack/">OpenStack</a>, and <a class="reference external" href="../rbd-cloudstack/">CloudStack</a>.</p>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>To use RBD snapshots, you must have a running Ceph cluster.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Because RBD is unaware of any file system within an image (volume),
+snapshots are merely <cite>crash-consistent</cite> unless they are coordinated within
+the mounting (attaching) operating system. We therefore recommend that you
+pause or stop I/O before taking a snapshot.</p>
+<p>If the volume contains a file system, the file system should be in an
+internally consistent state before a snapshot is taken. Snapshots taken
+without write quiescing could need an <cite>fsck</cite> pass before they are mounted
+again. To quiesce I/O you can use <cite>fsfreeze</cite> command. See the <cite>fsfreeze(8)</cite>
+man page for more details.</p>
+<p>For virtual machines, <cite>qemu-guest-agent</cite> can be used to automatically freeze
+file systems when creating a snapshot.</p>
+</div>
+<p class="ditaa">
+<img src="../../_images/ditaa-c88a4c1cc8dfd3f0cb8afc3444fd6cd5727e822a.png"/>
+</p>
+<section id="cephx-notes">
+<h2>Cephx Notes<a class="headerlink" href="#cephx-notes" title="Permalink to this heading">¶</a></h2>
+<p>When <a class="reference external" href="../../rados/configuration/auth-config-ref/">cephx</a> authentication is enabled (it is by default), you must specify a
+user name or ID and a path to the keyring containing the corresponding key. See
+<a class="reference internal" href="../../rados/operations/user-management/#user-management"><span class="std std-ref">User Management</span></a> for details.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><style type="text/css">
+span.prompt1:before {
+  content: "$ ";
+}
+</style><span class="prompt1">rbd<span class="w"> </span>--id<span class="w"> </span><span class="o">{</span>user-ID<span class="o">}</span><span class="w"> </span>--keyring<span class="w"> </span>/path/to/secret<span class="w"> </span><span class="o">[</span>commands<span class="o">]</span></span>
+<span class="prompt1">rbd<span class="w"> </span>--name<span class="w"> </span><span class="o">{</span>username<span class="o">}</span><span class="w"> </span>--keyring<span class="w"> </span>/path/to/secret<span class="w"> </span><span class="o">[</span>commands<span class="o">]</span></span>
+</pre></div></div><p>For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">rbd<span class="w"> </span>--id<span class="w"> </span>admin<span class="w"> </span>--keyring<span class="w"> </span>/etc/ceph/ceph.keyring<span class="w"> </span><span class="o">[</span>commands<span class="o">]</span></span>
+<span class="prompt1">rbd<span class="w"> </span>--name<span class="w"> </span>client.admin<span class="w"> </span>--keyring<span class="w"> </span>/etc/ceph/ceph.keyring<span class="w"> </span><span class="o">[</span>commands<span class="o">]</span></span>
+</pre></div></div><div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>Add the user and secret to the <code class="docutils literal notranslate"><span class="pre">CEPH_ARGS</span></code> environment variable to
+avoid re-entry of these parameters.</p>
+</div>
+</section>
+<section id="snapshot-basics">
+<h2>Snapshot Basics<a class="headerlink" href="#snapshot-basics" title="Permalink to this heading">¶</a></h2>
+<p>The following procedures demonstrate how to create, list, and remove
+snapshots using the <code class="docutils literal notranslate"><span class="pre">rbd</span></code> command.</p>
+<section id="create-snapshot">
+<h3>Create Snapshot<a class="headerlink" href="#create-snapshot" title="Permalink to this heading">¶</a></h3>
+<p>To create a snapshot, use the <code class="docutils literal notranslate"><span class="pre">rbd</span> <span class="pre">snap</span> <span class="pre">create</span></code> command and specify the pool
+name, the image name, and the snap name:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">rbd<span class="w"> </span>snap<span class="w"> </span>create<span class="w"> </span><span class="o">{</span>pool-name<span class="o">}</span>/<span class="o">{</span>image-name<span class="o">}</span>@<span class="o">{</span>snap-name<span class="o">}</span></span>
+</pre></div></div><p>For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">rbd<span class="w"> </span>snap<span class="w"> </span>create<span class="w"> </span>rbd/foo@snapname</span>
+</pre></div></div></section>
+<section id="list-snapshots">
+<h3>List Snapshots<a class="headerlink" href="#list-snapshots" title="Permalink to this heading">¶</a></h3>
+<p>To list the snapshots of an image, use the <code class="docutils literal notranslate"><span class="pre">rbd</span> <span class="pre">snap</span> <span class="pre">ls</span></code> command and specify
+the pool name and the image name:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">rbd<span class="w"> </span>snap<span class="w"> </span>ls<span class="w"> </span><span class="o">{</span>pool-name<span class="o">}</span>/<span class="o">{</span>image-name<span class="o">}</span></span>
+</pre></div></div><p>For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">rbd<span class="w"> </span>snap<span class="w"> </span>ls<span class="w"> </span>rbd/foo</span>
+</pre></div></div></section>
+<section id="roll-back-snapshot">
+<h3>Roll back Snapshot<a class="headerlink" href="#roll-back-snapshot" title="Permalink to this heading">¶</a></h3>
+<p>To roll back to a snapshot,  use the <code class="docutils literal notranslate"><span class="pre">rbd</span> <span class="pre">snap</span> <span class="pre">rollback</span></code> command and specify
+the pool name, the image name, and the snap name:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">rbd<span class="w"> </span>snap<span class="w"> </span>rollback<span class="w"> </span><span class="o">{</span>pool-name<span class="o">}</span>/<span class="o">{</span>image-name<span class="o">}</span>@<span class="o">{</span>snap-name<span class="o">}</span></span>
+</pre></div></div><p>For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">rbd<span class="w"> </span>snap<span class="w"> </span>rollback<span class="w"> </span>rbd/foo@snapname</span>
+</pre></div></div><div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Rolling back an image to a snapshot means overwriting the current
+version of the image with data from a snapshot. The time it takes to execute
+a rollback increases with the size of the image. It is <strong>faster to clone</strong>
+from a snapshot <strong>than to roll back</strong> an image to a snapshot. Cloning from a
+snapshot is the preferred method of returning to a pre-existing state.</p>
+</div>
+</section>
+<section id="delete-a-snapshot">
+<h3>Delete a Snapshot<a class="headerlink" href="#delete-a-snapshot" title="Permalink to this heading">¶</a></h3>
+<p>To delete a snapshot, use the <code class="docutils literal notranslate"><span class="pre">rbd</span> <span class="pre">snap</span> <span class="pre">rm</span></code> command and specify the pool
+name, the image name, and the snap name:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">rbd<span class="w"> </span>snap<span class="w"> </span>rm<span class="w"> </span><span class="o">{</span>pool-name<span class="o">}</span>/<span class="o">{</span>image-name<span class="o">}</span>@<span class="o">{</span>snap-name<span class="o">}</span></span>
+</pre></div></div><p>For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">rbd<span class="w"> </span>snap<span class="w"> </span>rm<span class="w"> </span>rbd/foo@snapname</span>
+</pre></div></div><div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Ceph OSDs delete data asynchronously, so deleting a snapshot  does
+not immediately free up the capacity of the underlying OSDs. This process is
+known as “snaptrim”, and is referred to as such in <code class="docutils literal notranslate"><span class="pre">ceph</span> <span class="pre">status</span></code> output.</p>
+</div>
+</section>
+<section id="purge-snapshots">
+<h3>Purge Snapshots<a class="headerlink" href="#purge-snapshots" title="Permalink to this heading">¶</a></h3>
+<p>To delete all snapshots, use the <code class="docutils literal notranslate"><span class="pre">rbd</span> <span class="pre">snap</span> <span class="pre">purge</span></code> command and specify the
+pool name and the image name:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">rbd<span class="w"> </span>snap<span class="w"> </span>purge<span class="w"> </span><span class="o">{</span>pool-name<span class="o">}</span>/<span class="o">{</span>image-name<span class="o">}</span></span>
+</pre></div></div><p>For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">rbd<span class="w"> </span>snap<span class="w"> </span>purge<span class="w"> </span>rbd/foo</span>
+</pre></div></div></section>
+</section>
+<section id="layering">
+<span id="index-1"></span><h2>Layering<a class="headerlink" href="#layering" title="Permalink to this heading">¶</a></h2>
+<p>Ceph supports the ability to create many copy-on-write (COW) clones of a block
+device snapshot. Snapshot layering enables Ceph block device clients to create
+images very quickly. For example, you might create a block device image with a
+Linux VM written to it, snapshot the image, protect the snapshot, and create as
+many copy-on-write clones as you like. A snapshot is read-only, so cloning a
+snapshot simplifies semantics, making it possible to create clones rapidly.</p>
+<p class="ditaa">
+<img src="../../_images/ditaa-56f061443d7d36d37f6e7476032beeb1e5ded4c6.png"/>
+</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The terms “parent” and “child” refer to a Ceph block device snapshot
+(parent) and the corresponding image cloned from the snapshot (child).
+These terms are important for the command line usage below.</p>
+</div>
+<p>Each cloned image (child) stores a reference to its parent image, which enables
+the cloned image to open the parent snapshot and read it.</p>
+<p>A copy-on-write clone of a snapshot behaves exactly like any other Ceph
+block device image. You can read to, write from, clone, and resize cloned
+images. There are no special restrictions with cloned images. However, the
+copy-on-write clone of a snapshot depends on the snapshot, so you must
+protect the snapshot before you clone it. The diagram below depicts this
+process.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Ceph supports the cloning of only “RBD format 2” images (that is,
+images created without specifying <code class="docutils literal notranslate"><span class="pre">--image-format</span> <span class="pre">1</span></code>). The Linux kernel
+client supports cloned images beginning with the 3.10 release.</p>
+</div>
+<section id="getting-started-with-layering">
+<h3>Getting Started with Layering<a class="headerlink" href="#getting-started-with-layering" title="Permalink to this heading">¶</a></h3>
+<p>Ceph block device layering is a simple process. You must have an image. You
+must create a snapshot of the image. You must protect the snapshot. After you
+have performed these steps, you can begin cloning the snapshot.</p>
+<p class="ditaa">
+<img src="../../_images/ditaa-9e08ce07b061c9036e67abe630e4d3dd17a467a9.png"/>
+</p>
+<p>The cloned image has a reference to the parent snapshot, and includes the pool
+ID, the image ID, and the snapshot ID. The inclusion of the pool ID means that
+you may clone snapshots from one pool to images in another pool.</p>
+<ol class="arabic simple">
+<li><p><strong>Image Template:</strong> A common use case for block device layering is to create
+a base image and a snapshot that serves as a template for clones. For
+example: a user may create an image for a Linux distribution (for example,
+Ubuntu 22.04) and create a snapshot of it. The user may occasionally update
+the image and create a new snapshot (by using such commands as <code class="docutils literal notranslate"><span class="pre">sudo</span>
+<span class="pre">apt-get</span> <span class="pre">update</span></code>, <code class="docutils literal notranslate"><span class="pre">sudo</span> <span class="pre">apt-get</span> <span class="pre">upgrade</span></code>, or <code class="docutils literal notranslate"><span class="pre">sudo</span> <span class="pre">apt-get</span> <span class="pre">dist-upgrade</span></code>
+followed by <code class="docutils literal notranslate"><span class="pre">rbd</span> <span class="pre">snap</span> <span class="pre">create</span></code>). As the image matures, the user can clone
+any one of the snapshots.</p></li>
+<li><p><strong>Extended Template:</strong> A more advanced use case includes extending a
+template image to provide more information than a base image. For
+example, a user may clone an image (for example, a VM template) and install
+other software (for example, a database, a content management system, an
+analytics system) and then snapshot the extended image, which may itself be
+updated just like the base image.</p></li>
+<li><p><strong>Template Pool:</strong> One way to use block device layering is to create a pool
+that contains (1) base images that act as templates and (2) snapshots of
+those templates. You may then extend read-only privileges to users so that
+they may clone the snapshots even though they do not have permissions that
+allow them to write or execute within the pool.</p></li>
+<li><p><strong>Image Migration/Recovery:</strong> One way to use block device layering is to
+migrate or recover data from one pool into another pool.</p></li>
+</ol>
+</section>
+<section id="protecting-a-snapshot">
+<h3>Protecting a Snapshot<a class="headerlink" href="#protecting-a-snapshot" title="Permalink to this heading">¶</a></h3>
+<p>Clones access the parent snapshots. All clones would break if a user
+inadvertently deleted the parent snapshot. To prevent data loss, you must
+protect the snapshot before you can clone it:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">rbd<span class="w"> </span>snap<span class="w"> </span>protect<span class="w"> </span><span class="o">{</span>pool-name<span class="o">}</span>/<span class="o">{</span>image-name<span class="o">}</span>@<span class="o">{</span>snapshot-name<span class="o">}</span></span>
+</pre></div></div><p>For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">rbd<span class="w"> </span>snap<span class="w"> </span>protect<span class="w"> </span>rbd/foo@snapname</span>
+</pre></div></div><div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>You cannot delete a protected snapshot.</p>
+</div>
+</section>
+<section id="cloning-a-snapshot">
+<h3>Cloning a Snapshot<a class="headerlink" href="#cloning-a-snapshot" title="Permalink to this heading">¶</a></h3>
+<p>To clone a snapshot, specify the parent pool, the parent image, and the parent
+snapshot; and also the child pool together with the image name. You must
+protect the snapshot before you can clone it:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">rbd<span class="w"> </span>clone<span class="w"> </span><span class="o">{</span>pool-name<span class="o">}</span>/<span class="o">{</span>parent-image-name<span class="o">}</span>@<span class="o">{</span>snap-name<span class="o">}</span><span class="w"> </span><span class="o">{</span>pool-name<span class="o">}</span>/<span class="o">{</span>child-image-name<span class="o">}</span></span>
+</pre></div></div><p>For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">rbd<span class="w"> </span>clone<span class="w"> </span>rbd/foo@snapname<span class="w"> </span>rbd/bar</span>
+</pre></div></div><div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>You may clone a snapshot from one pool to an image in another pool.
+For example, you may maintain read-only images and snapshots as templates in
+one pool, and writeable clones in another pool.</p>
+</div>
+</section>
+<section id="unprotecting-a-snapshot">
+<h3>Unprotecting a Snapshot<a class="headerlink" href="#unprotecting-a-snapshot" title="Permalink to this heading">¶</a></h3>
+<p>Before you can delete a snapshot, you must first unprotect it. Additionally,
+you may <em>NOT</em> delete snapshots that have references from clones. You must
+flatten or delete each clone of a snapshot before you can unprotect the
+snapshot:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">rbd<span class="w"> </span>snap<span class="w"> </span>unprotect<span class="w"> </span><span class="o">{</span>pool-name<span class="o">}</span>/<span class="o">{</span>image-name<span class="o">}</span>@<span class="o">{</span>snapshot-name<span class="o">}</span></span>
+</pre></div></div><p>For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">rbd<span class="w"> </span>snap<span class="w"> </span>unprotect<span class="w"> </span>rbd/foo@snapname</span>
+</pre></div></div></section>
+<section id="listing-children-of-a-snapshot">
+<h3>Listing Children of a Snapshot<a class="headerlink" href="#listing-children-of-a-snapshot" title="Permalink to this heading">¶</a></h3>
+<p>To list the children of a snapshot, use the <code class="docutils literal notranslate"><span class="pre">rbd</span> <span class="pre">children</span></code> command and
+specify the pool name, the image name, and the snap name:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">rbd<span class="w"> </span>children<span class="w"> </span><span class="o">{</span>pool-name<span class="o">}</span>/<span class="o">{</span>image-name<span class="o">}</span>@<span class="o">{</span>snapshot-name<span class="o">}</span></span>
+</pre></div></div><p>For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">rbd<span class="w"> </span>children<span class="w"> </span>rbd/foo@snapname</span>
+</pre></div></div></section>
+<section id="flattening-a-cloned-image">
+<h3>Flattening a Cloned Image<a class="headerlink" href="#flattening-a-cloned-image" title="Permalink to this heading">¶</a></h3>
+<p>Cloned images retain a reference to the parent snapshot. When you remove the
+reference to the parent snapshot from the clone, you effectively “flatten” the
+clone by copying the data stored in the snapshot to the clone.  The time it
+takes to flatten a clone increases with the size of the snapshot.  To delete a
+snapshot, you must first flatten the child images (or delete them):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">rbd<span class="w"> </span>flatten<span class="w"> </span><span class="o">{</span>pool-name<span class="o">}</span>/<span class="o">{</span>image-name<span class="o">}</span></span>
+</pre></div></div><p>For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">rbd<span class="w"> </span>flatten<span class="w"> </span>rbd/bar</span>
+</pre></div></div><div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Since a flattened image contains all the data stored in the snapshot,
+a flattened image takes up more storage space than a layered clone does.</p>
+</div>
+</section>
+</section>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../">
+              <img class="logo" src="../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../install/">Installing Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cephadm/">Cephadm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rados/">Ceph Storage Cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cephfs/">Ceph File System</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../">Ceph Block Device</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../rados-rbd-cmds/">Basic Commands</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../rbd-operations/">Operations</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Snapshots</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#cephx-notes">Cephx Notes</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#snapshot-basics">Snapshot Basics</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#create-snapshot">Create Snapshot</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#list-snapshots">List Snapshots</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#roll-back-snapshot">Roll back Snapshot</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#delete-a-snapshot">Delete a Snapshot</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#purge-snapshots">Purge Snapshots</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#layering">Layering</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#getting-started-with-layering">Getting Started with Layering</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#protecting-a-snapshot">Protecting a Snapshot</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#cloning-a-snapshot">Cloning a Snapshot</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#unprotecting-a-snapshot">Unprotecting a Snapshot</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#listing-children-of-a-snapshot">Listing Children of a Snapshot</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#flattening-a-cloned-image">Flattening a Cloned Image</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../rbd-exclusive-locks/">Exclusive Locking</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rbd-mirroring/">Mirroring</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rbd-live-migration/">Live-Migration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rbd-persistent-read-only-cache/">Persistent Read-only Cache</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rbd-persistent-write-back-cache/">Persistent Write-back Cache</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rbd-encryption/">Encryption</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rbd-config-ref/">Config Settings (librbd)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rbd-replay/">RBD Replay</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../rbd-integrations/">Integrations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../man/">Manpages</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/">APIs</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../radosgw/">Ceph Object Gateway</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/">Ceph Manager Daemon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dev/developer_guide/">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dev/internals/">Ceph Internals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../rbd-exclusive-locks/" title="RBD Exclusive Locks"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../rbd-operations/" title="Ceph Block Device Operations"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../" >Ceph Block Device</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../rbd-operations/" >Ceph Block Device Operations</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Snapshots</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

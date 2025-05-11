@@ -1,0 +1,489 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Essentials (tl;dr) &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/css/custom.css" />
+    <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/jquery.js"></script>
+    <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../../genindex/" />
+    <link rel="search" title="Search" href="../../../search/" />
+    <link rel="next" title="Commit merging: scope and cadence" href="../merging/" />
+    <link rel="prev" title="Introduction" href="../intro/" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../merging/" title="Commit merging: scope and cadence"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../intro/" title="Introduction"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../" accesskey="U">Contributing to Ceph: A Guide for Developers</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Essentials (tl;dr)</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="essentials-tl-dr">
+<h1>Essentials (tl;dr)<a class="headerlink" href="#essentials-tl-dr" title="Permalink to this heading">¶</a></h1>
+<p>This chapter presents essential information that every Ceph developer needs
+to know.</p>
+<section id="leads">
+<h2>Leads<a class="headerlink" href="#leads" title="Permalink to this heading">¶</a></h2>
+<p>The Ceph project is led by Sage Weil. In addition, each major project
+component has its own lead. The following table shows all the leads and
+their nicks on <a class="reference external" href="https://github.com/">GitHub</a>:</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 24%" />
+<col style="width: 42%" />
+<col style="width: 34%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Scope</p></th>
+<th class="head"><p>Lead</p></th>
+<th class="head"><p>GitHub nick</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Ceph</p></td>
+<td><p>Sage Weil</p></td>
+<td><p>liewegas</p></td>
+</tr>
+<tr class="row-odd"><td><p>RADOS</p></td>
+<td><p>Neha Ojha</p></td>
+<td><p>neha-ojha</p></td>
+</tr>
+<tr class="row-even"><td><p>RGW</p></td>
+<td><p>Yehuda Sadeh</p></td>
+<td><p>yehudasa</p></td>
+</tr>
+<tr class="row-odd"><td><p>RGW</p></td>
+<td><p>Matt Benjamin</p></td>
+<td><p>mattbenjamin</p></td>
+</tr>
+<tr class="row-even"><td><p>RBD</p></td>
+<td><p>Jason Dillaman</p></td>
+<td><p>dillaman</p></td>
+</tr>
+<tr class="row-odd"><td><p>CephFS</p></td>
+<td><p>Patrick Donnelly</p></td>
+<td><p>batrick</p></td>
+</tr>
+<tr class="row-even"><td><p>Dashboard</p></td>
+<td><p>Lenz Grimmer</p></td>
+<td><p>LenzGr</p></td>
+</tr>
+<tr class="row-odd"><td><p>MON</p></td>
+<td><p>Joao Luis</p></td>
+<td><p>jecluis</p></td>
+</tr>
+<tr class="row-even"><td><p>Build/Ops</p></td>
+<td><p>Ken Dreyer</p></td>
+<td><p>ktdreyer</p></td>
+</tr>
+<tr class="row-odd"><td><p>Docs</p></td>
+<td><p>Zac Dover</p></td>
+<td><p>zdover23</p></td>
+</tr>
+</tbody>
+</table>
+<p>The Ceph-specific acronyms in the table are explained in
+<a class="reference internal" href="../../../architecture/"><span class="doc">Architecture</span></a>.</p>
+</section>
+<section id="history">
+<h2>History<a class="headerlink" href="#history" title="Permalink to this heading">¶</a></h2>
+<p>See the <a class="reference external" href="https://en.wikipedia.org/wiki/Ceph_%28software%29#History">History chapter of the Wikipedia article</a>.</p>
+</section>
+<section id="licensing">
+<h2>Licensing<a class="headerlink" href="#licensing" title="Permalink to this heading">¶</a></h2>
+<p>Ceph is free software.</p>
+<p>Unless stated otherwise, the Ceph source code is distributed under the
+terms of the LGPL2.1 or LGPL3.0. For full details, see the file
+<a class="reference external" href="https://github.com/ceph/ceph/blob/master/COPYING">COPYING</a> in the top-level directory of the source-code tree.</p>
+</section>
+<section id="source-code-repositories">
+<h2>Source code repositories<a class="headerlink" href="#source-code-repositories" title="Permalink to this heading">¶</a></h2>
+<p>The source code of Ceph lives on <a class="reference external" href="https://github.com/">GitHub</a> in a number of repositories below
+the <a class="reference external" href="https://github.com/ceph">Ceph “organization”</a>.</p>
+<p>A working knowledge of <a class="reference external" href="https://git-scm.com/doc">git</a> is essential to make a meaningful contribution to the project as a developer.</p>
+<p>Although the <a class="reference external" href="https://github.com/ceph">Ceph “organization”</a> includes several software repositories,
+this document covers only one: <a class="reference external" href="https://github.com/ceph/ceph">https://github.com/ceph/ceph</a>.</p>
+</section>
+<section id="redmine-issue-tracker">
+<h2>Redmine issue tracker<a class="headerlink" href="#redmine-issue-tracker" title="Permalink to this heading">¶</a></h2>
+<p>Although <a class="reference external" href="https://github.com/">GitHub</a> is used for code, Ceph-related issues (Bugs, Features,
+Backports, Documentation, etc.) are tracked at <a class="reference external" href="http://tracker.ceph.com">http://tracker.ceph.com</a>,
+which is powered by <a class="reference external" href="http://www.redmine.org">Redmine</a>.</p>
+<p>The tracker has a Ceph project with a number of subprojects loosely
+corresponding to the various architectural components (see
+<a class="reference internal" href="../../../architecture/"><span class="doc">Architecture</span></a>).</p>
+<p>Mere <a class="reference external" href="http://tracker.ceph.com/account/register">registration</a> in the tracker automatically grants permissions
+sufficient to open new issues and comment on existing ones.</p>
+<p>To report a bug or propose a new feature, <a class="reference external" href="http://tracker.ceph.com/projects/ceph">jump to the Ceph project</a> and
+click on <a class="reference external" href="http://tracker.ceph.com/projects/ceph/issues/new">New issue</a>.</p>
+</section>
+<section id="slack">
+<h2>Slack<a class="headerlink" href="#slack" title="Permalink to this heading">¶</a></h2>
+<p>Ceph’s Slack is <a class="reference external" href="https://ceph-storage.slack.com/">https://ceph-storage.slack.com/</a>.</p>
+</section>
+<section id="mailing-lists">
+<span id="mailing-list"></span><h2>Mailing lists<a class="headerlink" href="#mailing-lists" title="Permalink to this heading">¶</a></h2>
+<section id="ceph-development-mailing-list">
+<h3>Ceph Development Mailing List<a class="headerlink" href="#ceph-development-mailing-list" title="Permalink to this heading">¶</a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">dev&#64;ceph.io</span></code> list is for discussion about the development of Ceph,
+its interoperability with other technology, and the operations of the
+project itself.</p>
+<p>The email discussion list for Ceph development is open to all. Subscribe by
+sending a message to <code class="docutils literal notranslate"><span class="pre">dev-request&#64;ceph.io</span></code> with the following line in the
+body of the message:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">subscribe</span> <span class="n">ceph</span><span class="o">-</span><span class="n">devel</span>
+</pre></div>
+</div>
+</section>
+<section id="ceph-client-patch-review-mailing-list">
+<h3>Ceph Client Patch Review Mailing List<a class="headerlink" href="#ceph-client-patch-review-mailing-list" title="Permalink to this heading">¶</a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">ceph-devel&#64;vger.kernel.org</span></code> list is for discussion and patch review
+for the Linux kernel Ceph client component. Note that this list used to
+be an all-encompassing list for developers. When searching the archives,
+remember that this list contains the generic devel-ceph archives before mid-2018.</p>
+<p>Subscribe to the list covering the Linux kernel Ceph client component by sending
+a message to <code class="docutils literal notranslate"><span class="pre">majordomo&#64;vger.kernel.org</span></code> with the following line in the body
+of the message:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">subscribe</span> <span class="n">ceph</span><span class="o">-</span><span class="n">devel</span>
+</pre></div>
+</div>
+</section>
+<section id="other-ceph-mailing-lists">
+<h3>Other Ceph Mailing Lists<a class="headerlink" href="#other-ceph-mailing-lists" title="Permalink to this heading">¶</a></h3>
+<p>There are also <a class="reference external" href="https://ceph.com/irc/">other Ceph-related mailing lists</a>.</p>
+</section>
+</section>
+<section id="irc">
+<span id="id1"></span><h2>IRC<a class="headerlink" href="#irc" title="Permalink to this heading">¶</a></h2>
+<p>In addition to mailing lists, the Ceph community also communicates in real time
+using <a class="reference external" href="http://www.irchelp.org/">Internet Relay Chat</a>.</p>
+<p>The Ceph community gathers in the #ceph channel of the Open and Free Technology
+Community (OFTC) IRC network.</p>
+<p>Created in 1988, Internet Relay Chat (IRC) is a relay-based, real-time chat
+protocol. It is mainly designed for group (many-to-many) communication in
+discussion forums called channels, but also allows one-to-one communication via
+private message. On IRC you can talk to many other members using Ceph, on
+topics ranging from idle chit-chat to support questions. Though a channel might
+have many people in it at any one time, they might not always be at their
+keyboard; so if no-one responds, just wait around and someone will hopefully
+answer soon enough.</p>
+<section id="id2">
+<h3>Registration<a class="headerlink" href="#id2" title="Permalink to this heading">¶</a></h3>
+<p>If you intend to use the IRC service on a continued basis, you are advised to
+register an account. Registering gives you a unique IRC identity and allows you
+to access channels where unregistered users have been locked out for technical
+reasons.</p>
+<p>See <code class="docutils literal notranslate"><span class="pre">the</span> <span class="pre">official</span> <span class="pre">OFTC</span> <span class="pre">(Open</span> <span class="pre">and</span> <span class="pre">Free</span> <span class="pre">Technology</span> <span class="pre">Community)</span> <span class="pre">documentation's</span>
+<span class="pre">registration</span> <span class="pre">instructions</span>
+<span class="pre">&lt;https://www.oftc.net/Services/#register-your-account&gt;</span></code> to learn how to
+register your IRC account.</p>
+<section id="channels">
+<h4>Channels<a class="headerlink" href="#channels" title="Permalink to this heading">¶</a></h4>
+<p>To connect to the OFTC IRC network, download an IRC client and configure it to
+connect to <code class="docutils literal notranslate"><span class="pre">irc.oftc.net</span></code>. Then join one or more of the channels. Discussions
+inside #ceph are logged and archives are available online.</p>
+<p>Here are the real-time discussion channels for the Ceph community:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>#ceph</p></li>
+<li><p>#ceph-devel</p></li>
+<li><p>#cephfs</p></li>
+<li><p>#ceph-dashboard</p></li>
+<li><p>#ceph-orchestrators</p></li>
+<li><p>#sepia</p></li>
+</ul>
+</div></blockquote>
+</section>
+</section>
+</section>
+<section id="submitting-patches">
+<span id="id3"></span><h2>Submitting patches<a class="headerlink" href="#submitting-patches" title="Permalink to this heading">¶</a></h2>
+<p>The canonical instructions for submitting patches are contained in the
+file <a class="reference external" href="https://github.com/ceph/ceph/blob/main/CONTRIBUTING.rst">CONTRIBUTING.rst</a> in the top-level directory of the source-code
+tree. There may be some overlap between this guide and that file.</p>
+<p>All newcomers are encouraged to read that file carefully.</p>
+</section>
+<section id="building-from-source">
+<h2>Building from source<a class="headerlink" href="#building-from-source" title="Permalink to this heading">¶</a></h2>
+<p>See instructions at <a class="reference internal" href="../../../install/build-ceph/"><span class="doc">Build Ceph</span></a>.</p>
+</section>
+<section id="using-ccache-to-speed-up-local-builds">
+<h2>Using ccache to speed up local builds<a class="headerlink" href="#using-ccache-to-speed-up-local-builds" title="Permalink to this heading">¶</a></h2>
+<p><a class="reference external" href="https://ccache.samba.org/">ccache</a> can make the process of rebuilding the ceph source tree faster.</p>
+<p>Before you use <a class="reference external" href="https://ccache.samba.org/">ccache</a> to speed up your rebuilds of the ceph source tree,
+make sure that your source tree is clean and will produce no build failures.
+When you have a clean source tree, you can confidently use <a class="reference external" href="https://ccache.samba.org/">ccache</a>, secure in
+the knowledge that you’re not using a dirty tree.</p>
+<p>Old build artifacts can cause build failures. You might introduce these
+artifacts unknowingly when switching from one branch to another. If you see
+build errors when you attempt a local build, follow the procedure below to
+clean your source tree.</p>
+<section id="cleaning-the-source-tree">
+<h3>Cleaning the Source Tree<a class="headerlink" href="#cleaning-the-source-tree" title="Permalink to this heading">¶</a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><style type="text/css">
+span.prompt1:before {
+  content: "$ ";
+}
+</style><span class="prompt1">make<span class="w"> </span>clean</span>
+</pre></div></div><div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The following commands will remove everything in the source tree
+that isn’t tracked by git. Make sure to back up your log files
+and configuration options before running these commands.</p>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">git<span class="w"> </span>clean<span class="w"> </span>-fdx<span class="p">;</span><span class="w"> </span>git<span class="w"> </span>submodule<span class="w"> </span>foreach<span class="w"> </span>git<span class="w"> </span>clean<span class="w"> </span>-fdx</span>
+</pre></div></div></section>
+<section id="building-ceph-with-ccache">
+<h3>Building Ceph with ccache<a class="headerlink" href="#building-ceph-with-ccache" title="Permalink to this heading">¶</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">ccache</span></code> is available as a package in most distros. To build ceph with
+ccache, run the following command.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">cmake<span class="w"> </span>-DWITH_CCACHE<span class="o">=</span>ON<span class="w"> </span>..</span>
+</pre></div></div></section>
+<section id="using-ccache-to-speed-up-build-times">
+<h3>Using ccache to Speed Up Build Times<a class="headerlink" href="#using-ccache-to-speed-up-build-times" title="Permalink to this heading">¶</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">ccache</span></code> can be used for speeding up all builds of the system. For more
+details, refer to the <a class="reference external" href="https://ccache.samba.org/manual.html#_run_modes">run modes</a> section of the ccache manual. The default
+settings of <code class="docutils literal notranslate"><span class="pre">ccache</span></code> can be displayed with the <code class="docutils literal notranslate"><span class="pre">ccache</span> <span class="pre">-s</span></code> command.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>We recommend overriding the <code class="docutils literal notranslate"><span class="pre">max_size</span></code>. The default is 10G.
+Use a larger value, like 25G. Refer to the <a class="reference external" href="https://ccache.samba.org/manual.html#_configuration">configuration</a> section
+of the ccache manual for more information.</p>
+</div>
+<p>To further increase the cache hit rate and reduce compile times in a
+development environment, set the version information and build timestamps to
+fixed values. This makes it unnecessary to rebuild the binaries that contain
+this information.</p>
+<p>This can be achieved by adding the following settings to the <code class="docutils literal notranslate"><span class="pre">ccache</span></code>
+configuration file <code class="docutils literal notranslate"><span class="pre">ccache.conf</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">sloppiness</span> <span class="o">=</span> <span class="n">time_macros</span>
+<span class="n">run_second_cpp</span> <span class="o">=</span> <span class="n">true</span>
+</pre></div>
+</div>
+<p>Now, set the environment variable <code class="docutils literal notranslate"><span class="pre">SOURCE_DATE_EPOCH</span></code> to a fixed value (a
+UNIX timestamp) and set <code class="docutils literal notranslate"><span class="pre">ENABLE_GIT_VERSION</span></code> to <code class="docutils literal notranslate"><span class="pre">OFF</span></code> when running
+<code class="docutils literal notranslate"><span class="pre">cmake</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1"><span class="nb">export</span><span class="w"> </span><span class="nv">SOURCE_DATE_EPOCH</span><span class="o">=</span><span class="m">946684800</span></span>
+<span class="prompt1">cmake<span class="w"> </span>-DWITH_CCACHE<span class="o">=</span>ON<span class="w"> </span>-DENABLE_GIT_VERSION<span class="o">=</span>OFF<span class="w"> </span>..</span>
+</pre></div></div><div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Binaries produced with these build options are not suitable for
+production or debugging purposes, as they do not contain the correct build
+time and git version information.</p>
+</div>
+</section>
+</section>
+<section id="development-mode-cluster">
+<h2>Development-mode cluster<a class="headerlink" href="#development-mode-cluster" title="Permalink to this heading">¶</a></h2>
+<p>See <a class="reference internal" href="../../quick_guide/"><span class="doc">Developer Guide (Quick)</span></a>.</p>
+</section>
+<section id="kubernetes-rook-development-cluster">
+<h2>Kubernetes/Rook development cluster<a class="headerlink" href="#kubernetes-rook-development-cluster" title="Permalink to this heading">¶</a></h2>
+<p>See <a class="reference internal" href="../../kubernetes/#kubernetes-dev"><span class="std std-ref">Hacking on Ceph in Kubernetes with Rook</span></a></p>
+</section>
+<section id="backporting">
+<span id="id4"></span><h2>Backporting<a class="headerlink" href="#backporting" title="Permalink to this heading">¶</a></h2>
+<p>All bugfixes should be merged to the <code class="docutils literal notranslate"><span class="pre">main</span></code> branch before being
+backported. To flag a bugfix for backporting, make sure it has a
+<a class="reference external" href="http://tracker.ceph.com/">tracker issue</a> associated with it and set the <code class="docutils literal notranslate"><span class="pre">Backport</span></code> field to a
+comma-separated list of previous releases (e.g. “hammer,jewel”) that you think
+need the backport.
+The rest (including the actual backporting) will be taken care of by the
+<a class="reference external" href="http://tracker.ceph.com/projects/ceph-releases/wiki">Stable Releases and Backports</a> team.</p>
+</section>
+<section id="dependabot">
+<h2>Dependabot<a class="headerlink" href="#dependabot" title="Permalink to this heading">¶</a></h2>
+<p>Dependabot is a GitHub bot that scans the dependencies in the repositories for
+security vulnerabilities (CVEs). If a fix is available for a discovered CVE,
+Dependabot creates a pull request to update the dependency.</p>
+<p>Dependabot also indicates the compatibility score of the upgrade. This score is
+based on the number of CI failures that occur in other GitHub repositories
+where the fix was applied.</p>
+<p>With some configuration, Dependabot can perform non-security updates (for
+example, it can upgrade to the latest minor version or patch version).</p>
+<p>Dependabot supports <a class="reference external" href="https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/about-dependabot-version-updates#supported-repositories-and-ecosystems">several languages and package managers</a>.
+As of July 2022, the Ceph project receives alerts only from pip (based on the
+<cite>requirements.txt</cite> files) and npm (<cite>package*.json</cite>). It is possible to extend
+these alerts to git submodules, Golang, and Java. As of July 2022, there is no
+support for C++ package managers such as vcpkg, conan, C++20 modules.</p>
+<p>Many of the dependencies discovered by Dependabot will best be updated
+elsewhere than the Ceph Github repository (distribution packages, for example,
+will be a better place to update some of the dependencies). Nonetheless, the
+list of new and existing vulnerabilities generated by Dependabot will be
+useful.</p>
+<p><a class="reference external" href="https://github.com/ceph/ceph/pull/46998">Here is an example of a Dependabot pull request.</a></p>
+</section>
+<section id="guidance-for-use-of-cluster-log">
+<h2>Guidance for use of cluster log<a class="headerlink" href="#guidance-for-use-of-cluster-log" title="Permalink to this heading">¶</a></h2>
+<p>If your patches emit messages to the Ceph cluster log, please consult
+this: <a class="reference internal" href="../../logging/"><span class="doc">Use of the cluster log</span></a>.</p>
+</section>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../../">
+              <img class="logo" src="../../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../install/">Installing Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cephadm/">Cephadm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../rados/">Ceph Storage Cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cephfs/">Ceph File System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../rbd/">Ceph Block Device</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../radosgw/">Ceph Object Gateway</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../mgr/">Ceph Manager Daemon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../mgr/dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../architecture/">Architecture</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../">Developer Guide</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../intro/">Introduction</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Essentials</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#leads">Leads</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#history">History</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#licensing">Licensing</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#source-code-repositories">Source code repositories</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#redmine-issue-tracker">Redmine issue tracker</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#slack">Slack</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#mailing-lists">Mailing lists</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#ceph-development-mailing-list">Ceph Development Mailing List</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#ceph-client-patch-review-mailing-list">Ceph Client Patch Review Mailing List</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#other-ceph-mailing-lists">Other Ceph Mailing Lists</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#irc">IRC</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#id2">Registration</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#channels">Channels</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#submitting-patches">Submitting patches</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#building-from-source">Building from source</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#using-ccache-to-speed-up-local-builds">Using ccache to speed up local builds</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#cleaning-the-source-tree">Cleaning the Source Tree</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#building-ceph-with-ccache">Building Ceph with ccache</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#using-ccache-to-speed-up-build-times">Using ccache to Speed Up Build Times</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#development-mode-cluster">Development-mode cluster</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#kubernetes-rook-development-cluster">Kubernetes/Rook development cluster</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#backporting">Backporting</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#dependabot">Dependabot</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#guidance-for-use-of-cluster-log">Guidance for use of cluster log</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../merging/">What is Merged and When</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../issue-tracker/">Issue tracker</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../basic-workflow/">Basic workflow</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tests-unit-tests/">Tests: Unit Tests</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tests-integration-tests/">Tests: Integration Tests</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../running-tests-locally/">Running Tests Locally</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../running-tests-using-teuth/">Running Integration Tests using Teuthology</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../running-tests-in-cloud/">Running Tests in the Cloud</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../dash-devel/">Ceph Dashboard Developer Documentation (formerly HACKING.rst)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../cephadm/">cephadm Developer Documentation</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../internals/">Ceph Internals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../../../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../merging/" title="Commit merging: scope and cadence"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../intro/" title="Introduction"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../" >Contributing to Ceph: A Guide for Developers</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Essentials (tl;dr)</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

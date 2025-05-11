@@ -1,0 +1,224 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Basic Ceph Client Setup &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css" />
+    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../genindex/" />
+    <link rel="search" title="Search" href="../../search/" />
+    <link rel="next" title="Troubleshooting" href="../troubleshooting/" />
+    <link rel="prev" title="Cephadm Operations" href="../operations/" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../troubleshooting/" title="Troubleshooting"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../operations/" title="Cephadm Operations"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../" accesskey="U">Cephadm</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Basic Ceph Client Setup</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="basic-ceph-client-setup">
+<h1>Basic Ceph Client Setup<a class="headerlink" href="#basic-ceph-client-setup" title="Permalink to this heading">¶</a></h1>
+<p>Client machines require some basic configuration to interact with
+Ceph clusters. This section describes how to configure a client machine
+so that it can interact with a Ceph cluster.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Most client machines need to install only the <cite>ceph-common</cite> package
+and its dependencies. Such a setup supplies the basic <cite>ceph</cite> and
+<cite>rados</cite> commands, as well as other commands including <cite>mount.ceph</cite>
+and <cite>rbd</cite>.</p>
+</div>
+<section id="config-file-setup">
+<h2>Config File Setup<a class="headerlink" href="#config-file-setup" title="Permalink to this heading">¶</a></h2>
+<p>Client machines usually require smaller configuration files (here
+sometimes called “config files”) than do full-fledged cluster members.
+To generate a minimal config file, log into a host that has been
+configured as a client or that is running a cluster daemon, and then run the following command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><style type="text/css">
+span.prompt1:before {
+  content: "# ";
+}
+</style><span class="prompt1">ceph<span class="w"> </span>config<span class="w"> </span>generate-minimal-conf</span>
+</pre></div></div><p>This command generates a minimal config file that tells the client how
+to reach the Ceph monitors. The contents of this file should usually
+be installed in <code class="docutils literal notranslate"><span class="pre">/etc/ceph/ceph.conf</span></code>.</p>
+</section>
+<section id="keyring-setup">
+<h2>Keyring Setup<a class="headerlink" href="#keyring-setup" title="Permalink to this heading">¶</a></h2>
+<p>Most Ceph clusters run with authentication enabled. This means that
+the client needs keys in order to communicate with the machines in the
+cluster. To generate a keyring file with credentials for <cite>client.fs</cite>,
+log into an running cluster member and run the following command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><style type="text/css">
+span.prompt2:before {
+  content: "$ ";
+}
+</style><span class="prompt2">ceph<span class="w"> </span>auth<span class="w"> </span>get-or-create<span class="w"> </span>client.fs</span>
+</pre></div></div><p>The resulting output is directed into a keyring file, typically
+<code class="docutils literal notranslate"><span class="pre">/etc/ceph/ceph.keyring</span></code>.</p>
+<p>To gain a broader understanding of client keyring distribution and administration, you should read <a class="reference internal" href="../operations/#client-keyrings-and-configs"><span class="std std-ref">Client keyrings and configs</span></a>.</p>
+<p>To see an example that explains how to distribute <code class="docutils literal notranslate"><span class="pre">ceph.conf</span></code> configuration files to hosts that are tagged with the <code class="docutils literal notranslate"><span class="pre">bare_config</span></code> label, you should read the section called “Distributing ceph.conf to hosts tagged with bare_config” in the section called <a class="reference internal" href="../operations/#etc-ceph-conf-distribution"><span class="std std-ref">/etc/ceph/ceph.conf</span></a>.</p>
+</section>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../">
+              <img class="logo" src="../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../install/">Installing Ceph</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../">Cephadm</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../compatibility/">Compatibility and Stability</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../install/">Deploying a new Ceph cluster</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../adoption/">Converting an existing cluster to cephadm</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../host-management/">Host Management</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../services/">Service Management</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../upgrade/">Upgrading Ceph</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../operations/">Cephadm operations</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Client Setup</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#config-file-setup">Config File Setup</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#keyring-setup">Keyring Setup</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../troubleshooting/">Troubleshooting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../dev/cephadm/">Cephadm Feature Planning</a></li>
+</ul>
+</li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../rados/">Ceph Storage Cluster</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../../rados/configuration/">Configuration</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../">Deployment</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../compatibility/">Compatibility and Stability</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../install/">Deploying a new Ceph cluster</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../adoption/">Converting an existing cluster to cephadm</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../host-management/">Host Management</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../services/">Service Management</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../upgrade/">Upgrading Ceph</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../operations/">Cephadm operations</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Client Setup</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#config-file-setup">Config File Setup</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#keyring-setup">Keyring Setup</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../troubleshooting/">Troubleshooting</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../dev/cephadm/">Cephadm Feature Planning</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../rados/operations/">Operations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../rados/man/">Man Pages</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../rados/troubleshooting/">Troubleshooting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../rados/api/">APIs</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../cephfs/">Ceph File System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rbd/">Ceph Block Device</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../radosgw/">Ceph Object Gateway</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/">Ceph Manager Daemon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dev/developer_guide/">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dev/internals/">Ceph Internals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../troubleshooting/" title="Troubleshooting"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../operations/" title="Cephadm Operations"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../" >Cephadm</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Basic Ceph Client Setup</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

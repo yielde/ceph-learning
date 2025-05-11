@@ -1,0 +1,1339 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Librados (Python) &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/css/custom.css" />
+    <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/jquery.js"></script>
+    <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../../genindex/" />
+    <link rel="search" title="Search" href="../../../search/" />
+    <link rel="next" title="Ceph SQLite VFS" href="../libcephsqlite/" />
+    <link rel="prev" title="LibradosPP (C++)" href="../libradospp/" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../libcephsqlite/" title="Ceph SQLite VFS"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../libradospp/" title="LibradosPP (C++)"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../" >Ceph Storage Cluster</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../" accesskey="U">Ceph Storage Cluster APIs</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Librados (Python)</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="librados-python">
+<h1>Librados (Python)<a class="headerlink" href="#librados-python" title="Permalink to this heading">¶</a></h1>
+<p>The <code class="docutils literal notranslate"><span class="pre">rados</span></code> module is a thin Python wrapper for <code class="docutils literal notranslate"><span class="pre">librados</span></code>.</p>
+<section id="installation">
+<h2>Installation<a class="headerlink" href="#installation" title="Permalink to this heading">¶</a></h2>
+<p>To install Python libraries for Ceph, see <a class="reference external" href="../librados-intro#getting-librados-for-python">Getting librados for Python</a>.</p>
+</section>
+<section id="getting-started">
+<h2>Getting Started<a class="headerlink" href="#getting-started" title="Permalink to this heading">¶</a></h2>
+<p>You can create your own Ceph client using Python. The following tutorial will
+show you how to import the Ceph Python module, connect to a Ceph cluster,  and
+perform object operations as a <code class="docutils literal notranslate"><span class="pre">client.admin</span></code> user.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>To use the Ceph Python bindings, you must have access to a
+running Ceph cluster. To set one up quickly, see <a class="reference external" href="../../../start">Getting Started</a>.</p>
+</div>
+<dl class="simple">
+<dt>First, create a Python source file for your Ceph client. ::</dt><dd><dl class="field-list simple">
+<dt class="field-odd">linenos</dt>
+<dd class="field-odd"><p>sudo vim client.py</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<section id="import-the-module">
+<h3>Import the Module<a class="headerlink" href="#import-the-module" title="Permalink to this heading">¶</a></h3>
+<p>To use the <code class="docutils literal notranslate"><span class="pre">rados</span></code> module, import it into your source file.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="linenos">1</span>     <span class="kn">import</span><span class="w"> </span><span class="nn">rados</span>
+</pre></div>
+</div>
+</section>
+<section id="configure-a-cluster-handle">
+<h3>Configure a Cluster Handle<a class="headerlink" href="#configure-a-cluster-handle" title="Permalink to this heading">¶</a></h3>
+<p>Before connecting to the Ceph Storage Cluster, create a cluster handle. By
+default, the cluster handle assumes a cluster named <code class="docutils literal notranslate"><span class="pre">ceph</span></code> (i.e., the default
+for deployment tools, and our Getting Started guides too),  and a
+<code class="docutils literal notranslate"><span class="pre">client.admin</span></code> user name. You may change these defaults to suit your needs.</p>
+<p>To connect to the Ceph Storage Cluster, your application needs to know where to
+find the  Ceph Monitor. Provide this information to your application by
+specifying the path to your Ceph configuration file, which contains the location
+of the initial Ceph monitors.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="linenos">1</span>     <span class="kn">import</span><span class="w"> </span><span class="nn">rados</span><span class="o">,</span><span class="w"> </span><span class="nn">sys</span>
+<span class="linenos">2</span>
+<span class="linenos">3</span>     <span class="c1">#Create Handle Examples.</span>
+<span class="linenos">4</span>     <span class="n">cluster</span> <span class="o">=</span> <span class="n">rados</span><span class="o">.</span><span class="n">Rados</span><span class="p">(</span><span class="n">conffile</span><span class="o">=</span><span class="s1">&#39;ceph.conf&#39;</span><span class="p">)</span>
+<span class="linenos">5</span>     <span class="n">cluster</span> <span class="o">=</span> <span class="n">rados</span><span class="o">.</span><span class="n">Rados</span><span class="p">(</span><span class="n">conffile</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+<span class="linenos">6</span>     <span class="n">cluster</span> <span class="o">=</span> <span class="n">rados</span><span class="o">.</span><span class="n">Rados</span><span class="p">(</span><span class="n">conffile</span> <span class="o">=</span> <span class="s1">&#39;ceph.conf&#39;</span><span class="p">,</span> <span class="n">conf</span> <span class="o">=</span> <span class="nb">dict</span> <span class="p">(</span><span class="n">keyring</span> <span class="o">=</span> <span class="s1">&#39;/path/to/keyring&#39;</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>Ensure that the <code class="docutils literal notranslate"><span class="pre">conffile</span></code> argument provides the path and file name of your
+Ceph configuration file. You may use the <code class="docutils literal notranslate"><span class="pre">sys</span></code> module to avoid hard-coding the
+Ceph configuration path and file name.</p>
+<p>Your Python client also requires a client keyring. For this example, we use the
+<code class="docutils literal notranslate"><span class="pre">client.admin</span></code> key by default. If you would like to specify the keyring when
+creating the cluster handle, you may use the <code class="docutils literal notranslate"><span class="pre">conf</span></code> argument. Alternatively,
+you may specify the keyring path in your Ceph configuration file. For example,
+you may add something like the following line to your Ceph configuration file:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">keyring</span> <span class="o">=</span> <span class="o">/</span><span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">ceph</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">admin</span><span class="o">.</span><span class="n">keyring</span>
+</pre></div>
+</div>
+<p>For additional details on modifying your configuration via Python, see <a class="reference internal" href="#configuration">Configuration</a>.</p>
+</section>
+<section id="connect-to-the-cluster">
+<h3>Connect to the Cluster<a class="headerlink" href="#connect-to-the-cluster" title="Permalink to this heading">¶</a></h3>
+<p>Once you have a cluster handle configured, you may connect to the cluster.
+With a connection to the cluster, you may execute methods that return
+information about the cluster.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="linenos"> 1</span>     <span class="kn">import</span><span class="w"> </span><span class="nn">rados</span><span class="o">,</span><span class="w"> </span><span class="nn">sys</span>
+<span class="linenos"> 2</span>
+<span class="linenos"> 3</span>     <span class="n">cluster</span> <span class="o">=</span> <span class="n">rados</span><span class="o">.</span><span class="n">Rados</span><span class="p">(</span><span class="n">conffile</span><span class="o">=</span><span class="s1">&#39;ceph.conf&#39;</span><span class="p">)</span>
+<span class="linenos"> 4</span>     <span class="nb">print</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">librados version: &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">cluster</span><span class="o">.</span><span class="n">version</span><span class="p">())</span>
+<span class="linenos"> 5</span>     <span class="nb">print</span> <span class="s2">&quot;Will attempt to connect to: &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">cluster</span><span class="o">.</span><span class="n">conf_get</span><span class="p">(</span><span class="s1">&#39;mon host&#39;</span><span class="p">))</span>
+<span class="linenos"> 6</span>
+<span class="hll"><span class="linenos"> 7</span>     <span class="n">cluster</span><span class="o">.</span><span class="n">connect</span><span class="p">()</span>
+</span><span class="linenos"> 8</span>     <span class="nb">print</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Cluster ID: &quot;</span> <span class="o">+</span> <span class="n">cluster</span><span class="o">.</span><span class="n">get_fsid</span><span class="p">()</span>
+<span class="linenos"> 9</span>
+<span class="linenos">10</span>     <span class="nb">print</span> <span class="s2">&quot;</span><span class="se">\n\n</span><span class="s2">Cluster Statistics&quot;</span>
+<span class="linenos">11</span>     <span class="nb">print</span> <span class="s2">&quot;==================&quot;</span>
+<span class="linenos">12</span>     <span class="n">cluster_stats</span> <span class="o">=</span> <span class="n">cluster</span><span class="o">.</span><span class="n">get_cluster_stats</span><span class="p">()</span>
+<span class="linenos">13</span>
+<span class="linenos">14</span>     <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">cluster_stats</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+<span class="linenos">15</span>             <span class="nb">print</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span>
+</pre></div>
+</div>
+<p>By default, Ceph authentication is <code class="docutils literal notranslate"><span class="pre">on</span></code>. Your application will need to know
+the location of the keyring. The <code class="docutils literal notranslate"><span class="pre">python-ceph</span></code> module doesn’t have the default
+location, so you need to specify the keyring path. The easiest way to specify
+the keyring is to add it to the Ceph configuration file. The following Ceph
+configuration file example uses the <code class="docutils literal notranslate"><span class="pre">client.admin</span></code> keyring.</p>
+<div class="highlight-ini notranslate"><div class="highlight"><pre><span></span><span class="linenos">1</span><span class="w">     </span><span class="k">[global]</span>
+<span class="linenos">2</span><span class="w">     </span><span class="c1"># ... elided configuration</span>
+<span class="linenos">3</span><span class="w">     </span><span class="na">keyring</span><span class="o">=</span><span class="s">/path/to/keyring/ceph.client.admin.keyring</span>
+</pre></div>
+</div>
+</section>
+<section id="manage-pools">
+<h3>Manage Pools<a class="headerlink" href="#manage-pools" title="Permalink to this heading">¶</a></h3>
+<p>When connected to the cluster, the <code class="docutils literal notranslate"><span class="pre">Rados</span></code> API allows you to manage pools. You
+can list pools, check for the existence of a pool, create a pool and delete a
+pool.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="linenos"> 1</span>     <span class="nb">print</span> <span class="s2">&quot;</span><span class="se">\n\n</span><span class="s2">Pool Operations&quot;</span>
+<span class="linenos"> 2</span>     <span class="nb">print</span> <span class="s2">&quot;===============&quot;</span>
+<span class="linenos"> 3</span>
+<span class="linenos"> 4</span>     <span class="nb">print</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Available Pools&quot;</span>
+<span class="linenos"> 5</span>     <span class="nb">print</span> <span class="s2">&quot;----------------&quot;</span>
+<span class="hll"><span class="linenos"> 6</span>     <span class="n">pools</span> <span class="o">=</span> <span class="n">cluster</span><span class="o">.</span><span class="n">list_pools</span><span class="p">()</span>
+</span><span class="linenos"> 7</span>
+<span class="linenos"> 8</span>     <span class="k">for</span> <span class="n">pool</span> <span class="ow">in</span> <span class="n">pools</span><span class="p">:</span>
+<span class="linenos"> 9</span>             <span class="nb">print</span> <span class="n">pool</span>
+<span class="linenos">10</span>
+<span class="linenos">11</span>     <span class="nb">print</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Create &#39;test&#39; Pool&quot;</span>
+<span class="linenos">12</span>     <span class="nb">print</span> <span class="s2">&quot;------------------&quot;</span>
+<span class="hll"><span class="linenos">13</span>     <span class="n">cluster</span><span class="o">.</span><span class="n">create_pool</span><span class="p">(</span><span class="s1">&#39;test&#39;</span><span class="p">)</span>
+</span><span class="linenos">14</span>
+<span class="linenos">15</span>     <span class="nb">print</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Pool named &#39;test&#39; exists: &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">cluster</span><span class="o">.</span><span class="n">pool_exists</span><span class="p">(</span><span class="s1">&#39;test&#39;</span><span class="p">))</span>
+<span class="linenos">16</span>     <span class="nb">print</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Verify &#39;test&#39; Pool Exists&quot;</span>
+<span class="linenos">17</span>     <span class="nb">print</span> <span class="s2">&quot;-------------------------&quot;</span>
+<span class="hll"><span class="linenos">18</span>     <span class="n">pools</span> <span class="o">=</span> <span class="n">cluster</span><span class="o">.</span><span class="n">list_pools</span><span class="p">()</span>
+</span><span class="linenos">19</span>
+<span class="linenos">20</span>     <span class="k">for</span> <span class="n">pool</span> <span class="ow">in</span> <span class="n">pools</span><span class="p">:</span>
+<span class="linenos">21</span>             <span class="nb">print</span> <span class="n">pool</span>
+<span class="linenos">22</span>
+<span class="linenos">23</span>     <span class="nb">print</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Delete &#39;test&#39; Pool&quot;</span>
+<span class="linenos">24</span>     <span class="nb">print</span> <span class="s2">&quot;------------------&quot;</span>
+<span class="hll"><span class="linenos">25</span>     <span class="n">cluster</span><span class="o">.</span><span class="n">delete_pool</span><span class="p">(</span><span class="s1">&#39;test&#39;</span><span class="p">)</span>
+</span><span class="linenos">26</span>     <span class="nb">print</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Pool named &#39;test&#39; exists: &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">cluster</span><span class="o">.</span><span class="n">pool_exists</span><span class="p">(</span><span class="s1">&#39;test&#39;</span><span class="p">))</span>
+</pre></div>
+</div>
+</section>
+<section id="input-output-context">
+<h3>Input/Output Context<a class="headerlink" href="#input-output-context" title="Permalink to this heading">¶</a></h3>
+<p>Reading from and writing to the Ceph Storage Cluster requires an input/output
+context (ioctx). You can create an ioctx with the <code class="docutils literal notranslate"><span class="pre">open_ioctx()</span></code> or
+<code class="docutils literal notranslate"><span class="pre">open_ioctx2()</span></code> method of the <code class="docutils literal notranslate"><span class="pre">Rados</span></code> class. The <code class="docutils literal notranslate"><span class="pre">ioctx_name</span></code> parameter
+is the name of the  pool and <code class="docutils literal notranslate"><span class="pre">pool_id</span></code> is the ID of the pool you wish to use.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="linenos">1</span>     <span class="n">ioctx</span> <span class="o">=</span> <span class="n">cluster</span><span class="o">.</span><span class="n">open_ioctx</span><span class="p">(</span><span class="s1">&#39;data&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>or</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="linenos">1</span>     <span class="n">ioctx</span> <span class="o">=</span> <span class="n">cluster</span><span class="o">.</span><span class="n">open_ioctx2</span><span class="p">(</span><span class="n">pool_id</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Once you have an I/O context, you can read/write objects, extended attributes,
+and perform a number of other operations. After you complete operations, ensure
+that you close the connection. For example:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="linenos">1</span>     <span class="nb">print</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Closing the connection.&quot;</span>
+<span class="linenos">2</span>     <span class="n">ioctx</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+</pre></div>
+</div>
+</section>
+<section id="writing-reading-and-removing-objects">
+<h3>Writing, Reading and Removing Objects<a class="headerlink" href="#writing-reading-and-removing-objects" title="Permalink to this heading">¶</a></h3>
+<p>Once you create an I/O context, you can write objects to the cluster. If you
+write to an object that doesn’t exist, Ceph creates it. If you write to an
+object that exists, Ceph overwrites it (except when you specify a range, and
+then it only overwrites the range). You may read objects (and object ranges)
+from the cluster. You may also remove objects from the cluster. For example:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="linenos">1</span><span class="nb">print</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Writing object &#39;hw&#39; with contents &#39;Hello World!&#39; to pool &#39;data&#39;.&quot;</span>
+<span class="hll"><span class="linenos">2</span><span class="n">ioctx</span><span class="o">.</span><span class="n">write_full</span><span class="p">(</span><span class="s2">&quot;hw&quot;</span><span class="p">,</span> <span class="s2">&quot;Hello World!&quot;</span><span class="p">)</span>
+</span><span class="linenos">3</span>
+<span class="linenos">4</span><span class="nb">print</span> <span class="s2">&quot;</span><span class="se">\n\n</span><span class="s2">Contents of object &#39;hw&#39;</span><span class="se">\n</span><span class="s2">------------------------</span><span class="se">\n</span><span class="s2">&quot;</span>
+<span class="hll"><span class="linenos">5</span><span class="nb">print</span> <span class="n">ioctx</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="s2">&quot;hw&quot;</span><span class="p">)</span>
+</span><span class="linenos">6</span>
+<span class="linenos">7</span><span class="nb">print</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Removing object &#39;hw&#39;&quot;</span>
+<span class="hll"><span class="linenos">8</span><span class="n">ioctx</span><span class="o">.</span><span class="n">remove_object</span><span class="p">(</span><span class="s2">&quot;hw&quot;</span><span class="p">)</span>
+</span></pre></div>
+</div>
+</section>
+<section id="writing-and-reading-xattrs">
+<h3>Writing and Reading XATTRS<a class="headerlink" href="#writing-and-reading-xattrs" title="Permalink to this heading">¶</a></h3>
+<p>Once you create an object, you can write extended attributes (XATTRs) to
+the object and read XATTRs from the object. For example:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="linenos">1</span><span class="nb">print</span> <span class="s2">&quot;</span><span class="se">\n\n</span><span class="s2">Writing XATTR &#39;lang&#39; with value &#39;en_US&#39; to object &#39;hw&#39;&quot;</span>
+<span class="hll"><span class="linenos">2</span><span class="n">ioctx</span><span class="o">.</span><span class="n">set_xattr</span><span class="p">(</span><span class="s2">&quot;hw&quot;</span><span class="p">,</span> <span class="s2">&quot;lang&quot;</span><span class="p">,</span> <span class="s2">&quot;en_US&quot;</span><span class="p">)</span>
+</span><span class="linenos">3</span>
+<span class="linenos">4</span><span class="nb">print</span> <span class="s2">&quot;</span><span class="se">\n\n</span><span class="s2">Getting XATTR &#39;lang&#39; from object &#39;hw&#39;</span><span class="se">\n</span><span class="s2">&quot;</span>
+<span class="hll"><span class="linenos">5</span><span class="nb">print</span> <span class="n">ioctx</span><span class="o">.</span><span class="n">get_xattr</span><span class="p">(</span><span class="s2">&quot;hw&quot;</span><span class="p">,</span> <span class="s2">&quot;lang&quot;</span><span class="p">)</span>
+</span></pre></div>
+</div>
+</section>
+<section id="listing-objects">
+<h3>Listing Objects<a class="headerlink" href="#listing-objects" title="Permalink to this heading">¶</a></h3>
+<p>If you want to examine the list of objects in a pool, you may
+retrieve the list of objects and iterate over them with the object iterator.
+For example:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="hll"><span class="linenos"> 1</span><span class="n">object_iterator</span> <span class="o">=</span> <span class="n">ioctx</span><span class="o">.</span><span class="n">list_objects</span><span class="p">()</span>
+</span><span class="linenos"> 2</span>
+<span class="linenos"> 3</span><span class="k">while</span> <span class="kc">True</span> <span class="p">:</span>
+<span class="linenos"> 4</span>
+<span class="linenos"> 5</span>        <span class="k">try</span> <span class="p">:</span>
+<span class="hll"><span class="linenos"> 6</span>                <span class="n">rados_object</span> <span class="o">=</span> <span class="n">object_iterator</span><span class="o">.</span><span class="n">next</span><span class="p">()</span>
+</span><span class="hll"><span class="linenos"> 7</span>                <span class="nb">print</span> <span class="s2">&quot;Object contents = &quot;</span> <span class="o">+</span> <span class="n">rados_object</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+</span><span class="linenos"> 8</span>
+<span class="linenos"> 9</span>        <span class="k">except</span> <span class="ne">StopIteration</span> <span class="p">:</span>
+<span class="linenos">10</span>                <span class="k">break</span>
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">Object</span></code> class provides a file-like interface to an object, allowing
+you to read and write content and extended attributes. Object operations using
+the I/O context provide additional functionality and asynchronous capabilities.</p>
+</section>
+</section>
+<section id="cluster-handle-api">
+<h2>Cluster Handle API<a class="headerlink" href="#cluster-handle-api" title="Permalink to this heading">¶</a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">Rados</span></code> class provides an interface into the Ceph Storage Daemon.</p>
+<section id="configuration">
+<h3>Configuration<a class="headerlink" href="#configuration" title="Permalink to this heading">¶</a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">Rados</span></code> class provides methods for getting and setting configuration
+values, reading the Ceph configuration file, and parsing arguments. You
+do not need to be connected to the Ceph Storage Cluster to invoke the following
+methods. See <a class="reference external" href="../../configuration">Storage Cluster Configuration</a> for details on settings.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="rados.Rados.conf_get">
+<span class="sig-prename descclassname"><span class="pre">Rados.</span></span><span class="sig-name descname"><span class="pre">conf_get</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">option</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#rados.Rados.conf_get" title="Permalink to this definition">¶</a></dt>
+<dd><p>Rados.conf_get(self, str option: str) -&gt; Optional[str]
+Get the value of a configuration option</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>option</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – which option to read</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>str - value of the option or None</p>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">TypeError</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rados.Rados.conf_set">
+<span class="sig-prename descclassname"><span class="pre">Rados.</span></span><span class="sig-name descname"><span class="pre">conf_set</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">option</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">val</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#rados.Rados.conf_set" title="Permalink to this definition">¶</a></dt>
+<dd><p>Rados.conf_set(self, str option: str, str val: str)
+Set the value of a configuration option</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>option</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – which option to set</p></li>
+<li><p><strong>option</strong> – value of the option</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">TypeError</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ObjectNotFound</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rados.Rados.conf_read_file">
+<span class="sig-prename descclassname"><span class="pre">Rados.</span></span><span class="sig-name descname"><span class="pre">conf_read_file</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#rados.Rados.conf_read_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>Rados.conf_read_file(self, str path: Optional[str] = None)
+Configure the cluster handle using a Ceph config file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>path</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – path to the config file</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rados.Rados.conf_parse_argv">
+<span class="sig-prename descclassname"><span class="pre">Rados.</span></span><span class="sig-name descname"><span class="pre">conf_parse_argv</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#rados.Rados.conf_parse_argv" title="Permalink to this definition">¶</a></dt>
+<dd><p>Rados.conf_parse_argv(self, args: Sequence[str])
+Parse known arguments from args, and remove; returned
+args contain only those unknown to ceph</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rados.Rados.version">
+<span class="sig-prename descclassname"><span class="pre">Rados.</span></span><span class="sig-name descname"><span class="pre">version</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#rados.Rados.version" title="Permalink to this definition">¶</a></dt>
+<dd><p>Rados.version(self) -&gt; Version
+Get the version number of the <code class="docutils literal notranslate"><span class="pre">librados</span></code> C library.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Version</span></code></p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>a tuple of <code class="docutils literal notranslate"><span class="pre">(major,</span> <span class="pre">minor,</span> <span class="pre">extra)</span></code> components of the
+librados version</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="connection-management">
+<h3>Connection Management<a class="headerlink" href="#connection-management" title="Permalink to this heading">¶</a></h3>
+<p>Once you configure your cluster handle, you may connect to the cluster, check
+the cluster <code class="docutils literal notranslate"><span class="pre">fsid</span></code>, retrieve cluster statistics, and disconnect (shutdown)
+from the cluster. You may also assert that the cluster handle is in a particular
+state (e.g., “configuring”, “connecting”, etc.).</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="rados.Rados.connect">
+<span class="sig-prename descclassname"><span class="pre">Rados.</span></span><span class="sig-name descname"><span class="pre">connect</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">timeout</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#rados.Rados.connect" title="Permalink to this definition">¶</a></dt>
+<dd><p>Rados.connect(self, int timeout: int = 0)
+Connect to the cluster.  Use shutdown() to release resources.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rados.Rados.shutdown">
+<span class="sig-prename descclassname"><span class="pre">Rados.</span></span><span class="sig-name descname"><span class="pre">shutdown</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#rados.Rados.shutdown" title="Permalink to this definition">¶</a></dt>
+<dd><p>Rados.shutdown(self)
+Disconnects from the cluster.  Call this explicitly when a
+Rados.connect()ed object is no longer used.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rados.Rados.get_fsid">
+<span class="sig-prename descclassname"><span class="pre">Rados.</span></span><span class="sig-name descname"><span class="pre">get_fsid</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#rados.Rados.get_fsid" title="Permalink to this definition">¶</a></dt>
+<dd><p>Rados.get_fsid(self) -&gt; str
+Get the fsid of the cluster as a hexadecimal string.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Error</span></code></p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>str - cluster fsid</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rados.Rados.get_cluster_stats">
+<span class="sig-prename descclassname"><span class="pre">Rados.</span></span><span class="sig-name descname"><span class="pre">get_cluster_stats</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#rados.Rados.get_cluster_stats" title="Permalink to this definition">¶</a></dt>
+<dd><p>Rados.get_cluster_stats(self) -&gt; Dict[str, int]
+Read usage info about the cluster</p>
+<p>This tells you total space, space used, space available, and number
+of objects. These are not updated immediately when data is written,
+they are eventually consistent.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><p>dict - contains the following keys:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">kb</span></code> (int) - total space</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">kb_used</span></code> (int) - space used</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">kb_avail</span></code> (int) - free space available</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">num_objects</span></code> (int) - number of objects</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="rados.Rados">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">rados.</span></span><span class="sig-name descname"><span class="pre">Rados</span></span><a class="headerlink" href="#rados.Rados" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="py method">
+<dt class="sig sig-object py" id="rados.Rados.require_state">
+<span class="sig-name descname"><span class="pre">require_state</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#rados.Rados.require_state" title="Permalink to this definition">¶</a></dt>
+<dd><p>Checks if the Rados object is in a special state</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>args</strong> – Any number of states to check as separate arguments</p>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">RadosStateError</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="pool-operations">
+<h3>Pool Operations<a class="headerlink" href="#pool-operations" title="Permalink to this heading">¶</a></h3>
+<p>To use pool operation methods, you must connect to the Ceph Storage Cluster
+first.  You may list the available pools, create a pool, check to see if a pool
+exists,  and delete a pool.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="rados.Rados.list_pools">
+<span class="sig-prename descclassname"><span class="pre">Rados.</span></span><span class="sig-name descname"><span class="pre">list_pools</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#rados.Rados.list_pools" title="Permalink to this definition">¶</a></dt>
+<dd><p>Rados.list_pools(self) -&gt; List[str]
+Gets a list of pool names.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>list - of pool names.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rados.Rados.create_pool">
+<span class="sig-prename descclassname"><span class="pre">Rados.</span></span><span class="sig-name descname"><span class="pre">create_pool</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pool_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">crush_rule</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">auid</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#rados.Rados.create_pool" title="Permalink to this definition">¶</a></dt>
+<dd><p>Rados.create_pool(self, str pool_name: str, int crush_rule: Optional[int] = None, int auid: Optional[int] = None)
+Create a pool:
+- with default settings: if crush_rule=None and auid=None
+- with a specific CRUSH rule: crush_rule given
+- with a specific auid: auid given
+- with a specific CRUSH rule and auid: crush_rule and auid given</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>pool_name</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – name of the pool to create</p></li>
+<li><p><strong>crush_rule</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – rule to use for placement in the new pool</p></li>
+<li><p><strong>auid</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – id of the owner of the new pool</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">TypeError</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Error</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rados.Rados.pool_exists">
+<span class="sig-prename descclassname"><span class="pre">Rados.</span></span><span class="sig-name descname"><span class="pre">pool_exists</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pool_name</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#rados.Rados.pool_exists" title="Permalink to this definition">¶</a></dt>
+<dd><p>Rados.pool_exists(self, str pool_name: str) -&gt; bool
+Checks if a given pool exists.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>pool_name</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – name of the pool to check</p>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">TypeError</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Error</span></code></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>bool - whether the pool exists, false otherwise.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rados.Rados.delete_pool">
+<span class="sig-prename descclassname"><span class="pre">Rados.</span></span><span class="sig-name descname"><span class="pre">delete_pool</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pool_name</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#rados.Rados.delete_pool" title="Permalink to this definition">¶</a></dt>
+<dd><p>Rados.delete_pool(self, str pool_name: str)
+Delete a pool and all data inside it.</p>
+<p>The pool is removed from the cluster immediately,
+but the actual data is deleted in the background.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>pool_name</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – name of the pool to delete</p>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">TypeError</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Error</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="cli-commands">
+<h3>CLI Commands<a class="headerlink" href="#cli-commands" title="Permalink to this heading">¶</a></h3>
+<p>The Ceph CLI command is internally using the following librados Python binding methods.</p>
+<p>In order to send a command, choose the correct method and choose the correct target.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="rados.Rados.mon_command">
+<span class="sig-prename descclassname"><span class="pre">Rados.</span></span><span class="sig-name descname"><span class="pre">mon_command</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cmd</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inbuf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeout</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#rados.Rados.mon_command" title="Permalink to this definition">¶</a></dt>
+<dd><p>Send a command to the mon.</p>
+<p>mon_command[_target](cmd, inbuf, outbuf, outbuflen, outs, outslen)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>cmd</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – JSON formatted string.</p></li>
+<li><p><strong>inbuf</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bytes</span></code>) – optional string.</p></li>
+<li><p><strong>timeout</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – This parameter is ignored.</p></li>
+<li><p><strong>target</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – name or rank of a specific mon. Optional</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">bytes</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>(int ret, string outbuf, string outs)</p>
+</dd>
+</dl>
+<p>Example:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">c</span> <span class="o">=</span> <span class="n">Rados</span><span class="p">(</span><span class="n">conffile</span><span class="o">=</span><span class="s1">&#39;/etc/ceph/ceph.conf&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">c</span><span class="o">.</span><span class="n">connect</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">cmd</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">({</span><span class="s2">&quot;prefix&quot;</span><span class="p">:</span> <span class="s2">&quot;osd safe-to-destroy&quot;</span><span class="p">,</span> <span class="s2">&quot;ids&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;2&quot;</span><span class="p">],</span> <span class="s2">&quot;format&quot;</span><span class="p">:</span> <span class="s2">&quot;json&quot;</span><span class="p">})</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">c</span><span class="o">.</span><span class="n">mon_command</span><span class="p">(</span><span class="n">cmd</span><span class="p">,</span> <span class="sa">b</span><span class="s1">&#39;&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rados.Rados.osd_command">
+<span class="sig-prename descclassname"><span class="pre">Rados.</span></span><span class="sig-name descname"><span class="pre">osd_command</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">osdid</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cmd</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inbuf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeout</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#rados.Rados.osd_command" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py">
+<span class="sig-prename descclassname"><span class="pre">Rados.</span></span><span class="sig-name descname"><span class="pre">osd_command</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">osdid</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cmd</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inbuf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">outbuf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">outbuflen</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">outs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">outslen</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">bytes</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>(int ret, string outbuf, string outs)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rados.Rados.mgr_command">
+<span class="sig-prename descclassname"><span class="pre">Rados.</span></span><span class="sig-name descname"><span class="pre">mgr_command</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cmd</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inbuf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeout</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#rados.Rados.mgr_command" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">bytes</span></code>]</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>(int ret, string outbuf, string outs)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rados.Rados.pg_command">
+<span class="sig-prename descclassname"><span class="pre">Rados.</span></span><span class="sig-name descname"><span class="pre">pg_command</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pgid</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cmd</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inbuf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeout</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#rados.Rados.pg_command" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py">
+<span class="sig-prename descclassname"><span class="pre">Rados.</span></span><span class="sig-name descname"><span class="pre">pg_command</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pgid</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cmd</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inbuf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">outbuf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">outbuflen</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">outs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">outslen</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">bytes</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>(int ret, string outbuf, string outs)</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+</section>
+<section id="input-output-context-api">
+<h2>Input/Output Context API<a class="headerlink" href="#input-output-context-api" title="Permalink to this heading">¶</a></h2>
+<p>To write data to and read data from the Ceph Object Store, you must create
+an Input/Output context (ioctx). The <cite>Rados</cite> class provides <cite>open_ioctx()</cite>
+and <cite>open_ioctx2()</cite> methods. The remaining <code class="docutils literal notranslate"><span class="pre">ioctx</span></code> operations involve
+invoking methods of the <cite>Ioctx</cite> and other classes.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="rados.Rados.open_ioctx">
+<span class="sig-prename descclassname"><span class="pre">Rados.</span></span><span class="sig-name descname"><span class="pre">open_ioctx</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ioctx_name</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#rados.Rados.open_ioctx" title="Permalink to this definition">¶</a></dt>
+<dd><p>Rados.open_ioctx(self, str ioctx_name: str) -&gt; Ioctx
+Create an io context</p>
+<p>The io context allows you to perform operations within a particular
+pool.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>ioctx_name</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – name of the pool</p>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">TypeError</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Error</span></code></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Ioctx</span></code></p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Ioctx - Rados Ioctx object</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rados.Ioctx.require_ioctx_open">
+<span class="sig-prename descclassname"><span class="pre">Ioctx.</span></span><span class="sig-name descname"><span class="pre">require_ioctx_open</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#rados.Ioctx.require_ioctx_open" title="Permalink to this definition">¶</a></dt>
+<dd><p>Ioctx.require_ioctx_open(self)
+Checks if the rados.Ioctx object state is ‘open’</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><p>IoctxStateError</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rados.Ioctx.get_stats">
+<span class="sig-prename descclassname"><span class="pre">Ioctx.</span></span><span class="sig-name descname"><span class="pre">get_stats</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#rados.Ioctx.get_stats" title="Permalink to this definition">¶</a></dt>
+<dd><p>Ioctx.get_stats(self) -&gt; Dict[str, int]
+Get pool usage statistics</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><p>dict - contains the following keys:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">num_bytes</span></code> (int) - size of pool in bytes</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">num_kb</span></code> (int) - size of pool in kbytes</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">num_objects</span></code> (int) - number of objects in the pool</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">num_object_clones</span></code> (int) - number of object clones</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">num_object_copies</span></code> (int) - number of object copies</p></li>
+<li><dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">num_objects_missing_on_primary</span></code> (int) - number of objets</dt><dd><p>missing on primary</p>
+</dd>
+</dl>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">num_objects_unfound</span></code> (int) - number of unfound objects</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">num_objects_degraded</span></code> (int) - number of degraded objects</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">num_rd</span></code> (int) - bytes read</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">num_rd_kb</span></code> (int) - kbytes read</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">num_wr</span></code> (int) - bytes written</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">num_wr_kb</span></code> (int) - kbytes written</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rados.Ioctx.get_last_version">
+<span class="sig-prename descclassname"><span class="pre">Ioctx.</span></span><span class="sig-name descname"><span class="pre">get_last_version</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#rados.Ioctx.get_last_version" title="Permalink to this definition">¶</a></dt>
+<dd><p>Ioctx.get_last_version(self) -&gt; int
+Return the version of the last object read or written to.</p>
+<p>This exposes the internal version number of the last object read or
+written via this io context</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>version of the last object used</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rados.Ioctx.close">
+<span class="sig-prename descclassname"><span class="pre">Ioctx.</span></span><span class="sig-name descname"><span class="pre">close</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#rados.Ioctx.close" title="Permalink to this definition">¶</a></dt>
+<dd><p>Ioctx.close(self)
+Close a rados.Ioctx object.</p>
+<p>This just tells librados that you no longer need to use the io context.
+It may not be freed immediately if there are pending asynchronous
+requests on it, but you should not use an io context again after
+calling this function on it.</p>
+</dd></dl>
+
+<section id="object-operations">
+<h3>Object Operations<a class="headerlink" href="#object-operations" title="Permalink to this heading">¶</a></h3>
+<p>The Ceph Storage Cluster stores data as objects. You can read and write objects
+synchronously or asynchronously. You can read and write from offsets. An object
+has a name (or key) and data.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="rados.Ioctx.aio_write">
+<span class="sig-prename descclassname"><span class="pre">Ioctx.</span></span><span class="sig-name descname"><span class="pre">aio_write</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">object_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">to_write</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">offset</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">oncomplete</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">onsafe</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#rados.Ioctx.aio_write" title="Permalink to this definition">¶</a></dt>
+<dd><p>Ioctx.aio_write(self, str object_name: str, bytes to_write: bytes, int offset: int = 0, oncomplete: Optional[Callable[[Completion], None]] = None, onsafe: Optional[Callable[[Completion], None]] = None) -&gt; Completion
+Write data to an object asynchronously</p>
+<p>Queues the write and returns.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>object_name</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – name of the object</p></li>
+<li><p><strong>to_write</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bytes</span></code>) – data to write</p></li>
+<li><p><strong>offset</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – byte offset in the object to begin writing at</p></li>
+<li><p><strong>oncomplete</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code>[[<code class="xref py py-class docutils literal notranslate"><span class="pre">Completion</span></code>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]]) – what to do when the write is safe and complete in memory
+on all replicas</p></li>
+<li><p><strong>onsafe</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code>[[<code class="xref py py-class docutils literal notranslate"><span class="pre">Completion</span></code>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]]) – what to do when the write is safe and complete on storage
+on all replicas</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Error</span></code></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Completion</span></code></p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>completion object</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rados.Ioctx.aio_write_full">
+<span class="sig-prename descclassname"><span class="pre">Ioctx.</span></span><span class="sig-name descname"><span class="pre">aio_write_full</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">object_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">to_write</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">oncomplete</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">onsafe</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#rados.Ioctx.aio_write_full" title="Permalink to this definition">¶</a></dt>
+<dd><p>Ioctx.aio_write_full(self, str object_name: str, bytes to_write: bytes, oncomplete: Optional[Callable] = None, onsafe: Optional[Callable] = None) -&gt; Completion
+Asynchronously write an entire object</p>
+<p>The object is filled with the provided data. If the object exists,
+it is atomically truncated and then written.
+Queues the write and returns.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>object_name</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – name of the object</p></li>
+<li><p><strong>to_write</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bytes</span></code>) – data to write</p></li>
+<li><p><strong>oncomplete</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code>]) – what to do when the write is safe and complete in memory
+on all replicas</p></li>
+<li><p><strong>onsafe</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code>]) – what to do when the write is safe and complete on storage
+on all replicas</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Error</span></code></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Completion</span></code></p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>completion object</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rados.Ioctx.aio_append">
+<span class="sig-prename descclassname"><span class="pre">Ioctx.</span></span><span class="sig-name descname"><span class="pre">aio_append</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">object_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">to_append</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">oncomplete</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">onsafe</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#rados.Ioctx.aio_append" title="Permalink to this definition">¶</a></dt>
+<dd><p>Ioctx.aio_append(self, str object_name: str, bytes to_append: bytes, oncomplete: Optional[Callable] = None, onsafe: Optional[Callable] = None) -&gt; Completion
+Asynchronously append data to an object</p>
+<p>Queues the write and returns.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>object_name</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – name of the object</p></li>
+<li><p><strong>to_append</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bytes</span></code>) – data to append</p></li>
+<li><p><strong>offset</strong> – byte offset in the object to begin writing at</p></li>
+<li><p><strong>oncomplete</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code>]) – what to do when the write is safe and complete in memory
+on all replicas</p></li>
+<li><p><strong>onsafe</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code>]) – what to do when the write is safe and complete on storage
+on all replicas</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Error</span></code></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Completion</span></code></p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>completion object</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rados.Ioctx.write">
+<span class="sig-prename descclassname"><span class="pre">Ioctx.</span></span><span class="sig-name descname"><span class="pre">write</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">offset</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#rados.Ioctx.write" title="Permalink to this definition">¶</a></dt>
+<dd><p>Ioctx.write(self, str key: str, bytes data: bytes, int offset: int = 0)
+Write data to an object synchronously</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>key</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – name of the object</p></li>
+<li><p><strong>data</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bytes</span></code>) – data to write</p></li>
+<li><p><strong>offset</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – byte offset in the object to begin writing at</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">TypeError</span></code></p>
+</dd>
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">LogicError</span></code></p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>int - 0 on success</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rados.Ioctx.write_full">
+<span class="sig-prename descclassname"><span class="pre">Ioctx.</span></span><span class="sig-name descname"><span class="pre">write_full</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#rados.Ioctx.write_full" title="Permalink to this definition">¶</a></dt>
+<dd><p>Ioctx.write_full(self, str key: str, bytes data: bytes)
+Write an entire object synchronously.</p>
+<p>The object is filled with the provided data. If the object exists,
+it is atomically truncated and then written.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>key</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – name of the object</p></li>
+<li><p><strong>data</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bytes</span></code>) – data to write</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">TypeError</span></code></p>
+</dd>
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Error</span></code></p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>int - 0 on success</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rados.Ioctx.aio_flush">
+<span class="sig-prename descclassname"><span class="pre">Ioctx.</span></span><span class="sig-name descname"><span class="pre">aio_flush</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#rados.Ioctx.aio_flush" title="Permalink to this definition">¶</a></dt>
+<dd><p>Ioctx.aio_flush(self)
+Block until all pending writes in an io context are safe</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Error</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rados.Ioctx.set_locator_key">
+<span class="sig-prename descclassname"><span class="pre">Ioctx.</span></span><span class="sig-name descname"><span class="pre">set_locator_key</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">loc_key</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#rados.Ioctx.set_locator_key" title="Permalink to this definition">¶</a></dt>
+<dd><p>Ioctx.set_locator_key(self, str loc_key: str)
+Set the key for mapping objects to pgs within an io context.</p>
+<p>The key is used instead of the object name to determine which
+placement groups an object is put in. This affects all subsequent
+operations of the io context - until a different locator key is
+set, all objects in this io context will be placed in the same pg.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>loc_key</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – the key to use as the object locator, or NULL to discard
+any previously set key</p>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">TypeError</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rados.Ioctx.aio_read">
+<span class="sig-prename descclassname"><span class="pre">Ioctx.</span></span><span class="sig-name descname"><span class="pre">aio_read</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">object_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">length</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">offset</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">oncomplete</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#rados.Ioctx.aio_read" title="Permalink to this definition">¶</a></dt>
+<dd><p>Ioctx.aio_read(self, str object_name: str, int length: int, int offset: int, oncomplete: Optional[Callable] = None) -&gt; Completion
+Asynchronously read data from an object</p>
+<p>oncomplete will be called with the returned read value as
+well as the completion:</p>
+<p>oncomplete(completion, data_read)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>object_name</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – name of the object to read from</p></li>
+<li><p><strong>length</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – the number of bytes to read</p></li>
+<li><p><strong>offset</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – byte offset in the object to begin reading from</p></li>
+<li><p><strong>oncomplete</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code>]) – what to do when the read is complete</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Error</span></code></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Completion</span></code></p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>completion object</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rados.Ioctx.read">
+<span class="sig-prename descclassname"><span class="pre">Ioctx.</span></span><span class="sig-name descname"><span class="pre">read</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">8192</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">offset</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#rados.Ioctx.read" title="Permalink to this definition">¶</a></dt>
+<dd><p>Ioctx.read(self, str key: str, int length: int = 8192, int offset: int = 0) -&gt; bytes
+Read data from an object synchronously</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>key</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – name of the object</p></li>
+<li><p><strong>length</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – the number of bytes to read (default=8192)</p></li>
+<li><p><strong>offset</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – byte offset in the object to begin reading at</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">TypeError</span></code></p>
+</dd>
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Error</span></code></p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">bytes</span></code></p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>str - data read from object</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rados.Ioctx.stat">
+<span class="sig-prename descclassname"><span class="pre">Ioctx.</span></span><span class="sig-name descname"><span class="pre">stat</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#rados.Ioctx.stat" title="Permalink to this definition">¶</a></dt>
+<dd><p>Ioctx.stat(self, str key: str) -&gt; Tuple[int, time.struct_time]
+Get object stats (size/mtime)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>key</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – the name of the object to get stats from</p>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">TypeError</span></code></p>
+</dd>
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Error</span></code></p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">struct_time</span></code>]</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>(size,timestamp)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rados.Ioctx.trunc">
+<span class="sig-prename descclassname"><span class="pre">Ioctx.</span></span><span class="sig-name descname"><span class="pre">trunc</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">size</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#rados.Ioctx.trunc" title="Permalink to this definition">¶</a></dt>
+<dd><p>Ioctx.trunc(self, str key: str, int size: int)
+Resize an object</p>
+<p>If this enlarges the object, the new area is logically filled with
+zeroes. If this shrinks the object, the excess data is removed.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>key</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – the name of the object to resize</p></li>
+<li><p><strong>size</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – the new size of the object in bytes</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">TypeError</span></code></p>
+</dd>
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Error</span></code></p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>int - 0 on success, otherwise raises error</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rados.Ioctx.remove_object">
+<span class="sig-prename descclassname"><span class="pre">Ioctx.</span></span><span class="sig-name descname"><span class="pre">remove_object</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#rados.Ioctx.remove_object" title="Permalink to this definition">¶</a></dt>
+<dd><p>Ioctx.remove_object(self, str key: str) -&gt; bool
+Delete an object</p>
+<p>This does not delete any snapshots of the object.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>key</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – the name of the object to delete</p>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">TypeError</span></code></p>
+</dd>
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Error</span></code></p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>bool - True on success</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="object-extended-attributes">
+<h3>Object Extended Attributes<a class="headerlink" href="#object-extended-attributes" title="Permalink to this heading">¶</a></h3>
+<p>You may set extended attributes (XATTRs) on an object. You can retrieve a list
+of objects or XATTRs and iterate over them.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="rados.Ioctx.set_xattr">
+<span class="sig-prename descclassname"><span class="pre">Ioctx.</span></span><span class="sig-name descname"><span class="pre">set_xattr</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xattr_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xattr_value</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#rados.Ioctx.set_xattr" title="Permalink to this definition">¶</a></dt>
+<dd><p>Ioctx.set_xattr(self, str key: str, str xattr_name: str, bytes xattr_value: bytes) -&gt; bool
+Set an extended attribute on an object.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>key</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – the name of the object to set xattr to</p></li>
+<li><p><strong>xattr_name</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – which extended attribute to set</p></li>
+<li><p><strong>xattr_value</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bytes</span></code>) – the value of the  extended attribute</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">TypeError</span></code></p>
+</dd>
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Error</span></code></p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>bool - True on success, otherwise raise an error</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rados.Ioctx.get_xattrs">
+<span class="sig-prename descclassname"><span class="pre">Ioctx.</span></span><span class="sig-name descname"><span class="pre">get_xattrs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">oid</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#rados.Ioctx.get_xattrs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Ioctx.get_xattrs(self, str oid: str) -&gt; XattrIterator
+Start iterating over xattrs on an object.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>oid</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – the name of the object to get xattrs from</p>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">TypeError</span></code></p>
+</dd>
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Error</span></code></p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">XattrIterator</span></code></p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>XattrIterator</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rados.XattrIterator.__next__">
+<span class="sig-prename descclassname"><span class="pre">XattrIterator.</span></span><span class="sig-name descname"><span class="pre">__next__</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#rados.XattrIterator.__next__" title="Permalink to this definition">¶</a></dt>
+<dd><p>XattrIterator.__next__(self)
+Get the next xattr on the object</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><p>StopIteration</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>pair - of name and value of the next Xattr</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rados.Ioctx.get_xattr">
+<span class="sig-prename descclassname"><span class="pre">Ioctx.</span></span><span class="sig-name descname"><span class="pre">get_xattr</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xattr_name</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#rados.Ioctx.get_xattr" title="Permalink to this definition">¶</a></dt>
+<dd><p>Ioctx.get_xattr(self, str key: str, str xattr_name: str) -&gt; bytes
+Get the value of an extended attribute on an object.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>key</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – the name of the object to get xattr from</p></li>
+<li><p><strong>xattr_name</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – which extended attribute to read</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">TypeError</span></code></p>
+</dd>
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Error</span></code></p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">bytes</span></code></p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>str - value of the xattr</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rados.Ioctx.rm_xattr">
+<span class="sig-prename descclassname"><span class="pre">Ioctx.</span></span><span class="sig-name descname"><span class="pre">rm_xattr</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xattr_name</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#rados.Ioctx.rm_xattr" title="Permalink to this definition">¶</a></dt>
+<dd><p>Ioctx.rm_xattr(self, str key: str, str xattr_name: str) -&gt; bool
+Removes an extended attribute on from an object.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>key</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – the name of the object to remove xattr from</p></li>
+<li><p><strong>xattr_name</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – which extended attribute to remove</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">TypeError</span></code></p>
+</dd>
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Error</span></code></p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>bool - True on success, otherwise raise an error</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+</section>
+<section id="object-interface">
+<h2>Object Interface<a class="headerlink" href="#object-interface" title="Permalink to this heading">¶</a></h2>
+<p>From an I/O context, you can retrieve a list of objects from a pool and iterate
+over them. The object interface provide makes each object look like a file, and
+you may perform synchronous operations on the  objects. For asynchronous
+operations, you should use the I/O context methods.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="rados.Ioctx.list_objects">
+<span class="sig-prename descclassname"><span class="pre">Ioctx.</span></span><span class="sig-name descname"><span class="pre">list_objects</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#rados.Ioctx.list_objects" title="Permalink to this definition">¶</a></dt>
+<dd><p>Ioctx.list_objects(self) -&gt; ObjectIterator
+Get ObjectIterator on rados.Ioctx object.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">ObjectIterator</span></code></p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>ObjectIterator</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rados.ObjectIterator.__next__">
+<span class="sig-prename descclassname"><span class="pre">ObjectIterator.</span></span><span class="sig-name descname"><span class="pre">__next__</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#rados.ObjectIterator.__next__" title="Permalink to this definition">¶</a></dt>
+<dd><p>ObjectIterator.__next__(self)
+Get the next object name and locator in the pool</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><p>StopIteration</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>next rados.Ioctx Object</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rados.Object.read">
+<span class="sig-prename descclassname"><span class="pre">Object.</span></span><span class="sig-name descname"><span class="pre">read</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1024</span> <span class="pre">*</span> <span class="pre">1024</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#rados.Object.read" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rados.Object.write">
+<span class="sig-prename descclassname"><span class="pre">Object.</span></span><span class="sig-name descname"><span class="pre">write</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">string_to_write</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#rados.Object.write" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rados.Object.get_xattrs">
+<span class="sig-prename descclassname"><span class="pre">Object.</span></span><span class="sig-name descname"><span class="pre">get_xattrs</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#rados.Object.get_xattrs" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rados.Object.get_xattr">
+<span class="sig-prename descclassname"><span class="pre">Object.</span></span><span class="sig-name descname"><span class="pre">get_xattr</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">xattr_name</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#rados.Object.get_xattr" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rados.Object.set_xattr">
+<span class="sig-prename descclassname"><span class="pre">Object.</span></span><span class="sig-name descname"><span class="pre">set_xattr</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">xattr_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xattr_value</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#rados.Object.set_xattr" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rados.Object.rm_xattr">
+<span class="sig-prename descclassname"><span class="pre">Object.</span></span><span class="sig-name descname"><span class="pre">rm_xattr</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">xattr_name</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#rados.Object.rm_xattr" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rados.Object.stat">
+<span class="sig-prename descclassname"><span class="pre">Object.</span></span><span class="sig-name descname"><span class="pre">stat</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#rados.Object.stat" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rados.Object.remove">
+<span class="sig-prename descclassname"><span class="pre">Object.</span></span><span class="sig-name descname"><span class="pre">remove</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#rados.Object.remove" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</section>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../../">
+              <img class="logo" src="../../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../install/">Installing Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cephadm/">Cephadm</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../">Ceph Storage Cluster</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../../configuration/">Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../cephadm/">Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../operations/">Operations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../man/">Man Pages</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../troubleshooting/">Troubleshooting</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../">APIs</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../librados-intro/">Introduction to librados</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../librados/">librados (C)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../libradospp/">librados (C++)</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">librados (Python)</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#installation">Installation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#getting-started">Getting Started</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#import-the-module">Import the Module</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#configure-a-cluster-handle">Configure a Cluster Handle</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#connect-to-the-cluster">Connect to the Cluster</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#manage-pools">Manage Pools</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#input-output-context">Input/Output Context</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#writing-reading-and-removing-objects">Writing, Reading and Removing Objects</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#writing-and-reading-xattrs">Writing and Reading XATTRS</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#listing-objects">Listing Objects</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#cluster-handle-api">Cluster Handle API</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#configuration">Configuration</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#connection-management">Connection Management</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#pool-operations">Pool Operations</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#cli-commands">CLI Commands</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#input-output-context-api">Input/Output Context API</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#object-operations">Object Operations</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#object-extended-attributes">Object Extended Attributes</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#object-interface">Object Interface</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../libcephsqlite/">libcephsqlite (SQLite)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../objclass-sdk/">object class</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cephfs/">Ceph File System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../rbd/">Ceph Block Device</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../radosgw/">Ceph Object Gateway</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../mgr/">Ceph Manager Daemon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../mgr/dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dev/developer_guide/">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dev/internals/">Ceph Internals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../../../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../libcephsqlite/" title="Ceph SQLite VFS"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../libradospp/" title="LibradosPP (C++)"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../" >Ceph Storage Cluster</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../" >Ceph Storage Cluster APIs</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Librados (Python)</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

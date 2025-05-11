@@ -1,0 +1,879 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Service Management &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css" />
+    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../genindex/" />
+    <link rel="search" title="Search" href="../../search/" />
+    <link rel="next" title="MON Service" href="mon/" />
+    <link rel="prev" title="Host Management" href="../host-management/" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="mon/" title="MON Service"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../host-management/" title="Host Management"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../" accesskey="U">Cephadm</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Service Management</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="service-management">
+<h1>Service Management<a class="headerlink" href="#service-management" title="Permalink to this heading">¶</a></h1>
+<p>A service is a group of daemons configured together. See these chapters
+for details on individual services:</p>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="mon/">MON Service</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mgr/">MGR Service</a></li>
+<li class="toctree-l1"><a class="reference internal" href="osd/">OSD Service</a></li>
+<li class="toctree-l1"><a class="reference internal" href="rgw/">RGW Service</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mds/">MDS Service</a></li>
+<li class="toctree-l1"><a class="reference internal" href="nfs/">NFS Service</a></li>
+<li class="toctree-l1"><a class="reference internal" href="iscsi/">iSCSI Service</a></li>
+<li class="toctree-l1"><a class="reference internal" href="custom-container/">Custom Container Service</a></li>
+<li class="toctree-l1"><a class="reference internal" href="monitoring/">Monitoring Services</a></li>
+<li class="toctree-l1"><a class="reference internal" href="snmp-gateway/">SNMP Gateway Service</a></li>
+</ul>
+</div>
+<section id="service-status">
+<h2>Service Status<a class="headerlink" href="#service-status" title="Permalink to this heading">¶</a></h2>
+<p>To see the status of one
+of the services running in the Ceph cluster, do the following:</p>
+<ol class="arabic simple">
+<li><p>Use the command line to print a list of services.</p></li>
+<li><p>Locate the service whose status you want to check.</p></li>
+<li><p>Print the status of the service.</p></li>
+</ol>
+<p>The following command prints a list of services known to the orchestrator. To
+limit the output to services only on a specified host, use the optional
+<code class="docutils literal notranslate"><span class="pre">--host</span></code> parameter. To limit the output to services of only a particular
+type, use the optional <code class="docutils literal notranslate"><span class="pre">--type</span></code> parameter (mon, osd, mgr, mds, rgw):</p>
+<blockquote>
+<div><div class="highlight-default notranslate"><div class="highlight"><pre><style type="text/css">
+span.prompt1:before {
+  content: "# ";
+}
+</style><span class="prompt1">ceph<span class="w"> </span>orch<span class="w"> </span>ls<span class="w"> </span><span class="o">[</span>--service_type<span class="w"> </span>type<span class="o">]</span><span class="w"> </span><span class="o">[</span>--service_name<span class="w"> </span>name<span class="o">]</span><span class="w"> </span><span class="o">[</span>--export<span class="o">]</span><span class="w"> </span><span class="o">[</span>--format<span class="w"> </span>f<span class="o">]</span><span class="w"> </span><span class="o">[</span>--refresh<span class="o">]</span></span>
+</pre></div></div></div></blockquote>
+<p>Discover the status of a particular service or daemon:</p>
+<blockquote>
+<div><div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>orch<span class="w"> </span>ls<span class="w"> </span>--service_type<span class="w"> </span><span class="nb">type</span><span class="w"> </span>--service_name<span class="w"> </span>&lt;name&gt;<span class="w"> </span><span class="o">[</span>--refresh<span class="o">]</span></span>
+</pre></div></div></div></blockquote>
+<p>To export the service specifications knows to the orchestrator, run the following command.</p>
+<blockquote>
+<div><div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>orch<span class="w"> </span>ls<span class="w"> </span>--export</span>
+</pre></div></div></div></blockquote>
+<p>The service specifications exported with this command will be exported as yaml
+and that yaml can be used with the <code class="docutils literal notranslate"><span class="pre">ceph</span> <span class="pre">orch</span> <span class="pre">apply</span> <span class="pre">-i</span></code> command.</p>
+<p>For information about retrieving the specifications of single services (including examples of commands), see <a class="reference internal" href="#orchestrator-cli-service-spec-retrieve"><span class="std std-ref">Retrieving the running Service Specification</span></a>.</p>
+</section>
+<section id="daemon-status">
+<h2>Daemon Status<a class="headerlink" href="#daemon-status" title="Permalink to this heading">¶</a></h2>
+<p>A daemon is a systemd unit that is running and part of a service.</p>
+<p>To see the status of a daemon, do the following:</p>
+<ol class="arabic simple">
+<li><p>Print a list of all daemons known to the orchestrator.</p></li>
+<li><p>Query the status of the target daemon.</p></li>
+</ol>
+<p>First, print a list of all daemons known to the orchestrator:</p>
+<blockquote>
+<div><div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>orch<span class="w"> </span>ps<span class="w"> </span><span class="o">[</span>--hostname<span class="w"> </span>host<span class="o">]</span><span class="w"> </span><span class="o">[</span>--daemon_type<span class="w"> </span>type<span class="o">]</span><span class="w"> </span><span class="o">[</span>--service_name<span class="w"> </span>name<span class="o">]</span><span class="w"> </span><span class="o">[</span>--daemon_id<span class="w"> </span>id<span class="o">]</span><span class="w"> </span><span class="o">[</span>--format<span class="w"> </span>f<span class="o">]</span><span class="w"> </span><span class="o">[</span>--refresh<span class="o">]</span></span>
+</pre></div></div></div></blockquote>
+<p>Then query the status of a particular service instance (mon, osd, mds, rgw).
+For OSDs the id is the numeric OSD ID. For MDS services the id is the file
+system name:</p>
+<blockquote>
+<div><div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>orch<span class="w"> </span>ps<span class="w"> </span>--daemon_type<span class="w"> </span>osd<span class="w"> </span>--daemon_id<span class="w"> </span><span class="m">0</span></span>
+</pre></div></div></div></blockquote>
+</section>
+<section id="service-specification">
+<span id="orchestrator-cli-service-spec"></span><h2>Service Specification<a class="headerlink" href="#service-specification" title="Permalink to this heading">¶</a></h2>
+<p>A <em>Service Specification</em> is a data structure that is used to specify the
+deployment of services. In addition to parameters such as <cite>placement</cite> or
+<cite>networks</cite>, the user can set initial values of service configuration parameters
+by means of the <cite>config</cite> section. For each param/value configuration pair,
+cephadm calls the following command to set its value:</p>
+<blockquote>
+<div><div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>config<span class="w"> </span><span class="nb">set</span><span class="w"> </span>&lt;service-name&gt;<span class="w"> </span>&lt;param&gt;<span class="w"> </span>&lt;value&gt;</span>
+</pre></div></div></div></blockquote>
+<p>cephadm raises health warnings in case invalid configuration parameters are
+found in the spec (<cite>CEPHADM_INVALID_CONFIG_OPTION</cite>) or if any error while
+trying to apply the new configuration option(s) (<cite>CEPHADM_FAILED_SET_OPTION</cite>).</p>
+<p>Here is an example of a service specification in YAML:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">service_type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">rgw</span>
+<span class="nt">service_id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">realm.zone</span>
+<span class="nt">placement</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">hosts</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">host1</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">host2</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">host3</span>
+<span class="nt">config</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">param_1</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">val_1</span>
+<span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">...</span>
+<span class="w">  </span><span class="nt">param_N</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">val_N</span>
+<span class="nt">unmanaged</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<span class="nt">networks</span><span class="p">:</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">192.169.142.0/24</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="c1"># Additional service specific attributes.</span>
+</pre></div>
+</div>
+<p>In this example, the properties of this service specification are:</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="ceph.deployment.service_spec.ServiceSpec">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">ceph.deployment.service_spec.</span></span><span class="sig-name descname"><span class="pre">ServiceSpec</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">service_type</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">service_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">placement</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">count</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">unmanaged</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">preview_only</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">networks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">extra_container_args</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">extra_entrypoint_args</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">custom_configs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#ceph.deployment.service_spec.ServiceSpec" title="Permalink to this definition">¶</a></dt>
+<dd><p>Details of service creation.</p>
+<p>Request to the orchestrator for a cluster of daemons
+such as MDS, RGW, iscsi gateway, MONs, MGRs, Prometheus</p>
+<p>This structure is supposed to be enough information to
+start the services.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ceph.deployment.service_spec.ServiceSpec.networks">
+<span class="sig-name descname"><span class="pre">networks</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#ceph.deployment.service_spec.ServiceSpec.networks" title="Permalink to this definition">¶</a></dt>
+<dd><p>A list of network identities instructing the daemons to only bind
+on the particular networks in that list. In case the cluster is distributed
+across multiple networks, you can add multiple networks. See
+<a class="reference internal" href="monitoring/#cephadm-monitoring-networks-ports"><span class="std std-ref">Networks and Ports</span></a>,
+<a class="reference internal" href="rgw/#cephadm-rgw-networks"><span class="std std-ref">Specifying Networks</span></a> and <a class="reference internal" href="mgr/#cephadm-mgr-networks"><span class="std std-ref">Specifying Networks</span></a>.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ceph.deployment.service_spec.ServiceSpec.placement">
+<span class="sig-name descname"><span class="pre">placement</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="../../mgr/orchestrator_modules/#ceph.deployment.service_spec.PlacementSpec" title="ceph.deployment.service_spec.PlacementSpec"><span class="pre">PlacementSpec</span></a></em><a class="headerlink" href="#ceph.deployment.service_spec.ServiceSpec.placement" title="Permalink to this definition">¶</a></dt>
+<dd><p>See <a class="reference internal" href="#orchestrator-cli-placement-spec"><span class="std std-ref">Daemon Placement</span></a>.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ceph.deployment.service_spec.ServiceSpec.service_id">
+<span class="sig-name descname"><span class="pre">service_id</span></span><a class="headerlink" href="#ceph.deployment.service_spec.ServiceSpec.service_id" title="Permalink to this definition">¶</a></dt>
+<dd><p>The name of the service. Required for <code class="docutils literal notranslate"><span class="pre">iscsi</span></code>, <code class="docutils literal notranslate"><span class="pre">mds</span></code>, <code class="docutils literal notranslate"><span class="pre">nfs</span></code>, <code class="docutils literal notranslate"><span class="pre">osd</span></code>, <code class="docutils literal notranslate"><span class="pre">rgw</span></code>,
+<code class="docutils literal notranslate"><span class="pre">container</span></code>, <code class="docutils literal notranslate"><span class="pre">ingress</span></code></p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ceph.deployment.service_spec.ServiceSpec.service_type">
+<span class="sig-name descname"><span class="pre">service_type</span></span><a class="headerlink" href="#ceph.deployment.service_spec.ServiceSpec.service_type" title="Permalink to this definition">¶</a></dt>
+<dd><p>The type of the service. Needs to be either a Ceph
+service (<code class="docutils literal notranslate"><span class="pre">mon</span></code>, <code class="docutils literal notranslate"><span class="pre">crash</span></code>, <code class="docutils literal notranslate"><span class="pre">mds</span></code>, <code class="docutils literal notranslate"><span class="pre">mgr</span></code>, <code class="docutils literal notranslate"><span class="pre">osd</span></code> or
+<code class="docutils literal notranslate"><span class="pre">rbd-mirror</span></code>), a gateway (<code class="docutils literal notranslate"><span class="pre">nfs</span></code> or <code class="docutils literal notranslate"><span class="pre">rgw</span></code>), part of the
+monitoring stack (<code class="docutils literal notranslate"><span class="pre">alertmanager</span></code>, <code class="docutils literal notranslate"><span class="pre">grafana</span></code>, <code class="docutils literal notranslate"><span class="pre">node-exporter</span></code> or
+<code class="docutils literal notranslate"><span class="pre">prometheus</span></code>) or (<code class="docutils literal notranslate"><span class="pre">container</span></code>) for custom containers.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ceph.deployment.service_spec.ServiceSpec.unmanaged">
+<span class="sig-name descname"><span class="pre">unmanaged</span></span><a class="headerlink" href="#ceph.deployment.service_spec.ServiceSpec.unmanaged" title="Permalink to this definition">¶</a></dt>
+<dd><p>If set to <code class="docutils literal notranslate"><span class="pre">true</span></code>, the orchestrator will not deploy nor remove
+any daemon associated with this service. Placement and all other properties
+will be ignored. This is useful, if you do not want this service to be
+managed temporarily. For cephadm, See <a class="reference internal" href="#cephadm-spec-unmanaged"><span class="std std-ref">Disabling automatic deployment of daemons</span></a></p>
+</dd></dl>
+
+</dd></dl>
+
+<p>Each service type can have additional service-specific properties.</p>
+<p>Service specifications of type <code class="docutils literal notranslate"><span class="pre">mon</span></code>, <code class="docutils literal notranslate"><span class="pre">mgr</span></code>, and the monitoring
+types do not require a <code class="docutils literal notranslate"><span class="pre">service_id</span></code>.</p>
+<p>A service of type <code class="docutils literal notranslate"><span class="pre">osd</span></code> is described in <a class="reference internal" href="osd/#drivegroups"><span class="std std-ref">Advanced OSD Service Specifications</span></a></p>
+<p>Many service specifications can be applied at once using <code class="docutils literal notranslate"><span class="pre">ceph</span> <span class="pre">orch</span> <span class="pre">apply</span> <span class="pre">-i</span></code>
+by submitting a multi-document YAML file:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">cat</span> <span class="o">&lt;&lt;</span><span class="n">EOF</span> <span class="o">|</span> <span class="n">ceph</span> <span class="n">orch</span> <span class="n">apply</span> <span class="o">-</span><span class="n">i</span> <span class="o">-</span>
+<span class="n">service_type</span><span class="p">:</span> <span class="n">mon</span>
+<span class="n">placement</span><span class="p">:</span>
+  <span class="n">host_pattern</span><span class="p">:</span> <span class="s2">&quot;mon*&quot;</span>
+<span class="o">---</span>
+<span class="n">service_type</span><span class="p">:</span> <span class="n">mgr</span>
+<span class="n">placement</span><span class="p">:</span>
+  <span class="n">host_pattern</span><span class="p">:</span> <span class="s2">&quot;mgr*&quot;</span>
+<span class="o">---</span>
+<span class="n">service_type</span><span class="p">:</span> <span class="n">osd</span>
+<span class="n">service_id</span><span class="p">:</span> <span class="n">default_drive_group</span>
+<span class="n">placement</span><span class="p">:</span>
+  <span class="n">host_pattern</span><span class="p">:</span> <span class="s2">&quot;osd*&quot;</span>
+<span class="n">data_devices</span><span class="p">:</span>
+  <span class="nb">all</span><span class="p">:</span> <span class="n">true</span>
+<span class="n">EOF</span>
+</pre></div>
+</div>
+<section id="retrieving-the-running-service-specification">
+<span id="orchestrator-cli-service-spec-retrieve"></span><h3>Retrieving the running Service Specification<a class="headerlink" href="#retrieving-the-running-service-specification" title="Permalink to this heading">¶</a></h3>
+<p>If the services have been started via <code class="docutils literal notranslate"><span class="pre">ceph</span> <span class="pre">orch</span> <span class="pre">apply...</span></code>, then directly changing
+the Services Specification is complicated. Instead of attempting to directly change
+the Services Specification, we suggest exporting the running Service Specification by
+following these instructions:</p>
+<blockquote>
+<div><div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>orch<span class="w"> </span>ls<span class="w"> </span>--service-name<span class="w"> </span>rgw.&lt;realm&gt;.&lt;zone&gt;<span class="w"> </span>--export<span class="w"> </span>&gt;<span class="w"> </span>rgw.&lt;realm&gt;.&lt;zone&gt;.yaml</span>
+<span class="prompt1">ceph<span class="w"> </span>orch<span class="w"> </span>ls<span class="w"> </span>--service-type<span class="w"> </span>mgr<span class="w"> </span>--export<span class="w"> </span>&gt;<span class="w"> </span>mgr.yaml</span>
+<span class="prompt1">ceph<span class="w"> </span>orch<span class="w"> </span>ls<span class="w"> </span>--export<span class="w"> </span>&gt;<span class="w"> </span>cluster.yaml</span>
+</pre></div></div></div></blockquote>
+<p>The Specification can then be changed and re-applied as above.</p>
+</section>
+<section id="updating-service-specifications">
+<h3>Updating Service Specifications<a class="headerlink" href="#updating-service-specifications" title="Permalink to this heading">¶</a></h3>
+<p>The Ceph Orchestrator maintains a declarative state of each
+service in a <code class="docutils literal notranslate"><span class="pre">ServiceSpec</span></code>. For certain operations, like updating
+the RGW HTTP port, we need to update the existing
+specification.</p>
+<ol class="arabic">
+<li><p>List the current <code class="docutils literal notranslate"><span class="pre">ServiceSpec</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>orch<span class="w"> </span>ls<span class="w"> </span>--service_name<span class="o">=</span>&lt;service-name&gt;<span class="w"> </span>--export<span class="w"> </span>&gt;<span class="w"> </span>myservice.yaml</span>
+</pre></div></div></li>
+<li><p>Update the yaml file:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">vi<span class="w"> </span>myservice.yaml</span>
+</pre></div></div></li>
+<li><p>Apply the new <code class="docutils literal notranslate"><span class="pre">ServiceSpec</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>orch<span class="w"> </span>apply<span class="w"> </span>-i<span class="w"> </span>myservice.yaml<span class="w"> </span><span class="o">[</span>--dry-run<span class="o">]</span></span>
+</pre></div></div></li>
+</ol>
+</section>
+</section>
+<section id="daemon-placement">
+<span id="orchestrator-cli-placement-spec"></span><h2>Daemon Placement<a class="headerlink" href="#daemon-placement" title="Permalink to this heading">¶</a></h2>
+<p>For the orchestrator to deploy a <em>service</em>, it needs to know where to deploy
+<em>daemons</em>, and how many to deploy.  This is the role of a placement
+specification.  Placement specifications can either be passed as command line arguments
+or in a YAML files.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>cephadm will not deploy daemons on hosts with the <code class="docutils literal notranslate"><span class="pre">_no_schedule</span></code> label; see <a class="reference internal" href="../host-management/#cephadm-special-host-labels"><span class="std std-ref">Special host labels</span></a>.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The <strong>apply</strong> command can be confusing. For this reason, we recommend using
+YAML specifications.</p>
+<p>Each <code class="docutils literal notranslate"><span class="pre">ceph</span> <span class="pre">orch</span> <span class="pre">apply</span> <span class="pre">&lt;service-name&gt;</span></code> command supersedes the one before it.
+If you do not use the proper syntax, you will clobber your work
+as you go.</p>
+<p>For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>orch<span class="w"> </span>apply<span class="w"> </span>mon<span class="w"> </span>host1</span>
+<span class="prompt1">ceph<span class="w"> </span>orch<span class="w"> </span>apply<span class="w"> </span>mon<span class="w"> </span>host2</span>
+<span class="prompt1">ceph<span class="w"> </span>orch<span class="w"> </span>apply<span class="w"> </span>mon<span class="w"> </span>host3</span>
+</pre></div></div><p>This results in only one host having a monitor applied to it: host 3.</p>
+<p>(The first command creates a monitor on host1. Then the second command
+clobbers the monitor on host1 and creates a monitor on host2. Then the
+third command clobbers the monitor on host2 and creates a monitor on
+host3. In this scenario, at this point, there is a monitor ONLY on
+host3.)</p>
+<p>To make certain that a monitor is applied to each of these three hosts,
+run a command like this:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>orch<span class="w"> </span>apply<span class="w"> </span>mon<span class="w"> </span><span class="s2">&quot;host1,host2,host3&quot;</span></span>
+</pre></div></div><p>There is another way to apply monitors to multiple hosts: a <code class="docutils literal notranslate"><span class="pre">yaml</span></code> file
+can be used. Instead of using the “ceph orch apply mon” commands, run a
+command of this form:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>orch<span class="w"> </span>apply<span class="w"> </span>-i<span class="w"> </span>file.yaml</span>
+</pre></div></div><p>Here is a sample <strong>file.yaml</strong> file</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">service_type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">mon</span>
+<span class="nt">placement</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">hosts</span><span class="p">:</span>
+<span class="w">   </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">host1</span>
+<span class="w">   </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">host2</span>
+<span class="w">   </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">host3</span>
+</pre></div>
+</div>
+</div>
+<section id="explicit-placements">
+<h3>Explicit placements<a class="headerlink" href="#explicit-placements" title="Permalink to this heading">¶</a></h3>
+<p>Daemons can be explicitly placed on hosts by simply specifying them:</p>
+<blockquote>
+<div><div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">orch<span class="w"> </span>apply<span class="w"> </span>prometheus<span class="w"> </span>--placement<span class="o">=</span><span class="s2">&quot;host1 host2 host3&quot;</span></span>
+</pre></div></div></div></blockquote>
+<p>Or in YAML:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">service_type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">prometheus</span>
+<span class="nt">placement</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">hosts</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">host1</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">host2</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">host3</span>
+</pre></div>
+</div>
+<p>MONs and other services may require some enhanced network specifications:</p>
+<blockquote>
+<div><div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">orch<span class="w"> </span>daemon<span class="w"> </span>add<span class="w"> </span>mon<span class="w"> </span>--placement<span class="o">=</span><span class="s2">&quot;myhost:[v2:1.2.3.4:3300,v1:1.2.3.4:6789]=name&quot;</span></span>
+</pre></div></div></div></blockquote>
+<p>where <code class="docutils literal notranslate"><span class="pre">[v2:1.2.3.4:3300,v1:1.2.3.4:6789]</span></code> is the network address of the monitor
+and <code class="docutils literal notranslate"><span class="pre">=name</span></code> specifies the name of the new monitor.</p>
+</section>
+<section id="placement-by-labels">
+<span id="orch-placement-by-labels"></span><h3>Placement by labels<a class="headerlink" href="#placement-by-labels" title="Permalink to this heading">¶</a></h3>
+<p>Daemon placement can be limited to hosts that match a specific label. To set
+a label <code class="docutils literal notranslate"><span class="pre">mylabel</span></code> to the appropriate hosts, run this command:</p>
+<blockquote>
+<div><div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>orch<span class="w"> </span>host<span class="w"> </span>label<span class="w"> </span>add<span class="w"> </span>*&lt;hostname&gt;*<span class="w"> </span>mylabel</span>
+</pre></div></div><p>To view the current hosts and labels, run this command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>orch<span class="w"> </span>host<span class="w"> </span>ls</span>
+</pre></div></div><p>For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>orch<span class="w"> </span>host<span class="w"> </span>label<span class="w"> </span>add<span class="w"> </span>host1<span class="w"> </span>mylabel</span>
+<span class="prompt1">ceph<span class="w"> </span>orch<span class="w"> </span>host<span class="w"> </span>label<span class="w"> </span>add<span class="w"> </span>host2<span class="w"> </span>mylabel</span>
+<span class="prompt1">ceph<span class="w"> </span>orch<span class="w"> </span>host<span class="w"> </span>label<span class="w"> </span>add<span class="w"> </span>host3<span class="w"> </span>mylabel</span>
+<span class="prompt1">ceph<span class="w"> </span>orch<span class="w"> </span>host<span class="w"> </span>ls</span>
+</pre></div></div><div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>HOST<span class="w">   </span>ADDR<span class="w">   </span>LABELS<span class="w">  </span>STATUS
+host1<span class="w">         </span>mylabel
+host2<span class="w">         </span>mylabel
+host3<span class="w">         </span>mylabel
+host4
+host5
+</pre></div>
+</div>
+</div></blockquote>
+<p>Now, Tell cephadm to deploy daemons based on the label by running
+this command:</p>
+<blockquote>
+<div><div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">orch<span class="w"> </span>apply<span class="w"> </span>prometheus<span class="w"> </span>--placement<span class="o">=</span><span class="s2">&quot;label:mylabel&quot;</span></span>
+</pre></div></div></div></blockquote>
+<p>Or in YAML:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">service_type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">prometheus</span>
+<span class="nt">placement</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">label</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;mylabel&quot;</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>See <a class="reference internal" href="../host-management/#orchestrator-host-labels"><span class="std std-ref">Host labels</span></a></p></li>
+</ul>
+</section>
+<section id="placement-by-pattern-matching">
+<h3>Placement by pattern matching<a class="headerlink" href="#placement-by-pattern-matching" title="Permalink to this heading">¶</a></h3>
+<p>Daemons can be placed on hosts as well:</p>
+<blockquote>
+<div><div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">orch<span class="w"> </span>apply<span class="w"> </span>prometheus<span class="w"> </span>--placement<span class="o">=</span><span class="s1">&#39;myhost[1-3]&#39;</span></span>
+</pre></div></div></div></blockquote>
+<p>Or in YAML:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">service_type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">prometheus</span>
+<span class="nt">placement</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">host_pattern</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;myhost[1-3]&quot;</span>
+</pre></div>
+</div>
+<p>To place a service on <em>all</em> hosts, use <code class="docutils literal notranslate"><span class="pre">&quot;*&quot;</span></code>:</p>
+<blockquote>
+<div><div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">orch<span class="w"> </span>apply<span class="w"> </span>node-exporter<span class="w"> </span>--placement<span class="o">=</span><span class="s1">&#39;*&#39;</span></span>
+</pre></div></div></div></blockquote>
+<p>Or in YAML:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">service_type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">node-exporter</span>
+<span class="nt">placement</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">host_pattern</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;*&quot;</span>
+</pre></div>
+</div>
+</section>
+<section id="changing-the-number-of-daemons">
+<h3>Changing the number of daemons<a class="headerlink" href="#changing-the-number-of-daemons" title="Permalink to this heading">¶</a></h3>
+<p>By specifying <code class="docutils literal notranslate"><span class="pre">count</span></code>, only the number of daemons specified will be created:</p>
+<blockquote>
+<div><div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">orch<span class="w"> </span>apply<span class="w"> </span>prometheus<span class="w"> </span>--placement<span class="o">=</span><span class="m">3</span></span>
+</pre></div></div></div></blockquote>
+<p>To deploy <em>daemons</em> on a subset of hosts, specify the count:</p>
+<blockquote>
+<div><div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">orch<span class="w"> </span>apply<span class="w"> </span>prometheus<span class="w"> </span>--placement<span class="o">=</span><span class="s2">&quot;2 host1 host2 host3&quot;</span></span>
+</pre></div></div></div></blockquote>
+<p>If the count is bigger than the amount of hosts, cephadm deploys one per host:</p>
+<blockquote>
+<div><div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">orch<span class="w"> </span>apply<span class="w"> </span>prometheus<span class="w"> </span>--placement<span class="o">=</span><span class="s2">&quot;3 host1 host2&quot;</span></span>
+</pre></div></div></div></blockquote>
+<p>The command immediately above results in two Prometheus daemons.</p>
+<p>YAML can also be used to specify limits, in the following way:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">service_type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">prometheus</span>
+<span class="nt">placement</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">count</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3</span>
+</pre></div>
+</div>
+<p>YAML can also be used to specify limits on hosts:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">service_type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">prometheus</span>
+<span class="nt">placement</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">count</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span>
+<span class="w">  </span><span class="nt">hosts</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">host1</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">host2</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">host3</span>
+</pre></div>
+</div>
+</section>
+<section id="co-location-of-daemons">
+<span id="cephadm-co-location"></span><h3>Co-location of daemons<a class="headerlink" href="#co-location-of-daemons" title="Permalink to this heading">¶</a></h3>
+<p>Cephadm supports the deployment of multiple daemons on the same host:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">service_type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">rgw</span>
+<span class="nt">placement</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">label</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">rgw</span>
+<span class="w">  </span><span class="nt">count_per_host</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span>
+</pre></div>
+</div>
+<p>The main reason for deploying multiple daemons per host is an additional
+performance benefit for running multiple RGW and MDS daemons on the same host.</p>
+<p>See also:</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="mgr/#cephadm-mgr-co-location"><span class="std std-ref">Allow co-location of MGR daemons</span></a>.</p></li>
+<li><p><a class="reference internal" href="rgw/#cephadm-rgw-designated-gateways"><span class="std std-ref">Designated gateways</span></a>.</p></li>
+</ul>
+<p>This feature was introduced in Pacific.</p>
+</section>
+<section id="algorithm-description">
+<h3>Algorithm description<a class="headerlink" href="#algorithm-description" title="Permalink to this heading">¶</a></h3>
+<p>Cephadm’s declarative state consists of a list of service specifications
+containing placement specifications.</p>
+<p>Cephadm continually compares a list of daemons actually running in the cluster
+against the list in the service specifications. Cephadm adds new daemons and
+removes old daemons as necessary in order to conform to the service
+specifications.</p>
+<p>Cephadm does the following to maintain compliance with the service
+specifications.</p>
+<p>Cephadm first selects a list of candidate hosts. Cephadm seeks explicit host
+names and selects them. If cephadm finds no explicit host names, it looks for
+label specifications. If no label is defined in the specification, cephadm
+selects hosts based on a host pattern. If no host pattern is defined, as a last
+resort, cephadm selects all known hosts as candidates.</p>
+<p>Cephadm is aware of existing daemons running services and tries to avoid moving
+them.</p>
+<p>Cephadm supports the deployment of a specific amount of services.
+Consider the following service specification:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">service_type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">mds</span>
+<span class="nt">service_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">myfs</span>
+<span class="nt">placement</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">count</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3</span>
+<span class="w">  </span><span class="nt">label</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">myfs</span>
+</pre></div>
+</div>
+<p>This service specifcation instructs cephadm to deploy three daemons on hosts
+labeled <code class="docutils literal notranslate"><span class="pre">myfs</span></code> across the cluster.</p>
+<p>If there are fewer than three daemons deployed on the candidate hosts, cephadm
+randomly chooses hosts on which to deploy new daemons.</p>
+<p>If there are more than three daemons deployed on the candidate hosts, cephadm
+removes existing daemons.</p>
+<p>Finally, cephadm removes daemons on hosts that are outside of the list of
+candidate hosts.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>There is a special case that cephadm must consider.</p>
+<p>If there are fewer hosts selected by the placement specification than
+demanded by <code class="docutils literal notranslate"><span class="pre">count</span></code>, cephadm will deploy only on the selected hosts.</p>
+</div>
+</section>
+</section>
+<section id="extra-container-arguments">
+<span id="cephadm-extra-container-args"></span><h2>Extra Container Arguments<a class="headerlink" href="#extra-container-arguments" title="Permalink to this heading">¶</a></h2>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>The arguments provided for extra container args are limited to whatever arguments are available for
+a <cite>run</cite> command from whichever container engine you are using. Providing any arguments the <cite>run</cite>
+command does not support (or invalid values for arguments) will cause the daemon to fail to start.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>For arguments passed to the process running inside the container rather than the for
+the container runtime itself, see <a class="reference internal" href="#cephadm-extra-entrypoint-args"><span class="std std-ref">Extra Entrypoint Arguments</span></a></p>
+</div>
+<p>Cephadm supports providing extra miscellaneous container arguments for
+specific cases when they may be necessary. For example, if a user needed
+to limit the amount of cpus their mon daemons make use of they could apply
+a spec like</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">service_type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">mon</span>
+<span class="nt">service_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">mon</span>
+<span class="nt">placement</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">hosts</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">host1</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">host2</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">host3</span>
+<span class="nt">extra_container_args</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;--cpus=2&quot;</span>
+</pre></div>
+</div>
+<p>which would cause each mon daemon to be deployed with <cite>–cpus=2</cite>.</p>
+<section id="mounting-files-with-extra-container-arguments">
+<h3>Mounting Files with Extra Container Arguments<a class="headerlink" href="#mounting-files-with-extra-container-arguments" title="Permalink to this heading">¶</a></h3>
+<p>A common use case for extra container arguments is to mount additional
+files within the container. However, some intuitive formats for doing
+so can cause deployment to fail (see <a class="reference external" href="https://tracker.ceph.com/issues/57338">https://tracker.ceph.com/issues/57338</a>).
+The recommended syntax for mounting a file with extra container arguments is:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">extra_container_args</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;-v&quot;</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;/absolute/file/path/on/host:/absolute/file/path/in/container&quot;</span>
+</pre></div>
+</div>
+<p>For example:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">extra_container_args</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;-v&quot;</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;/opt/ceph_cert/host.cert:/etc/grafana/certs/cert_file:ro&quot;</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="extra-entrypoint-arguments">
+<span id="cephadm-extra-entrypoint-args"></span><h2>Extra Entrypoint Arguments<a class="headerlink" href="#extra-entrypoint-arguments" title="Permalink to this heading">¶</a></h2>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>For arguments intended for the container runtime rather than the process inside
+it, see <a class="reference internal" href="#cephadm-extra-container-args"><span class="std std-ref">Extra Container Arguments</span></a></p>
+</div>
+<p>Similar to extra container args for the container runtime, Cephadm supports
+appending to args passed to the entrypoint process running
+within a container. For example, to set the collector textfile directory for
+the node-exporter service , one could apply a service spec like</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">service_type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">node-exporter</span>
+<span class="nt">service_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">node-exporter</span>
+<span class="nt">placement</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">host_pattern</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;*&#39;</span>
+<span class="nt">extra_entrypoint_args</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;--collector.textfile.directory=/var/lib/node_exporter/textfile_collector2&quot;</span>
+</pre></div>
+</div>
+</section>
+<section id="custom-config-files">
+<h2>Custom Config Files<a class="headerlink" href="#custom-config-files" title="Permalink to this heading">¶</a></h2>
+<p>Cephadm supports specifying miscellaneous config files for daemons.
+To do so, users must provide both the content of the config file and the
+location within the daemon’s container at which it should be mounted. After
+applying a YAML spec with custom config files specified and having cephadm
+redeploy the daemons for which the config files are specified, these files will
+be mounted within the daemon’s container at the specified location.</p>
+<p>Example service spec:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">service_type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">grafana</span>
+<span class="nt">service_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">grafana</span>
+<span class="nt">custom_configs</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">mount_path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/etc/example.conf</span>
+<span class="w">    </span><span class="nt">content</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<span class="w">      </span><span class="no">setting1 = value1</span>
+<span class="w">      </span><span class="no">setting2 = value2</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">mount_path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/usr/share/grafana/example.cert</span>
+<span class="w">    </span><span class="nt">content</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<span class="w">      </span><span class="no">-----BEGIN PRIVATE KEY-----</span>
+<span class="w">      </span><span class="no">V2VyIGRhcyBsaWVzdCBpc3QgZG9vZi4gTG9yZW0gaXBzdW0gZG9sb3Igc2l0IGFt</span>
+<span class="w">      </span><span class="no">ZXQsIGNvbnNldGV0dXIgc2FkaXBzY2luZyBlbGl0ciwgc2VkIGRpYW0gbm9udW15</span>
+<span class="w">      </span><span class="no">IGVpcm1vZCB0ZW1wb3IgaW52aWR1bnQgdXQgbGFib3JlIGV0IGRvbG9yZSBtYWdu</span>
+<span class="w">      </span><span class="no">YSBhbGlxdXlhbSBlcmF0LCBzZWQgZGlhbSB2b2x1cHR1YS4gQXQgdmVybyBlb3Mg</span>
+<span class="w">      </span><span class="no">ZXQgYWNjdXNhbSBldCBqdXN0byBkdW8=</span>
+<span class="w">      </span><span class="no">-----END PRIVATE KEY-----</span>
+<span class="w">      </span><span class="no">-----BEGIN CERTIFICATE-----</span>
+<span class="w">      </span><span class="no">V2VyIGRhcyBsaWVzdCBpc3QgZG9vZi4gTG9yZW0gaXBzdW0gZG9sb3Igc2l0IGFt</span>
+<span class="w">      </span><span class="no">ZXQsIGNvbnNldGV0dXIgc2FkaXBzY2luZyBlbGl0ciwgc2VkIGRpYW0gbm9udW15</span>
+<span class="w">      </span><span class="no">IGVpcm1vZCB0ZW1wb3IgaW52aWR1bnQgdXQgbGFib3JlIGV0IGRvbG9yZSBtYWdu</span>
+<span class="w">      </span><span class="no">YSBhbGlxdXlhbSBlcmF0LCBzZWQgZGlhbSB2b2x1cHR1YS4gQXQgdmVybyBlb3Mg</span>
+<span class="w">      </span><span class="no">ZXQgYWNjdXNhbSBldCBqdXN0byBkdW8=</span>
+<span class="w">      </span><span class="no">-----END CERTIFICATE-----</span>
+</pre></div>
+</div>
+<p>To make these new config files actually get mounted within the
+containers for the daemons</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><style type="text/css">
+span.prompt2:before {
+  content: "$ ";
+}
+</style><span class="prompt2">ceph<span class="w"> </span>orch<span class="w"> </span>redeploy<span class="w"> </span>&lt;service-name&gt;</span>
+</pre></div></div><p>For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt2">ceph<span class="w"> </span>orch<span class="w"> </span>redeploy<span class="w"> </span>grafana</span>
+</pre></div></div></section>
+<section id="removing-a-service">
+<span id="orch-rm"></span><h2>Removing a Service<a class="headerlink" href="#removing-a-service" title="Permalink to this heading">¶</a></h2>
+<p>In order to remove a service including the removal
+of all daemons of that service, run</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt2">ceph<span class="w"> </span>orch<span class="w"> </span>rm<span class="w"> </span>&lt;service-name&gt;</span>
+</pre></div></div><p>For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt2">ceph<span class="w"> </span>orch<span class="w"> </span>rm<span class="w"> </span>rgw.myrgw</span>
+</pre></div></div></section>
+<section id="disabling-automatic-deployment-of-daemons">
+<span id="cephadm-spec-unmanaged"></span><h2>Disabling automatic deployment of daemons<a class="headerlink" href="#disabling-automatic-deployment-of-daemons" title="Permalink to this heading">¶</a></h2>
+<p>Cephadm supports disabling the automated deployment and removal of daemons on a
+per service basis. The CLI supports two commands for this.</p>
+<p>In order to fully remove a service, see <a class="reference internal" href="#orch-rm"><span class="std std-ref">Removing a Service</span></a>.</p>
+<section id="disabling-automatic-management-of-daemons">
+<h3>Disabling automatic management of daemons<a class="headerlink" href="#disabling-automatic-management-of-daemons" title="Permalink to this heading">¶</a></h3>
+<p>To disable the automatic management of dameons, set <code class="docutils literal notranslate"><span class="pre">unmanaged=True</span></code> in the
+<a class="reference internal" href="#orchestrator-cli-service-spec"><span class="std std-ref">Service Specification</span></a> (<code class="docutils literal notranslate"><span class="pre">mgr.yaml</span></code>).</p>
+<p><code class="docutils literal notranslate"><span class="pre">mgr.yaml</span></code>:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">service_type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">mgr</span>
+<span class="nt">unmanaged</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="nt">placement</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">label</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">mgr</span>
+</pre></div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>orch<span class="w"> </span>apply<span class="w"> </span>-i<span class="w"> </span>mgr.yaml</span>
+</pre></div></div><div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>After you apply this change in the Service Specification, cephadm will no
+longer deploy any new daemons (even if the placement specification matches
+additional hosts).</p>
+</div>
+</section>
+<section id="deploying-a-daemon-on-a-host-manually">
+<h3>Deploying a daemon on a host manually<a class="headerlink" href="#deploying-a-daemon-on-a-host-manually" title="Permalink to this heading">¶</a></h3>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This workflow has a very limited use case and should only be used
+in rare circumstances.</p>
+</div>
+<p>To manually deploy a daemon on a host, follow these steps:</p>
+<p>Modify the service spec for a service by getting the
+existing spec, adding <code class="docutils literal notranslate"><span class="pre">unmanaged:</span> <span class="pre">true</span></code>, and applying the modified spec.</p>
+<p>Then manually deploy the daemon using the following:</p>
+<blockquote>
+<div><div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>orch<span class="w"> </span>daemon<span class="w"> </span>add<span class="w"> </span>&lt;daemon-type&gt;<span class="w">  </span>--placement<span class="o">=</span>&lt;placement<span class="w"> </span>spec&gt;</span>
+</pre></div></div></div></blockquote>
+<p>For example :</p>
+<blockquote>
+<div><div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>orch<span class="w"> </span>daemon<span class="w"> </span>add<span class="w"> </span>mgr<span class="w"> </span>--placement<span class="o">=</span>my_host</span>
+</pre></div></div></div></blockquote>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Removing <code class="docutils literal notranslate"><span class="pre">unmanaged:</span> <span class="pre">true</span></code> from the service spec will
+enable the reconciliation loop for this service and will
+potentially lead to the removal of the daemon, depending
+on the placement spec.</p>
+</div>
+</section>
+<section id="removing-a-daemon-from-a-host-manually">
+<h3>Removing a daemon from a host manually<a class="headerlink" href="#removing-a-daemon-from-a-host-manually" title="Permalink to this heading">¶</a></h3>
+<p>To manually remove a daemon, run a command of the following form:</p>
+<blockquote>
+<div><div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>orch<span class="w"> </span>daemon<span class="w"> </span>rm<span class="w"> </span>&lt;daemon<span class="w"> </span>name&gt;...<span class="w"> </span><span class="o">[</span>--force<span class="o">]</span></span>
+</pre></div></div></div></blockquote>
+<p>For example:</p>
+<blockquote>
+<div><div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>orch<span class="w"> </span>daemon<span class="w"> </span>rm<span class="w"> </span>mgr.my_host.xyzxyz</span>
+</pre></div></div></div></blockquote>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>For managed services (<code class="docutils literal notranslate"><span class="pre">unmanaged=False</span></code>), cephadm will automatically
+deploy a new daemon a few seconds later.</p>
+</div>
+</section>
+<section id="see-also">
+<h3>See also<a class="headerlink" href="#see-also" title="Permalink to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>See <a class="reference internal" href="osd/#cephadm-osd-declarative"><span class="std std-ref">Declarative State</span></a> for special handling of unmanaged OSDs.</p></li>
+<li><p>See also <a class="reference internal" href="../troubleshooting/#cephadm-pause"><span class="std std-ref">Pausing or Disabling cephadm</span></a></p></li>
+</ul>
+</section>
+</section>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../">
+              <img class="logo" src="../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../install/">Installing Ceph</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../">Cephadm</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../compatibility/">Compatibility and Stability</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../install/">Deploying a new Ceph cluster</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../adoption/">Converting an existing cluster to cephadm</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../host-management/">Host Management</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Service Management</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="mon/">MON Service</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mgr/">MGR Service</a></li>
+<li class="toctree-l3"><a class="reference internal" href="osd/">OSD Service</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rgw/">RGW Service</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mds/">MDS Service</a></li>
+<li class="toctree-l3"><a class="reference internal" href="nfs/">NFS Service</a></li>
+<li class="toctree-l3"><a class="reference internal" href="iscsi/">iSCSI Service</a></li>
+<li class="toctree-l3"><a class="reference internal" href="custom-container/">Custom Container Service</a></li>
+<li class="toctree-l3"><a class="reference internal" href="monitoring/">Monitoring Services</a></li>
+<li class="toctree-l3"><a class="reference internal" href="snmp-gateway/">SNMP Gateway Service</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#service-status">Service Status</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#daemon-status">Daemon Status</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#service-specification">Service Specification</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#retrieving-the-running-service-specification">Retrieving the running Service Specification</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#updating-service-specifications">Updating Service Specifications</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#daemon-placement">Daemon Placement</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#explicit-placements">Explicit placements</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#placement-by-labels">Placement by labels</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#placement-by-pattern-matching">Placement by pattern matching</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#changing-the-number-of-daemons">Changing the number of daemons</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#co-location-of-daemons">Co-location of daemons</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#algorithm-description">Algorithm description</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#extra-container-arguments">Extra Container Arguments</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#mounting-files-with-extra-container-arguments">Mounting Files with Extra Container Arguments</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#extra-entrypoint-arguments">Extra Entrypoint Arguments</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#custom-config-files">Custom Config Files</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#removing-a-service">Removing a Service</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#disabling-automatic-deployment-of-daemons">Disabling automatic deployment of daemons</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#disabling-automatic-management-of-daemons">Disabling automatic management of daemons</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#deploying-a-daemon-on-a-host-manually">Deploying a daemon on a host manually</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#removing-a-daemon-from-a-host-manually">Removing a daemon from a host manually</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#see-also">See also</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../upgrade/">Upgrading Ceph</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../operations/">Cephadm operations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../client-setup/">Client Setup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../troubleshooting/">Troubleshooting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../dev/cephadm/">Cephadm Feature Planning</a></li>
+</ul>
+</li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../rados/">Ceph Storage Cluster</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../../rados/configuration/">Configuration</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../">Deployment</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../compatibility/">Compatibility and Stability</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../install/">Deploying a new Ceph cluster</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../adoption/">Converting an existing cluster to cephadm</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../host-management/">Host Management</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Service Management</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="mon/">MON Service</a></li>
+<li class="toctree-l4"><a class="reference internal" href="mgr/">MGR Service</a></li>
+<li class="toctree-l4"><a class="reference internal" href="osd/">OSD Service</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rgw/">RGW Service</a></li>
+<li class="toctree-l4"><a class="reference internal" href="mds/">MDS Service</a></li>
+<li class="toctree-l4"><a class="reference internal" href="nfs/">NFS Service</a></li>
+<li class="toctree-l4"><a class="reference internal" href="iscsi/">iSCSI Service</a></li>
+<li class="toctree-l4"><a class="reference internal" href="custom-container/">Custom Container Service</a></li>
+<li class="toctree-l4"><a class="reference internal" href="monitoring/">Monitoring Services</a></li>
+<li class="toctree-l4"><a class="reference internal" href="snmp-gateway/">SNMP Gateway Service</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#service-status">Service Status</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#daemon-status">Daemon Status</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#service-specification">Service Specification</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#retrieving-the-running-service-specification">Retrieving the running Service Specification</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#updating-service-specifications">Updating Service Specifications</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#daemon-placement">Daemon Placement</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#explicit-placements">Explicit placements</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#placement-by-labels">Placement by labels</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#placement-by-pattern-matching">Placement by pattern matching</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#changing-the-number-of-daemons">Changing the number of daemons</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#co-location-of-daemons">Co-location of daemons</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#algorithm-description">Algorithm description</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#extra-container-arguments">Extra Container Arguments</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#mounting-files-with-extra-container-arguments">Mounting Files with Extra Container Arguments</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#extra-entrypoint-arguments">Extra Entrypoint Arguments</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#custom-config-files">Custom Config Files</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#removing-a-service">Removing a Service</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#disabling-automatic-deployment-of-daemons">Disabling automatic deployment of daemons</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#disabling-automatic-management-of-daemons">Disabling automatic management of daemons</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#deploying-a-daemon-on-a-host-manually">Deploying a daemon on a host manually</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#removing-a-daemon-from-a-host-manually">Removing a daemon from a host manually</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#see-also">See also</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../upgrade/">Upgrading Ceph</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../operations/">Cephadm operations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../client-setup/">Client Setup</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../troubleshooting/">Troubleshooting</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../dev/cephadm/">Cephadm Feature Planning</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../rados/operations/">Operations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../rados/man/">Man Pages</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../rados/troubleshooting/">Troubleshooting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../rados/api/">APIs</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../cephfs/">Ceph File System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rbd/">Ceph Block Device</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../radosgw/">Ceph Object Gateway</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/">Ceph Manager Daemon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dev/developer_guide/">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dev/internals/">Ceph Internals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="mon/" title="MON Service"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../host-management/" title="Host Management"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../" >Cephadm</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Service Management</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

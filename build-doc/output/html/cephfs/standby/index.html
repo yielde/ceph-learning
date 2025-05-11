@@ -1,0 +1,328 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Terminology &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css" />
+    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../genindex/" />
+    <link rel="search" title="Search" href="../../search/" />
+    <link rel="next" title="MDS Cache Configuration" href="../cache-configuration/" />
+    <link rel="prev" title="Deploying Metadata Servers" href="../add-remove-mds/" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../cache-configuration/" title="MDS Cache Configuration"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../add-remove-mds/" title="Deploying Metadata Servers"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../" accesskey="U">Ceph File System</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Terminology</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="terminology">
+<span id="mds-standby"></span><h1>Terminology<a class="headerlink" href="#terminology" title="Permalink to this heading">¶</a></h1>
+<p>A Ceph cluster may have zero or more CephFS <em>file systems</em>.  CephFS
+file systems have a human readable name (set in <code class="docutils literal notranslate"><span class="pre">fs</span> <span class="pre">new</span></code>)
+and an integer ID.  The ID is called the file system cluster ID,
+or <em>FSCID</em>.</p>
+<p>Each CephFS file system has a number of <em>ranks</em>, one by default,
+which start at zero.  A rank may be thought of as a metadata shard.
+Controlling the number of ranks in a file system is described
+in <a class="reference internal" href="../multimds/"><span class="doc">Configuring multiple active MDS daemons</span></a></p>
+<p>Each CephFS ceph-mds process (a <em>daemon</em>) initially starts up
+without a rank.  It may be assigned one by the monitor cluster.
+A daemon may only hold one rank at a time.  Daemons only give up
+a rank when the ceph-mds process stops.</p>
+<p>If a rank is not associated with a daemon, the rank is
+considered <em>failed</em>.  Once a rank is assigned to a daemon,
+the rank is considered <em>up</em>.</p>
+<p>A daemon has a <em>name</em> that is set statically by the administrator
+when the daemon is first configured.  Typical configurations
+use the hostname where the daemon runs as the daemon name.</p>
+<p>A ceph-mds daemons can be assigned to a particular file system by
+setting the <cite>mds_join_fs</cite> configuration option to the file system
+name.</p>
+<p>Each time a daemon starts up, it is also assigned a <em>GID</em>, which
+is unique to this particular process lifetime of the daemon.  The
+GID is an integer.</p>
+</section>
+<section id="referring-to-mds-daemons">
+<h1>Referring to MDS daemons<a class="headerlink" href="#referring-to-mds-daemons" title="Permalink to this heading">¶</a></h1>
+<p>Most of the administrative commands that refer to an MDS daemon
+accept a flexible argument format that may contain a rank, a GID
+or a name.</p>
+<p>Where a rank is used, this may optionally be qualified with
+a leading file system name or ID.  If a daemon is a standby (i.e.
+it is not currently assigned a rank), then it may only be
+referred to by GID or name.</p>
+<p>For example, if we had an MDS daemon which was called ‘myhost’,
+had GID 5446, and was assigned rank 0 in the file system ‘myfs’
+which had FSCID 3, then any of the following would be suitable
+forms of the ‘fail’ command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span> <span class="n">mds</span> <span class="n">fail</span> <span class="mi">5446</span>     <span class="c1"># GID</span>
+<span class="n">ceph</span> <span class="n">mds</span> <span class="n">fail</span> <span class="n">myhost</span>   <span class="c1"># Daemon name</span>
+<span class="n">ceph</span> <span class="n">mds</span> <span class="n">fail</span> <span class="mi">0</span>        <span class="c1"># Unqualified rank</span>
+<span class="n">ceph</span> <span class="n">mds</span> <span class="n">fail</span> <span class="mi">3</span><span class="p">:</span><span class="mi">0</span>      <span class="c1"># FSCID and rank</span>
+<span class="n">ceph</span> <span class="n">mds</span> <span class="n">fail</span> <span class="n">myfs</span><span class="p">:</span><span class="mi">0</span>   <span class="c1"># File System name and rank</span>
+</pre></div>
+</div>
+</section>
+<section id="managing-failover">
+<h1>Managing failover<a class="headerlink" href="#managing-failover" title="Permalink to this heading">¶</a></h1>
+<p>If an MDS daemon stops communicating with the monitor, the monitor will wait
+<code class="docutils literal notranslate"><span class="pre">mds_beacon_grace</span></code> seconds (default 15 seconds) before marking the daemon as
+<em>laggy</em>. If a standby is available, the monitor will immediately replace the
+laggy daemon.</p>
+<p>Each file system may specify a number of standby daemons to be considered
+healthy. This number includes daemons in standby-replay waiting for a rank to
+fail (remember that a standby-replay daemon will not be assigned to take over a
+failure for another rank or a failure in a another CephFS file system). The
+pool of standby daemons not in replay count towards any file system count.
+Each file system may set the number of standby daemons wanted using:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span> <span class="n">fs</span> <span class="nb">set</span> <span class="o">&lt;</span><span class="n">fs</span> <span class="n">name</span><span class="o">&gt;</span> <span class="n">standby_count_wanted</span> <span class="o">&lt;</span><span class="n">count</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<p>Setting <code class="docutils literal notranslate"><span class="pre">count</span></code> to 0 will disable the health check.</p>
+</section>
+<section id="configuring-standby-replay">
+<span id="mds-standby-replay"></span><h1>Configuring standby-replay<a class="headerlink" href="#configuring-standby-replay" title="Permalink to this heading">¶</a></h1>
+<p>Each CephFS file system may be configured to add standby-replay daemons.  These
+standby daemons follow the active MDS’s metadata journal to reduce failover
+time in the event the active MDS becomes unavailable. Each active MDS may have
+only one standby-replay daemon following it.</p>
+<p>Configuring standby-replay on a file system is done using:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span> <span class="n">fs</span> <span class="nb">set</span> <span class="o">&lt;</span><span class="n">fs</span> <span class="n">name</span><span class="o">&gt;</span> <span class="n">allow_standby_replay</span> <span class="o">&lt;</span><span class="nb">bool</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<p>Once set, the monitors will assign available standby daemons to follow the
+active MDSs in that file system.</p>
+<p>Once an MDS has entered the standby-replay state, it will only be used as a
+standby for the rank that it is following. If another rank fails, this
+standby-replay daemon will not be used as a replacement, even if no other
+standbys are available. For this reason, it is advised that if standby-replay
+is used then every active MDS should have a standby-replay daemon.</p>
+</section>
+<section id="configuring-mds-file-system-affinity">
+<span id="mds-join-fs"></span><h1>Configuring MDS file system affinity<a class="headerlink" href="#configuring-mds-file-system-affinity" title="Permalink to this heading">¶</a></h1>
+<p>You may want to have an MDS used for a particular file system. Or, perhaps you
+have larger MDSs on better hardware that should be preferred over a last-resort
+standby on lesser or over-provisioned hardware. To express this preference,
+CephFS provides a configuration option for MDS called <code class="docutils literal notranslate"><span class="pre">mds_join_fs</span></code> which
+enforces this <cite>affinity</cite>.</p>
+<p>As part of any failover, the Ceph monitors will prefer standby daemons with
+<code class="docutils literal notranslate"><span class="pre">mds_join_fs</span></code> equal to the file system name with the failed rank.  If no
+standby exists with <code class="docutils literal notranslate"><span class="pre">mds_join_fs</span></code> equal to the file system name, it will
+choose a <cite>vanilla</cite> standby (no setting for <code class="docutils literal notranslate"><span class="pre">mds_join_fs</span></code>) for the replacement
+or any other available standby as a last resort. Note, this does not change the
+behavior that <code class="docutils literal notranslate"><span class="pre">standby-replay</span></code> daemons are always selected before looking at
+other standbys.</p>
+<p>Even further, the monitors will regularly examine the CephFS file systems when
+stable to check if a standby with stronger affinity is available to replace an
+MDS with lower affinity. This process is also done for standby-replay daemons:
+if a regular standby has stronger affinity than the standby-replay MDS, it will
+replace the standby-replay MDS.</p>
+<p>For example, given this stable and healthy file system:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ ceph fs dump
+dumped fsmap epoch 399
+...
+Filesystem &#39;cephfs&#39; (27)
+...
+e399
+max_mds 1
+in      0
+up      {0=20384}
+failed
+damaged
+stopped
+...
+[mds.a{0:20384} state up:active seq 239 addr [v2:127.0.0.1:6854/966242805,v1:127.0.0.1:6855/966242805]]
+
+Standby daemons:
+
+[mds.b{-1:10420} state up:standby seq 2 addr [v2:127.0.0.1:6856/2745199145,v1:127.0.0.1:6857/2745199145]]
+</pre></div>
+</div>
+<p>You may set <code class="docutils literal notranslate"><span class="pre">mds_join_fs</span></code> on the standby to enforce your preference:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ ceph config set mds.b mds_join_fs cephfs
+</pre></div>
+</div>
+<p>after automatic failover:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ ceph fs dump
+dumped fsmap epoch 405
+e405
+...
+Filesystem &#39;cephfs&#39; (27)
+...
+max_mds 1
+in      0
+up      {0=10420}
+failed
+damaged
+stopped
+...
+[mds.b{0:10420} state up:active seq 274 join_fscid=27 addr [v2:127.0.0.1:6856/2745199145,v1:127.0.0.1:6857/2745199145]]
+
+Standby daemons:
+
+[mds.a{-1:10720} state up:standby seq 2 addr [v2:127.0.0.1:6854/1340357658,v1:127.0.0.1:6855/1340357658]]
+</pre></div>
+</div>
+<p>Note in the above example that <code class="docutils literal notranslate"><span class="pre">mds.b</span></code> now has <code class="docutils literal notranslate"><span class="pre">join_fscid=27</span></code>. In this
+output, the file system name from <code class="docutils literal notranslate"><span class="pre">mds_join_fs</span></code> is changed to the file system
+identifier (27). If the file system is recreated with the same name, the
+standby will follow the new file system as expected.</p>
+<p>Finally, if the file system is degraded or undersized, no failover will occur
+to enforce <code class="docutils literal notranslate"><span class="pre">mds_join_fs</span></code>.</p>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../">
+              <img class="logo" src="../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../install/">Installing Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cephadm/">Cephadm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rados/">Ceph Storage Cluster</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../">Ceph File System</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../#getting-started-with-cephfs">Getting Started with CephFS</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../#administration">Administration</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../createfs/"> Create a CephFS file system</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../administration/"> Administrative commands</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../multifs/"> Creating Multiple File Systems</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../add-remove-mds/"> Provision/Add/Remove MDS(s)</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Terminology</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#referring-to-mds-daemons">Referring to MDS daemons</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#managing-failover">Managing failover</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#configuring-standby-replay">Configuring standby-replay</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#configuring-mds-file-system-affinity">Configuring MDS file system affinity</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../cache-configuration/"> MDS Cache Configuration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../mds-config-ref/"> MDS Configuration Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../man/8/ceph-mds/"> Manual: ceph-mds</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../nfs/"> Export over NFS</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../app-best-practices/"> Application best practices</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../fs-volumes/"> FS volume and subvolumes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../quota/"> CephFS Quotas</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../health-messages/"> Health messages</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../upgrading/">Upgrading the MDS Cluster</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../upgrading/#upgrading-pre-firefly-file-systems-past-jewel">Upgrading pre-Firefly file systems past Jewel</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../cephfs-top/"> CephFS Top Utility</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../snap-schedule/"> Scheduled Snapshots</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../cephfs-mirroring/"> CephFS Snapshot Mirroring</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../#mounting-cephfs">Mounting CephFS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../#cephfs-concepts">CephFS Concepts</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../#troubleshooting-and-disaster-recovery">Troubleshooting and Disaster Recovery</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../#developer-guides">Developer Guides</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../#additional-details">Additional Details</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../rbd/">Ceph Block Device</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../radosgw/">Ceph Object Gateway</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/">Ceph Manager Daemon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dev/developer_guide/">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dev/internals/">Ceph Internals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../cache-configuration/" title="MDS Cache Configuration"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../add-remove-mds/" title="Deploying Metadata Servers"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../" >Ceph File System</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Terminology</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

@@ -1,0 +1,340 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Integrating with OpenStack Keystone &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css" />
+    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../genindex/" />
+    <link rel="search" title="Search" href="../../search/" />
+    <link rel="next" title="OpenStack Barbican Integration" href="../barbican/" />
+    <link rel="prev" title="NFS" href="../nfs/" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../barbican/" title="OpenStack Barbican Integration"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../nfs/" title="NFS"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../" accesskey="U">Ceph Object Gateway</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Integrating with OpenStack Keystone</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="integrating-with-openstack-keystone">
+<h1>Integrating with OpenStack Keystone<a class="headerlink" href="#integrating-with-openstack-keystone" title="Permalink to this heading">¶</a></h1>
+<p>It is possible to integrate the Ceph Object Gateway with Keystone, the OpenStack
+identity service. This sets up the gateway to accept Keystone as the users
+authority. A user that Keystone authorizes to access the gateway will also be
+automatically created on the Ceph Object Gateway (if didn’t exist beforehand). A
+token that Keystone validates will be considered as valid by the gateway.</p>
+<p>The following configuration options are available for Keystone integration:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[</span><span class="n">client</span><span class="o">.</span><span class="n">radosgw</span><span class="o">.</span><span class="n">gateway</span><span class="p">]</span>
+<span class="n">rgw</span> <span class="n">keystone</span> <span class="n">api</span> <span class="n">version</span> <span class="o">=</span> <span class="p">{</span><span class="n">keystone</span> <span class="n">api</span> <span class="n">version</span><span class="p">}</span>
+<span class="n">rgw</span> <span class="n">keystone</span> <span class="n">url</span> <span class="o">=</span> <span class="p">{</span><span class="n">keystone</span> <span class="n">server</span> <span class="n">url</span><span class="p">:</span><span class="n">keystone</span> <span class="n">server</span> <span class="n">admin</span> <span class="n">port</span><span class="p">}</span>
+<span class="n">rgw</span> <span class="n">keystone</span> <span class="n">admin</span> <span class="n">token</span> <span class="o">=</span> <span class="p">{</span><span class="n">keystone</span> <span class="n">admin</span> <span class="n">token</span><span class="p">}</span>
+<span class="n">rgw</span> <span class="n">keystone</span> <span class="n">admin</span> <span class="n">token</span> <span class="n">path</span> <span class="o">=</span> <span class="p">{</span><span class="n">path</span> <span class="n">to</span> <span class="n">keystone</span> <span class="n">admin</span> <span class="n">token</span><span class="p">}</span> <span class="c1">#preferred</span>
+<span class="n">rgw</span> <span class="n">keystone</span> <span class="n">accepted</span> <span class="n">roles</span> <span class="o">=</span> <span class="p">{</span><span class="n">accepted</span> <span class="n">user</span> <span class="n">roles</span><span class="p">}</span>
+<span class="n">rgw</span> <span class="n">keystone</span> <span class="n">token</span> <span class="n">cache</span> <span class="n">size</span> <span class="o">=</span> <span class="p">{</span><span class="n">number</span> <span class="n">of</span> <span class="n">tokens</span> <span class="n">to</span> <span class="n">cache</span><span class="p">}</span>
+<span class="n">rgw</span> <span class="n">keystone</span> <span class="n">implicit</span> <span class="n">tenants</span> <span class="o">=</span> <span class="p">{</span><span class="n">true</span> <span class="k">for</span> <span class="n">private</span> <span class="n">tenant</span> <span class="k">for</span> <span class="n">each</span> <span class="n">new</span> <span class="n">user</span><span class="p">}</span>
+</pre></div>
+</div>
+<p>It is also possible to configure a Keystone service tenant, user &amp; password for
+Keystone (for v2.0 version of the OpenStack Identity API), similar to the way
+OpenStack services tend to be configured, this avoids the need for setting the
+shared secret <code class="docutils literal notranslate"><span class="pre">rgw</span> <span class="pre">keystone</span> <span class="pre">admin</span> <span class="pre">token</span></code> in the configuration file, which is
+recommended to be disabled in production environments. The service tenant
+credentials should have admin privileges, for more details refer the <a class="reference external" href="http://docs.openstack.org/developer/keystone/configuringservices.html#setting-up-projects-users-and-roles">OpenStack
+Keystone documentation</a>, which explains the process in detail. The requisite
+configuration options for are:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">rgw</span> <span class="n">keystone</span> <span class="n">admin</span> <span class="n">user</span> <span class="o">=</span> <span class="p">{</span><span class="n">keystone</span> <span class="n">service</span> <span class="n">tenant</span> <span class="n">user</span> <span class="n">name</span><span class="p">}</span>
+<span class="n">rgw</span> <span class="n">keystone</span> <span class="n">admin</span> <span class="n">password</span> <span class="o">=</span> <span class="p">{</span><span class="n">keystone</span> <span class="n">service</span> <span class="n">tenant</span> <span class="n">user</span> <span class="n">password</span><span class="p">}</span>
+<span class="n">rgw</span> <span class="n">keystone</span> <span class="n">admin</span> <span class="n">password</span> <span class="o">=</span> <span class="p">{</span><span class="n">keystone</span> <span class="n">service</span> <span class="n">tenant</span> <span class="n">user</span> <span class="n">password</span> <span class="n">path</span><span class="p">}</span> <span class="c1"># preferred</span>
+<span class="n">rgw</span> <span class="n">keystone</span> <span class="n">admin</span> <span class="n">tenant</span> <span class="o">=</span> <span class="p">{</span><span class="n">keystone</span> <span class="n">service</span> <span class="n">tenant</span> <span class="n">name</span><span class="p">}</span>
+</pre></div>
+</div>
+<p>A Ceph Object Gateway user is mapped into a Keystone <code class="docutils literal notranslate"><span class="pre">tenant</span></code>. A Keystone user
+has different roles assigned to it on possibly more than a single tenant. When
+the Ceph Object Gateway gets the ticket, it looks at the tenant, and the user
+roles that are assigned to that ticket, and accepts/rejects the request
+according to the <code class="docutils literal notranslate"><span class="pre">rgw</span> <span class="pre">keystone</span> <span class="pre">accepted</span> <span class="pre">roles</span></code> configurable.</p>
+<p>For a v3 version of the OpenStack Identity API you should replace
+<code class="docutils literal notranslate"><span class="pre">rgw</span> <span class="pre">keystone</span> <span class="pre">admin</span> <span class="pre">tenant</span></code> with:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">rgw</span> <span class="n">keystone</span> <span class="n">admin</span> <span class="n">domain</span> <span class="o">=</span> <span class="p">{</span><span class="n">keystone</span> <span class="n">admin</span> <span class="n">domain</span> <span class="n">name</span><span class="p">}</span>
+<span class="n">rgw</span> <span class="n">keystone</span> <span class="n">admin</span> <span class="n">project</span> <span class="o">=</span> <span class="p">{</span><span class="n">keystone</span> <span class="n">admin</span> <span class="n">project</span> <span class="n">name</span><span class="p">}</span>
+</pre></div>
+</div>
+<p>For compatibility with previous versions of ceph, it is also
+possible to set <code class="docutils literal notranslate"><span class="pre">rgw</span> <span class="pre">keystone</span> <span class="pre">implicit</span> <span class="pre">tenants</span></code> to either
+<code class="docutils literal notranslate"><span class="pre">s3</span></code> or <code class="docutils literal notranslate"><span class="pre">swift</span></code>.  This has the effect of splitting
+the identity space such that the indicated protocol will
+only use implicit tenants, and the other protocol will
+never use implicit tenants.  Some older versions of ceph
+only supported implicit tenants with swift.</p>
+<section id="ocata-and-later">
+<h2>Ocata (and later)<a class="headerlink" href="#ocata-and-later" title="Permalink to this heading">¶</a></h2>
+<p>Keystone itself needs to be configured to point to the Ceph Object Gateway as an
+object-storage endpoint:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>openstack service create --name=swift \
+                         --description=&quot;Swift Service&quot; \
+                         object-store
++-------------+----------------------------------+
+| Field       | Value                            |
++-------------+----------------------------------+
+| description | Swift Service                    |
+| enabled     | True                             |
+| id          | 37c4c0e79571404cb4644201a4a6e5ee |
+| name        | swift                            |
+| type        | object-store                     |
++-------------+----------------------------------+
+
+openstack endpoint create --region RegionOne \
+     --publicurl   &quot;http://radosgw.example.com:8080/swift/v1&quot; \
+     --adminurl    &quot;http://radosgw.example.com:8080/swift/v1&quot; \
+     --internalurl &quot;http://radosgw.example.com:8080/swift/v1&quot; \
+     swift
++--------------+------------------------------------------+
+| Field        | Value                                    |
++--------------+------------------------------------------+
+| adminurl     | http://radosgw.example.com:8080/swift/v1 |
+| id           | e4249d2b60e44743a67b5e5b38c18dd3         |
+| internalurl  | http://radosgw.example.com:8080/swift/v1 |
+| publicurl    | http://radosgw.example.com:8080/swift/v1 |
+| region       | RegionOne                                |
+| service_id   | 37c4c0e79571404cb4644201a4a6e5ee         |
+| service_name | swift                                    |
+| service_type | object-store                             |
++--------------+------------------------------------------+
+
+$ openstack endpoint show object-store
++--------------+------------------------------------------+
+| Field        | Value                                    |
++--------------+------------------------------------------+
+| adminurl     | http://radosgw.example.com:8080/swift/v1 |
+| enabled      | True                                     |
+| id           | e4249d2b60e44743a67b5e5b38c18dd3         |
+| internalurl  | http://radosgw.example.com:8080/swift/v1 |
+| publicurl    | http://radosgw.example.com:8080/swift/v1 |
+| region       | RegionOne                                |
+| service_id   | 37c4c0e79571404cb4644201a4a6e5ee         |
+| service_name | swift                                    |
+| service_type | object-store                             |
++--------------+------------------------------------------+
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If your radosgw <code class="docutils literal notranslate"><span class="pre">ceph.conf</span></code> sets the configuration option
+<code class="docutils literal notranslate"><span class="pre">rgw</span> <span class="pre">swift</span> <span class="pre">account</span> <span class="pre">in</span> <span class="pre">url</span> <span class="pre">=</span> <span class="pre">true</span></code>, your <code class="docutils literal notranslate"><span class="pre">object-store</span></code>
+endpoint URLs must be set to include the suffix
+<code class="docutils literal notranslate"><span class="pre">/v1/AUTH_%(tenant_id)s</span></code> (instead of just <code class="docutils literal notranslate"><span class="pre">/v1</span></code>).</p>
+</div>
+<p>The Keystone URL is the Keystone admin RESTful API URL. The admin token is the
+token that is configured internally in Keystone for admin requests.</p>
+<p>OpenStack Keystone may be terminated with a self signed ssl certificate, in
+order for radosgw to interact with Keystone in such a case, you could either
+install Keystone’s ssl certificate in the node running radosgw. Alternatively
+radosgw could be made to not verify the ssl certificate at all (similar to
+OpenStack clients with a <code class="docutils literal notranslate"><span class="pre">--insecure</span></code> switch) by setting the value of the
+configurable <code class="docutils literal notranslate"><span class="pre">rgw</span> <span class="pre">keystone</span> <span class="pre">verify</span> <span class="pre">ssl</span></code> to false.</p>
+</section>
+<section id="cross-project-tenant-access">
+<h2>Cross Project(Tenant) Access<a class="headerlink" href="#cross-project-tenant-access" title="Permalink to this heading">¶</a></h2>
+<p>In order to let a project (earlier called a ‘tenant’) access buckets belonging to a different project, the following config option needs to be enabled:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">rgw</span> <span class="n">swift</span> <span class="n">account</span> <span class="ow">in</span> <span class="n">url</span> <span class="o">=</span> <span class="n">true</span>
+</pre></div>
+</div>
+<p>The Keystone object-store endpoint must accordingly be configured to include the AUTH_%(project_id)s suffix:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span> openstack endpoint create --region RegionOne \
+     --publicurl   &quot;http://radosgw.example.com:8080/swift/v1/AUTH_$(project_id)s&quot; \
+     --adminurl    &quot;http://radosgw.example.com:8080/swift/v1/AUTH_$(project_id)s&quot; \
+     --internalurl &quot;http://radosgw.example.com:8080/swift/v1/AUTH_$(project_id)s&quot; \
+     swift
++--------------+--------------------------------------------------------------+
+| Field        | Value                                                        |
++--------------+--------------------------------------------------------------+
+| adminurl     | http://radosgw.example.com:8080/swift/v1/AUTH_$(project_id)s |
+| id           | e4249d2b60e44743a67b5e5b38c18dd3                             |
+| internalurl  | http://radosgw.example.com:8080/swift/v1/AUTH_$(project_id)s |
+| publicurl    | http://radosgw.example.com:8080/swift/v1/AUTH_$(project_id)s |
+| region       | RegionOne                                                    |
+| service_id   | 37c4c0e79571404cb4644201a4a6e5ee                             |
+| service_name | swift                                                        |
+| service_type | object-store                                                 |
++--------------+--------------------------------------------------------------+
+</pre></div>
+</div>
+</section>
+<section id="keystone-integration-with-the-s3-api">
+<h2>Keystone integration with the S3 API<a class="headerlink" href="#keystone-integration-with-the-s3-api" title="Permalink to this heading">¶</a></h2>
+<p>It is possible to use Keystone for authentication even when using the
+S3 API (with AWS-like access and secret keys), if the <code class="docutils literal notranslate"><span class="pre">rgw</span> <span class="pre">s3</span> <span class="pre">auth</span>
+<span class="pre">use</span> <span class="pre">keystone</span></code> option is set. For details, see
+<a class="reference internal" href="../s3/authentication/"><span class="doc">Authentication and ACLs</span></a>.</p>
+</section>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../">
+              <img class="logo" src="../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../install/">Installing Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cephadm/">Cephadm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rados/">Ceph Storage Cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cephfs/">Ceph File System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rbd/">Ceph Block Device</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../">Ceph Object Gateway</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../frontends/">HTTP Frontends</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../placement/">Pool Placement and Storage Classes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../multisite/">Multisite Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../multisite-sync-policy/">Multisite Sync Policy Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pools/">Configuring Pools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../config-ref/">Config Reference</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../admin/">Admin Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../s3/">S3 API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rgw-cache/">Data caching and CDN</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../swift/">Swift API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../adminops/">Admin Ops API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/">Python binding</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../nfs/">Export over NFS</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">OpenStack Keystone Integration</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#ocata-and-later">Ocata (and later)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#cross-project-tenant-access">Cross Project(Tenant) Access</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#keystone-integration-with-the-s3-api">Keystone integration with the S3 API</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../barbican/">OpenStack Barbican Integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../vault/">HashiCorp Vault Integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../kmip/">KMIP Integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../opa/">Open Policy Agent Integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../multitenancy/">Multi-tenancy</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../compression/">Compression</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../ldap-auth/">LDAP Authentication</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../encryption/">Server-Side Encryption</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../bucketpolicy/">Bucket Policy</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../dynamicresharding/">Dynamic bucket index resharding</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../mfa/">Multi factor authentication</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../sync-modules/">Sync Modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../notifications/">Bucket Notifications</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../layout/">Data Layout in RADOS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../STS/">STS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../STSLite/">STS Lite</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../keycloak/">Keycloak</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../session-tags/">Session Tags</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../role/">Role</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../orphans/">Orphan List and Associated Tooling</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../oidc/">OpenID Connect Provider</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../troubleshooting/">Troubleshooting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../man/8/radosgw/">Manpage radosgw</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../man/8/radosgw-admin/">Manpage radosgw-admin</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../qat-accel/">QAT Acceleration for Encryption and Compression</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../s3select/">S3-select</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../lua-scripting/">Lua Scripting</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/">Ceph Manager Daemon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dev/developer_guide/">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dev/internals/">Ceph Internals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../barbican/" title="OpenStack Barbican Integration"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../nfs/" title="NFS"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../" >Ceph Object Gateway</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Integrating with OpenStack Keystone</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

@@ -1,0 +1,752 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Placement Groups &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/css/custom.css" />
+    <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/jquery.js"></script>
+    <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/ceph.js"></script>
+    <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <link rel="shortcut icon" href="../../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../../genindex/" />
+    <link rel="search" title="Search" href="../../../search/" />
+    <link rel="next" title="Placement Group States" href="../pg-states/" />
+    <link rel="prev" title="Cache Tiering" href="../cache-tiering/" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../pg-states/" title="Placement Group States"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../cache-tiering/" title="Cache Tiering"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../" >Ceph Storage Cluster</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../" accesskey="U">Cluster Operations</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Placement Groups</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="placement-groups">
+<h1>Placement Groups<a class="headerlink" href="#placement-groups" title="Permalink to this heading">¶</a></h1>
+<section id="autoscaling-placement-groups">
+<span id="pg-autoscaler"></span><h2>Autoscaling placement groups<a class="headerlink" href="#autoscaling-placement-groups" title="Permalink to this heading">¶</a></h2>
+<p>Placement groups (PGs) are an internal implementation detail of how
+Ceph distributes data.  You can allow the cluster to either make
+recommendations or automatically tune PGs based on how the cluster is
+used by enabling <em>pg-autoscaling</em>.</p>
+<p>Each pool in the system has a <code class="docutils literal notranslate"><span class="pre">pg_autoscale_mode</span></code> property that can be set to <code class="docutils literal notranslate"><span class="pre">off</span></code>, <code class="docutils literal notranslate"><span class="pre">on</span></code>, or <code class="docutils literal notranslate"><span class="pre">warn</span></code>.</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">off</span></code>: Disable autoscaling for this pool.  It is up to the administrator to choose an appropriate PG number for each pool.  Please refer to <a class="reference internal" href="#choosing-number-of-placement-groups"><span class="std std-ref">Choosing the number of Placement Groups</span></a> for more information.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">on</span></code>: Enable automated adjustments of the PG count for the given pool.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">warn</span></code>: Raise health alerts when the PG count should be adjusted</p></li>
+</ul>
+<p>To set the autoscaling mode for an existing pool:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><style type="text/css">
+span.prompt1:before {
+  content: "# ";
+}
+</style><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>pool<span class="w"> </span><span class="nb">set</span><span class="w"> </span>&lt;pool-name&gt;<span class="w"> </span>pg_autoscale_mode<span class="w"> </span>&lt;mode&gt;</span>
+</pre></div></div><p>For example to enable autoscaling on pool <code class="docutils literal notranslate"><span class="pre">foo</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>pool<span class="w"> </span><span class="nb">set</span><span class="w"> </span>foo<span class="w"> </span>pg_autoscale_mode<span class="w"> </span>on</span>
+</pre></div></div><p>You can also configure the default <code class="docutils literal notranslate"><span class="pre">pg_autoscale_mode</span></code> that is
+set on any pools that are subsequently created:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>config<span class="w"> </span><span class="nb">set</span><span class="w"> </span>global<span class="w"> </span>osd_pool_default_pg_autoscale_mode<span class="w"> </span>&lt;mode&gt;</span>
+</pre></div></div><p>You can disable or enable the autoscaler for all pools with
+the <code class="docutils literal notranslate"><span class="pre">noautoscale</span></code> flag. By default this flag is set to  be <code class="docutils literal notranslate"><span class="pre">off</span></code>,
+but you can turn it <code class="docutils literal notranslate"><span class="pre">on</span></code> by using the command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><style type="text/css">
+span.prompt2:before {
+  content: "$ ";
+}
+</style><span class="prompt2">ceph<span class="w"> </span>osd<span class="w"> </span>pool<span class="w"> </span><span class="nb">set</span><span class="w"> </span>noautoscale</span>
+</pre></div></div><p>You can turn it <code class="docutils literal notranslate"><span class="pre">off</span></code> using the command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>pool<span class="w"> </span><span class="nb">unset</span><span class="w"> </span>noautoscale</span>
+</pre></div></div><p>To <code class="docutils literal notranslate"><span class="pre">get</span></code> the value of the flag use the command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>pool<span class="w"> </span>get<span class="w"> </span>noautoscale</span>
+</pre></div></div><section id="viewing-pg-scaling-recommendations">
+<h3>Viewing PG scaling recommendations<a class="headerlink" href="#viewing-pg-scaling-recommendations" title="Permalink to this heading">¶</a></h3>
+<p>You can view each pool, its relative utilization, and any suggested changes to
+the PG count with this command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>pool<span class="w"> </span>autoscale-status</span>
+</pre></div></div><p>Output will be something like:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">POOL</span>    <span class="n">SIZE</span>  <span class="n">TARGET</span> <span class="n">SIZE</span>  <span class="n">RATE</span>  <span class="n">RAW</span> <span class="n">CAPACITY</span>   <span class="n">RATIO</span>  <span class="n">TARGET</span> <span class="n">RATIO</span>  <span class="n">EFFECTIVE</span> <span class="n">RATIO</span> <span class="n">BIAS</span> <span class="n">PG_NUM</span>  <span class="n">NEW</span> <span class="n">PG_NUM</span>  <span class="n">AUTOSCALE</span> <span class="n">BULK</span>
+<span class="n">a</span>     <span class="mi">12900</span><span class="n">M</span>                <span class="mf">3.0</span>        <span class="mi">82431</span><span class="n">M</span>  <span class="mf">0.4695</span>                                          <span class="mi">8</span>         <span class="mi">128</span>  <span class="n">warn</span>      <span class="kc">True</span>
+<span class="n">c</span>         <span class="mi">0</span>                 <span class="mf">3.0</span>        <span class="mi">82431</span><span class="n">M</span>  <span class="mf">0.0000</span>        <span class="mf">0.2000</span>           <span class="mf">0.9884</span>  <span class="mf">1.0</span>      <span class="mi">1</span>          <span class="mi">64</span>  <span class="n">warn</span>      <span class="kc">True</span>
+<span class="n">b</span>         <span class="mi">0</span>        <span class="mf">953.6</span><span class="n">M</span>   <span class="mf">3.0</span>        <span class="mi">82431</span><span class="n">M</span>  <span class="mf">0.0347</span>                                          <span class="mi">8</span>              <span class="n">warn</span>      <span class="kc">False</span>
+</pre></div>
+</div>
+<p><strong>SIZE</strong> is the amount of data stored in the pool. <strong>TARGET SIZE</strong>, if
+present, is the amount of data the administrator has specified that
+they expect to eventually be stored in this pool.  The system uses
+the larger of the two values for its calculation.</p>
+<p><strong>RATE</strong> is the multiplier for the pool that determines how much raw
+storage capacity is consumed.  For example, a 3 replica pool will
+have a ratio of 3.0, while a k=4,m=2 erasure coded pool will have a
+ratio of 1.5.</p>
+<p><strong>RAW CAPACITY</strong> is the total amount of raw storage capacity on the
+OSDs that are responsible for storing this pool’s (and perhaps other
+pools’) data.  <strong>RATIO</strong> is the ratio of that total capacity that
+this pool is consuming (i.e., ratio = size * rate / raw capacity).</p>
+<p><strong>TARGET RATIO</strong>, if present, is the ratio of storage that the
+administrator has specified that they expect this pool to consume
+relative to other pools with target ratios set.
+If both target size bytes and ratio are specified, the
+ratio takes precedence.</p>
+<p><strong>EFFECTIVE RATIO</strong> is the target ratio after adjusting in two ways:</p>
+<ol class="arabic simple">
+<li><p>subtracting any capacity expected to be used by pools with target size set</p></li>
+<li><p>normalizing the target ratios among pools with target ratio set so
+they collectively target the rest of the space. For example, 4
+pools with target_ratio 1.0 would have an effective ratio of 0.25.</p></li>
+</ol>
+<p>The system uses the larger of the actual ratio and the effective ratio
+for its calculation.</p>
+<p><strong>BIAS</strong> is used as a multiplier to manually adjust a pool’s PG based
+on prior information about how much PGs a specific pool is expected
+to have.</p>
+<p><strong>PG_NUM</strong> is the current number of PGs for the pool (or the current
+number of PGs that the pool is working towards, if a <code class="docutils literal notranslate"><span class="pre">pg_num</span></code>
+change is in progress).  <strong>NEW PG_NUM</strong>, if present, is what the
+system believes the pool’s <code class="docutils literal notranslate"><span class="pre">pg_num</span></code> should be changed to.  It is
+always a power of 2, and will only be present if the “ideal” value
+varies from the current value by more than a factor of 3 by default.
+This factor can be be adjusted with:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>pool<span class="w"> </span><span class="nb">set</span><span class="w"> </span>threshold<span class="w"> </span><span class="m">2</span>.0</span>
+</pre></div></div><p><strong>AUTOSCALE</strong>, is the pool <code class="docutils literal notranslate"><span class="pre">pg_autoscale_mode</span></code>
+and will be either <code class="docutils literal notranslate"><span class="pre">on</span></code>, <code class="docutils literal notranslate"><span class="pre">off</span></code>, or <code class="docutils literal notranslate"><span class="pre">warn</span></code>.</p>
+<p>The final column, <strong>BULK</strong> determines if the pool is <code class="docutils literal notranslate"><span class="pre">bulk</span></code>
+and will be either <code class="docutils literal notranslate"><span class="pre">True</span></code> or <code class="docutils literal notranslate"><span class="pre">False</span></code>. A <code class="docutils literal notranslate"><span class="pre">bulk</span></code> pool
+means that the pool is expected to be large and should start out
+with large amount of PGs for performance purposes. On the other hand,
+pools without the <code class="docutils literal notranslate"><span class="pre">bulk</span></code> flag are expected to be smaller e.g.,
+.mgr or meta pools.</p>
+</section>
+<section id="automated-scaling">
+<h3>Automated scaling<a class="headerlink" href="#automated-scaling" title="Permalink to this heading">¶</a></h3>
+<p>Allowing the cluster to automatically scale PGs based on usage is the
+simplest approach.  Ceph will look at the total available storage and
+target number of PGs for the whole system, look at how much data is
+stored in each pool, and try to apportion the PGs accordingly.  The
+system is relatively conservative with its approach, only making
+changes to a pool when the current number of PGs (<code class="docutils literal notranslate"><span class="pre">pg_num</span></code>) is more
+than 3 times off from what it thinks it should be.</p>
+<p>The target number of PGs per OSD is based on the
+<code class="docutils literal notranslate"><span class="pre">mon_target_pg_per_osd</span></code> configurable (default: 100), which can be
+adjusted with:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>config<span class="w"> </span><span class="nb">set</span><span class="w"> </span>global<span class="w"> </span>mon_target_pg_per_osd<span class="w"> </span><span class="m">100</span></span>
+</pre></div></div><p>The autoscaler analyzes pools and adjusts on a per-subtree basis.
+Because each pool may map to a different CRUSH rule, and each rule may
+distribute data across different devices, Ceph will consider
+utilization of each subtree of the hierarchy independently.  For
+example, a pool that maps to OSDs of class <cite>ssd</cite> and a pool that maps
+to OSDs of class <cite>hdd</cite> will each have optimal PG counts that depend on
+the number of those respective device types.</p>
+<p>In the case where a pool uses OSDs under two or more CRUSH roots, e.g., (shadow
+trees with both <cite>ssd</cite> and <cite>hdd</cite> devices), the autoscaler will
+issue a warning to the user in the manager log stating the name of the pool
+and the set of roots that overlap each other. The autoscaler will not
+scale any pools with overlapping roots because this can cause problems
+with the scaling process. We recommend making each pool belong to only
+one root (one OSD class) to get rid of the warning and ensure a successful
+scaling process.</p>
+<p>The autoscaler uses the <cite>bulk</cite> flag to determine which pool
+should start out with a full complement of PGs and only
+scales down when the usage ratio across the pool is not even.
+However, if the pool doesn’t have the <cite>bulk</cite> flag, the pool will
+start out with minimal PGs and only when there is more usage in the pool.</p>
+<p>To create pool with <cite>bulk</cite> flag:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>pool<span class="w"> </span>create<span class="w"> </span>&lt;pool-name&gt;<span class="w"> </span>--bulk</span>
+</pre></div></div><p>To set/unset <cite>bulk</cite> flag of existing pool:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>pool<span class="w"> </span><span class="nb">set</span><span class="w"> </span>&lt;pool-name&gt;<span class="w"> </span>bulk<span class="w"> </span>&lt;true/false/1/0&gt;</span>
+</pre></div></div><p>To get <cite>bulk</cite> flag of existing pool:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>pool<span class="w"> </span>get<span class="w"> </span>&lt;pool-name&gt;<span class="w"> </span>bulk</span>
+</pre></div></div></section>
+<section id="specifying-expected-pool-size">
+<span id="specifying-pool-target-size"></span><h3>Specifying expected pool size<a class="headerlink" href="#specifying-expected-pool-size" title="Permalink to this heading">¶</a></h3>
+<p>When a cluster or pool is first created, it will consume a small
+fraction of the total cluster capacity and will appear to the system
+as if it should only need a small number of placement groups.
+However, in most cases cluster administrators have a good idea which
+pools are expected to consume most of the system capacity over time.
+By providing this information to Ceph, a more appropriate number of
+PGs can be used from the beginning, preventing subsequent changes in
+<code class="docutils literal notranslate"><span class="pre">pg_num</span></code> and the overhead associated with moving data around when
+those adjustments are made.</p>
+<p>The <em>target size</em> of a pool can be specified in two ways: either in
+terms of the absolute size of the pool (i.e., bytes), or as a weight
+relative to other pools with a <code class="docutils literal notranslate"><span class="pre">target_size_ratio</span></code> set.</p>
+<p>For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>pool<span class="w"> </span><span class="nb">set</span><span class="w"> </span>mypool<span class="w"> </span>target_size_bytes<span class="w"> </span>100T</span>
+</pre></div></div><p>will tell the system that <cite>mypool</cite> is expected to consume 100 TiB of
+space.  Alternatively:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>pool<span class="w"> </span><span class="nb">set</span><span class="w"> </span>mypool<span class="w"> </span>target_size_ratio<span class="w"> </span><span class="m">1</span>.0</span>
+</pre></div></div><p>will tell the system that <cite>mypool</cite> is expected to consume 1.0 relative
+to the other pools with <code class="docutils literal notranslate"><span class="pre">target_size_ratio</span></code> set. If <cite>mypool</cite> is the
+only pool in the cluster, this means an expected use of 100% of the
+total capacity. If there is a second pool with <code class="docutils literal notranslate"><span class="pre">target_size_ratio</span></code>
+1.0, both pools would expect to use 50% of the cluster capacity.</p>
+<p>You can also set the target size of a pool at creation time with the optional <code class="docutils literal notranslate"><span class="pre">--target-size-bytes</span> <span class="pre">&lt;bytes&gt;</span></code> or <code class="docutils literal notranslate"><span class="pre">--target-size-ratio</span> <span class="pre">&lt;ratio&gt;</span></code> arguments to the <code class="docutils literal notranslate"><span class="pre">ceph</span> <span class="pre">osd</span> <span class="pre">pool</span> <span class="pre">create</span></code> command.</p>
+<p>Note that if impossible target size values are specified (for example,
+a capacity larger than the total cluster) then a health warning
+(<code class="docutils literal notranslate"><span class="pre">POOL_TARGET_SIZE_BYTES_OVERCOMMITTED</span></code>) will be raised.</p>
+<p>If both <code class="docutils literal notranslate"><span class="pre">target_size_ratio</span></code> and <code class="docutils literal notranslate"><span class="pre">target_size_bytes</span></code> are specified
+for a pool, only the ratio will be considered, and a health warning
+(<code class="docutils literal notranslate"><span class="pre">POOL_HAS_TARGET_SIZE_BYTES_AND_RATIO</span></code>) will be issued.</p>
+</section>
+<section id="specifying-bounds-on-a-pool-s-pgs">
+<h3>Specifying bounds on a pool’s PGs<a class="headerlink" href="#specifying-bounds-on-a-pool-s-pgs" title="Permalink to this heading">¶</a></h3>
+<p>It is also possible to specify a minimum number of PGs for a pool.
+This is useful for establishing a lower bound on the amount of
+parallelism client will see when doing IO, even when a pool is mostly
+empty.  Setting the lower bound prevents Ceph from reducing (or
+recommending you reduce) the PG number below the configured number.</p>
+<p>You can set the minimum or maximum number of PGs for a pool with:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>pool<span class="w"> </span><span class="nb">set</span><span class="w"> </span>&lt;pool-name&gt;<span class="w"> </span>pg_num_min<span class="w"> </span>&lt;num&gt;</span>
+<span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>pool<span class="w"> </span><span class="nb">set</span><span class="w"> </span>&lt;pool-name&gt;<span class="w"> </span>pg_num_max<span class="w"> </span>&lt;num&gt;</span>
+</pre></div></div><p>You can also specify the minimum or maximum PG count at pool creation
+time with the optional <code class="docutils literal notranslate"><span class="pre">--pg-num-min</span> <span class="pre">&lt;num&gt;</span></code> or <code class="docutils literal notranslate"><span class="pre">--pg-num-max</span>
+<span class="pre">&lt;num&gt;</span></code> arguments to the <code class="docutils literal notranslate"><span class="pre">ceph</span> <span class="pre">osd</span> <span class="pre">pool</span> <span class="pre">create</span></code> command.</p>
+</section>
+</section>
+<section id="a-preselection-of-pg-num">
+<span id="preselection"></span><h2>A preselection of pg_num<a class="headerlink" href="#a-preselection-of-pg-num" title="Permalink to this heading">¶</a></h2>
+<p>When creating a new pool with:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>pool<span class="w"> </span>create<span class="w"> </span><span class="o">{</span>pool-name<span class="o">}</span><span class="w"> </span><span class="o">[</span>pg_num<span class="o">]</span></span>
+</pre></div></div><p>it is optional to choose the value of <code class="docutils literal notranslate"><span class="pre">pg_num</span></code>.  If you do not
+specify <code class="docutils literal notranslate"><span class="pre">pg_num</span></code>, the cluster can (by default) automatically tune it
+for you based on how much data is stored in the pool (see above, <a class="reference internal" href="#pg-autoscaler"><span class="std std-ref">Autoscaling placement groups</span></a>).</p>
+<p>Alternatively, <code class="docutils literal notranslate"><span class="pre">pg_num</span></code> can be explicitly provided.  However,
+whether you specify a <code class="docutils literal notranslate"><span class="pre">pg_num</span></code> value or not does not affect whether
+the value is automatically tuned by the cluster after the fact.  To
+enable or disable auto-tuning:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>pool<span class="w"> </span><span class="nb">set</span><span class="w"> </span><span class="o">{</span>pool-name<span class="o">}</span><span class="w"> </span>pg_autoscale_mode<span class="w"> </span><span class="o">(</span>on<span class="p">|</span>off<span class="p">|</span>warn<span class="o">)</span></span>
+</pre></div></div><p>The “rule of thumb” for PGs per OSD has traditionally be 100.  With
+the additional of the balancer (which is also enabled by default), a
+value of more like 50 PGs per OSD is probably reasonable.  The
+challenge (which the autoscaler normally does for you), is to:</p>
+<ul class="simple">
+<li><p>have the PGs per pool proportional to the data in the pool, and</p></li>
+<li><p>end up with 50-100 PGs per OSDs, after the replication or
+erasuring-coding fan-out of each PG across OSDs is taken into
+consideration</p></li>
+</ul>
+</section>
+<section id="how-are-placement-groups-used">
+<h2>How are Placement Groups used ?<a class="headerlink" href="#how-are-placement-groups-used" title="Permalink to this heading">¶</a></h2>
+<p>A placement group (PG) aggregates objects within a pool because
+tracking object placement and object metadata on a per-object basis is
+computationally expensive–i.e., a system with millions of objects
+cannot realistically track placement on a per-object basis.</p>
+<p class="ditaa">
+<img src="../../../_images/ditaa-a53f413321ac943aa924fb6b58c0b3716821f6a7.png"/>
+</p>
+<p>The Ceph client will calculate which placement group an object should
+be in. It does this by hashing the object ID and applying an operation
+based on the number of PGs in the defined pool and the ID of the pool.
+See <a class="reference external" href="../../../architecture#mapping-pgs-to-osds">Mapping PGs to OSDs</a> for details.</p>
+<p>The object’s contents within a placement group are stored in a set of
+OSDs. For instance, in a replicated pool of size two, each placement
+group will store objects on two OSDs, as shown below.</p>
+<p class="ditaa">
+<img src="../../../_images/ditaa-9d7f8f18e202e8cc5e09f9691de9266064af43b6.png"/>
+</p>
+<p>Should OSD #2 fail, another will be assigned to Placement Group #1 and
+will be filled with copies of all objects in OSD #1. If the pool size
+is changed from two to three, an additional OSD will be assigned to
+the placement group and will receive copies of all objects in the
+placement group.</p>
+<p>Placement groups do not own the OSD; they share it with other
+placement groups from the same pool or even other pools. If OSD #2
+fails, the Placement Group #2 will also have to restore copies of
+objects, using OSD #3.</p>
+<p>When the number of placement groups increases, the new placement
+groups will be assigned OSDs. The result of the CRUSH function will
+also change and some objects from the former placement groups will be
+copied over to the new Placement Groups and removed from the old ones.</p>
+</section>
+<section id="placement-groups-tradeoffs">
+<h2>Placement Groups Tradeoffs<a class="headerlink" href="#placement-groups-tradeoffs" title="Permalink to this heading">¶</a></h2>
+<p>Data durability and even distribution among all OSDs call for more
+placement groups but their number should be reduced to the minimum to
+save CPU and memory.</p>
+<section id="data-durability">
+<span id="id1"></span><h3>Data durability<a class="headerlink" href="#data-durability" title="Permalink to this heading">¶</a></h3>
+<p>After an OSD fails, the risk of data loss increases until the data it
+contained is fully recovered. Let’s imagine a scenario that causes
+permanent data loss in a single placement group:</p>
+<ul class="simple">
+<li><p>The OSD fails and all copies of the object it contains are lost.
+For all objects within the placement group the number of replica
+suddenly drops from three to two.</p></li>
+<li><p>Ceph starts recovery for this placement group by choosing a new OSD
+to re-create the third copy of all objects.</p></li>
+<li><p>Another OSD, within the same placement group, fails before the new
+OSD is fully populated with the third copy. Some objects will then
+only have one surviving copies.</p></li>
+<li><p>Ceph picks yet another OSD and keeps copying objects to restore the
+desired number of copies.</p></li>
+<li><p>A third OSD, within the same placement group, fails before recovery
+is complete. If this OSD contained the only remaining copy of an
+object, it is permanently lost.</p></li>
+</ul>
+<p>In a cluster containing 10 OSDs with 512 placement groups in a three
+replica pool, CRUSH will give each placement groups three OSDs. In the
+end, each OSDs will end up hosting (512 * 3) / 10 = ~150 Placement
+Groups. When the first OSD fails, the above scenario will therefore
+start recovery for all 150 placement groups at the same time.</p>
+<p>The 150 placement groups being recovered are likely to be
+homogeneously spread over the 9 remaining OSDs. Each remaining OSD is
+therefore likely to send copies of objects to all others and also
+receive some new objects to be stored because they became part of a
+new placement group.</p>
+<p>The amount of time it takes for this recovery to complete entirely
+depends on the architecture of the Ceph cluster. Let say each OSD is
+hosted by a 1TB SSD on a single machine and all of them are connected
+to a 10Gb/s switch and the recovery for a single OSD completes within
+M minutes. If there are two OSDs per machine using spinners with no
+SSD journal and a 1Gb/s switch, it will at least be an order of
+magnitude slower.</p>
+<p>In a cluster of this size, the number of placement groups has almost
+no influence on data durability. It could be 128 or 8192 and the
+recovery would not be slower or faster.</p>
+<p>However, growing the same Ceph cluster to 20 OSDs instead of 10 OSDs
+is likely to speed up recovery and therefore improve data durability
+significantly. Each OSD now participates in only ~75 placement groups
+instead of ~150 when there were only 10 OSDs and it will still require
+all 19 remaining OSDs to perform the same amount of object copies in
+order to recover. But where 10 OSDs had to copy approximately 100GB
+each, they now have to copy 50GB each instead. If the network was the
+bottleneck, recovery will happen twice as fast. In other words,
+recovery goes faster when the number of OSDs increases.</p>
+<p>If this cluster grows to 40 OSDs, each of them will only host ~35
+placement groups. If an OSD dies, recovery will keep going faster
+unless it is blocked by another bottleneck. However, if this cluster
+grows to 200 OSDs, each of them will only host ~7 placement groups. If
+an OSD dies, recovery will happen between at most of ~21 (7 * 3) OSDs
+in these placement groups: recovery will take longer than when there
+were 40 OSDs, meaning the number of placement groups should be
+increased.</p>
+<p>No matter how short the recovery time is, there is a chance for a
+second OSD to fail while it is in progress. In the 10 OSDs cluster
+described above, if any of them fail, then ~17 placement groups
+(i.e. ~150 / 9 placement groups being recovered) will only have one
+surviving copy. And if any of the 8 remaining OSD fail, the last
+objects of two placement groups are likely to be lost (i.e. ~17 / 8
+placement groups with only one remaining copy being recovered).</p>
+<p>When the size of the cluster grows to 20 OSDs, the number of Placement
+Groups damaged by the loss of three OSDs drops. The second OSD lost
+will degrade ~4 (i.e. ~75 / 19 placement groups being recovered)
+instead of ~17 and the third OSD lost will only lose data if it is one
+of the four OSDs containing the surviving copy. In other words, if the
+probability of losing one OSD is 0.0001% during the recovery time
+frame, it goes from 17 * 10 * 0.0001% in the cluster with 10 OSDs to 4 * 20 *
+0.0001% in the cluster with 20 OSDs.</p>
+<p>In a nutshell, more OSDs mean faster recovery and a lower risk of
+cascading failures leading to the permanent loss of a Placement
+Group. Having 512 or 4096 Placement Groups is roughly equivalent in a
+cluster with less than 50 OSDs as far as data durability is concerned.</p>
+<p>Note: It may take a long time for a new OSD added to the cluster to be
+populated with placement groups that were assigned to it. However
+there is no degradation of any object and it has no impact on the
+durability of the data contained in the Cluster.</p>
+</section>
+<section id="object-distribution-within-a-pool">
+<span id="object-distribution"></span><h3>Object distribution within a pool<a class="headerlink" href="#object-distribution-within-a-pool" title="Permalink to this heading">¶</a></h3>
+<p>Ideally objects are evenly distributed in each placement group. Since
+CRUSH computes the placement group for each object, but does not
+actually know how much data is stored in each OSD within this
+placement group, the ratio between the number of placement groups and
+the number of OSDs may influence the distribution of the data
+significantly.</p>
+<p>For instance, if there was a single placement group for ten OSDs in a
+three replica pool, only three OSD would be used because CRUSH would
+have no other choice. When more placement groups are available,
+objects are more likely to be evenly spread among them. CRUSH also
+makes every effort to evenly spread OSDs among all existing Placement
+Groups.</p>
+<p>As long as there are one or two orders of magnitude more Placement
+Groups than OSDs, the distribution should be even. For instance, 256
+placement groups for 3 OSDs, 512 or 1024 placement groups for 10 OSDs
+etc.</p>
+<p>Uneven data distribution can be caused by factors other than the ratio
+between OSDs and placement groups. Since CRUSH does not take into
+account the size of the objects, a few very large objects may create
+an imbalance. Let say one million 4K objects totaling 4GB are evenly
+spread among 1024 placement groups on 10 OSDs. They will use 4GB / 10
+= 400MB on each OSD. If one 400MB object is added to the pool, the
+three OSDs supporting the placement group in which the object has been
+placed will be filled with 400MB + 400MB = 800MB while the seven
+others will remain occupied with only 400MB.</p>
+</section>
+<section id="memory-cpu-and-network-usage">
+<span id="resource-usage"></span><h3>Memory, CPU and network usage<a class="headerlink" href="#memory-cpu-and-network-usage" title="Permalink to this heading">¶</a></h3>
+<p>For each placement group, OSDs and MONs need memory, network and CPU
+at all times and even more during recovery. Sharing this overhead by
+clustering objects within a placement group is one of the main reasons
+they exist.</p>
+<p>Minimizing the number of placement groups saves significant amounts of
+resources.</p>
+</section>
+</section>
+<section id="choosing-the-number-of-placement-groups">
+<span id="choosing-number-of-placement-groups"></span><h2>Choosing the number of Placement Groups<a class="headerlink" href="#choosing-the-number-of-placement-groups" title="Permalink to this heading">¶</a></h2>
+<p>If you have more than 50 OSDs, we recommend approximately 50-100
+placement groups per OSD to balance out resource usage, data
+durability and distribution. If you have less than 50 OSDs, choosing
+among the <a class="reference internal" href="#preselection">preselection</a> above is best. For a single pool of objects,
+you can use the following formula to get a baseline</p>
+<blockquote>
+<div><p>Total PGs = <span class="math notranslate nohighlight">\(\frac{OSDs \times 100}{pool \: size}\)</span></p>
+</div></blockquote>
+<p>Where <strong>pool size</strong> is either the number of replicas for replicated
+pools or the K+M sum for erasure coded pools (as returned by <strong>ceph
+osd erasure-code-profile get</strong>).</p>
+<p>You should then check if the result makes sense with the way you
+designed your Ceph cluster to maximize <a class="reference internal" href="#data-durability">data durability</a>,
+<a class="reference internal" href="#object-distribution">object distribution</a> and minimize <a class="reference internal" href="#resource-usage">resource usage</a>.</p>
+<p>The result should always be <strong>rounded up to the nearest power of two</strong>.</p>
+<p>Only a power of two will evenly balance the number of objects among
+placement groups. Other values will result in an uneven distribution of
+data across your OSDs. Their use should be limited to incrementally
+stepping from one power of two to another.</p>
+<p>As an example, for a cluster with 200 OSDs and a pool size of 3
+replicas, you would estimate your number of PGs as follows</p>
+<blockquote>
+<div><p><span class="math notranslate nohighlight">\(\frac{200 \times 100}{3} = 6667\)</span>. Nearest power of 2: 8192</p>
+</div></blockquote>
+<p>When using multiple data pools for storing objects, you need to ensure
+that you balance the number of placement groups per pool with the
+number of placement groups per OSD so that you arrive at a reasonable
+total number of placement groups that provides reasonably low variance
+per OSD without taxing system resources or making the peering process
+too slow.</p>
+<p>For instance a cluster of 10 pools each with 512 placement groups on
+ten OSDs is a total of 5,120 placement groups spread over ten OSDs,
+that is 512 placement groups per OSD. That does not use too many
+resources. However, if 1,000 pools were created with 512 placement
+groups each, the OSDs will handle ~50,000 placement groups each and it
+would require significantly more resources and time for peering.</p>
+<p>You may find the <a class="reference external" href="https://old.ceph.com/pgcalc/">PGCalc</a> tool helpful.</p>
+</section>
+<section id="set-the-number-of-placement-groups">
+<span id="setting-the-number-of-placement-groups"></span><h2>Set the Number of Placement Groups<a class="headerlink" href="#set-the-number-of-placement-groups" title="Permalink to this heading">¶</a></h2>
+<p>To set the number of placement groups in a pool, you must specify the
+number of placement groups at the time you create the pool.
+See <a class="reference external" href="../pools#createpool">Create a Pool</a> for details.  Even after a pool is created you can also change the number of placement groups with:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>pool<span class="w"> </span><span class="nb">set</span><span class="w"> </span><span class="o">{</span>pool-name<span class="o">}</span><span class="w"> </span>pg_num<span class="w"> </span><span class="o">{</span>pg_num<span class="o">}</span></span>
+</pre></div></div><p>After you increase the number of placement groups, you must also
+increase the number of placement groups for placement (<code class="docutils literal notranslate"><span class="pre">pgp_num</span></code>)
+before your cluster will rebalance. The <code class="docutils literal notranslate"><span class="pre">pgp_num</span></code> will be the number of
+placement groups that will be considered for placement by the CRUSH
+algorithm. Increasing <code class="docutils literal notranslate"><span class="pre">pg_num</span></code> splits the placement groups but data
+will not be migrated to the newer placement groups until placement
+groups for placement, ie. <code class="docutils literal notranslate"><span class="pre">pgp_num</span></code> is increased. The <code class="docutils literal notranslate"><span class="pre">pgp_num</span></code>
+should be equal to the <code class="docutils literal notranslate"><span class="pre">pg_num</span></code>.  To increase the number of
+placement groups for placement, execute the following:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>pool<span class="w"> </span><span class="nb">set</span><span class="w"> </span><span class="o">{</span>pool-name<span class="o">}</span><span class="w"> </span>pgp_num<span class="w"> </span><span class="o">{</span>pgp_num<span class="o">}</span></span>
+</pre></div></div><p>When decreasing the number of PGs, <code class="docutils literal notranslate"><span class="pre">pgp_num</span></code> is adjusted
+automatically for you.</p>
+</section>
+<section id="get-the-number-of-placement-groups">
+<h2>Get the Number of Placement Groups<a class="headerlink" href="#get-the-number-of-placement-groups" title="Permalink to this heading">¶</a></h2>
+<p>To get the number of placement groups in a pool, execute the following:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>pool<span class="w"> </span>get<span class="w"> </span><span class="o">{</span>pool-name<span class="o">}</span><span class="w"> </span>pg_num</span>
+</pre></div></div></section>
+<section id="get-a-cluster-s-pg-statistics">
+<h2>Get a Cluster’s PG Statistics<a class="headerlink" href="#get-a-cluster-s-pg-statistics" title="Permalink to this heading">¶</a></h2>
+<p>To get the statistics for the placement groups in your cluster, execute the following:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>pg<span class="w"> </span>dump<span class="w"> </span><span class="o">[</span>--format<span class="w"> </span><span class="o">{</span>format<span class="o">}]</span></span>
+</pre></div></div><p>Valid formats are <code class="docutils literal notranslate"><span class="pre">plain</span></code> (default) and <code class="docutils literal notranslate"><span class="pre">json</span></code>.</p>
+</section>
+<section id="get-statistics-for-stuck-pgs">
+<h2>Get Statistics for Stuck PGs<a class="headerlink" href="#get-statistics-for-stuck-pgs" title="Permalink to this heading">¶</a></h2>
+<p>To get the statistics for all placement groups stuck in a specified state,
+execute the following:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>pg<span class="w"> </span>dump_stuck<span class="w"> </span>inactive<span class="p">|</span>unclean<span class="p">|</span>stale<span class="p">|</span>undersized<span class="p">|</span>degraded<span class="w"> </span><span class="o">[</span>--format<span class="w"> </span>&lt;format&gt;<span class="o">]</span><span class="w"> </span><span class="o">[</span>-t<span class="p">|</span>--threshold<span class="w"> </span>&lt;seconds&gt;<span class="o">]</span></span>
+</pre></div></div><p><strong>Inactive</strong> Placement groups cannot process reads or writes because they are waiting for an OSD
+with the most up-to-date data to come up and in.</p>
+<p><strong>Unclean</strong> Placement groups contain objects that are not replicated the desired number
+of times. They should be recovering.</p>
+<p><strong>Stale</strong> Placement groups are in an unknown state - the OSDs that host them have not
+reported to the monitor cluster in a while (configured by <code class="docutils literal notranslate"><span class="pre">mon_osd_report_timeout</span></code>).</p>
+<p>Valid formats are <code class="docutils literal notranslate"><span class="pre">plain</span></code> (default) and <code class="docutils literal notranslate"><span class="pre">json</span></code>. The threshold defines the minimum number
+of seconds the placement group is stuck before including it in the returned statistics
+(default 300 seconds).</p>
+</section>
+<section id="get-a-pg-map">
+<h2>Get a PG Map<a class="headerlink" href="#get-a-pg-map" title="Permalink to this heading">¶</a></h2>
+<p>To get the placement group map for a particular placement group, execute the following:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>pg<span class="w"> </span>map<span class="w"> </span><span class="o">{</span>pg-id<span class="o">}</span></span>
+</pre></div></div><p>For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>pg<span class="w"> </span>map<span class="w"> </span><span class="m">1</span>.6c</span>
+</pre></div></div><p>Ceph will return the placement group map, the placement group, and the OSD status:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">osdmap<span class="w"> </span>e13<span class="w"> </span>pg<span class="w"> </span><span class="m">1</span>.6c<span class="w"> </span><span class="o">(</span><span class="m">1</span>.6c<span class="o">)</span><span class="w"> </span>-&gt;<span class="w"> </span>up<span class="w"> </span><span class="o">[</span><span class="m">1</span>,0<span class="o">]</span><span class="w"> </span>acting<span class="w"> </span><span class="o">[</span><span class="m">1</span>,0<span class="o">]</span></span>
+</pre></div></div></section>
+<section id="get-a-pgs-statistics">
+<h2>Get a PGs Statistics<a class="headerlink" href="#get-a-pgs-statistics" title="Permalink to this heading">¶</a></h2>
+<p>To retrieve statistics for a particular placement group, execute the following:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>pg<span class="w"> </span><span class="o">{</span>pg-id<span class="o">}</span><span class="w"> </span>query</span>
+</pre></div></div></section>
+<section id="scrub-a-placement-group">
+<h2>Scrub a Placement Group<a class="headerlink" href="#scrub-a-placement-group" title="Permalink to this heading">¶</a></h2>
+<p>To scrub a placement group, execute the following:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>pg<span class="w"> </span>scrub<span class="w"> </span><span class="o">{</span>pg-id<span class="o">}</span></span>
+</pre></div></div><p>Ceph checks the primary and any replica nodes, generates a catalog of all objects
+in the placement group and compares them to ensure that no objects are missing
+or mismatched, and their contents are consistent.  Assuming the replicas all
+match, a final semantic sweep ensures that all of the snapshot-related object
+metadata is consistent. Errors are reported via logs.</p>
+<p>To scrub all placement groups from a specific pool, execute the following:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>pool<span class="w"> </span>scrub<span class="w"> </span><span class="o">{</span>pool-name<span class="o">}</span></span>
+</pre></div></div></section>
+<section id="prioritize-backfill-recovery-of-a-placement-group-s">
+<h2>Prioritize backfill/recovery of a Placement Group(s)<a class="headerlink" href="#prioritize-backfill-recovery-of-a-placement-group-s" title="Permalink to this heading">¶</a></h2>
+<p>You may run into a situation where a bunch of placement groups will require
+recovery and/or backfill, and some particular groups hold data more important
+than others (for example, those PGs may hold data for images used by running
+machines and other PGs may be used by inactive machines/less relevant data).
+In that case, you may want to prioritize recovery of those groups so
+performance and/or availability of data stored on those groups is restored
+earlier. To do this (mark particular placement group(s) as prioritized during
+backfill or recovery), execute the following:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>pg<span class="w"> </span>force-recovery<span class="w"> </span><span class="o">{</span>pg-id<span class="o">}</span><span class="w"> </span><span class="o">[{</span>pg-id<span class="w"> </span><span class="c1">#2}] [{pg-id #3} ...]</span></span>
+<span class="prompt1">ceph<span class="w"> </span>pg<span class="w"> </span>force-backfill<span class="w"> </span><span class="o">{</span>pg-id<span class="o">}</span><span class="w"> </span><span class="o">[{</span>pg-id<span class="w"> </span><span class="c1">#2}] [{pg-id #3} ...]</span></span>
+</pre></div></div><p>This will cause Ceph to perform recovery or backfill on specified placement
+groups first, before other placement groups. This does not interrupt currently
+ongoing backfills or recovery, but causes specified PGs to be processed
+as soon as possible. If you change your mind or prioritize wrong groups,
+use:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>pg<span class="w"> </span>cancel-force-recovery<span class="w"> </span><span class="o">{</span>pg-id<span class="o">}</span><span class="w"> </span><span class="o">[{</span>pg-id<span class="w"> </span><span class="c1">#2}] [{pg-id #3} ...]</span></span>
+<span class="prompt1">ceph<span class="w"> </span>pg<span class="w"> </span>cancel-force-backfill<span class="w"> </span><span class="o">{</span>pg-id<span class="o">}</span><span class="w"> </span><span class="o">[{</span>pg-id<span class="w"> </span><span class="c1">#2}] [{pg-id #3} ...]</span></span>
+</pre></div></div><p>This will remove “force” flag from those PGs and they will be processed
+in default order. Again, this doesn’t affect currently processed placement
+group, only those that are still queued.</p>
+<p>The “force” flag is cleared automatically after recovery or backfill of group
+is done.</p>
+<p>Similarly, you may use the following commands to force Ceph to perform recovery
+or backfill on all placement groups from a specified pool first:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>pool<span class="w"> </span>force-recovery<span class="w"> </span><span class="o">{</span>pool-name<span class="o">}</span></span>
+<span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>pool<span class="w"> </span>force-backfill<span class="w"> </span><span class="o">{</span>pool-name<span class="o">}</span></span>
+</pre></div></div><p>or:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>pool<span class="w"> </span>cancel-force-recovery<span class="w"> </span><span class="o">{</span>pool-name<span class="o">}</span></span>
+<span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>pool<span class="w"> </span>cancel-force-backfill<span class="w"> </span><span class="o">{</span>pool-name<span class="o">}</span></span>
+</pre></div></div><p>to restore to the default recovery or backfill priority if you change your mind.</p>
+<p>Note that these commands could possibly break the ordering of Ceph’s internal
+priority computations, so use them with caution!
+Especially, if you have multiple pools that are currently sharing the same
+underlying OSDs, and some particular pools hold data more important than others,
+we recommend you use the following command to re-arrange all pools’s
+recovery/backfill priority in a better order:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>osd<span class="w"> </span>pool<span class="w"> </span><span class="nb">set</span><span class="w"> </span><span class="o">{</span>pool-name<span class="o">}</span><span class="w"> </span>recovery_priority<span class="w"> </span><span class="o">{</span>value<span class="o">}</span></span>
+</pre></div></div><p>For example, if you have 10 pools you could make the most important one priority 10,
+next 9, etc. Or you could leave most pools alone and have say 3 important pools
+all priority 1 or priorities 3, 2, 1 respectively.</p>
+</section>
+<section id="revert-lost">
+<h2>Revert Lost<a class="headerlink" href="#revert-lost" title="Permalink to this heading">¶</a></h2>
+<p>If the cluster has lost one or more objects, and you have decided to
+abandon the search for the lost data, you must mark the unfound objects
+as <code class="docutils literal notranslate"><span class="pre">lost</span></code>.</p>
+<p>If all possible locations have been queried and objects are still
+lost, you may have to give up on the lost objects. This is
+possible given unusual combinations of failures that allow the cluster
+to learn about writes that were performed before the writes themselves
+are recovered.</p>
+<p>Currently the only supported option is “revert”, which will either roll back to
+a previous version of the object or (if it was a new object) forget about it
+entirely. To mark the “unfound” objects as “lost”, execute the following:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>pg<span class="w"> </span><span class="o">{</span>pg-id<span class="o">}</span><span class="w"> </span>mark_unfound_lost<span class="w"> </span>revert<span class="p">|</span>delete</span>
+</pre></div></div><div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>Use this feature with caution, because it may confuse
+applications that expect the object(s) to exist.</p>
+</div>
+<div class="toctree-wrapper compound">
+</div>
+</section>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../../">
+              <img class="logo" src="../../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../install/">Installing Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cephadm/">Cephadm</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../">Ceph Storage Cluster</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../../configuration/">Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../cephadm/">Deployment</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../">Operations</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../operating/">Operating a Cluster</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../health-checks/">Health checks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../monitoring/">Monitoring a Cluster</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../monitoring-osd-pg/">Monitoring OSDs and PGs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../user-management/">User Management</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../pg-repair/">Repairing PG Inconsistencies</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../data-placement/">Data Placement Overview</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../pools/">Pools</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../erasure-code/">Erasure code</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../cache-tiering/">Cache Tiering</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Placement Groups</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#autoscaling-placement-groups">Autoscaling placement groups</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#viewing-pg-scaling-recommendations">Viewing PG scaling recommendations</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#automated-scaling">Automated scaling</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#specifying-expected-pool-size">Specifying expected pool size</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#specifying-bounds-on-a-pool-s-pgs">Specifying bounds on a pool’s PGs</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#a-preselection-of-pg-num">A preselection of pg_num</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#how-are-placement-groups-used">How are Placement Groups used ?</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#placement-groups-tradeoffs">Placement Groups Tradeoffs</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#data-durability">Data durability</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#object-distribution-within-a-pool">Object distribution within a pool</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#memory-cpu-and-network-usage">Memory, CPU and network usage</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#choosing-the-number-of-placement-groups">Choosing the number of Placement Groups</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#set-the-number-of-placement-groups">Set the Number of Placement Groups</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#get-the-number-of-placement-groups">Get the Number of Placement Groups</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#get-a-cluster-s-pg-statistics">Get a Cluster’s PG Statistics</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#get-statistics-for-stuck-pgs">Get Statistics for Stuck PGs</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#get-a-pg-map">Get a PG Map</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#get-a-pgs-statistics">Get a PGs Statistics</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#scrub-a-placement-group">Scrub a Placement Group</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#prioritize-backfill-recovery-of-a-placement-group-s">Prioritize backfill/recovery of a Placement Group(s)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#revert-lost">Revert Lost</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="../pg-states/">Placement Group States</a></li>
+<li class="toctree-l5"><a class="reference internal" href="../pg-concepts/">Placement Group Concepts</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../balancer/">Balancer</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../upmap/">Using pg-upmap</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../crush-map/">CRUSH Maps</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../crush-map-edits/">Manually editing a CRUSH Map</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../stretch-mode/">Stretch Clusters</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../change-mon-elections/">Configure Monitor Election Strategies</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../add-or-rm-osds/">Adding/Removing OSDs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../add-or-rm-mons/">Adding/Removing Monitors</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../devices/">Device Management</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../bluestore-migration/">BlueStore Migration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../control/">Command Reference</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../troubleshooting/community/">The Ceph Community</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../troubleshooting/troubleshooting-mon/">Troubleshooting Monitors</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../troubleshooting/troubleshooting-osd/">Troubleshooting OSDs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../troubleshooting/troubleshooting-pg/">Troubleshooting PGs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../troubleshooting/log-and-debug/">Logging and Debugging</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../troubleshooting/cpu-profiling/">CPU Profiling</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../troubleshooting/memory-profiling/">Memory Profiling</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../man/">Man Pages</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../troubleshooting/">Troubleshooting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/">APIs</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cephfs/">Ceph File System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../rbd/">Ceph Block Device</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../radosgw/">Ceph Object Gateway</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../mgr/">Ceph Manager Daemon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../mgr/dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dev/developer_guide/">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dev/internals/">Ceph Internals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../../../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../pg-states/" title="Placement Group States"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../cache-tiering/" title="Cache Tiering"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../" >Ceph Storage Cluster</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../" >Cluster Operations</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Placement Groups</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

@@ -1,0 +1,672 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Container Operations &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/css/custom.css" />
+    <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/jquery.js"></script>
+    <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../../genindex/" />
+    <link rel="search" title="Search" href="../../../search/" />
+    <link rel="next" title="Object Operations" href="../objectops/" />
+    <link rel="prev" title="Service Operations" href="../serviceops/" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../objectops/" title="Object Operations"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../serviceops/" title="Service Operations"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../" >Ceph Object Gateway</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../" accesskey="U">Ceph Object Gateway Swift API</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Container Operations</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="container-operations">
+<h1>Container Operations<a class="headerlink" href="#container-operations" title="Permalink to this heading">¶</a></h1>
+<p>A container is a mechanism for storing data objects. An account may
+have many containers, but container names must be unique. This API enables a
+client to create a container, set access controls and metadata,
+retrieve a container’s contents, and delete a container. Since this API
+makes requests related to information in a particular user’s account, all
+requests in this API must be authenticated unless a container’s access control
+is deliberately made publicly accessible (i.e., allows anonymous requests).</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The Amazon S3 API uses the term ‘bucket’ to describe a data container.
+When you hear someone refer to a ‘bucket’ within the Swift API, the term
+‘bucket’ may be construed as the equivalent of the term ‘container.’</p>
+</div>
+<p>One facet of object storage is that it does not support hierarchical paths
+or directories. Instead, it supports one level consisting of one or more
+containers, where each container may have objects. The RADOS Gateway’s
+Swift-compatible API supports the notion of ‘pseudo-hierarchical containers,’
+which is a means of using object naming to emulate a container (or directory)
+hierarchy without actually implementing one in the storage system. You may
+name objects with pseudo-hierarchical names
+(e.g., photos/buildings/empire-state.jpg), but container names cannot
+contain a forward slash (<code class="docutils literal notranslate"><span class="pre">/</span></code>) character.</p>
+<section id="create-a-container">
+<h2>Create a Container<a class="headerlink" href="#create-a-container" title="Permalink to this heading">¶</a></h2>
+<p>To create a new container, make a <code class="docutils literal notranslate"><span class="pre">PUT</span></code> request with the API version, account,
+and the name of the new container. The container name must be unique, must not
+contain a forward-slash (/) character, and should be less than 256 bytes. You
+may include access control headers and metadata headers in the request. The
+operation is idempotent; that is, if you make a request to create a container
+that already exists, it will return with a HTTP 202 return code, but will not
+create another container.</p>
+<section id="syntax">
+<h3>Syntax<a class="headerlink" href="#syntax" title="Permalink to this heading">¶</a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">PUT</span> <span class="o">/</span><span class="p">{</span><span class="n">api</span> <span class="n">version</span><span class="p">}</span><span class="o">/</span><span class="p">{</span><span class="n">account</span><span class="p">}</span><span class="o">/</span><span class="p">{</span><span class="n">container</span><span class="p">}</span> <span class="n">HTTP</span><span class="o">/</span><span class="mf">1.1</span>
+<span class="n">Host</span><span class="p">:</span> <span class="p">{</span><span class="n">fqdn</span><span class="p">}</span>
+<span class="n">X</span><span class="o">-</span><span class="n">Auth</span><span class="o">-</span><span class="n">Token</span><span class="p">:</span> <span class="p">{</span><span class="n">auth</span><span class="o">-</span><span class="n">token</span><span class="p">}</span>
+<span class="n">X</span><span class="o">-</span><span class="n">Container</span><span class="o">-</span><span class="n">Read</span><span class="p">:</span> <span class="p">{</span><span class="n">comma</span><span class="o">-</span><span class="n">separated</span><span class="o">-</span><span class="n">uids</span><span class="p">}</span>
+<span class="n">X</span><span class="o">-</span><span class="n">Container</span><span class="o">-</span><span class="n">Write</span><span class="p">:</span> <span class="p">{</span><span class="n">comma</span><span class="o">-</span><span class="n">separated</span><span class="o">-</span><span class="n">uids</span><span class="p">}</span>
+<span class="n">X</span><span class="o">-</span><span class="n">Container</span><span class="o">-</span><span class="n">Meta</span><span class="o">-</span><span class="p">{</span><span class="n">key</span><span class="p">}:</span> <span class="p">{</span><span class="n">value</span><span class="p">}</span>
+</pre></div>
+</div>
+</section>
+<section id="headers">
+<h3>Headers<a class="headerlink" href="#headers" title="Permalink to this heading">¶</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">X-Container-Read</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The user IDs with read permissions for the container.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Comma-separated string values of user IDs.</p>
+</dd>
+<dt class="field-odd">Required</dt>
+<dd class="field-odd"><p>No</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">X-Container-Write</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The user IDs with write permissions for the container.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Comma-separated string values of user IDs.</p>
+</dd>
+<dt class="field-odd">Required</dt>
+<dd class="field-odd"><p>No</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">X-Container-Meta-{key}</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>A user-defined meta data key that takes an arbitrary string value.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Required</dt>
+<dd class="field-odd"><p>No</p>
+</dd>
+</dl>
+</section>
+<section id="http-response">
+<h3>HTTP Response<a class="headerlink" href="#http-response" title="Permalink to this heading">¶</a></h3>
+<p>If a container with the same name already exists, and the user is the
+container owner then the operation will succeed. Otherwise the operation
+will fail.</p>
+<p><code class="docutils literal notranslate"><span class="pre">409</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The container already exists under a different user’s ownership.</p>
+</dd>
+<dt class="field-even">Status Code</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">BucketAlreadyExists</span></code></p>
+</dd>
+</dl>
+</section>
+</section>
+<section id="list-a-container-s-objects">
+<h2>List a Container’s Objects<a class="headerlink" href="#list-a-container-s-objects" title="Permalink to this heading">¶</a></h2>
+<p>To list the objects within a container, make a <code class="docutils literal notranslate"><span class="pre">GET</span></code> request with the with the
+API version, account, and the name of the container.  You can specify query
+parameters to filter the full list, or leave out the parameters to return a list
+of the first 10,000 object names stored in the container.</p>
+<section id="id1">
+<h3>Syntax<a class="headerlink" href="#id1" title="Permalink to this heading">¶</a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">GET</span> <span class="o">/</span><span class="p">{</span><span class="n">api</span> <span class="n">version</span><span class="p">}</span><span class="o">/</span><span class="p">{</span><span class="n">container</span><span class="p">}</span> <span class="n">HTTP</span><span class="o">/</span><span class="mf">1.1</span>
+     <span class="n">Host</span><span class="p">:</span> <span class="p">{</span><span class="n">fqdn</span><span class="p">}</span>
+     <span class="n">X</span><span class="o">-</span><span class="n">Auth</span><span class="o">-</span><span class="n">Token</span><span class="p">:</span> <span class="p">{</span><span class="n">auth</span><span class="o">-</span><span class="n">token</span><span class="p">}</span>
+</pre></div>
+</div>
+</section>
+<section id="parameters">
+<h3>Parameters<a class="headerlink" href="#parameters" title="Permalink to this heading">¶</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">format</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Defines the format of the result.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Valid Values</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">json</span></code> | <code class="docutils literal notranslate"><span class="pre">xml</span></code></p>
+</dd>
+<dt class="field-even">Required</dt>
+<dd class="field-even"><p>No</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">prefix</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Limits the result set to objects beginning with the specified prefix.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Required</dt>
+<dd class="field-odd"><p>No</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">marker</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Returns a list of results greater than the marker value.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Required</dt>
+<dd class="field-odd"><p>No</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">limit</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Limits the number of results to the specified value.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Integer</p>
+</dd>
+<dt class="field-odd">Valid Range</dt>
+<dd class="field-odd"><p>0 - 10,000</p>
+</dd>
+<dt class="field-even">Required</dt>
+<dd class="field-even"><p>No</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">delimiter</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The delimiter between the prefix and the rest of the object name.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Required</dt>
+<dd class="field-odd"><p>No</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">path</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The pseudo-hierarchical path of the objects.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Required</dt>
+<dd class="field-odd"><p>No</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">allow_unordered</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>Allows the results to be returned unordered to reduce computation overhead. Cannot be used with <code class="docutils literal notranslate"><span class="pre">delimiter</span></code>.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Boolean</p>
+</dd>
+<dt class="field-odd">Required</dt>
+<dd class="field-odd"><p>No</p>
+</dd>
+<dt class="field-even">Non-Standard Extension</dt>
+<dd class="field-even"><p>Yes</p>
+</dd>
+</dl>
+</section>
+<section id="response-entities">
+<h3>Response Entities<a class="headerlink" href="#response-entities" title="Permalink to this heading">¶</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">container</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The container.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Container</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>An object within the container.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Container</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">name</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The name of an object within the container.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">hash</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>A hash code of the object’s contents.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">last_modified</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The last time the object’s contents were modified.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Date</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">content_type</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The type of content within the object.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+</dl>
+</section>
+</section>
+<section id="update-a-container-s-acls">
+<h2>Update a Container’s ACLs<a class="headerlink" href="#update-a-container-s-acls" title="Permalink to this heading">¶</a></h2>
+<p>When a user creates a container, the user has read and write access to the
+container by default. To allow other users to read a container’s contents or
+write to a container, you must specifically enable the user.
+You may also specify <code class="docutils literal notranslate"><span class="pre">*</span></code> in the <code class="docutils literal notranslate"><span class="pre">X-Container-Read</span></code> or <code class="docutils literal notranslate"><span class="pre">X-Container-Write</span></code>
+settings, which effectively enables all users to either read from or write
+to the container. Setting <code class="docutils literal notranslate"><span class="pre">*</span></code> makes the container public. That is it
+enables anonymous users to either read from or write to the container.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If you are planning to expose public read ACL functionality
+for the Swift API, it is strongly recommended to include the
+Swift account name in the endpoint definition, so as to most
+closely emulate the behavior of native OpenStack Swift. To
+do so, set the <code class="docutils literal notranslate"><span class="pre">ceph.conf</span></code> configuration option <code class="docutils literal notranslate"><span class="pre">rgw</span>
+<span class="pre">swift</span> <span class="pre">account</span> <span class="pre">in</span> <span class="pre">url</span> <span class="pre">=</span> <span class="pre">true</span></code>, and update your Keystone
+endpoint to the URL suffix <code class="docutils literal notranslate"><span class="pre">/v1/AUTH_%(tenant_id)s</span></code>
+(instead of just <code class="docutils literal notranslate"><span class="pre">/v1</span></code>).</p>
+</div>
+<section id="id2">
+<h3>Syntax<a class="headerlink" href="#id2" title="Permalink to this heading">¶</a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">POST</span> <span class="o">/</span><span class="p">{</span><span class="n">api</span> <span class="n">version</span><span class="p">}</span><span class="o">/</span><span class="p">{</span><span class="n">account</span><span class="p">}</span><span class="o">/</span><span class="p">{</span><span class="n">container</span><span class="p">}</span> <span class="n">HTTP</span><span class="o">/</span><span class="mf">1.1</span>
+<span class="n">Host</span><span class="p">:</span> <span class="p">{</span><span class="n">fqdn</span><span class="p">}</span>
+     <span class="n">X</span><span class="o">-</span><span class="n">Auth</span><span class="o">-</span><span class="n">Token</span><span class="p">:</span> <span class="p">{</span><span class="n">auth</span><span class="o">-</span><span class="n">token</span><span class="p">}</span>
+     <span class="n">X</span><span class="o">-</span><span class="n">Container</span><span class="o">-</span><span class="n">Read</span><span class="p">:</span> <span class="o">*</span>
+     <span class="n">X</span><span class="o">-</span><span class="n">Container</span><span class="o">-</span><span class="n">Write</span><span class="p">:</span> <span class="p">{</span><span class="n">uid1</span><span class="p">},</span> <span class="p">{</span><span class="n">uid2</span><span class="p">},</span> <span class="p">{</span><span class="n">uid3</span><span class="p">}</span>
+</pre></div>
+</div>
+</section>
+<section id="request-headers">
+<h3>Request Headers<a class="headerlink" href="#request-headers" title="Permalink to this heading">¶</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">X-Container-Read</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The user IDs with read permissions for the container.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Comma-separated string values of user IDs.</p>
+</dd>
+<dt class="field-odd">Required</dt>
+<dd class="field-odd"><p>No</p>
+</dd>
+</dl>
+<p><code class="docutils literal notranslate"><span class="pre">X-Container-Write</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The user IDs with write permissions for the container.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>Comma-separated string values of user IDs.</p>
+</dd>
+<dt class="field-odd">Required</dt>
+<dd class="field-odd"><p>No</p>
+</dd>
+</dl>
+</section>
+</section>
+<section id="add-update-container-metadata">
+<h2>Add/Update Container Metadata<a class="headerlink" href="#add-update-container-metadata" title="Permalink to this heading">¶</a></h2>
+<p>To add metadata to a container, make a <code class="docutils literal notranslate"><span class="pre">POST</span></code> request with the API version,
+account, and container name. You must have write permissions on the
+container to add or update metadata.</p>
+<section id="id3">
+<h3>Syntax<a class="headerlink" href="#id3" title="Permalink to this heading">¶</a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">POST</span> <span class="o">/</span><span class="p">{</span><span class="n">api</span> <span class="n">version</span><span class="p">}</span><span class="o">/</span><span class="p">{</span><span class="n">account</span><span class="p">}</span><span class="o">/</span><span class="p">{</span><span class="n">container</span><span class="p">}</span> <span class="n">HTTP</span><span class="o">/</span><span class="mf">1.1</span>
+<span class="n">Host</span><span class="p">:</span> <span class="p">{</span><span class="n">fqdn</span><span class="p">}</span>
+     <span class="n">X</span><span class="o">-</span><span class="n">Auth</span><span class="o">-</span><span class="n">Token</span><span class="p">:</span> <span class="p">{</span><span class="n">auth</span><span class="o">-</span><span class="n">token</span><span class="p">}</span>
+     <span class="n">X</span><span class="o">-</span><span class="n">Container</span><span class="o">-</span><span class="n">Meta</span><span class="o">-</span><span class="n">Color</span><span class="p">:</span> <span class="n">red</span>
+     <span class="n">X</span><span class="o">-</span><span class="n">Container</span><span class="o">-</span><span class="n">Meta</span><span class="o">-</span><span class="n">Taste</span><span class="p">:</span> <span class="n">salty</span>
+</pre></div>
+</div>
+</section>
+<section id="id4">
+<h3>Request Headers<a class="headerlink" href="#id4" title="Permalink to this heading">¶</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">X-Container-Meta-{key}</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>A user-defined meta data key that takes an arbitrary string value.</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Required</dt>
+<dd class="field-odd"><p>No</p>
+</dd>
+</dl>
+</section>
+</section>
+<section id="enable-object-versioning-for-a-container">
+<h2>Enable Object Versioning for a Container<a class="headerlink" href="#enable-object-versioning-for-a-container" title="Permalink to this heading">¶</a></h2>
+<p>To enable object versioning a container, make a <code class="docutils literal notranslate"><span class="pre">POST</span></code> request with
+the API version, account, and container name. You must have write
+permissions on the container to add or update metadata.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Object versioning support is not enabled in radosgw by
+default; you must set <code class="docutils literal notranslate"><span class="pre">rgw</span> <span class="pre">swift</span> <span class="pre">versioning</span> <span class="pre">enabled</span> <span class="pre">=</span>
+<span class="pre">true</span></code> in <code class="docutils literal notranslate"><span class="pre">ceph.conf</span></code> to enable this feature.</p>
+</div>
+<section id="id5">
+<h3>Syntax<a class="headerlink" href="#id5" title="Permalink to this heading">¶</a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">POST</span> <span class="o">/</span><span class="p">{</span><span class="n">api</span> <span class="n">version</span><span class="p">}</span><span class="o">/</span><span class="p">{</span><span class="n">account</span><span class="p">}</span><span class="o">/</span><span class="p">{</span><span class="n">container</span><span class="p">}</span> <span class="n">HTTP</span><span class="o">/</span><span class="mf">1.1</span>
+<span class="n">Host</span><span class="p">:</span> <span class="p">{</span><span class="n">fqdn</span><span class="p">}</span>
+     <span class="n">X</span><span class="o">-</span><span class="n">Auth</span><span class="o">-</span><span class="n">Token</span><span class="p">:</span> <span class="p">{</span><span class="n">auth</span><span class="o">-</span><span class="n">token</span><span class="p">}</span>
+     <span class="n">X</span><span class="o">-</span><span class="n">Versions</span><span class="o">-</span><span class="n">Location</span><span class="p">:</span> <span class="p">{</span><span class="n">archive</span><span class="o">-</span><span class="n">container</span><span class="p">}</span>
+</pre></div>
+</div>
+</section>
+<section id="id6">
+<h3>Request Headers<a class="headerlink" href="#id6" title="Permalink to this heading">¶</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">X-Versions-Location</span></code></p>
+<dl class="field-list">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The name of a container (the “archive container”) that
+will be used to store versions of the objects in the
+container that the <code class="docutils literal notranslate"><span class="pre">POST</span></code> request is made on (the
+“current container”). The archive container need not
+exist at the time it is being referenced, but once
+<code class="docutils literal notranslate"><span class="pre">X-Versions-Location</span></code> is set on the current container,
+and object versioning is thus enabled, the archive
+container must exist before any further objects are
+updated or deleted in the current container.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><code class="docutils literal notranslate"><span class="pre">X-Versions-Location</span></code> is the only
+versioning-related header that radosgw
+interprets. <code class="docutils literal notranslate"><span class="pre">X-History-Location</span></code>, supported
+by native OpenStack Swift, is currently not
+supported by radosgw.</p>
+</div>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>String</p>
+</dd>
+<dt class="field-odd">Required</dt>
+<dd class="field-odd"><p>No (if this header is passed with an empty value, object
+versioning on the current container is disabled, but the
+archive container continues to exist.)</p>
+</dd>
+</dl>
+</section>
+</section>
+<section id="delete-a-container">
+<h2>Delete a Container<a class="headerlink" href="#delete-a-container" title="Permalink to this heading">¶</a></h2>
+<p>To delete a container, make a <code class="docutils literal notranslate"><span class="pre">DELETE</span></code> request with the API version, account,
+and the name of the container. The container must be empty. If you’d like to check
+if the container is empty, execute a <code class="docutils literal notranslate"><span class="pre">HEAD</span></code> request against the container. Once
+you have successfully removed the container, you will be able to reuse the container name.</p>
+<section id="id7">
+<h3>Syntax<a class="headerlink" href="#id7" title="Permalink to this heading">¶</a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">DELETE</span> <span class="o">/</span><span class="p">{</span><span class="n">api</span> <span class="n">version</span><span class="p">}</span><span class="o">/</span><span class="p">{</span><span class="n">account</span><span class="p">}</span><span class="o">/</span><span class="p">{</span><span class="n">container</span><span class="p">}</span> <span class="n">HTTP</span><span class="o">/</span><span class="mf">1.1</span>
+<span class="n">Host</span><span class="p">:</span> <span class="p">{</span><span class="n">fqdn</span><span class="p">}</span>
+<span class="n">X</span><span class="o">-</span><span class="n">Auth</span><span class="o">-</span><span class="n">Token</span><span class="p">:</span> <span class="p">{</span><span class="n">auth</span><span class="o">-</span><span class="n">token</span><span class="p">}</span>
+</pre></div>
+</div>
+</section>
+<section id="id8">
+<h3>HTTP Response<a class="headerlink" href="#id8" title="Permalink to this heading">¶</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">204</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Description</dt>
+<dd class="field-odd"><p>The container was removed.</p>
+</dd>
+<dt class="field-even">Status Code</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">NoContent</span></code></p>
+</dd>
+</dl>
+</section>
+</section>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../../">
+              <img class="logo" src="../../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../install/">Installing Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cephadm/">Cephadm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../rados/">Ceph Storage Cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cephfs/">Ceph File System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../rbd/">Ceph Block Device</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../">Ceph Object Gateway</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../../frontends/">HTTP Frontends</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../placement/">Pool Placement and Storage Classes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../multisite/">Multisite Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../multisite-sync-policy/">Multisite Sync Policy Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../pools/">Configuring Pools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../config-ref/">Config Reference</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../admin/">Admin Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../s3/">S3 API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../rgw-cache/">Data caching and CDN</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../">Swift API</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="../#api">API</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="../auth/">Authentication</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../serviceops/">Service Ops</a></li>
+<li class="toctree-l4 current"><a class="current reference internal" href="#">Container Ops</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#create-a-container">Create a Container</a><ul>
+<li class="toctree-l6"><a class="reference internal" href="#syntax">Syntax</a></li>
+<li class="toctree-l6"><a class="reference internal" href="#headers">Headers</a></li>
+<li class="toctree-l6"><a class="reference internal" href="#http-response">HTTP Response</a></li>
+</ul>
+</li>
+<li class="toctree-l5"><a class="reference internal" href="#list-a-container-s-objects">List a Container’s Objects</a><ul>
+<li class="toctree-l6"><a class="reference internal" href="#id1">Syntax</a></li>
+<li class="toctree-l6"><a class="reference internal" href="#parameters">Parameters</a></li>
+<li class="toctree-l6"><a class="reference internal" href="#response-entities">Response Entities</a></li>
+</ul>
+</li>
+<li class="toctree-l5"><a class="reference internal" href="#update-a-container-s-acls">Update a Container’s ACLs</a><ul>
+<li class="toctree-l6"><a class="reference internal" href="#id2">Syntax</a></li>
+<li class="toctree-l6"><a class="reference internal" href="#request-headers">Request Headers</a></li>
+</ul>
+</li>
+<li class="toctree-l5"><a class="reference internal" href="#add-update-container-metadata">Add/Update Container Metadata</a><ul>
+<li class="toctree-l6"><a class="reference internal" href="#id3">Syntax</a></li>
+<li class="toctree-l6"><a class="reference internal" href="#id4">Request Headers</a></li>
+</ul>
+</li>
+<li class="toctree-l5"><a class="reference internal" href="#enable-object-versioning-for-a-container">Enable Object Versioning for a Container</a><ul>
+<li class="toctree-l6"><a class="reference internal" href="#id5">Syntax</a></li>
+<li class="toctree-l6"><a class="reference internal" href="#id6">Request Headers</a></li>
+</ul>
+</li>
+<li class="toctree-l5"><a class="reference internal" href="#delete-a-container">Delete a Container</a><ul>
+<li class="toctree-l6"><a class="reference internal" href="#id7">Syntax</a></li>
+<li class="toctree-l6"><a class="reference internal" href="#id8">HTTP Response</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="../objectops/">Object Ops</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../tempurl/">Temp URL Ops</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../tutorial/">Tutorial</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../java/">Java</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../python/">Python</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../ruby/">Ruby</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../#features-support">Features Support</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../adminops/">Admin Ops API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/">Python binding</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../nfs/">Export over NFS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../keystone/">OpenStack Keystone Integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../barbican/">OpenStack Barbican Integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../vault/">HashiCorp Vault Integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../kmip/">KMIP Integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../opa/">Open Policy Agent Integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../multitenancy/">Multi-tenancy</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../compression/">Compression</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../ldap-auth/">LDAP Authentication</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../encryption/">Server-Side Encryption</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../bucketpolicy/">Bucket Policy</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../dynamicresharding/">Dynamic bucket index resharding</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../mfa/">Multi factor authentication</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../sync-modules/">Sync Modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../notifications/">Bucket Notifications</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../layout/">Data Layout in RADOS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../STS/">STS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../STSLite/">STS Lite</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../keycloak/">Keycloak</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../session-tags/">Session Tags</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../role/">Role</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../orphans/">Orphan List and Associated Tooling</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../oidc/">OpenID Connect Provider</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../troubleshooting/">Troubleshooting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../man/8/radosgw/">Manpage radosgw</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../man/8/radosgw-admin/">Manpage radosgw-admin</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../qat-accel/">QAT Acceleration for Encryption and Compression</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../s3select/">S3-select</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../lua-scripting/">Lua Scripting</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../mgr/">Ceph Manager Daemon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../mgr/dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dev/developer_guide/">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dev/internals/">Ceph Internals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../../../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../objectops/" title="Object Operations"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../serviceops/" title="Service Operations"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../" >Ceph Object Gateway</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../" >Ceph Object Gateway Swift API</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Container Operations</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

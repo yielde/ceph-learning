@@ -1,0 +1,260 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>MGR Service &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/css/custom.css" />
+    <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/jquery.js"></script>
+    <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../../genindex/" />
+    <link rel="search" title="Search" href="../../../search/" />
+    <link rel="next" title="OSD Service" href="../osd/" />
+    <link rel="prev" title="MON Service" href="../mon/" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../osd/" title="OSD Service"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../mon/" title="MON Service"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../" >Cephadm</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../" accesskey="U">Service Management</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">MGR Service</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="mgr-service">
+<span id="mgr-cephadm-mgr"></span><h1>MGR Service<a class="headerlink" href="#mgr-service" title="Permalink to this heading">¶</a></h1>
+<p>The cephadm MGR service is hosting different modules, like the <a class="reference internal" href="../../../mgr/dashboard/#mgr-dashboard"><span class="std std-ref">Ceph Dashboard</span></a>
+and the cephadm manager module.</p>
+<section id="specifying-networks">
+<span id="cephadm-mgr-networks"></span><h2>Specifying Networks<a class="headerlink" href="#specifying-networks" title="Permalink to this heading">¶</a></h2>
+<p>The MGR service supports binding only to a specific IP within a network.</p>
+<p>example spec file (leveraging a default placement):</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">service_type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">mgr</span>
+<span class="nt">networks</span><span class="p">:</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">192.169.142.0/24</span>
+</pre></div>
+</div>
+<section id="allow-co-location-of-mgr-daemons">
+<span id="cephadm-mgr-co-location"></span><h3>Allow co-location of MGR daemons<a class="headerlink" href="#allow-co-location-of-mgr-daemons" title="Permalink to this heading">¶</a></h3>
+<p>In deployment scenarios with just a single host, cephadm still needs
+to deploy at least two MGR daemons in order to allow an automated
+upgrade of the cluster. See <code class="docutils literal notranslate"><span class="pre">mgr_standby_modules</span></code> in
+the <a class="reference internal" href="../../../mgr/administrator/#mgr-administrator-guide"><span class="std std-ref">ceph-mgr administrator’s guide</span></a> for further details.</p>
+<p>See also: <a class="reference internal" href="../#cephadm-co-location"><span class="std std-ref">Co-location of daemons</span></a>.</p>
+</section>
+<section id="further-reading">
+<h3>Further Reading<a class="headerlink" href="#further-reading" title="Permalink to this heading">¶</a></h3>
+<ul class="simple">
+<li><p><a class="reference internal" href="../../../mgr/#ceph-manager-daemon"><span class="std std-ref">Ceph Manager Daemon</span></a></p></li>
+<li><p><a class="reference internal" href="../../troubleshooting/#cephadm-manually-deploy-mgr"><span class="std std-ref">Manually Deploying a Manager Daemon</span></a></p></li>
+</ul>
+</section>
+</section>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../../">
+              <img class="logo" src="../../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../install/">Installing Ceph</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../">Cephadm</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../../compatibility/">Compatibility and Stability</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../install/">Deploying a new Ceph cluster</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../adoption/">Converting an existing cluster to cephadm</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../host-management/">Host Management</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../">Service Management</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../mon/">MON Service</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">MGR Service</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#specifying-networks">Specifying Networks</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#allow-co-location-of-mgr-daemons">Allow co-location of MGR daemons</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#further-reading">Further Reading</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../osd/">OSD Service</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rgw/">RGW Service</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../mds/">MDS Service</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../nfs/">NFS Service</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../iscsi/">iSCSI Service</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../custom-container/">Custom Container Service</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../monitoring/">Monitoring Services</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../snmp-gateway/">SNMP Gateway Service</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../#service-status">Service Status</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../#daemon-status">Daemon Status</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../#service-specification">Service Specification</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../#daemon-placement">Daemon Placement</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../#extra-container-arguments">Extra Container Arguments</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../#extra-entrypoint-arguments">Extra Entrypoint Arguments</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../#custom-config-files">Custom Config Files</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../#removing-a-service">Removing a Service</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../#disabling-automatic-deployment-of-daemons">Disabling automatic deployment of daemons</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../upgrade/">Upgrading Ceph</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../operations/">Cephadm operations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../client-setup/">Client Setup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../troubleshooting/">Troubleshooting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../dev/cephadm/">Cephadm Feature Planning</a></li>
+</ul>
+</li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../../rados/">Ceph Storage Cluster</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../../../rados/configuration/">Configuration</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../../">Deployment</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../../compatibility/">Compatibility and Stability</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../install/">Deploying a new Ceph cluster</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../adoption/">Converting an existing cluster to cephadm</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../host-management/">Host Management</a></li>
+<li class="toctree-l3 current"><a class="reference internal" href="../">Service Management</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="../mon/">MON Service</a></li>
+<li class="toctree-l4 current"><a class="current reference internal" href="#">MGR Service</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#specifying-networks">Specifying Networks</a><ul>
+<li class="toctree-l6"><a class="reference internal" href="#allow-co-location-of-mgr-daemons">Allow co-location of MGR daemons</a></li>
+<li class="toctree-l6"><a class="reference internal" href="#further-reading">Further Reading</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="../osd/">OSD Service</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../rgw/">RGW Service</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../mds/">MDS Service</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../nfs/">NFS Service</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../iscsi/">iSCSI Service</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../custom-container/">Custom Container Service</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../monitoring/">Monitoring Services</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../snmp-gateway/">SNMP Gateway Service</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../#service-status">Service Status</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../#daemon-status">Daemon Status</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../#service-specification">Service Specification</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../#daemon-placement">Daemon Placement</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../#extra-container-arguments">Extra Container Arguments</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../#extra-entrypoint-arguments">Extra Entrypoint Arguments</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../#custom-config-files">Custom Config Files</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../#removing-a-service">Removing a Service</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../#disabling-automatic-deployment-of-daemons">Disabling automatic deployment of daemons</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../upgrade/">Upgrading Ceph</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../operations/">Cephadm operations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../client-setup/">Client Setup</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../troubleshooting/">Troubleshooting</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../dev/cephadm/">Cephadm Feature Planning</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../rados/operations/">Operations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../rados/man/">Man Pages</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../rados/troubleshooting/">Troubleshooting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../rados/api/">APIs</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cephfs/">Ceph File System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../rbd/">Ceph Block Device</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../radosgw/">Ceph Object Gateway</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../mgr/">Ceph Manager Daemon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../mgr/dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dev/developer_guide/">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dev/internals/">Ceph Internals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../../../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../osd/" title="OSD Service"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../mon/" title="MON Service"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../" >Cephadm</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../" >Service Management</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">MGR Service</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

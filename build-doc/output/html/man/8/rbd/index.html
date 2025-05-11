@@ -1,0 +1,1074 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>rbd – manage rados block device (RBD) images &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/css/custom.css" />
+    <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/jquery.js"></script>
+    <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../../genindex/" />
+    <link rel="search" title="Search" href="../../../search/" />
+    <link rel="next" title="rbd-fuse – expose rbd images as files" href="../rbd-fuse/" />
+    <link rel="prev" title="Ceph Block Device Manpages" href="../../../rbd/man/" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../rbd-fuse/" title="rbd-fuse – expose rbd images as files"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../../../rbd/man/" title="Ceph Block Device Manpages"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../../rbd/" >Ceph Block Device</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../../../rbd/man/" accesskey="U">Ceph Block Device Manpages</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">rbd – manage rados block device (RBD) images</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="rbd-manage-rados-block-device-rbd-images">
+<h1>rbd – manage rados block device (RBD) images<a class="headerlink" href="#rbd-manage-rados-block-device-rbd-images" title="Permalink to this heading">¶</a></h1>
+<section id="synopsis">
+<h2>Synopsis<a class="headerlink" href="#synopsis" title="Permalink to this heading">¶</a></h2>
+<div class="line-block">
+<div class="line"><strong>rbd</strong> [ -c <em>ceph.conf</em> ] [ -m <em>monaddr</em> ] [–cluster <em>cluster-name</em>]
+[ -p | –pool <em>pool</em> ] [ <em>command</em> … ]</div>
+</div>
+</section>
+<section id="description">
+<h2>Description<a class="headerlink" href="#description" title="Permalink to this heading">¶</a></h2>
+<p><strong>rbd</strong> is a utility for manipulating rados block device (RBD) images,
+used by the Linux rbd driver and the rbd storage driver for QEMU/KVM.
+RBD images are simple block devices that are striped over objects and
+stored in a RADOS object store. The size of the objects the image is
+striped over must be a power of two.</p>
+</section>
+<section id="options">
+<h2>Options<a class="headerlink" href="#options" title="Permalink to this heading">¶</a></h2>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-rbd-c">
+<span id="cmdoption-rbd-conf"></span><span class="sig-name descname"><span class="pre">-c</span></span><span class="sig-prename descclassname"> <span class="pre">ceph.conf</span></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--conf</span></span><span class="sig-prename descclassname"> <span class="pre">ceph.conf</span></span><a class="headerlink" href="#cmdoption-rbd-c" title="Permalink to this definition">¶</a></dt>
+<dd><p>Use ceph.conf configuration file instead of the default /etc/ceph/ceph.conf to
+determine monitor addresses during startup.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-rbd-m">
+<span class="sig-name descname"><span class="pre">-m</span></span><span class="sig-prename descclassname"> <span class="pre">monaddress[:port]</span></span><a class="headerlink" href="#cmdoption-rbd-m" title="Permalink to this definition">¶</a></dt>
+<dd><p>Connect to specified monitor (instead of looking through ceph.conf).</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-rbd-cluster">
+<span class="sig-name descname"><span class="pre">--cluster</span></span><span class="sig-prename descclassname"> <span class="pre">cluster-name</span></span><a class="headerlink" href="#cmdoption-rbd-cluster" title="Permalink to this definition">¶</a></dt>
+<dd><p>Use different cluster name as compared to default cluster name <em>ceph</em>.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-rbd-p">
+<span id="cmdoption-rbd-pool"></span><span class="sig-name descname"><span class="pre">-p</span></span><span class="sig-prename descclassname"> <span class="pre">pool-name</span></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--pool</span></span><span class="sig-prename descclassname"> <span class="pre">pool-name</span></span><a class="headerlink" href="#cmdoption-rbd-p" title="Permalink to this definition">¶</a></dt>
+<dd><p>Interact with the given pool. Required by most commands.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-rbd-namespace">
+<span class="sig-name descname"><span class="pre">--namespace</span></span><span class="sig-prename descclassname"> <span class="pre">namespace-name</span></span><a class="headerlink" href="#cmdoption-rbd-namespace" title="Permalink to this definition">¶</a></dt>
+<dd><p>Use a pre-defined image namespace within a pool</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-rbd-no-progress">
+<span class="sig-name descname"><span class="pre">--no-progress</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-rbd-no-progress" title="Permalink to this definition">¶</a></dt>
+<dd><p>Do not output progress information (goes to standard error by
+default for some commands).</p>
+</dd></dl>
+
+</section>
+<section id="parameters">
+<h2>Parameters<a class="headerlink" href="#parameters" title="Permalink to this heading">¶</a></h2>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-rbd-image-format">
+<span class="sig-name descname"><span class="pre">--image-format</span></span><span class="sig-prename descclassname"> <span class="pre">format-id</span></span><a class="headerlink" href="#cmdoption-rbd-image-format" title="Permalink to this definition">¶</a></dt>
+<dd><p>Specifies which object layout to use. The default is 2.</p>
+<ul class="simple">
+<li><p>format 1 - (deprecated) Use the original format for a new rbd image. This
+format is understood by all versions of librbd and the kernel rbd module,
+but does not support newer features like cloning.</p></li>
+<li><p>format 2 - Use the second rbd format, which is supported by librbd since
+the Bobtail release and the kernel rbd module since kernel 3.10 (except
+for “fancy” striping, which is supported since kernel 4.17). This adds
+support for cloning and is more easily extensible to allow more
+features in the future.</p></li>
+</ul>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-rbd-s">
+<span id="cmdoption-rbd-size"></span><span class="sig-name descname"><span class="pre">-s</span></span><span class="sig-prename descclassname"> <span class="pre">size-in-M/G/T</span></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--size</span></span><span class="sig-prename descclassname"> <span class="pre">size-in-M/G/T</span></span><a class="headerlink" href="#cmdoption-rbd-s" title="Permalink to this definition">¶</a></dt>
+<dd><p>Specifies the size of the new rbd image or the new size of the existing rbd
+image in M/G/T.  If no suffix is given, unit M is assumed.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-rbd-object-size">
+<span class="sig-name descname"><span class="pre">--object-size</span></span><span class="sig-prename descclassname"> <span class="pre">size-in-B/K/M</span></span><a class="headerlink" href="#cmdoption-rbd-object-size" title="Permalink to this definition">¶</a></dt>
+<dd><p>Specifies the object size in B/K/M.  Object size will be rounded up the
+nearest power of two; if no suffix is given, unit B is assumed.  The default
+object size is 4M, smallest is 4K and maximum is 32M.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-rbd-stripe-unit">
+<span class="sig-name descname"><span class="pre">--stripe-unit</span></span><span class="sig-prename descclassname"> <span class="pre">size-in-B/K/M</span></span><a class="headerlink" href="#cmdoption-rbd-stripe-unit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Specifies the stripe unit size in B/K/M.  If no suffix is given, unit B is
+assumed.  See striping section (below) for more details.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-rbd-stripe-count">
+<span class="sig-name descname"><span class="pre">--stripe-count</span></span><span class="sig-prename descclassname"> <span class="pre">num</span></span><a class="headerlink" href="#cmdoption-rbd-stripe-count" title="Permalink to this definition">¶</a></dt>
+<dd><p>Specifies the number of objects to stripe over before looping back
+to the first object.  See striping section (below) for more details.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-rbd-snap">
+<span class="sig-name descname"><span class="pre">--snap</span></span><span class="sig-prename descclassname"> <span class="pre">snap</span></span><a class="headerlink" href="#cmdoption-rbd-snap" title="Permalink to this definition">¶</a></dt>
+<dd><p>Specifies the snapshot name for the specific operation.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-rbd-id">
+<span class="sig-name descname"><span class="pre">--id</span></span><span class="sig-prename descclassname"> <span class="pre">username</span></span><a class="headerlink" href="#cmdoption-rbd-id" title="Permalink to this definition">¶</a></dt>
+<dd><p>Specifies the username (without the <code class="docutils literal notranslate"><span class="pre">client.</span></code> prefix) to use with the map command.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-rbd-keyring">
+<span class="sig-name descname"><span class="pre">--keyring</span></span><span class="sig-prename descclassname"> <span class="pre">filename</span></span><a class="headerlink" href="#cmdoption-rbd-keyring" title="Permalink to this definition">¶</a></dt>
+<dd><p>Specifies a keyring file containing a secret for the specified user
+to use with the map command.  If not specified, the default keyring
+locations will be searched.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-rbd-keyfile">
+<span class="sig-name descname"><span class="pre">--keyfile</span></span><span class="sig-prename descclassname"> <span class="pre">filename</span></span><a class="headerlink" href="#cmdoption-rbd-keyfile" title="Permalink to this definition">¶</a></dt>
+<dd><p>Specifies a file containing the secret key of <code class="docutils literal notranslate"><span class="pre">--id</span> <span class="pre">user</span></code> to use with the map command.
+This option is overridden by <code class="docutils literal notranslate"><span class="pre">--keyring</span></code> if the latter is also specified.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-rbd-shared">
+<span class="sig-name descname"><span class="pre">--shared</span></span><span class="sig-prename descclassname"> <span class="pre">lock-tag</span></span><a class="headerlink" href="#cmdoption-rbd-shared" title="Permalink to this definition">¶</a></dt>
+<dd><p>Option for <cite>lock add</cite> that allows multiple clients to lock the
+same image if they use the same tag. The tag is an arbitrary
+string. This is useful for situations where an image must
+be open from more than one client at once, like during
+live migration of a virtual machine, or for use underneath
+a clustered file system.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-rbd-format">
+<span class="sig-name descname"><span class="pre">--format</span></span><span class="sig-prename descclassname"> <span class="pre">format</span></span><a class="headerlink" href="#cmdoption-rbd-format" title="Permalink to this definition">¶</a></dt>
+<dd><p>Specifies output formatting (default: plain, json, xml)</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-rbd-pretty-format">
+<span class="sig-name descname"><span class="pre">--pretty-format</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-rbd-pretty-format" title="Permalink to this definition">¶</a></dt>
+<dd><p>Make json or xml formatted output more human-readable.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-rbd-o">
+<span id="cmdoption-rbd-options"></span><span class="sig-name descname"><span class="pre">-o</span></span><span class="sig-prename descclassname"> <span class="pre">krbd-options</span></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--options</span></span><span class="sig-prename descclassname"> <span class="pre">krbd-options</span></span><a class="headerlink" href="#cmdoption-rbd-o" title="Permalink to this definition">¶</a></dt>
+<dd><p>Specifies which options to use when mapping or unmapping an image via the
+rbd kernel driver.  krbd-options is a comma-separated list of options
+(similar to mount(8) mount options).  See kernel rbd (krbd) options section
+below for more details.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-rbd-read-only">
+<span class="sig-name descname"><span class="pre">--read-only</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-rbd-read-only" title="Permalink to this definition">¶</a></dt>
+<dd><p>Map the image read-only.  Equivalent to -o ro.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-rbd-image-feature">
+<span class="sig-name descname"><span class="pre">--image-feature</span></span><span class="sig-prename descclassname"> <span class="pre">feature-name</span></span><a class="headerlink" href="#cmdoption-rbd-image-feature" title="Permalink to this definition">¶</a></dt>
+<dd><p>Specifies which RBD format 2 feature should be enabled when creating
+an image. Multiple features can be enabled by repeating this option
+multiple times. The following features are supported:</p>
+<ul class="simple">
+<li><p>layering: layering support</p></li>
+<li><p>striping: striping v2 support</p></li>
+<li><p>exclusive-lock: exclusive locking support</p></li>
+<li><p>object-map: object map support (requires exclusive-lock)</p></li>
+<li><p>fast-diff: fast diff calculations (requires object-map)</p></li>
+<li><p>deep-flatten: snapshot flatten support</p></li>
+<li><p>journaling: journaled IO support (requires exclusive-lock)</p></li>
+<li><p>data-pool: erasure coded pool support</p></li>
+</ul>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-rbd-image-shared">
+<span class="sig-name descname"><span class="pre">--image-shared</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-rbd-image-shared" title="Permalink to this definition">¶</a></dt>
+<dd><p>Specifies that the image will be used concurrently by multiple clients.
+This will disable features that are dependent upon exclusive ownership
+of the image.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-rbd-whole-object">
+<span class="sig-name descname"><span class="pre">--whole-object</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-rbd-whole-object" title="Permalink to this definition">¶</a></dt>
+<dd><p>Specifies that the diff should be limited to the extents of a full object
+instead of showing intra-object deltas. When the object map feature is
+enabled on an image, limiting the diff to the object extents will
+dramatically improve performance since the differences can be computed
+by examining the in-memory object map instead of querying RADOS for each
+object within the image.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-rbd-limit">
+<span class="sig-name descname"><span class="pre">--limit</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-rbd-limit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Specifies the limit for the number of snapshots permitted.</p>
+</dd></dl>
+
+</section>
+<section id="commands">
+<h2>Commands<a class="headerlink" href="#commands" title="Permalink to this heading">¶</a></h2>
+<dl>
+<dt><strong class="command">bench</strong> –io-type &lt;read | write | readwrite | rw&gt; [–io-size <em>size-in-B/K/M/G/T</em>] [–io-threads <em>num-ios-in-flight</em>] [–io-total <em>size-in-B/K/M/G/T</em>] [–io-pattern seq | rand] [–rw-mix-read <em>read proportion in readwrite</em>] <em>image-spec</em></dt><dd><p>Generate a series of IOs to the image and measure the IO throughput and
+latency.  If no suffix is given, unit B is assumed for both –io-size and
+–io-total.  Defaults are: –io-size 4096, –io-threads 16, –io-total 1G,
+–io-pattern seq, –rw-mix-read 50.</p>
+</dd>
+<dt><strong class="command">children</strong> <em>snap-spec</em></dt><dd><p>List the clones of the image at the given snapshot. This checks
+every pool, and outputs the resulting poolname/imagename.</p>
+<p>This requires image format 2.</p>
+</dd>
+<dt><strong class="command">clone</strong> [–object-size <em>size-in-B/K/M</em>] [–stripe-unit <em>size-in-B/K/M</em> –stripe-count <em>num</em>] [–image-feature <em>feature-name</em>] [–image-shared] <em>parent-snap-spec</em> <em>child-image-spec</em></dt><dd><p>Will create a clone (copy-on-write child) of the parent snapshot.
+Object size will be identical to that of the parent image unless
+specified. Size will be the same as the parent snapshot. The –stripe-unit
+and –stripe-count arguments are optional, but must be used together.</p>
+<p>The parent snapshot must be protected (see <cite>rbd snap protect</cite>).
+This requires image format 2.</p>
+</dd>
+<dt><strong class="command">config global get</strong> <em>config-entity</em> <em>key</em></dt><dd><p>Get a global-level configuration override.</p>
+</dd>
+<dt><strong class="command">config global list</strong> [–format plain | json | xml] [–pretty-format] <em>config-entity</em></dt><dd><p>List global-level configuration overrides.</p>
+</dd>
+<dt><strong class="command">config global set</strong> <em>config-entity</em> <em>key</em> <em>value</em></dt><dd><p>Set a global-level configuration override.</p>
+</dd>
+<dt><strong class="command">config global remove</strong> <em>config-entity</em> <em>key</em></dt><dd><p>Remove a global-level configuration override.</p>
+</dd>
+<dt><strong class="command">config image get</strong> <em>image-spec</em> <em>key</em></dt><dd><p>Get an image-level configuration override.</p>
+</dd>
+<dt><strong class="command">config image list</strong> [–format plain | json | xml] [–pretty-format] <em>image-spec</em></dt><dd><p>List image-level configuration overrides.</p>
+</dd>
+<dt><strong class="command">config image set</strong> <em>image-spec</em> <em>key</em> <em>value</em></dt><dd><p>Set an image-level configuration override.</p>
+</dd>
+<dt><strong class="command">config image remove</strong> <em>image-spec</em> <em>key</em></dt><dd><p>Remove an image-level configuration override.</p>
+</dd>
+<dt><strong class="command">config pool get</strong> <em>pool-name</em> <em>key</em></dt><dd><p>Get a pool-level configuration override.</p>
+</dd>
+<dt><strong class="command">config pool list</strong> [–format plain | json | xml] [–pretty-format] <em>pool-name</em></dt><dd><p>List pool-level configuration overrides.</p>
+</dd>
+<dt><strong class="command">config pool set</strong> <em>pool-name</em> <em>key</em> <em>value</em></dt><dd><p>Set a pool-level configuration override.</p>
+</dd>
+<dt><strong class="command">config pool remove</strong> <em>pool-name</em> <em>key</em></dt><dd><p>Remove a pool-level configuration override.</p>
+</dd>
+<dt><strong class="command">cp</strong> (<em>src-image-spec</em> | <em>src-snap-spec</em>) <em>dest-image-spec</em></dt><dd><p>Copy the content of a src-image into the newly created dest-image.
+dest-image will have the same size, object size, and image format as src-image.</p>
+</dd>
+<dt><strong class="command">create</strong> (-s | –size <em>size-in-M/G/T</em>) [–image-format <em>format-id</em>] [–object-size <em>size-in-B/K/M</em>] [–stripe-unit <em>size-in-B/K/M</em> –stripe-count <em>num</em>] [–thick-provision] [–no-progress] [–image-feature <em>feature-name</em>]… [–image-shared] <em>image-spec</em></dt><dd><p>Will create a new rbd image. You must also specify the size via –size.  The
+–stripe-unit and –stripe-count arguments are optional, but must be used together.
+If the –thick-provision is enabled, it will fully allocate storage for
+the image at creation time. It will take a long time to do.
+Note: thick provisioning requires zeroing the contents of the entire image.</p>
+</dd>
+<dt><strong class="command">deep cp</strong> (<em>src-image-spec</em> | <em>src-snap-spec</em>) <em>dest-image-spec</em></dt><dd><p>Deep copy the content of a src-image into the newly created dest-image.
+Dest-image will have the same size, object size, image format, and snapshots as src-image.</p>
+</dd>
+<dt><strong class="command">device list</strong> [-t | –device-type <em>device-type</em>] [–format plain | json | xml] –pretty-format</dt><dd><p>Show the rbd images that are mapped via the rbd kernel module
+(default) or other supported device.</p>
+</dd>
+<dt><strong class="command">device map</strong> [-t | –device-type <em>device-type</em>] [–cookie <em>device-cookie</em>] [–show-cookie] [–read-only] [–exclusive] [-o | –options <em>device-options</em>] <em>image-spec</em> | <em>snap-spec</em></dt><dd><p>Map the specified image to a block device via the rbd kernel module
+(default) or other supported device (<em>nbd</em> on Linux or <em>ggate</em> on
+FreeBSD).</p>
+<p>The –options argument is a comma separated list of device type
+specific options (opt1,opt2=val,…).</p>
+</dd>
+<dt><strong class="command">device unmap</strong> [-t | –device-type <em>device-type</em>] [-o | –options <em>device-options</em>] <em>image-spec</em> | <em>snap-spec</em> | <em>device-path</em></dt><dd><p>Unmap the block device that was mapped via the rbd kernel module
+(default) or other supported device.</p>
+<p>The –options argument is a comma separated list of device type
+specific options (opt1,opt2=val,…).</p>
+</dd>
+<dt><strong class="command">device attach</strong> [-t | –device-type <em>device-type</em>] –device <em>device-path</em> [–cookie <em>device-cookie</em>] [–show-cookie] [–read-only] [–exclusive] [–force] [-o | –options <em>device-options</em>] <em>image-spec</em> | <em>snap-spec</em></dt><dd><p>Attach the specified image to the specified block device (currently only
+<cite>nbd</cite> on Linux). This operation is unsafe and should not be normally used.
+In particular, specifying the wrong image or the wrong block device may
+lead to data corruption as no validation is performed by <cite>nbd</cite> kernel driver.</p>
+<p>The –options argument is a comma separated list of device type
+specific options (opt1,opt2=val,…).</p>
+</dd>
+<dt><strong class="command">device detach</strong> [-t | –device-type <em>device-type</em>] [-o | –options <em>device-options</em>] <em>image-spec</em> | <em>snap-spec</em> | <em>device-path</em></dt><dd><p>Detach the block device that was mapped or attached (currently only <cite>nbd</cite>
+on Linux). This operation is unsafe and should not be normally used.</p>
+<p>The –options argument is a comma separated list of device type
+specific options (opt1,opt2=val,…).</p>
+</dd>
+<dt><strong class="command">diff</strong> [–from-snap <em>snap-name</em>] [–whole-object] <em>image-spec</em> | <em>snap-spec</em></dt><dd><p>Dump a list of byte extents in the image that have changed since the specified start
+snapshot, or since the image was created.  Each output line includes the starting offset
+(in bytes), the length of the region (in bytes), and either ‘zero’ or ‘data’ to indicate
+whether the region is known to be zeros or may contain other data.</p>
+</dd>
+<dt><strong class="command">du</strong> [-p | –pool <em>pool-name</em>] [<em>image-spec</em> | <em>snap-spec</em>] [–merge-snapshots]</dt><dd><p>Will calculate the provisioned and actual disk usage of all images and
+associated snapshots within the specified pool.  It can also be used against
+individual images and snapshots.</p>
+<p>If the RBD fast-diff feature is not enabled on images, this operation will
+require querying the OSDs for every potential object within the image.</p>
+<p>The –merge-snapshots will merge snapshots used space into their parent images.</p>
+</dd>
+<dt><strong class="command">encryption format</strong> <em>image-spec</em> <em>format</em> <em>passphrase-file</em> [–cipher-alg <em>alg</em>]</dt><dd><p>Formats image to an encrypted format.
+All data previously written to the image will become unreadable.
+A cloned image cannot be formatted, although encrypted images can be cloned.
+Supported formats: <em>luks1</em>, <em>luks2</em>.
+Supported cipher algorithms: <em>aes-128</em>, <em>aes-256</em> (default).</p>
+</dd>
+<dt><strong class="command">export</strong> [–export-format <em>format (1 or 2)</em>] (<em>image-spec</em> | <em>snap-spec</em>) [<em>dest-path</em>]</dt><dd><p>Export image to dest path (use - for stdout).
+The –export-format accepts ‘1’ or ‘2’ currently. Format 2 allow us to export not only the content
+of image, but also the snapshots and other properties, such as image_order, features.</p>
+</dd>
+<dt><strong class="command">export-diff</strong> [–from-snap <em>snap-name</em>] [–whole-object] (<em>image-spec</em> | <em>snap-spec</em>) <em>dest-path</em></dt><dd><p>Export an incremental diff for an image to dest path (use - for stdout).  If
+an initial snapshot is specified, only changes since that snapshot are included; otherwise,
+any regions of the image that contain data are included.  The end snapshot is specified
+using the standard –snap option or &#64;snap syntax (see below).  The image diff format includes
+metadata about image size changes, and the start and end snapshots.  It efficiently represents
+discarded or ‘zero’ regions of the image.</p>
+</dd>
+<dt><strong class="command">feature disable</strong> <em>image-spec</em> <em>feature-name</em>…</dt><dd><p>Disable the specified feature on the specified image. Multiple features can
+be specified.</p>
+</dd>
+<dt><strong class="command">feature enable</strong> <em>image-spec</em> <em>feature-name</em>…</dt><dd><p>Enable the specified feature on the specified image. Multiple features can
+be specified.</p>
+</dd>
+<dt><strong class="command">flatten</strong> <em>image-spec</em></dt><dd><p>If image is a clone, copy all shared blocks from the parent snapshot and
+make the child independent of the parent, severing the link between
+parent snap and child.  The parent snapshot can be unprotected and
+deleted if it has no further dependent clones.</p>
+<p>This requires image format 2.</p>
+</dd>
+<dt><strong class="command">group create</strong> <em>group-spec</em></dt><dd><p>Create a group.</p>
+</dd>
+<dt><strong class="command">group image add</strong> <em>group-spec</em> <em>image-spec</em></dt><dd><p>Add an image to a group.</p>
+</dd>
+<dt><strong class="command">group image list</strong> <em>group-spec</em></dt><dd><p>List images in a group.</p>
+</dd>
+<dt><strong class="command">group image remove</strong> <em>group-spec</em> <em>image-spec</em></dt><dd><p>Remove an image from a group.</p>
+</dd>
+<dt><strong class="command">group ls</strong> [-p | –pool <em>pool-name</em>]</dt><dd><p>List rbd groups.</p>
+</dd>
+<dt><strong class="command">group rename</strong> <em>src-group-spec</em> <em>dest-group-spec</em></dt><dd><p>Rename a group.  Note: rename across pools is not supported.</p>
+</dd>
+<dt><strong class="command">group rm</strong> <em>group-spec</em></dt><dd><p>Delete a group.</p>
+</dd>
+<dt><strong class="command">group snap create</strong> <em>group-snap-spec</em></dt><dd><p>Make a snapshot of a group.</p>
+</dd>
+<dt><strong class="command">group snap list</strong> <em>group-spec</em></dt><dd><p>List snapshots of a group.</p>
+</dd>
+<dt><strong class="command">group snap rm</strong> <em>group-snap-spec</em></dt><dd><p>Remove a snapshot from a group.</p>
+</dd>
+<dt><strong class="command">group snap rename</strong> <em>group-snap-spec</em> <em>snap-name</em></dt><dd><p>Rename group’s snapshot.</p>
+</dd>
+<dt><strong class="command">group snap rollback</strong> <em>group-snap-spec</em></dt><dd><p>Rollback group to snapshot.</p>
+</dd>
+<dt><strong class="command">image-meta get</strong> <em>image-spec</em> <em>key</em></dt><dd><p>Get metadata value with the key.</p>
+</dd>
+<dt><strong class="command">image-meta list</strong> <em>image-spec</em></dt><dd><p>Show metadata held on the image. The first column is the key
+and the second column is the value.</p>
+</dd>
+<dt><strong class="command">image-meta remove</strong> <em>image-spec</em> <em>key</em></dt><dd><p>Remove metadata key with the value.</p>
+</dd>
+<dt><strong class="command">image-meta set</strong> <em>image-spec</em> <em>key</em> <em>value</em></dt><dd><p>Set metadata key with the value. They will displayed in <cite>image-meta list</cite>.</p>
+</dd>
+<dt><strong class="command">import</strong> [–export-format <em>format (1 or 2)</em>] [–image-format <em>format-id</em>] [–object-size <em>size-in-B/K/M</em>] [–stripe-unit <em>size-in-B/K/M</em> –stripe-count <em>num</em>] [–image-feature <em>feature-name</em>]… [–image-shared] <em>src-path</em> [<em>image-spec</em>]</dt><dd><p>Create a new image and imports its data from path (use - for
+stdin).  The import operation will try to create sparse rbd images
+if possible.  For import from stdin, the sparsification unit is
+the data block size of the destination image (object size).</p>
+<p>The –stripe-unit and –stripe-count arguments are optional, but must be
+used together.</p>
+<p>The –export-format accepts ‘1’ or ‘2’ currently. Format 2 allow us to import not only the content
+of image, but also the snapshots and other properties, such as image_order, features.</p>
+</dd>
+<dt><strong class="command">import-diff</strong> <em>src-path</em> <em>image-spec</em></dt><dd><p>Import an incremental diff of an image and applies it to the current image.  If the diff
+was generated relative to a start snapshot, we verify that snapshot already exists before
+continuing.  If there was an end snapshot we verify it does not already exist before
+applying the changes, and create the snapshot when we are done.</p>
+</dd>
+<dt><strong class="command">info</strong> <em>image-spec</em> | <em>snap-spec</em></dt><dd><p>Will dump information (such as size and object size) about a specific rbd image.
+If image is a clone, information about its parent is also displayed.
+If a snapshot is specified, whether it is protected is shown as well.</p>
+</dd>
+<dt><strong class="command">journal client disconnect</strong> <em>journal-spec</em></dt><dd><p>Flag image journal client as disconnected.</p>
+</dd>
+<dt><strong class="command">journal export</strong> [–verbose] [–no-error] <em>src-journal-spec</em> <em>path-name</em></dt><dd><p>Export image journal to path (use - for stdout). It can be make a backup
+of the image journal especially before attempting dangerous operations.</p>
+<p>Note that this command may not always work if the journal is badly corrupted.</p>
+</dd>
+<dt><strong class="command">journal import</strong> [–verbose] [–no-error] <em>path-name</em> <em>dest-journal-spec</em></dt><dd><p>Import image journal from path (use - for stdin).</p>
+</dd>
+<dt><strong class="command">journal info</strong> <em>journal-spec</em></dt><dd><p>Show information about image journal.</p>
+</dd>
+<dt><strong class="command">journal inspect</strong> [–verbose] <em>journal-spec</em></dt><dd><p>Inspect and report image journal for structural errors.</p>
+</dd>
+<dt><strong class="command">journal reset</strong> <em>journal-spec</em></dt><dd><p>Reset image journal.</p>
+</dd>
+<dt><strong class="command">journal status</strong> <em>journal-spec</em></dt><dd><p>Show status of image journal.</p>
+</dd>
+<dt><strong class="command">lock add</strong> [–shared <em>lock-tag</em>] <em>image-spec</em> <em>lock-id</em></dt><dd><p>Lock an image. The lock-id is an arbitrary name for the user’s
+convenience. By default, this is an exclusive lock, meaning it
+will fail if the image is already locked. The –shared option
+changes this behavior. Note that locking does not affect
+any operation other than adding a lock. It does not
+protect an image from being deleted.</p>
+</dd>
+<dt><strong class="command">lock ls</strong> <em>image-spec</em></dt><dd><p>Show locks held on the image. The first column is the locker
+to use with the <cite>lock remove</cite> command.</p>
+</dd>
+<dt><strong class="command">lock rm</strong> <em>image-spec</em> <em>lock-id</em> <em>locker</em></dt><dd><p>Release a lock on an image. The lock id and locker are
+as output by lock ls.</p>
+</dd>
+<dt><strong class="command">ls</strong> [-l | –long] [<em>pool-name</em>]</dt><dd><p>Will list all rbd images listed in the rbd_directory object.  With
+-l, also show snapshots, and use longer-format output including
+size, parent (if clone), format, etc.</p>
+</dd>
+<dt><strong class="command">merge-diff</strong> <em>first-diff-path</em> <em>second-diff-path</em> <em>merged-diff-path</em></dt><dd><p>Merge two continuous incremental diffs of an image into one single diff. The
+first diff’s end snapshot must be equal with the second diff’s start snapshot.
+The first diff could be - for stdin, and merged diff could be - for stdout, which
+enables multiple diff files to be merged using something like
+‘rbd merge-diff first second - | rbd merge-diff - third result’. Note this command
+currently only support the source incremental diff with stripe_count == 1</p>
+</dd>
+<dt><strong class="command">migration abort</strong> <em>image-spec</em></dt><dd><p>Cancel image migration. This step may be run after successful or
+failed migration prepare or migration execute steps and returns the
+image to its initial (before migration) state. All modifications to
+the destination image are lost.</p>
+</dd>
+<dt><strong class="command">migration commit</strong> <em>image-spec</em></dt><dd><p>Commit image migration. This step is run after a successful migration
+prepare and migration execute steps and removes the source image data.</p>
+</dd>
+<dt><strong class="command">migration execute</strong> <em>image-spec</em></dt><dd><p>Execute image migration. This step is run after a successful migration
+prepare step and copies image data to the destination.</p>
+</dd>
+<dt><strong class="command">migration prepare</strong> [–order <em>order</em>] [–object-size <em>object-size</em>] [–image-feature <em>image-feature</em>] [–image-shared] [–stripe-unit <em>stripe-unit</em>] [–stripe-count <em>stripe-count</em>] [–data-pool <em>data-pool</em>] [–import-only] [–source-spec <em>json</em>] [–source-spec-path <em>path</em>] <em>src-image-spec</em> [<em>dest-image-spec</em>]</dt><dd><p>Prepare image migration. This is the first step when migrating an
+image, i.e. changing the image location, format or other
+parameters that can’t be changed dynamically. The destination can
+match the source, and in this case <em>dest-image-spec</em> can be omitted.
+After this step the source image is set as a parent of the
+destination image, and the image is accessible in copy-on-write mode
+by its destination spec.</p>
+<p>An image can also be migrated from a read-only import source by adding the
+<em>–import-only</em> optional and providing a JSON-encoded <em>–source-spec</em> or a
+path to a JSON-encoded source-spec file using the <em>–source-spec-path</em>
+optionals.</p>
+</dd>
+<dt><strong class="command">mirror image demote</strong> <em>image-spec</em></dt><dd><p>Demote a primary image to non-primary for RBD mirroring.</p>
+</dd>
+<dt><strong class="command">mirror image disable</strong> [–force] <em>image-spec</em></dt><dd><p>Disable RBD mirroring for an image. If the mirroring is
+configured in <code class="docutils literal notranslate"><span class="pre">image</span></code> mode for the image’s pool, then it
+can be explicitly disabled mirroring for each image within
+the pool.</p>
+</dd>
+<dt><strong class="command">mirror image enable</strong> <em>image-spec</em> <em>mode</em></dt><dd><p>Enable RBD mirroring for an image. If the mirroring is
+configured in <code class="docutils literal notranslate"><span class="pre">image</span></code> mode for the image’s pool, then it
+can be explicitly enabled mirroring for each image within
+the pool.</p>
+<p>The mirror image mode can either be <code class="docutils literal notranslate"><span class="pre">journal</span></code> (default) or
+<code class="docutils literal notranslate"><span class="pre">snapshot</span></code>. The <code class="docutils literal notranslate"><span class="pre">journal</span></code> mode requires the RBD journaling
+feature.</p>
+</dd>
+<dt><strong class="command">mirror image promote</strong> [–force] <em>image-spec</em></dt><dd><p>Promote a non-primary image to primary for RBD mirroring.</p>
+</dd>
+<dt><strong class="command">mirror image resync</strong> <em>image-spec</em></dt><dd><p>Force resync to primary image for RBD mirroring.</p>
+</dd>
+<dt><strong class="command">mirror image status</strong> <em>image-spec</em></dt><dd><p>Show RBD mirroring status for an image.</p>
+</dd>
+<dt><strong class="command">mirror pool demote</strong> [<em>pool-name</em>]</dt><dd><p>Demote all primary images within a pool to non-primary.
+Every mirroring enabled image will demoted in the pool.</p>
+</dd>
+<dt><strong class="command">mirror pool disable</strong> [<em>pool-name</em>]</dt><dd><p>Disable RBD mirroring by default within a pool. When mirroring
+is disabled on a pool in this way, mirroring will also be
+disabled on any images (within the pool) for which mirroring
+was enabled explicitly.</p>
+</dd>
+<dt><strong class="command">mirror pool enable</strong> [<em>pool-name</em>] <em>mode</em></dt><dd><p>Enable RBD mirroring by default within a pool.
+The mirroring mode can either be <code class="docutils literal notranslate"><span class="pre">pool</span></code> or <code class="docutils literal notranslate"><span class="pre">image</span></code>.
+If configured in <code class="docutils literal notranslate"><span class="pre">pool</span></code> mode, all images in the pool
+with the journaling feature enabled are mirrored.
+If configured in <code class="docutils literal notranslate"><span class="pre">image</span></code> mode, mirroring needs to be
+explicitly enabled (by <code class="docutils literal notranslate"><span class="pre">mirror</span> <span class="pre">image</span> <span class="pre">enable</span></code> command)
+on each image.</p>
+</dd>
+<dt><strong class="command">mirror pool info</strong> [<em>pool-name</em>]</dt><dd><p>Show information about the pool mirroring configuration.
+It includes mirroring mode, peer UUID, remote cluster name,
+and remote client name.</p>
+</dd>
+<dt><strong class="command">mirror pool peer add</strong> [<em>pool-name</em>] <em>remote-cluster-spec</em></dt><dd><p>Add a mirroring peer to a pool.
+<em>remote-cluster-spec</em> is [<em>remote client name</em>&#64;]<em>remote cluster name</em>.</p>
+<p>The default for <em>remote client name</em> is “client.admin”.</p>
+<p>This requires mirroring mode is enabled.</p>
+</dd>
+<dt><strong class="command">mirror pool peer remove</strong> [<em>pool-name</em>] <em>uuid</em></dt><dd><p>Remove a mirroring peer from a pool. The peer uuid is available
+from <code class="docutils literal notranslate"><span class="pre">mirror</span> <span class="pre">pool</span> <span class="pre">info</span></code> command.</p>
+</dd>
+<dt><strong class="command">mirror pool peer set</strong> [<em>pool-name</em>] <em>uuid</em> <em>key</em> <em>value</em></dt><dd><p>Update mirroring peer settings.
+The key can be either <code class="docutils literal notranslate"><span class="pre">client</span></code> or <code class="docutils literal notranslate"><span class="pre">cluster</span></code>, and the value
+is corresponding to remote client name or remote cluster name.</p>
+</dd>
+<dt><strong class="command">mirror pool promote</strong> [–force] [<em>pool-name</em>]</dt><dd><p>Promote all non-primary images within a pool to primary.
+Every mirroring enabled image will promoted in the pool.</p>
+</dd>
+<dt><strong class="command">mirror pool status</strong> [–verbose] [<em>pool-name</em>]</dt><dd><p>Show status for all mirrored images in the pool.
+With –verbose, also show additionally output status
+details for every mirroring image in the pool.</p>
+</dd>
+<dt><strong class="command">mirror snapshot schedule add</strong> [-p | –pool <em>pool</em>] [–namespace <em>namespace</em>] [–image <em>image</em>] <em>interval</em> [<em>start-time</em>]</dt><dd><p>Add mirror snapshot schedule.</p>
+</dd>
+<dt><strong class="command">mirror snapshot schedule list</strong> [-R | –recursive] [–format <em>format</em>] [–pretty-format] [-p | –pool <em>pool</em>] [–namespace <em>namespace</em>] [–image <em>image</em>]</dt><dd><p>List mirror snapshot schedule.</p>
+</dd>
+<dt><strong class="command">mirror snapshot schedule remove</strong> [-p | –pool <em>pool</em>] [–namespace <em>namespace</em>] [–image <em>image</em>] <em>interval</em> [<em>start-time</em>]</dt><dd><p>Remove mirror snapshot schedule.</p>
+</dd>
+<dt><strong class="command">mirror snapshot schedule status</strong> [-p | –pool <em>pool</em>] [–format <em>format</em>] [–pretty-format] [–namespace <em>namespace</em>] [–image <em>image</em>]</dt><dd><p>Show mirror snapshot schedule status.</p>
+</dd>
+<dt><strong class="command">mv</strong> <em>src-image-spec</em> <em>dest-image-spec</em></dt><dd><p>Rename an image.  Note: rename across pools is not supported.</p>
+</dd>
+<dt><strong class="command">namespace create</strong> <em>pool-name</em>/<em>namespace-name</em></dt><dd><p>Create a new image namespace within the pool.</p>
+</dd>
+<dt><strong class="command">namespace list</strong> <em>pool-name</em></dt><dd><p>List image namespaces defined within the pool.</p>
+</dd>
+<dt><strong class="command">namespace remove</strong> <em>pool-name</em>/<em>namespace-name</em></dt><dd><p>Remove an empty image namespace from the pool.</p>
+</dd>
+<dt><strong class="command">object-map check</strong> <em>image-spec</em> | <em>snap-spec</em></dt><dd><p>Verify the object map is correct.</p>
+</dd>
+<dt><strong class="command">object-map rebuild</strong> <em>image-spec</em> | <em>snap-spec</em></dt><dd><p>Rebuild an invalid object map for the specified image. An image snapshot can be
+specified to rebuild an invalid object map for a snapshot.</p>
+</dd>
+<dt><strong class="command">pool init</strong> [<em>pool-name</em>] [–force]</dt><dd><p>Initialize pool for use by RBD. Newly created pools must initialized
+prior to use.</p>
+</dd>
+<dt><strong class="command">resize</strong> (-s | –size <em>size-in-M/G/T</em>) [–allow-shrink] <em>image-spec</em></dt><dd><p>Resize rbd image. The size parameter also needs to be specified.
+The –allow-shrink option lets the size be reduced.</p>
+</dd>
+<dt><strong class="command">rm</strong> <em>image-spec</em></dt><dd><p>Delete an rbd image (including all data blocks). If the image has
+snapshots, this fails and nothing is deleted.</p>
+</dd>
+<dt><strong class="command">snap create</strong> <em>snap-spec</em></dt><dd><p>Create a new snapshot. Requires the snapshot name parameter specified.</p>
+</dd>
+<dt><strong class="command">snap limit clear</strong> <em>image-spec</em></dt><dd><p>Remove any previously set limit on the number of snapshots allowed on
+an image.</p>
+</dd>
+<dt><strong class="command">snap limit set</strong> [–limit] <em>limit</em> <em>image-spec</em></dt><dd><p>Set a limit for the number of snapshots allowed on an image.</p>
+</dd>
+<dt><strong class="command">snap ls</strong> <em>image-spec</em></dt><dd><p>Dump the list of snapshots inside a specific image.</p>
+</dd>
+<dt><strong class="command">snap protect</strong> <em>snap-spec</em></dt><dd><p>Protect a snapshot from deletion, so that clones can be made of it
+(see <cite>rbd clone</cite>).  Snapshots must be protected before clones are made;
+protection implies that there exist dependent cloned children that
+refer to this snapshot.  <cite>rbd clone</cite> will fail on a nonprotected
+snapshot.</p>
+<p>This requires image format 2.</p>
+</dd>
+<dt><strong class="command">snap purge</strong> <em>image-spec</em></dt><dd><p>Remove all unprotected snapshots from an image.</p>
+</dd>
+<dt><strong class="command">snap rename</strong> <em>src-snap-spec</em> <em>dest-snap-spec</em></dt><dd><p>Rename a snapshot. Note: rename across pools and images is not supported.</p>
+</dd>
+<dt><strong class="command">snap rm</strong> [–force] <em>snap-spec</em></dt><dd><p>Remove the specified snapshot.</p>
+</dd>
+<dt><strong class="command">snap rollback</strong> <em>snap-spec</em></dt><dd><p>Rollback image content to snapshot. This will iterate through the entire blocks
+array and update the data head content to the snapshotted version.</p>
+</dd>
+<dt><strong class="command">snap unprotect</strong> <em>snap-spec</em></dt><dd><p>Unprotect a snapshot from deletion (undo <cite>snap protect</cite>).  If cloned
+children remain, <cite>snap unprotect</cite> fails.  (Note that clones may exist
+in different pools than the parent snapshot.)</p>
+<p>This requires image format 2.</p>
+</dd>
+<dt><strong class="command">sparsify</strong> [–sparse-size <em>sparse-size</em>] <em>image-spec</em></dt><dd><p>Reclaim space for zeroed image extents. The default sparse size is
+4096 bytes and can be changed via –sparse-size option with the
+following restrictions: it should be power of two, not less than
+4096, and not larger than image object size.</p>
+</dd>
+<dt><strong class="command">status</strong> <em>image-spec</em></dt><dd><p>Show the status of the image, including which clients have it open.</p>
+</dd>
+<dt><strong class="command">trash ls</strong> [<em>pool-name</em>]</dt><dd><p>List all entries from trash.</p>
+</dd>
+<dt><strong class="command">trash mv</strong> <em>image-spec</em></dt><dd><p>Move an image to the trash. Images, even ones actively in-use by
+clones, can be moved to the trash and deleted at a later time.</p>
+</dd>
+<dt><strong class="command">trash purge</strong> [<em>pool-name</em>]</dt><dd><p>Remove all expired images from trash.</p>
+</dd>
+<dt><strong class="command">trash restore</strong> <em>image-id</em></dt><dd><p>Restore an image from trash.</p>
+</dd>
+<dt><strong class="command">trash rm</strong> <em>image-id</em></dt><dd><p>Delete an image from trash. If image deferment time has not expired
+you can not removed it unless use force. But an actively in-use by clones
+or has snapshots can not be removed.</p>
+</dd>
+<dt><strong class="command">trash purge schedule add</strong> [-p | –pool <em>pool</em>] [–namespace <em>namespace</em>] <em>interval</em> [<em>start-time</em>]</dt><dd><p>Add trash purge schedule.</p>
+</dd>
+<dt><strong class="command">trash purge schedule list</strong> [-R | –recursive] [–format <em>format</em>] [–pretty-format] [-p | –pool <em>pool</em>] [–namespace <em>namespace</em>]</dt><dd><p>List trash purge schedule.</p>
+</dd>
+<dt><strong class="command">trash purge schedule remove</strong> [-p | –pool <em>pool</em>] [–namespace <em>namespace</em>] <em>interval</em> [<em>start-time</em>]</dt><dd><p>Remove trash purge schedule.</p>
+</dd>
+<dt><strong class="command">trash purge schedule status</strong> [-p | –pool <em>pool</em>] [–format <em>format</em>] [–pretty-format] [–namespace <em>namespace</em>]</dt><dd><p>Show trash purge schedule status.</p>
+</dd>
+<dt><strong class="command">watch</strong> <em>image-spec</em></dt><dd><p>Watch events on image.</p>
+</dd>
+</dl>
+</section>
+<section id="image-snap-group-and-journal-specs">
+<h2>Image, snap, group and journal specs<a class="headerlink" href="#image-snap-group-and-journal-specs" title="Permalink to this heading">¶</a></h2>
+<div class="line-block">
+<div class="line"><em>image-spec</em>      is [<em>pool-name</em>/[<em>namespace-name</em>/]]<em>image-name</em></div>
+<div class="line"><em>snap-spec</em>       is [<em>pool-name</em>/[<em>namespace-name</em>/]]<em>image-name</em>&#64;<em>snap-name</em></div>
+<div class="line"><em>group-spec</em>      is [<em>pool-name</em>/[<em>namespace-name</em>/]]<em>group-name</em></div>
+<div class="line"><em>group-snap-spec</em> is [<em>pool-name</em>/[<em>namespace-name</em>/]]<em>group-name</em>&#64;<em>snap-name</em></div>
+<div class="line"><em>journal-spec</em>    is [<em>pool-name</em>/[<em>namespace-name</em>/]]<em>journal-name</em></div>
+</div>
+<p>The default for <em>pool-name</em> is “rbd” and <em>namespace-name</em> is “”. If an image
+name contains a slash character (‘/’), <em>pool-name</em> is required.</p>
+<p>The <em>journal-name</em> is <em>image-id</em>.</p>
+<p>You may specify each name individually, using –pool, –namespace, –image, and
+–snap options, but this is discouraged in favor of the above spec syntax.</p>
+</section>
+<section id="striping">
+<h2>Striping<a class="headerlink" href="#striping" title="Permalink to this heading">¶</a></h2>
+<p>RBD images are striped over many objects, which are then stored by the
+Ceph distributed object store (RADOS).  As a result, read and write
+requests for the image are distributed across many nodes in the
+cluster, generally preventing any single node from becoming a
+bottleneck when individual images get large or busy.</p>
+<p>The striping is controlled by three parameters:</p>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-rbd-arg-object-size">
+<span class="sig-name descname"><span class="pre">object-size</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-rbd-arg-object-size" title="Permalink to this definition">¶</a></dt>
+<dd><p>The size of objects we stripe over is a power of two. It will be rounded up the nearest power of two.
+The default object size is 4 MB, smallest is 4K and maximum is 32M.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-rbd-arg-stripe_unit">
+<span id="cmdoption-rbd-arg-stripe-unit"></span><span class="sig-name descname"><span class="pre">stripe_unit</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-rbd-arg-stripe_unit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Each [<em>stripe_unit</em>] contiguous bytes are stored adjacently in the same object, before we move on
+to the next object.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-rbd-arg-stripe_count">
+<span id="cmdoption-rbd-arg-stripe-count"></span><span class="sig-name descname"><span class="pre">stripe_count</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-rbd-arg-stripe_count" title="Permalink to this definition">¶</a></dt>
+<dd><p>After we write [<em>stripe_unit</em>] bytes to [<em>stripe_count</em>] objects, we loop back to the initial object
+and write another stripe, until the object reaches its maximum size.  At that point,
+we move on to the next [<em>stripe_count</em>] objects.</p>
+</dd></dl>
+
+<p>By default, [<em>stripe_unit</em>] is the same as the object size and [<em>stripe_count</em>] is 1.  Specifying a different
+[<em>stripe_unit</em>] and/or [<em>stripe_count</em>] is often referred to as using “fancy” striping and requires format 2.</p>
+</section>
+<section id="kernel-rbd-krbd-options">
+<h2>Kernel rbd (krbd) options<a class="headerlink" href="#kernel-rbd-krbd-options" title="Permalink to this heading">¶</a></h2>
+<p>Most of these options are useful mainly for debugging and benchmarking.  The
+default values are set in the kernel and may therefore depend on the version of
+the running kernel.</p>
+<p>Per client instance <cite>rbd device map</cite> options:</p>
+<ul class="simple">
+<li><p>fsid=aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee - FSID that should be assumed by
+the client.</p></li>
+<li><p>ip=a.b.c.d[:p] - IP and, optionally, port the client should use.</p></li>
+<li><p>share - Enable sharing of client instances with other mappings (default).</p></li>
+<li><p>noshare - Disable sharing of client instances with other mappings.</p></li>
+<li><p>crc - Enable CRC32C checksumming for msgr1 on-the-wire protocol (default).
+For msgr2.1 protocol this option is ignored: full checksumming is always on
+in ‘crc’ mode and always off in ‘secure’ mode.</p></li>
+<li><p>nocrc - Disable CRC32C checksumming for msgr1 on-the-wire protocol.  Note
+that only payload checksumming is disabled, header checksumming is always on.
+For msgr2.1 protocol this option is ignored.</p></li>
+<li><p>cephx_require_signatures - Require msgr1 message signing feature (since 3.19,
+default).  This option is deprecated and will be removed in the future as the
+feature has been supported since the Bobtail release.</p></li>
+<li><p>nocephx_require_signatures - Don’t require msgr1 message signing feature
+(since 3.19).  This option is deprecated and will be removed in the future.</p></li>
+<li><p>tcp_nodelay - Disable Nagle’s algorithm on client sockets (since 4.0,
+default).</p></li>
+<li><p>notcp_nodelay - Enable Nagle’s algorithm on client sockets (since 4.0).</p></li>
+<li><p>cephx_sign_messages - Enable message signing for msgr1 on-the-wire protocol
+(since 4.4, default).  For msgr2.1 protocol this option is ignored: message
+signing is built into ‘secure’ mode and not offered in ‘crc’ mode.</p></li>
+<li><p>nocephx_sign_messages - Disable message signing for msgr1 on-the-wire protocol
+(since 4.4).  For msgr2.1 protocol this option is ignored.</p></li>
+<li><p>mount_timeout=x - A timeout on various steps in <cite>rbd device map</cite> and
+<cite>rbd device unmap</cite> sequences (default is 60 seconds).  In particular,
+since 4.2 this can be used to ensure that <cite>rbd device unmap</cite> eventually
+times out when there is no network connection to a cluster.</p></li>
+<li><p>osdkeepalive=x - OSD keepalive timeout (default is 5 seconds).</p></li>
+<li><p>osd_idle_ttl=x - OSD idle TTL (default is 60 seconds).</p></li>
+</ul>
+<p>Per mapping (block device) <cite>rbd device map</cite> options:</p>
+<ul>
+<li><p>rw - Map the image read-write (default).  Overridden by –read-only.</p></li>
+<li><p>ro - Map the image read-only.  Equivalent to –read-only.</p></li>
+<li><p>queue_depth=x - queue depth (since 4.2, default is 128 requests).</p></li>
+<li><p>lock_on_read - Acquire exclusive lock on reads, in addition to writes and
+discards (since 4.9).</p></li>
+<li><p>exclusive - Disable automatic exclusive lock transitions (since 4.12).
+Equivalent to –exclusive.</p></li>
+<li><p>lock_timeout=x - A timeout on waiting for the acquisition of exclusive lock
+(since 4.17, default is 0 seconds, meaning no timeout).</p></li>
+<li><p>notrim - Turn off discard and write zeroes offload support to avoid
+deprovisioning a fully provisioned image (since 4.17). When enabled, discard
+requests will fail with -EOPNOTSUPP, write zeroes requests will fall back to
+manually zeroing.</p></li>
+<li><p>abort_on_full - Fail write requests with -ENOSPC when the cluster is full or
+the data pool reaches its quota (since 5.0).  The default behaviour is to
+block until the full condition is cleared.</p></li>
+<li><p>alloc_size - Minimum allocation unit of the underlying OSD object store
+backend (since 5.1, default is 64K bytes).  This is used to round off and
+drop discards that are too small.  For bluestore, the recommended setting is
+bluestore_min_alloc_size (currently set to 4K for all types of drives,
+previously used to be set to 64K for hard disk drives and 16K for
+solid-state drives).  For filestore with filestore_punch_hole = false, the
+recommended setting is image object size (typically 4M).</p></li>
+<li><p>crush_location=x - Specify the location of the client in terms of CRUSH
+hierarchy (since 5.8).  This is a set of key-value pairs separated from
+each other by ‘|’, with keys separated from values by ‘:’.  Note that ‘|’
+may need to be quoted or escaped to avoid it being interpreted as a pipe
+by the shell.  The key is the bucket type name (e.g. rack, datacenter or
+region with default bucket types) and the value is the bucket name.  For
+example, to indicate that the client is local to rack “myrack”, data center
+“mydc” and region “myregion”:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">crush_location</span><span class="o">=</span><span class="n">rack</span><span class="p">:</span><span class="n">myrack</span><span class="o">|</span><span class="n">datacenter</span><span class="p">:</span><span class="n">mydc</span><span class="o">|</span><span class="n">region</span><span class="p">:</span><span class="n">myregion</span>
+</pre></div>
+</div>
+<p>Each key-value pair stands on its own: “myrack” doesn’t need to reside in
+“mydc”, which in turn doesn’t need to reside in “myregion”.  The location
+is not a path to the root of the hierarchy but rather a set of nodes that
+are matched independently, owning to the fact that bucket names are unique
+within a CRUSH map.  “Multipath” locations are supported, so it is possible
+to indicate locality for multiple parallel hierarchies:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">crush_location</span><span class="o">=</span><span class="n">rack</span><span class="p">:</span><span class="n">myrack1</span><span class="o">|</span><span class="n">rack</span><span class="p">:</span><span class="n">myrack2</span><span class="o">|</span><span class="n">datacenter</span><span class="p">:</span><span class="n">mydc</span>
+</pre></div>
+</div>
+</li>
+<li><p>read_from_replica=no - Disable replica reads, always pick the primary OSD
+(since 5.8, default).</p></li>
+<li><p>read_from_replica=balance - When issued a read on a replicated pool, pick
+a random OSD for serving it (since 5.8).</p>
+<p>This mode is safe for general use only since Octopus (i.e. after “ceph osd
+require-osd-release octopus”).  Otherwise it should be limited to read-only
+workloads such as images mapped read-only everywhere or snapshots.</p>
+</li>
+<li><p>read_from_replica=localize - When issued a read on a replicated pool, pick
+the most local OSD for serving it (since 5.8).  The locality metric is
+calculated against the location of the client given with crush_location;
+a match with the lowest-valued bucket type wins.  For example, with default
+bucket types, an OSD in a matching rack is closer than an OSD in a matching
+data center, which in turn is closer than an OSD in a matching region.</p>
+<p>This mode is safe for general use only since Octopus (i.e. after “ceph osd
+require-osd-release octopus”).  Otherwise it should be limited to read-only
+workloads such as images mapped read-only everywhere or snapshots.</p>
+</li>
+<li><p>compression_hint=none - Don’t set compression hints (since 5.8, default).</p></li>
+<li><p>compression_hint=compressible - Hint to the underlying OSD object store
+backend that the data is compressible, enabling compression in passive mode
+(since 5.8).</p></li>
+<li><p>compression_hint=incompressible - Hint to the underlying OSD object store
+backend that the data is incompressible, disabling compression in aggressive
+mode (since 5.8).</p></li>
+<li><p>ms_mode=legacy - Use msgr1 on-the-wire protocol (since 5.11, default).</p></li>
+<li><p>ms_mode=crc - Use msgr2.1 on-the-wire protocol, select ‘crc’ mode, also
+referred to as plain mode (since 5.11).  If the daemon denies ‘crc’ mode,
+fail the connection.</p></li>
+<li><p>ms_mode=secure - Use msgr2.1 on-the-wire protocol, select ‘secure’ mode
+(since 5.11).  ‘secure’ mode provides full in-transit encryption ensuring
+both confidentiality and authenticity.  If the daemon denies ‘secure’ mode,
+fail the connection.</p></li>
+<li><p>ms_mode=prefer-crc - Use msgr2.1 on-the-wire protocol, select ‘crc’
+mode (since 5.11).  If the daemon denies ‘crc’ mode in favor of ‘secure’
+mode, agree to ‘secure’ mode.</p></li>
+<li><p>ms_mode=prefer-secure - Use msgr2.1 on-the-wire protocol, select ‘secure’
+mode (since 5.11).  If the daemon denies ‘secure’ mode in favor of ‘crc’
+mode, agree to ‘crc’ mode.</p></li>
+<li><p>rxbounce - Use a bounce buffer when receiving data (since 5.17).  The default
+behaviour is to read directly into the destination buffer.  A bounce buffer
+is needed if the destination buffer isn’t guaranteed to be stable (i.e. remain
+unchanged while it is being read to).  In particular this is the case for
+Windows where a system-wide “dummy” (throwaway) page may be mapped into the
+destination buffer in order to generate a single large I/O.  Otherwise,
+“libceph: … bad crc/signature” or “libceph: … integrity error, bad crc”
+errors and associated performance degradation are expected.</p></li>
+<li><p>udev - Wait for udev device manager to finish executing all matching
+“add” rules and release the device before exiting (default).  This option
+is not passed to the kernel.</p></li>
+<li><p>noudev - Don’t wait for udev device manager.  When enabled, the device may
+not be fully usable immediately on exit.</p></li>
+</ul>
+<p><cite>rbd device unmap</cite> options:</p>
+<ul class="simple">
+<li><p>force - Force the unmapping of a block device that is open (since 4.9).  The
+driver will wait for running requests to complete and then unmap; requests
+sent to the driver after initiating the unmap will be failed.</p></li>
+<li><p>udev - Wait for udev device manager to finish executing all matching
+“remove” rules and clean up after the device before exiting (default).
+This option is not passed to the kernel.</p></li>
+<li><p>noudev - Don’t wait for udev device manager.</p></li>
+</ul>
+</section>
+<section id="examples">
+<h2>Examples<a class="headerlink" href="#examples" title="Permalink to this heading">¶</a></h2>
+<p>To create a new rbd image that is 100 GB:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">rbd</span> <span class="n">create</span> <span class="n">mypool</span><span class="o">/</span><span class="n">myimage</span> <span class="o">--</span><span class="n">size</span> <span class="mi">102400</span>
+</pre></div>
+</div>
+<p>To use a non-default object size (8 MB):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">rbd</span> <span class="n">create</span> <span class="n">mypool</span><span class="o">/</span><span class="n">myimage</span> <span class="o">--</span><span class="n">size</span> <span class="mi">102400</span> <span class="o">--</span><span class="nb">object</span><span class="o">-</span><span class="n">size</span> <span class="mi">8</span><span class="n">M</span>
+</pre></div>
+</div>
+<p>To delete an rbd image (be careful!):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">rbd</span> <span class="n">rm</span> <span class="n">mypool</span><span class="o">/</span><span class="n">myimage</span>
+</pre></div>
+</div>
+<p>To create a new snapshot:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">rbd</span> <span class="n">snap</span> <span class="n">create</span> <span class="n">mypool</span><span class="o">/</span><span class="n">myimage</span><span class="nd">@mysnap</span>
+</pre></div>
+</div>
+<p>To create a copy-on-write clone of a protected snapshot:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">rbd</span> <span class="n">clone</span> <span class="n">mypool</span><span class="o">/</span><span class="n">myimage</span><span class="nd">@mysnap</span> <span class="n">otherpool</span><span class="o">/</span><span class="n">cloneimage</span>
+</pre></div>
+</div>
+<p>To see which clones of a snapshot exist:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">rbd</span> <span class="n">children</span> <span class="n">mypool</span><span class="o">/</span><span class="n">myimage</span><span class="nd">@mysnap</span>
+</pre></div>
+</div>
+<p>To delete a snapshot:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">rbd</span> <span class="n">snap</span> <span class="n">rm</span> <span class="n">mypool</span><span class="o">/</span><span class="n">myimage</span><span class="nd">@mysnap</span>
+</pre></div>
+</div>
+<p>To map an image via the kernel with cephx enabled:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">rbd</span> <span class="n">device</span> <span class="nb">map</span> <span class="n">mypool</span><span class="o">/</span><span class="n">myimage</span> <span class="o">--</span><span class="nb">id</span> <span class="n">admin</span> <span class="o">--</span><span class="n">keyfile</span> <span class="n">secretfile</span>
+</pre></div>
+</div>
+<p>To map an image via the kernel with different cluster name other than default <em>ceph</em>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">rbd</span> <span class="n">device</span> <span class="nb">map</span> <span class="n">mypool</span><span class="o">/</span><span class="n">myimage</span> <span class="o">--</span><span class="n">cluster</span> <span class="n">cluster</span><span class="o">-</span><span class="n">name</span>
+</pre></div>
+</div>
+<p>To unmap an image:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">rbd</span> <span class="n">device</span> <span class="n">unmap</span> <span class="o">/</span><span class="n">dev</span><span class="o">/</span><span class="n">rbd0</span>
+</pre></div>
+</div>
+<p>To create an image and a clone from it:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">rbd</span> <span class="kn">import</span><span class="w"> </span><span class="o">--</span><span class="n">image</span><span class="o">-</span><span class="nb">format</span> <span class="mi">2</span> <span class="n">image</span> <span class="n">mypool</span><span class="o">/</span><span class="n">parent</span>
+<span class="n">rbd</span> <span class="n">snap</span> <span class="n">create</span> <span class="n">mypool</span><span class="o">/</span><span class="n">parent</span><span class="nd">@snap</span>
+<span class="n">rbd</span> <span class="n">snap</span> <span class="n">protect</span> <span class="n">mypool</span><span class="o">/</span><span class="n">parent</span><span class="nd">@snap</span>
+<span class="n">rbd</span> <span class="n">clone</span> <span class="n">mypool</span><span class="o">/</span><span class="n">parent</span><span class="nd">@snap</span> <span class="n">otherpool</span><span class="o">/</span><span class="n">child</span>
+</pre></div>
+</div>
+<p>To create an image with a smaller stripe_unit (to better distribute small writes in some workloads):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">rbd</span> <span class="n">create</span> <span class="n">mypool</span><span class="o">/</span><span class="n">myimage</span> <span class="o">--</span><span class="n">size</span> <span class="mi">102400</span> <span class="o">--</span><span class="n">stripe</span><span class="o">-</span><span class="n">unit</span> <span class="mi">65536</span><span class="n">B</span> <span class="o">--</span><span class="n">stripe</span><span class="o">-</span><span class="n">count</span> <span class="mi">16</span>
+</pre></div>
+</div>
+<p>To change an image from one image format to another, export it and then
+import it as the desired image format:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">rbd</span> <span class="n">export</span> <span class="n">mypool</span><span class="o">/</span><span class="n">myimage</span><span class="nd">@snap</span> <span class="o">/</span><span class="n">tmp</span><span class="o">/</span><span class="n">img</span>
+<span class="n">rbd</span> <span class="kn">import</span><span class="w"> </span><span class="o">--</span><span class="n">image</span><span class="o">-</span><span class="nb">format</span> <span class="mi">2</span> <span class="o">/</span><span class="n">tmp</span><span class="o">/</span><span class="n">img</span> <span class="n">mypool</span><span class="o">/</span><span class="n">myimage2</span>
+</pre></div>
+</div>
+<p>To lock an image for exclusive use:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">rbd</span> <span class="n">lock</span> <span class="n">add</span> <span class="n">mypool</span><span class="o">/</span><span class="n">myimage</span> <span class="n">mylockid</span>
+</pre></div>
+</div>
+<p>To release a lock:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">rbd</span> <span class="n">lock</span> <span class="n">remove</span> <span class="n">mypool</span><span class="o">/</span><span class="n">myimage</span> <span class="n">mylockid</span> <span class="n">client</span><span class="mf">.2485</span>
+</pre></div>
+</div>
+<p>To list images from trash:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">rbd</span> <span class="n">trash</span> <span class="n">ls</span> <span class="n">mypool</span>
+</pre></div>
+</div>
+<p>To defer delete an image (use <em>–expires-at</em> to set expiration time, default is now):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">rbd</span> <span class="n">trash</span> <span class="n">mv</span> <span class="n">mypool</span><span class="o">/</span><span class="n">myimage</span> <span class="o">--</span><span class="n">expires</span><span class="o">-</span><span class="n">at</span> <span class="s2">&quot;tomorrow&quot;</span>
+</pre></div>
+</div>
+<p>To delete an image from trash (be careful!):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">rbd</span> <span class="n">trash</span> <span class="n">rm</span> <span class="n">mypool</span><span class="o">/</span><span class="n">myimage</span><span class="o">-</span><span class="nb">id</span>
+</pre></div>
+</div>
+<p>To force delete an image from trash (be careful!):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">rbd</span> <span class="n">trash</span> <span class="n">rm</span> <span class="n">mypool</span><span class="o">/</span><span class="n">myimage</span><span class="o">-</span><span class="nb">id</span>  <span class="o">--</span><span class="n">force</span>
+</pre></div>
+</div>
+<p>To restore an image from trash:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">rbd</span> <span class="n">trash</span> <span class="n">restore</span> <span class="n">mypool</span><span class="o">/</span><span class="n">myimage</span><span class="o">-</span><span class="nb">id</span>
+</pre></div>
+</div>
+<p>To restore an image from trash and rename it:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">rbd</span> <span class="n">trash</span> <span class="n">restore</span> <span class="n">mypool</span><span class="o">/</span><span class="n">myimage</span><span class="o">-</span><span class="nb">id</span> <span class="o">--</span><span class="n">image</span> <span class="n">mynewimage</span>
+</pre></div>
+</div>
+</section>
+<section id="availability">
+<h2>Availability<a class="headerlink" href="#availability" title="Permalink to this heading">¶</a></h2>
+<p><strong>rbd</strong> is part of Ceph, a massively scalable, open-source, distributed storage system. Please refer to
+the Ceph documentation at <a class="reference external" href="http://ceph.com/docs">http://ceph.com/docs</a> for more information.</p>
+</section>
+<section id="see-also">
+<h2>See also<a class="headerlink" href="#see-also" title="Permalink to this heading">¶</a></h2>
+<p><a class="reference internal" href="../ceph/"><span class="doc">ceph</span></a>(8),
+<a class="reference internal" href="../rados/"><span class="doc">rados</span></a>(8)</p>
+</section>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../../">
+              <img class="logo" src="../../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../install/">Installing Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cephadm/">Cephadm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../rados/">Ceph Storage Cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cephfs/">Ceph File System</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../../rbd/">Ceph Block Device</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../../../rbd/rados-rbd-cmds/">Basic Commands</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../rbd/rbd-operations/">Operations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../rbd/rbd-integrations/">Integrations</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../../../rbd/man/">Manpages</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">rbd</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#synopsis">Synopsis</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#description">Description</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#options">Options</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#parameters">Parameters</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#commands">Commands</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#image-snap-group-and-journal-specs">Image, snap, group and journal specs</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#striping">Striping</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#kernel-rbd-krbd-options">Kernel rbd (krbd) options</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#examples">Examples</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#availability">Availability</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#see-also">See also</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../rbd-fuse/">rbd-fuse</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rbd-nbd/">rbd-nbd</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rbd-ggate/">rbd-ggate</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rbdmap/">rbd-map</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../ceph-rbdnamer/">ceph-rbdnamer</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rbd-replay-prep/">rbd-replay-prep</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rbd-replay/">rbd-replay</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rbd-replay-many/">rbd-replay-many</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../rbd/api/">APIs</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../radosgw/">Ceph Object Gateway</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../mgr/">Ceph Manager Daemon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../mgr/dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dev/developer_guide/">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dev/internals/">Ceph Internals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../../../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../rbd-fuse/" title="rbd-fuse – expose rbd images as files"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../../../rbd/man/" title="Ceph Block Device Manpages"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../../rbd/" >Ceph Block Device</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../../../rbd/man/" >Ceph Block Device Manpages</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">rbd – manage rados block device (RBD) images</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

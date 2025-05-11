@@ -1,0 +1,448 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Using libvirt with Ceph RBD &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css" />
+    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../genindex/" />
+    <link rel="search" title="Search" href="../../search/" />
+    <link rel="next" title="Block Devices and Kubernetes" href="../rbd-kubernetes/" />
+    <link rel="prev" title="QEMU and Block Devices" href="../qemu-rbd/" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../rbd-kubernetes/" title="Block Devices and Kubernetes"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../qemu-rbd/" title="QEMU and Block Devices"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../" >Ceph Block Device</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../rbd-integrations/" accesskey="U">Ceph Block Device 3rd Party Integration</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Using libvirt with Ceph RBD</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="using-libvirt-with-ceph-rbd">
+<h1>Using libvirt with Ceph RBD<a class="headerlink" href="#using-libvirt-with-ceph-rbd" title="Permalink to this heading">¶</a></h1>
+<p id="index-0">The <code class="docutils literal notranslate"><span class="pre">libvirt</span></code> library creates a virtual machine abstraction layer between
+hypervisor interfaces and the software applications that use them. With
+<code class="docutils literal notranslate"><span class="pre">libvirt</span></code>, developers and system administrators can focus on a common
+management framework, common API, and common shell interface (i.e., <code class="docutils literal notranslate"><span class="pre">virsh</span></code>)
+to many different hypervisors, including:</p>
+<ul class="simple">
+<li><p>QEMU/KVM</p></li>
+<li><p>XEN</p></li>
+<li><p>LXC</p></li>
+<li><p>VirtualBox</p></li>
+<li><p>etc.</p></li>
+</ul>
+<p>Ceph block devices support QEMU/KVM. You can use Ceph block devices with
+software that interfaces with <code class="docutils literal notranslate"><span class="pre">libvirt</span></code>. The following stack diagram
+illustrates how <code class="docutils literal notranslate"><span class="pre">libvirt</span></code> and QEMU use Ceph block devices via <code class="docutils literal notranslate"><span class="pre">librbd</span></code>.</p>
+<p class="ditaa">
+<img src="../../_images/ditaa-85d66af9d7a5acde5cc8e5621fd253044b078e0d.png"/>
+</p>
+<p>The most common <code class="docutils literal notranslate"><span class="pre">libvirt</span></code> use case involves providing Ceph block devices to
+cloud solutions like OpenStack or CloudStack. The cloud solution uses
+<code class="docutils literal notranslate"><span class="pre">libvirt</span></code> to  interact with QEMU/KVM, and QEMU/KVM interacts with Ceph block
+devices via  <code class="docutils literal notranslate"><span class="pre">librbd</span></code>. See <a class="reference external" href="../rbd-openstack">Block Devices and OpenStack</a> and <a class="reference external" href="../rbd-cloudstack">Block Devices
+and CloudStack</a> for details. See <a class="reference external" href="../../install">Installation</a> for installation details.</p>
+<p>You can also use Ceph block devices with <code class="docutils literal notranslate"><span class="pre">libvirt</span></code>, <code class="docutils literal notranslate"><span class="pre">virsh</span></code> and the
+<code class="docutils literal notranslate"><span class="pre">libvirt</span></code> API. See <a class="reference external" href="http://www.libvirt.org">libvirt Virtualization API</a> for details.</p>
+<p>To create VMs that use Ceph block devices, use the procedures in the following
+sections. In the exemplary embodiment, we have used <code class="docutils literal notranslate"><span class="pre">libvirt-pool</span></code> for the pool
+name, <code class="docutils literal notranslate"><span class="pre">client.libvirt</span></code> for the user name, and <code class="docutils literal notranslate"><span class="pre">new-libvirt-image</span></code> for  the
+image name. You may use any value you like, but ensure you replace those values
+when executing commands in the subsequent procedures.</p>
+<section id="configuring-ceph">
+<h2>Configuring Ceph<a class="headerlink" href="#configuring-ceph" title="Permalink to this heading">¶</a></h2>
+<p>To configure Ceph for use with <code class="docutils literal notranslate"><span class="pre">libvirt</span></code>, perform the following steps:</p>
+<ol class="arabic">
+<li><p><a class="reference external" href="../../rados/operations/pools#create-a-pool">Create a pool</a>. The following example uses the
+pool name <code class="docutils literal notranslate"><span class="pre">libvirt-pool</span></code>.:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span> <span class="n">osd</span> <span class="n">pool</span> <span class="n">create</span> <span class="n">libvirt</span><span class="o">-</span><span class="n">pool</span>
+</pre></div>
+</div>
+<p>Verify the pool exists.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span> <span class="n">osd</span> <span class="n">lspools</span>
+</pre></div>
+</div>
+</li>
+<li><p>Use the <code class="docutils literal notranslate"><span class="pre">rbd</span></code> tool to initialize the pool for use by RBD:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">rbd</span> <span class="n">pool</span> <span class="n">init</span> <span class="o">&lt;</span><span class="n">pool</span><span class="o">-</span><span class="n">name</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+</li>
+<li><p><a class="reference external" href="../../rados/operations/user-management#add-a-user">Create a Ceph User</a> (or use <code class="docutils literal notranslate"><span class="pre">client.admin</span></code> for version 0.9.7 and
+earlier). The following example uses the Ceph user name <code class="docutils literal notranslate"><span class="pre">client.libvirt</span></code>
+and references <code class="docutils literal notranslate"><span class="pre">libvirt-pool</span></code>.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span> <span class="n">auth</span> <span class="n">get</span><span class="o">-</span><span class="ow">or</span><span class="o">-</span><span class="n">create</span> <span class="n">client</span><span class="o">.</span><span class="n">libvirt</span> <span class="n">mon</span> <span class="s1">&#39;profile rbd&#39;</span> <span class="n">osd</span> <span class="s1">&#39;profile rbd pool=libvirt-pool&#39;</span>
+</pre></div>
+</div>
+<p>Verify the name exists.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span> <span class="n">auth</span> <span class="n">ls</span>
+</pre></div>
+</div>
+<p><strong>NOTE</strong>: <code class="docutils literal notranslate"><span class="pre">libvirt</span></code> will access Ceph using the ID <code class="docutils literal notranslate"><span class="pre">libvirt</span></code>,
+not the Ceph name <code class="docutils literal notranslate"><span class="pre">client.libvirt</span></code>. See <a class="reference external" href="../../rados/operations/user-management#user">User Management - User</a> and
+<a class="reference external" href="../../rados/operations/user-management#command-line-usage">User Management - CLI</a> for a detailed explanation of the difference
+between ID and name.</p>
+</li>
+<li><p>Use QEMU to <a class="reference external" href="../qemu-rbd#creating-images-with-qemu">create an image</a> in your RBD pool.
+The following example uses the image name <code class="docutils literal notranslate"><span class="pre">new-libvirt-image</span></code>
+and references <code class="docutils literal notranslate"><span class="pre">libvirt-pool</span></code>.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">qemu</span><span class="o">-</span><span class="n">img</span> <span class="n">create</span> <span class="o">-</span><span class="n">f</span> <span class="n">rbd</span> <span class="n">rbd</span><span class="p">:</span><span class="n">libvirt</span><span class="o">-</span><span class="n">pool</span><span class="o">/</span><span class="n">new</span><span class="o">-</span><span class="n">libvirt</span><span class="o">-</span><span class="n">image</span> <span class="mi">2</span><span class="n">G</span>
+</pre></div>
+</div>
+<p>Verify the image exists.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">rbd</span> <span class="o">-</span><span class="n">p</span> <span class="n">libvirt</span><span class="o">-</span><span class="n">pool</span> <span class="n">ls</span>
+</pre></div>
+</div>
+<p><strong>NOTE:</strong> You can also use <a class="reference external" href="../rados-rbd-cmds#creating-a-block-device-image">rbd create</a> to create an image, but we
+recommend ensuring that QEMU is working properly.</p>
+</li>
+</ol>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>Optionally, if you wish to enable debug logs and the admin socket for
+this client, you can add the following section to <code class="docutils literal notranslate"><span class="pre">/etc/ceph/ceph.conf</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>[client.libvirt]
+log file = /var/log/ceph/qemu-guest-$pid.log
+admin socket = /var/run/ceph/$cluster-$type.$id.$pid.$cctid.asok
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">client.libvirt</span></code> section name should match the cephx user you created
+above.
+If SELinux or AppArmor is enabled, note that this could prevent the client
+process (qemu via libvirt) from doing some operations, such as writing logs
+or operate the images or admin socket to the destination locations (<code class="docutils literal notranslate"><span class="pre">/var/</span>
+<span class="pre">log/ceph</span></code> or <code class="docutils literal notranslate"><span class="pre">/var/run/ceph</span></code>). Additionally, make sure that the libvirt
+and qemu users have appropriate access to the specified directory.</p>
+</div>
+</section>
+<section id="preparing-the-vm-manager">
+<h2>Preparing the VM Manager<a class="headerlink" href="#preparing-the-vm-manager" title="Permalink to this heading">¶</a></h2>
+<p>You may use <code class="docutils literal notranslate"><span class="pre">libvirt</span></code> without a VM manager, but you may find it simpler to
+create your first domain with <code class="docutils literal notranslate"><span class="pre">virt-manager</span></code>.</p>
+<ol class="arabic">
+<li><p>Install a virtual machine manager. See <a class="reference external" href="https://help.ubuntu.com/community/KVM/VirtManager">KVM/VirtManager</a> for details.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">sudo</span> <span class="n">apt</span><span class="o">-</span><span class="n">get</span> <span class="n">install</span> <span class="n">virt</span><span class="o">-</span><span class="n">manager</span>
+</pre></div>
+</div>
+</li>
+<li><p>Download an OS image (if necessary).</p></li>
+<li><p>Launch the virtual machine manager.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">sudo</span> <span class="n">virt</span><span class="o">-</span><span class="n">manager</span>
+</pre></div>
+</div>
+</li>
+</ol>
+</section>
+<section id="creating-a-vm">
+<h2>Creating a VM<a class="headerlink" href="#creating-a-vm" title="Permalink to this heading">¶</a></h2>
+<p>To create a VM with <code class="docutils literal notranslate"><span class="pre">virt-manager</span></code>, perform the following steps:</p>
+<ol class="arabic">
+<li><p>Press the <strong>Create New Virtual Machine</strong> button.</p></li>
+<li><p>Name the new virtual machine domain. In the exemplary embodiment, we
+use the name <code class="docutils literal notranslate"><span class="pre">libvirt-virtual-machine</span></code>. You may use any name you wish,
+but ensure you replace <code class="docutils literal notranslate"><span class="pre">libvirt-virtual-machine</span></code> with the name you
+choose in subsequent commandline and configuration examples.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">libvirt</span><span class="o">-</span><span class="n">virtual</span><span class="o">-</span><span class="n">machine</span>
+</pre></div>
+</div>
+</li>
+<li><p>Import the image.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">/</span><span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">image</span><span class="o">/</span><span class="n">recent</span><span class="o">-</span><span class="n">linux</span><span class="o">.</span><span class="n">img</span>
+</pre></div>
+</div>
+<p><strong>NOTE:</strong> Import a recent image. Some older images may not rescan for
+virtual devices properly.</p>
+</li>
+<li><p>Configure and start the VM.</p></li>
+<li><p>You may use <code class="docutils literal notranslate"><span class="pre">virsh</span> <span class="pre">list</span></code> to verify the VM domain exists.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">sudo</span> <span class="n">virsh</span> <span class="nb">list</span>
+</pre></div>
+</div>
+</li>
+<li><p>Login to the VM (root/root)</p></li>
+<li><p>Stop the VM before configuring it for use with Ceph.</p></li>
+</ol>
+</section>
+<section id="configuring-the-vm">
+<h2>Configuring the VM<a class="headerlink" href="#configuring-the-vm" title="Permalink to this heading">¶</a></h2>
+<p>When configuring the VM for use with Ceph, it is important  to use <code class="docutils literal notranslate"><span class="pre">virsh</span></code>
+where appropriate. Additionally, <code class="docutils literal notranslate"><span class="pre">virsh</span></code> commands often require root
+privileges  (i.e., <code class="docutils literal notranslate"><span class="pre">sudo</span></code>) and will not return appropriate results or notify
+you that root privileges are required. For a reference of <code class="docutils literal notranslate"><span class="pre">virsh</span></code>
+commands, refer to <a class="reference external" href="http://www.libvirt.org/virshcmdref.html">Virsh Command Reference</a>.</p>
+<ol class="arabic">
+<li><p>Open the configuration file with <code class="docutils literal notranslate"><span class="pre">virsh</span> <span class="pre">edit</span></code>.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">sudo</span> <span class="n">virsh</span> <span class="n">edit</span> <span class="p">{</span><span class="n">vm</span><span class="o">-</span><span class="n">domain</span><span class="o">-</span><span class="n">name</span><span class="p">}</span>
+</pre></div>
+</div>
+<p>Under <code class="docutils literal notranslate"><span class="pre">&lt;devices&gt;</span></code> there should be a <code class="docutils literal notranslate"><span class="pre">&lt;disk&gt;</span></code> entry.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">&lt;</span><span class="n">devices</span><span class="o">&gt;</span>
+        <span class="o">&lt;</span><span class="n">emulator</span><span class="o">&gt;/</span><span class="n">usr</span><span class="o">/</span><span class="nb">bin</span><span class="o">/</span><span class="n">kvm</span><span class="o">&lt;/</span><span class="n">emulator</span><span class="o">&gt;</span>
+        <span class="o">&lt;</span><span class="n">disk</span> <span class="nb">type</span><span class="o">=</span><span class="s1">&#39;file&#39;</span> <span class="n">device</span><span class="o">=</span><span class="s1">&#39;disk&#39;</span><span class="o">&gt;</span>
+                <span class="o">&lt;</span><span class="n">driver</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;qemu&#39;</span> <span class="nb">type</span><span class="o">=</span><span class="s1">&#39;raw&#39;</span><span class="o">/&gt;</span>
+                <span class="o">&lt;</span><span class="n">source</span> <span class="n">file</span><span class="o">=</span><span class="s1">&#39;/path/to/image/recent-linux.img&#39;</span><span class="o">/&gt;</span>
+                <span class="o">&lt;</span><span class="n">target</span> <span class="n">dev</span><span class="o">=</span><span class="s1">&#39;vda&#39;</span> <span class="n">bus</span><span class="o">=</span><span class="s1">&#39;virtio&#39;</span><span class="o">/&gt;</span>
+                <span class="o">&lt;</span><span class="n">address</span> <span class="nb">type</span><span class="o">=</span><span class="s1">&#39;drive&#39;</span> <span class="n">controller</span><span class="o">=</span><span class="s1">&#39;0&#39;</span> <span class="n">bus</span><span class="o">=</span><span class="s1">&#39;0&#39;</span> <span class="n">unit</span><span class="o">=</span><span class="s1">&#39;0&#39;</span><span class="o">/&gt;</span>
+        <span class="o">&lt;/</span><span class="n">disk</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<p>Replace <code class="docutils literal notranslate"><span class="pre">/path/to/image/recent-linux.img</span></code> with the path to the OS image.
+The minimum kernel for using the faster <code class="docutils literal notranslate"><span class="pre">virtio</span></code> bus is 2.6.25. See
+<a class="reference external" href="http://www.linux-kvm.org/page/Virtio">Virtio</a> for details.</p>
+<p><strong>IMPORTANT:</strong> Use <code class="docutils literal notranslate"><span class="pre">sudo</span> <span class="pre">virsh</span> <span class="pre">edit</span></code> instead of a text editor. If you edit
+the configuration file under <code class="docutils literal notranslate"><span class="pre">/etc/libvirt/qemu</span></code> with a text editor,
+<code class="docutils literal notranslate"><span class="pre">libvirt</span></code> may not recognize the change. If there is a discrepancy between
+the contents of the XML file under <code class="docutils literal notranslate"><span class="pre">/etc/libvirt/qemu</span></code> and the result of
+<code class="docutils literal notranslate"><span class="pre">sudo</span> <span class="pre">virsh</span> <span class="pre">dumpxml</span> <span class="pre">{vm-domain-name}</span></code>, then your VM may not work
+properly.</p>
+</li>
+<li><p>Add the Ceph RBD image you created as a <code class="docutils literal notranslate"><span class="pre">&lt;disk&gt;</span></code> entry.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">&lt;</span><span class="n">disk</span> <span class="nb">type</span><span class="o">=</span><span class="s1">&#39;network&#39;</span> <span class="n">device</span><span class="o">=</span><span class="s1">&#39;disk&#39;</span><span class="o">&gt;</span>
+        <span class="o">&lt;</span><span class="n">source</span> <span class="n">protocol</span><span class="o">=</span><span class="s1">&#39;rbd&#39;</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;libvirt-pool/new-libvirt-image&#39;</span><span class="o">&gt;</span>
+                <span class="o">&lt;</span><span class="n">host</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;{monitor-host}&#39;</span> <span class="n">port</span><span class="o">=</span><span class="s1">&#39;6789&#39;</span><span class="o">/&gt;</span>
+        <span class="o">&lt;/</span><span class="n">source</span><span class="o">&gt;</span>
+        <span class="o">&lt;</span><span class="n">target</span> <span class="n">dev</span><span class="o">=</span><span class="s1">&#39;vdb&#39;</span> <span class="n">bus</span><span class="o">=</span><span class="s1">&#39;virtio&#39;</span><span class="o">/&gt;</span>
+<span class="o">&lt;/</span><span class="n">disk</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<p>Replace <code class="docutils literal notranslate"><span class="pre">{monitor-host}</span></code> with the name of your host, and replace the
+pool and/or image name as necessary. You may add multiple <code class="docutils literal notranslate"><span class="pre">&lt;host&gt;</span></code>
+entries for your Ceph monitors. The <code class="docutils literal notranslate"><span class="pre">dev</span></code> attribute is the logical
+device name that will appear under the <code class="docutils literal notranslate"><span class="pre">/dev</span></code> directory of your
+VM. The optional <code class="docutils literal notranslate"><span class="pre">bus</span></code> attribute indicates the type of disk device to
+emulate. The valid settings are driver specific (e.g., “ide”, “scsi”,
+“virtio”, “xen”, “usb” or “sata”).</p>
+<p>See <a class="reference external" href="http://www.libvirt.org/formatdomain.html#elementsDisks">Disks</a> for details of the <code class="docutils literal notranslate"><span class="pre">&lt;disk&gt;</span></code> element, and its child elements
+and attributes.</p>
+</li>
+<li><p>Save the file.</p></li>
+<li><p>If your Ceph Storage Cluster has <a class="reference external" href="../../rados/configuration/auth-config-ref">Ceph Authentication</a> enabled (it does by
+default), you must generate a secret.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">cat</span> <span class="o">&gt;</span> <span class="n">secret</span><span class="o">.</span><span class="n">xml</span> <span class="o">&lt;&lt;</span><span class="n">EOF</span>
+<span class="o">&lt;</span><span class="n">secret</span> <span class="n">ephemeral</span><span class="o">=</span><span class="s1">&#39;no&#39;</span> <span class="n">private</span><span class="o">=</span><span class="s1">&#39;no&#39;</span><span class="o">&gt;</span>
+        <span class="o">&lt;</span><span class="n">usage</span> <span class="nb">type</span><span class="o">=</span><span class="s1">&#39;ceph&#39;</span><span class="o">&gt;</span>
+                <span class="o">&lt;</span><span class="n">name</span><span class="o">&gt;</span><span class="n">client</span><span class="o">.</span><span class="n">libvirt</span> <span class="n">secret</span><span class="o">&lt;/</span><span class="n">name</span><span class="o">&gt;</span>
+        <span class="o">&lt;/</span><span class="n">usage</span><span class="o">&gt;</span>
+<span class="o">&lt;/</span><span class="n">secret</span><span class="o">&gt;</span>
+<span class="n">EOF</span>
+</pre></div>
+</div>
+</li>
+<li><p>Define the secret.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">sudo</span> <span class="n">virsh</span> <span class="n">secret</span><span class="o">-</span><span class="n">define</span> <span class="o">--</span><span class="n">file</span> <span class="n">secret</span><span class="o">.</span><span class="n">xml</span>
+<span class="p">{</span><span class="n">uuid</span> <span class="n">of</span> <span class="n">secret</span><span class="p">}</span>
+</pre></div>
+</div>
+</li>
+<li><p>Get the <code class="docutils literal notranslate"><span class="pre">client.libvirt</span></code> key and save the key string to a file.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span> <span class="n">auth</span> <span class="n">get</span><span class="o">-</span><span class="n">key</span> <span class="n">client</span><span class="o">.</span><span class="n">libvirt</span> <span class="o">|</span> <span class="n">sudo</span> <span class="n">tee</span> <span class="n">client</span><span class="o">.</span><span class="n">libvirt</span><span class="o">.</span><span class="n">key</span>
+</pre></div>
+</div>
+</li>
+<li><p>Set the UUID of the secret.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>sudo virsh secret-set-value --secret {uuid of secret} --base64 $(cat client.libvirt.key) &amp;&amp; rm client.libvirt.key secret.xml
+</pre></div>
+</div>
+<p>You must also set the secret manually by adding the following <code class="docutils literal notranslate"><span class="pre">&lt;auth&gt;</span></code>
+entry to the <code class="docutils literal notranslate"><span class="pre">&lt;disk&gt;</span></code> element you entered earlier (replacing the
+<code class="docutils literal notranslate"><span class="pre">uuid</span></code> value with the result from the command line example above).</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">sudo</span> <span class="n">virsh</span> <span class="n">edit</span> <span class="p">{</span><span class="n">vm</span><span class="o">-</span><span class="n">domain</span><span class="o">-</span><span class="n">name</span><span class="p">}</span>
+</pre></div>
+</div>
+<p>Then, add <code class="docutils literal notranslate"><span class="pre">&lt;auth&gt;&lt;/auth&gt;</span></code> element to the domain configuration file:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">...</span>
+<span class="o">&lt;/</span><span class="n">source</span><span class="o">&gt;</span>
+<span class="o">&lt;</span><span class="n">auth</span> <span class="n">username</span><span class="o">=</span><span class="s1">&#39;libvirt&#39;</span><span class="o">&gt;</span>
+        <span class="o">&lt;</span><span class="n">secret</span> <span class="nb">type</span><span class="o">=</span><span class="s1">&#39;ceph&#39;</span> <span class="n">uuid</span><span class="o">=</span><span class="s1">&#39;{uuid of secret}&#39;</span><span class="o">/&gt;</span>
+<span class="o">&lt;/</span><span class="n">auth</span><span class="o">&gt;</span>
+<span class="o">&lt;</span><span class="n">target</span> <span class="o">...</span>
+</pre></div>
+</div>
+<p><strong>NOTE:</strong> The exemplary ID is <code class="docutils literal notranslate"><span class="pre">libvirt</span></code>, not the Ceph name
+<code class="docutils literal notranslate"><span class="pre">client.libvirt</span></code> as generated at step 2 of <a class="reference internal" href="#configuring-ceph">Configuring Ceph</a>. Ensure
+you use the ID component of the Ceph name you generated. If for some reason
+you need to regenerate the secret, you will have to execute
+<code class="docutils literal notranslate"><span class="pre">sudo</span> <span class="pre">virsh</span> <span class="pre">secret-undefine</span> <span class="pre">{uuid}</span></code> before executing
+<code class="docutils literal notranslate"><span class="pre">sudo</span> <span class="pre">virsh</span> <span class="pre">secret-set-value</span></code> again.</p>
+</li>
+</ol>
+</section>
+<section id="summary">
+<h2>Summary<a class="headerlink" href="#summary" title="Permalink to this heading">¶</a></h2>
+<p>Once you have configured the VM for use with Ceph, you can start the VM.
+To verify that the VM and Ceph are communicating, you may perform the
+following procedures.</p>
+<ol class="arabic">
+<li><p>Check to see if Ceph is running:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span> <span class="n">health</span>
+</pre></div>
+</div>
+</li>
+<li><p>Check to see if the VM is running.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">sudo</span> <span class="n">virsh</span> <span class="nb">list</span>
+</pre></div>
+</div>
+</li>
+<li><p>Check to see if the VM is communicating with Ceph. Replace
+<code class="docutils literal notranslate"><span class="pre">{vm-domain-name}</span></code> with the name of your VM domain:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">sudo</span> <span class="n">virsh</span> <span class="n">qemu</span><span class="o">-</span><span class="n">monitor</span><span class="o">-</span><span class="n">command</span> <span class="o">--</span><span class="n">hmp</span> <span class="p">{</span><span class="n">vm</span><span class="o">-</span><span class="n">domain</span><span class="o">-</span><span class="n">name</span><span class="p">}</span> <span class="s1">&#39;info block&#39;</span>
+</pre></div>
+</div>
+</li>
+<li><p>Check to see if the device from <code class="docutils literal notranslate"><span class="pre">&lt;target</span> <span class="pre">dev='vdb'</span> <span class="pre">bus='virtio'/&gt;</span></code> exists:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">virsh</span> <span class="n">domblklist</span> <span class="p">{</span><span class="n">vm</span><span class="o">-</span><span class="n">domain</span><span class="o">-</span><span class="n">name</span><span class="p">}</span> <span class="o">--</span><span class="n">details</span>
+</pre></div>
+</div>
+</li>
+</ol>
+<p>If everything looks okay, you may begin using the Ceph block device
+within your VM.</p>
+</section>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../">
+              <img class="logo" src="../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../install/">Installing Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cephadm/">Cephadm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rados/">Ceph Storage Cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cephfs/">Ceph File System</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../">Ceph Block Device</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../rados-rbd-cmds/">Basic Commands</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rbd-operations/">Operations</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../rbd-integrations/">Integrations</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../rbd-ko/">Kernel Modules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../qemu-rbd/">QEMU</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">libvirt</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#configuring-ceph">Configuring Ceph</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#preparing-the-vm-manager">Preparing the VM Manager</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#creating-a-vm">Creating a VM</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#configuring-the-vm">Configuring the VM</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#summary">Summary</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../rbd-kubernetes/">Kubernetes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rbd-openstack/">OpenStack</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rbd-cloudstack/">CloudStack</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../iscsi-overview/">LIO iSCSI Gateway</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rbd-windows/">Windows</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../man/">Manpages</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/">APIs</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../radosgw/">Ceph Object Gateway</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/">Ceph Manager Daemon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dev/developer_guide/">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dev/internals/">Ceph Internals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../rbd-kubernetes/" title="Block Devices and Kubernetes"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../qemu-rbd/" title="QEMU and Block Devices"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../" >Ceph Block Device</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../rbd-integrations/" >Ceph Block Device 3rd Party Integration</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Using libvirt with Ceph RBD</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

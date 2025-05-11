@@ -1,0 +1,278 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Compatibility and Stability &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css" />
+    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../genindex/" />
+    <link rel="search" title="Search" href="../../search/" />
+    <link rel="next" title="Converting an existing cluster to cephadm" href="../adoption/" />
+    <link rel="prev" title="Cephadm" href="../" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../adoption/" title="Converting an existing cluster to cephadm"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../" title="Cephadm"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../" accesskey="U">Cephadm</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Compatibility and Stability</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="compatibility-and-stability">
+<h1>Compatibility and Stability<a class="headerlink" href="#compatibility-and-stability" title="Permalink to this heading">¶</a></h1>
+<section id="compatibility-with-podman-versions">
+<span id="cephadm-compatibility-with-podman"></span><h2>Compatibility with Podman Versions<a class="headerlink" href="#compatibility-with-podman-versions" title="Permalink to this heading">¶</a></h2>
+<p>Podman and Ceph have different end-of-life strategies. This means that care
+must be taken in finding a version of Podman that is compatible with Ceph.</p>
+<p>This table shows which version pairs are expected to work or not work together:</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 21%" />
+<col style="width: 13%" />
+<col style="width: 13%" />
+<col style="width: 13%" />
+<col style="width: 13%" />
+<col style="width: 13%" />
+<col style="width: 13%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Ceph</p></th>
+<th class="head" colspan="6"><p>Podman</p></th>
+</tr>
+<tr class="row-even"><th class="head"></th>
+<th class="head"><p>1.9</p></th>
+<th class="head"><p>2.0</p></th>
+<th class="head"><p>2.1</p></th>
+<th class="head"><p>2.2</p></th>
+<th class="head"><p>3.0</p></th>
+<th class="head"><p>&gt; 3.0</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-odd"><td><p>&lt;= 15.2.5</p></td>
+<td><p>True</p></td>
+<td><p>False</p></td>
+<td><p>False</p></td>
+<td><p>False</p></td>
+<td><p>False</p></td>
+<td><p>False</p></td>
+</tr>
+<tr class="row-even"><td><p>&gt;= 15.2.6</p></td>
+<td><p>True</p></td>
+<td><p>True</p></td>
+<td><p>True</p></td>
+<td><p>False</p></td>
+<td><p>False</p></td>
+<td><p>False</p></td>
+</tr>
+<tr class="row-odd"><td><p>&gt;= 16.2.1</p></td>
+<td><p>False</p></td>
+<td><p>True</p></td>
+<td><p>True</p></td>
+<td><p>False</p></td>
+<td><p>True</p></td>
+<td><p>True</p></td>
+</tr>
+<tr class="row-even"><td><p>&gt;= 17.2.0</p></td>
+<td><p>False</p></td>
+<td><p>True</p></td>
+<td><p>True</p></td>
+<td><p>False</p></td>
+<td><p>True</p></td>
+<td><p>True</p></td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>While not all podman versions have been actively tested against
+all Ceph versions, there are no known issues with using podman
+version 3.0 or greater with Ceph Quincy and later releases.</p>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>To use Podman with Ceph Pacific, you must use <strong>a version of Podman that
+is 2.0.0 or higher</strong>. However, <strong>Podman version 2.2.1 does not work with
+Ceph Pacific</strong>.</p>
+<p>“Kubic stable” is known to work with Ceph Pacific, but it must be run
+with a newer kernel.</p>
+</div>
+</section>
+<section id="stability">
+<span id="cephadm-stability"></span><h2>Stability<a class="headerlink" href="#stability" title="Permalink to this heading">¶</a></h2>
+<p>Cephadm is relatively stable but new functionality is still being
+added and bugs are occasionally discovered. If issues are found, please
+open a tracker issue under the Orchestrator component (<a class="reference external" href="https://tracker.ceph.com/projects/orchestrator/issues">https://tracker.ceph.com/projects/orchestrator/issues</a>)</p>
+<p>Cephadm support remains under development for the following features:</p>
+<ul class="simple">
+<li><p>ceph-exporter deployment</p></li>
+<li><p>stretch mode integration</p></li>
+<li><p>monitoring stack (moving towards prometheus service discover and providing TLS)</p></li>
+<li><p>RGW multisite deployment support (requires lots of manual steps currently)</p></li>
+<li><p>cephadm agent</p></li>
+</ul>
+<p>If a cephadm command fails or a service stops running properly, see
+<a class="reference internal" href="../troubleshooting/#cephadm-pause"><span class="std std-ref">Pausing or Disabling cephadm</span></a> for instructions on how to pause the Ceph cluster’s
+background activity and how to disable cephadm.</p>
+</section>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../">
+              <img class="logo" src="../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../install/">Installing Ceph</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../">Cephadm</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Compatibility and Stability</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#compatibility-with-podman-versions">Compatibility with Podman Versions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#stability">Stability</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../install/">Deploying a new Ceph cluster</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../adoption/">Converting an existing cluster to cephadm</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../host-management/">Host Management</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../services/">Service Management</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../upgrade/">Upgrading Ceph</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../operations/">Cephadm operations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../client-setup/">Client Setup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../troubleshooting/">Troubleshooting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../dev/cephadm/">Cephadm Feature Planning</a></li>
+</ul>
+</li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../rados/">Ceph Storage Cluster</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../../rados/configuration/">Configuration</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../">Deployment</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Compatibility and Stability</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#compatibility-with-podman-versions">Compatibility with Podman Versions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#stability">Stability</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../install/">Deploying a new Ceph cluster</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../adoption/">Converting an existing cluster to cephadm</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../host-management/">Host Management</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../services/">Service Management</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../upgrade/">Upgrading Ceph</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../operations/">Cephadm operations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../client-setup/">Client Setup</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../troubleshooting/">Troubleshooting</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../dev/cephadm/">Cephadm Feature Planning</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../rados/operations/">Operations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../rados/man/">Man Pages</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../rados/troubleshooting/">Troubleshooting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../rados/api/">APIs</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../cephfs/">Ceph File System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rbd/">Ceph Block Device</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../radosgw/">Ceph Object Gateway</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/">Ceph Manager Daemon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dev/developer_guide/">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dev/internals/">Ceph Internals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../adoption/" title="Converting an existing cluster to cephadm"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../" title="Cephadm"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../" >Cephadm</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Compatibility and Stability</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

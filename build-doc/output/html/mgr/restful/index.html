@@ -1,0 +1,351 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Restful Module &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css" />
+    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../genindex/" />
+    <link rel="search" title="Search" href="../../search/" />
+    <link rel="next" title="Zabbix Module" href="../zabbix/" />
+    <link rel="prev" title="Local Pool Module" href="../localpool/" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../zabbix/" title="Zabbix Module"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../localpool/" title="Local Pool Module"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../" accesskey="U">Ceph Manager Daemon</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Restful Module</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="restful-module">
+<h1>Restful Module<a class="headerlink" href="#restful-module" title="Permalink to this heading">¶</a></h1>
+<p>RESTful module offers the REST API access to the status of the cluster
+over an SSL-secured connection.</p>
+<section id="enabling">
+<h2>Enabling<a class="headerlink" href="#enabling" title="Permalink to this heading">¶</a></h2>
+<p>The <em>restful</em> module is enabled with:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span> <span class="n">mgr</span> <span class="n">module</span> <span class="n">enable</span> <span class="n">restful</span>
+</pre></div>
+</div>
+<p>You will also need to configure an SSL certificate below before the
+API endpoint is available.  By default the module will accept HTTPS
+requests on port <code class="docutils literal notranslate"><span class="pre">8003</span></code> on all IPv4 and IPv6 addresses on the host.</p>
+</section>
+<section id="securing">
+<h2>Securing<a class="headerlink" href="#securing" title="Permalink to this heading">¶</a></h2>
+<p>All connections to <em>restful</em> are secured with SSL.  You can generate a
+self-signed certificate with the command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span> <span class="n">restful</span> <span class="n">create</span><span class="o">-</span><span class="bp">self</span><span class="o">-</span><span class="n">signed</span><span class="o">-</span><span class="n">cert</span>
+</pre></div>
+</div>
+<p>Note that with a self-signed certificate most clients will need a flag
+to allow a connection and/or suppress warning messages.  For example,
+if the <code class="docutils literal notranslate"><span class="pre">ceph-mgr</span></code> daemon is on the same host,:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">curl</span> <span class="o">-</span><span class="n">k</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">localhost</span><span class="p">:</span><span class="mi">8003</span><span class="o">/</span>
+</pre></div>
+</div>
+<p>To properly secure a deployment, a certificate that is signed by the
+organization’s certificate authority should be used.  For example, a key pair
+can be generated with a command similar to:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">openssl</span> <span class="n">req</span> <span class="o">-</span><span class="n">new</span> <span class="o">-</span><span class="n">nodes</span> <span class="o">-</span><span class="n">x509</span> \
+  <span class="o">-</span><span class="n">subj</span> <span class="s2">&quot;/O=IT/CN=ceph-mgr-restful&quot;</span> \
+  <span class="o">-</span><span class="n">days</span> <span class="mi">3650</span> <span class="o">-</span><span class="n">keyout</span> <span class="n">restful</span><span class="o">.</span><span class="n">key</span> <span class="o">-</span><span class="n">out</span> <span class="n">restful</span><span class="o">.</span><span class="n">crt</span> <span class="o">-</span><span class="n">extensions</span> <span class="n">v3_ca</span>
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">restful.crt</span></code> should then be signed by your organization’s CA
+(certificate authority).  Once that is done, you can set it with:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>ceph config-key set mgr/restful/$name/crt -i restful.crt
+ceph config-key set mgr/restful/$name/key -i restful.key
+</pre></div>
+</div>
+<p>where <code class="docutils literal notranslate"><span class="pre">$name</span></code> is the name of the <code class="docutils literal notranslate"><span class="pre">ceph-mgr</span></code> instance (usually the
+hostname). If all manager instances are to share the same certificate,
+you can leave off the <code class="docutils literal notranslate"><span class="pre">$name</span></code> portion:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span> <span class="n">config</span><span class="o">-</span><span class="n">key</span> <span class="nb">set</span> <span class="n">mgr</span><span class="o">/</span><span class="n">restful</span><span class="o">/</span><span class="n">crt</span> <span class="o">-</span><span class="n">i</span> <span class="n">restful</span><span class="o">.</span><span class="n">crt</span>
+<span class="n">ceph</span> <span class="n">config</span><span class="o">-</span><span class="n">key</span> <span class="nb">set</span> <span class="n">mgr</span><span class="o">/</span><span class="n">restful</span><span class="o">/</span><span class="n">key</span> <span class="o">-</span><span class="n">i</span> <span class="n">restful</span><span class="o">.</span><span class="n">key</span>
+</pre></div>
+</div>
+</section>
+<section id="configuring-ip-and-port">
+<h2>Configuring IP and port<a class="headerlink" href="#configuring-ip-and-port" title="Permalink to this heading">¶</a></h2>
+<p>Like any other RESTful API endpoint, <em>restful</em> binds to an IP and
+port.  By default, the currently active <code class="docutils literal notranslate"><span class="pre">ceph-mgr</span></code> daemon will bind
+to port 8003 and any available IPv4 or IPv6 address on the host.</p>
+<p>Since each <code class="docutils literal notranslate"><span class="pre">ceph-mgr</span></code> hosts its own instance of <em>restful</em>, it may
+also be necessary to configure them separately. The IP and port
+can be changed via the configuration key facility:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>ceph config set mgr mgr/restful/$name/server_addr $IP
+ceph config set mgr mgr/restful/$name/server_port $PORT
+</pre></div>
+</div>
+<p>where <code class="docutils literal notranslate"><span class="pre">$name</span></code> is the ID of the ceph-mgr daemon (usually the hostname).</p>
+<p>These settings can also be configured cluster-wide and not manager
+specific.  For example,:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>ceph config set mgr mgr/restful/server_addr $IP
+ceph config set mgr mgr/restful/server_port $PORT
+</pre></div>
+</div>
+<p>If the port is not configured, <em>restful</em> will bind to port <code class="docutils literal notranslate"><span class="pre">8003</span></code>.
+If the address it not configured, the <em>restful</em> will bind to <code class="docutils literal notranslate"><span class="pre">::</span></code>,
+which corresponds to all available IPv4 and IPv6 addresses.</p>
+</section>
+<section id="creating-an-api-user">
+<span id="id1"></span><h2>Creating an API User<a class="headerlink" href="#creating-an-api-user" title="Permalink to this heading">¶</a></h2>
+<p>To create an API user, please run the following command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span> <span class="n">restful</span> <span class="n">create</span><span class="o">-</span><span class="n">key</span> <span class="o">&lt;</span><span class="n">username</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<p>Replace <code class="docutils literal notranslate"><span class="pre">&lt;username&gt;</span></code> with the desired name of the user. For example, to create a user named
+<code class="docutils literal notranslate"><span class="pre">api</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ ceph restful create-key api
+52dffd92-a103-4a10-bfce-5b60f48f764e
+</pre></div>
+</div>
+<p>The UUID generated from <code class="docutils literal notranslate"><span class="pre">ceph</span> <span class="pre">restful</span> <span class="pre">create-key</span> <span class="pre">api</span></code> acts as the key for the user.</p>
+<p>To list all of your API keys, please run the following command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span> <span class="n">restful</span> <span class="nb">list</span><span class="o">-</span><span class="n">keys</span>
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">ceph</span> <span class="pre">restful</span> <span class="pre">list-keys</span></code> command will output in JSON:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+      <span class="s2">&quot;api&quot;</span><span class="p">:</span> <span class="s2">&quot;52dffd92-a103-4a10-bfce-5b60f48f764e&quot;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>You can use <code class="docutils literal notranslate"><span class="pre">curl</span></code> in order to test your user with the API. Here is an example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">curl</span> <span class="o">-</span><span class="n">k</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">api</span><span class="p">:</span><span class="mi">52</span><span class="n">dffd92</span><span class="o">-</span><span class="n">a103</span><span class="o">-</span><span class="mi">4</span><span class="n">a10</span><span class="o">-</span><span class="n">bfce</span><span class="o">-</span><span class="mi">5</span><span class="n">b60f48f764e</span><span class="o">@&lt;</span><span class="n">ceph</span><span class="o">-</span><span class="n">mgr</span><span class="o">&gt;</span><span class="p">:</span><span class="o">&lt;</span><span class="n">port</span><span class="o">&gt;/</span><span class="n">server</span>
+</pre></div>
+</div>
+<p>In the case above, we are using <code class="docutils literal notranslate"><span class="pre">GET</span></code> to fetch information from the <code class="docutils literal notranslate"><span class="pre">server</span></code> endpoint.</p>
+</section>
+<section id="load-balancer">
+<h2>Load balancer<a class="headerlink" href="#load-balancer" title="Permalink to this heading">¶</a></h2>
+<p>Please note that <em>restful</em> will <em>only</em> start on the manager which
+is active at that moment. Query the Ceph cluster status to see which
+manager is active (e.g., <code class="docutils literal notranslate"><span class="pre">ceph</span> <span class="pre">mgr</span> <span class="pre">dump</span></code>).  In order to make the
+API available via a consistent URL regardless of which manager
+daemon is currently active, you may want to set up a load balancer
+front-end to direct traffic to whichever manager endpoint is
+available.</p>
+</section>
+<section id="available-methods">
+<h2>Available methods<a class="headerlink" href="#available-methods" title="Permalink to this heading">¶</a></h2>
+<p>You can navigate to the <code class="docutils literal notranslate"><span class="pre">/doc</span></code> endpoint for full list of available
+endpoints and HTTP methods implemented for each endpoint.</p>
+<p>For example, if you want to use the PATCH method of the <code class="docutils literal notranslate"><span class="pre">/osd/&lt;id&gt;</span></code>
+endpoint to set the state <code class="docutils literal notranslate"><span class="pre">up</span></code> of the OSD id <code class="docutils literal notranslate"><span class="pre">1</span></code>, you can use the
+following curl command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">echo</span> <span class="o">-</span><span class="n">En</span> <span class="s1">&#39;{&quot;up&quot;: true}&#39;</span> <span class="o">|</span> <span class="n">curl</span> <span class="o">--</span><span class="n">request</span> <span class="n">PATCH</span> <span class="o">--</span><span class="n">data</span> <span class="o">@-</span> <span class="o">--</span><span class="n">silent</span> <span class="o">--</span><span class="n">insecure</span> <span class="o">--</span><span class="n">user</span> <span class="o">&lt;</span><span class="n">user</span><span class="o">&gt;</span> <span class="s1">&#39;https://&lt;ceph-mgr&gt;:&lt;port&gt;/osd/1&#39;</span>
+</pre></div>
+</div>
+<p>or you can use python to do so:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ python
+&gt;&gt; import requests
+&gt;&gt; result = requests.patch(
+       &#39;https://&lt;ceph-mgr&gt;:&lt;port&gt;/osd/1&#39;,
+       json={&quot;up&quot;: True},
+       auth=(&quot;&lt;user&gt;&quot;, &quot;&lt;password&gt;&quot;)
+   )
+&gt;&gt; print result.json()
+</pre></div>
+</div>
+<p>Some of the other endpoints implemented in the <em>restful</em> module include</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">/config/cluster</span></code>: <strong>GET</strong></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">/config/osd</span></code>: <strong>GET</strong>, <strong>PATCH</strong></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">/crush/rule</span></code>: <strong>GET</strong></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">/mon</span></code>: <strong>GET</strong></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">/osd</span></code>: <strong>GET</strong></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">/pool</span></code>: <strong>GET</strong>, <strong>POST</strong></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">/pool/&lt;arg&gt;</span></code>: <strong>DELETE</strong>, <strong>GET</strong>, <strong>PATCH</strong></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">/request</span></code>: <strong>DELETE</strong>, <strong>GET</strong>, <strong>POST</strong></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">/request/&lt;arg&gt;</span></code>: <strong>DELETE</strong>, <strong>GET</strong></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">/server</span></code>: <strong>GET</strong></p></li>
+</ul>
+</section>
+<section id="the-request-endpoint">
+<h2>The <code class="docutils literal notranslate"><span class="pre">/request</span></code> endpoint<a class="headerlink" href="#the-request-endpoint" title="Permalink to this heading">¶</a></h2>
+<p>You can use the <code class="docutils literal notranslate"><span class="pre">/request</span></code> endpoint to poll the state of a request
+you scheduled with any <strong>DELETE</strong>, <strong>POST</strong> or <strong>PATCH</strong> method. These
+methods are by default asynchronous since it may take longer for them
+to finish execution. You can modify this behaviour by appending
+<code class="docutils literal notranslate"><span class="pre">?wait=1</span></code> to the request url. The returned request will then always
+be completed.</p>
+<p>The <strong>POST</strong> method of the <code class="docutils literal notranslate"><span class="pre">/request</span></code> method provides a passthrough
+for the ceph mon commands as defined in <code class="docutils literal notranslate"><span class="pre">src/mon/MonCommands.h</span></code>.
+Let’s consider the following command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">COMMAND</span><span class="p">(</span><span class="s2">&quot;osd ls &quot;</span> \
+        <span class="s2">&quot;name=epoch,type=CephInt,range=0,req=false&quot;</span><span class="p">,</span> \
+        <span class="s2">&quot;show all OSD ids&quot;</span><span class="p">,</span> <span class="s2">&quot;osd&quot;</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">,</span> <span class="s2">&quot;cli,rest&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The <strong>prefix</strong> is <strong>osd ls</strong>. The optional argument’s name is <strong>epoch</strong>
+and it is of type <code class="docutils literal notranslate"><span class="pre">CephInt</span></code>, i.e. <code class="docutils literal notranslate"><span class="pre">integer</span></code>. This means that you
+need to do the following <strong>POST</strong> request to schedule the command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ python
+&gt;&gt; import requests
+&gt;&gt; result = requests.post(
+       &#39;https://&lt;ceph-mgr&gt;:&lt;port&gt;/request&#39;,
+       json={&#39;prefix&#39;: &#39;osd ls&#39;, &#39;epoch&#39;: 0},
+       auth=(&quot;&lt;user&gt;&quot;, &quot;&lt;password&gt;&quot;)
+   )
+&gt;&gt; print result.json()
+</pre></div>
+</div>
+</section>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../">
+              <img class="logo" src="../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../install/">Installing Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cephadm/">Cephadm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rados/">Ceph Storage Cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cephfs/">Ceph File System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rbd/">Ceph Block Device</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../radosgw/">Ceph Object Gateway</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../">Ceph Manager Daemon</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../administrator/">Installation and Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../modules/">Writing modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../orchestrator_modules/">Writing orchestrator plugins</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../dashboard/">Dashboard module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../ceph_api/">Ceph RESTful API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../alerts/">Alerts module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../diskprediction/">DiskPrediction module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../localpool/">Local pool module</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">RESTful module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#enabling">Enabling</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#securing">Securing</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#configuring-ip-and-port">Configuring IP and port</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#creating-an-api-user">Creating an API User</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#load-balancer">Load balancer</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#available-methods">Available methods</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#the-request-endpoint">The <code class="docutils literal notranslate"><span class="pre">/request</span></code> endpoint</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../zabbix/">Zabbix module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../prometheus/">Prometheus module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../influx/">Influx module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../hello/">Hello module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../telegraf/">Telegraf module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../telemetry/">Telemetry module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../iostat/">Iostat module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../crash/">Crash module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../insights/">Insights module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../orchestrator/">Orchestrator module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rook/">Rook module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../mds_autoscaler/">MDS Autoscaler module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../nfs/">NFS module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cli_api/">CLI API Commands module</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dev/developer_guide/">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dev/internals/">Ceph Internals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../zabbix/" title="Zabbix Module"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../localpool/" title="Local Pool Module"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../" >Ceph Manager Daemon</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Restful Module</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

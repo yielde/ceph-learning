@@ -1,0 +1,647 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Monitoring Services &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/css/custom.css" />
+    <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/jquery.js"></script>
+    <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../../genindex/" />
+    <link rel="search" title="Search" href="../../../search/" />
+    <link rel="next" title="SNMP Gateway Service" href="../snmp-gateway/" />
+    <link rel="prev" title="Custom Container Service" href="../custom-container/" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../snmp-gateway/" title="SNMP Gateway Service"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../custom-container/" title="Custom Container Service"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../" >Cephadm</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../" accesskey="U">Service Management</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Monitoring Services</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="monitoring-services">
+<span id="mgr-cephadm-monitoring"></span><h1>Monitoring Services<a class="headerlink" href="#monitoring-services" title="Permalink to this heading">¶</a></h1>
+<p>Ceph Dashboard uses <a class="reference external" href="https://prometheus.io/">Prometheus</a>, <a class="reference external" href="https://grafana.com/">Grafana</a>, and related tools to store and visualize detailed
+metrics on cluster utilization and performance.  Ceph users have three options:</p>
+<ol class="arabic simple">
+<li><p>Have cephadm deploy and configure these services.  This is the default
+when bootstrapping a new cluster unless the <code class="docutils literal notranslate"><span class="pre">--skip-monitoring-stack</span></code>
+option is used.</p></li>
+<li><p>Deploy and configure these services manually.  This is recommended for users
+with existing prometheus services in their environment (and in cases where
+Ceph is running in Kubernetes with Rook).</p></li>
+<li><p>Skip the monitoring stack completely.  Some Ceph dashboard graphs will
+not be available.</p></li>
+</ol>
+<p>The monitoring stack consists of <a class="reference external" href="https://prometheus.io/">Prometheus</a>,
+Prometheus exporters (<a class="reference internal" href="../../../mgr/prometheus/#mgr-prometheus"><span class="std std-ref">Prometheus Module</span></a>, <a class="reference external" href="https://prometheus.io/docs/guides/node-exporter/">Node exporter</a>), <a class="reference external" href="https://prometheus.io/docs/alerting/alertmanager/">Prometheus Alert
+Manager</a> and <a class="reference external" href="https://grafana.com/">Grafana</a>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Prometheus’ security model presumes that untrusted users have access to the
+Prometheus HTTP endpoint and logs. Untrusted users have access to all the
+(meta)data Prometheus collects that is contained in the database, plus a
+variety of operational and debugging information.</p>
+<p>However, Prometheus’ HTTP API is limited to read-only operations.
+Configurations can <em>not</em> be changed using the API and secrets are not
+exposed. Moreover, Prometheus has some built-in measures to mitigate the
+impact of denial of service attacks.</p>
+<p>Please see <cite>Prometheus’ Security model
+&lt;https://prometheus.io/docs/operating/security/&gt;</cite> for more detailed
+information.</p>
+</div>
+<section id="deploying-monitoring-with-cephadm">
+<h2>Deploying monitoring with cephadm<a class="headerlink" href="#deploying-monitoring-with-cephadm" title="Permalink to this heading">¶</a></h2>
+<p>The default behavior of <code class="docutils literal notranslate"><span class="pre">cephadm</span></code> is to deploy a basic monitoring stack.  It
+is however possible that you have a Ceph cluster without a monitoring stack,
+and you would like to add a monitoring stack to it. (Here are some ways that
+you might have come to have a Ceph cluster without a monitoring stack: You
+might have passed the <code class="docutils literal notranslate"><span class="pre">--skip-monitoring</span> <span class="pre">stack</span></code> option to <code class="docutils literal notranslate"><span class="pre">cephadm</span></code> during
+the installation of the cluster, or you might have converted an existing
+cluster (which had no monitoring stack) to cephadm management.)</p>
+<p>To set up monitoring on a Ceph cluster that has no monitoring, follow the
+steps below:</p>
+<ol class="arabic">
+<li><p>Deploy a node-exporter service on every node of the cluster.  The node-exporter provides host-level metrics like CPU and memory utilization:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><style type="text/css">
+span.prompt1:before {
+  content: "# ";
+}
+</style><span class="prompt1">ceph<span class="w"> </span>orch<span class="w"> </span>apply<span class="w"> </span>node-exporter</span>
+</pre></div></div></li>
+<li><p>Deploy alertmanager:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>orch<span class="w"> </span>apply<span class="w"> </span>alertmanager</span>
+</pre></div></div></li>
+<li><p>Deploy Prometheus. A single Prometheus instance is sufficient, but
+for high availablility (HA) you might want to deploy two:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>orch<span class="w"> </span>apply<span class="w"> </span>prometheus</span>
+</pre></div></div><p>or</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>orch<span class="w"> </span>apply<span class="w"> </span>prometheus<span class="w"> </span>--placement<span class="w"> </span><span class="s1">&#39;count:2&#39;</span></span>
+</pre></div></div></li>
+<li><p>Deploy grafana:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>orch<span class="w"> </span>apply<span class="w"> </span>grafana</span>
+</pre></div></div></li>
+</ol>
+<section id="networks-and-ports">
+<span id="cephadm-monitoring-networks-ports"></span><h3>Networks and Ports<a class="headerlink" href="#networks-and-ports" title="Permalink to this heading">¶</a></h3>
+<p>All monitoring services can have the network and port they bind to configured with a yaml service specification</p>
+<p>example spec file:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">service_type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">grafana</span>
+<span class="nt">service_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">grafana</span>
+<span class="nt">placement</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">count</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="nt">networks</span><span class="p">:</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">192.169.142.0/24</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">4200</span>
+</pre></div>
+</div>
+</section>
+<section id="using-custom-images">
+<span id="cephadm-monitoring-images"></span><h3>Using custom images<a class="headerlink" href="#using-custom-images" title="Permalink to this heading">¶</a></h3>
+<p>It is possible to install or upgrade monitoring components based on other
+images.  To do so, the name of the image to be used needs to be stored in the
+configuration first.  The following configuration options are available.</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">container_image_prometheus</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">container_image_grafana</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">container_image_alertmanager</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">container_image_node_exporter</span></code></p></li>
+</ul>
+<p>Custom images can be set with the <code class="docutils literal notranslate"><span class="pre">ceph</span> <span class="pre">config</span></code> command</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>ceph<span class="w"> </span>config<span class="w"> </span><span class="nb">set</span><span class="w"> </span>mgr<span class="w"> </span>mgr/cephadm/&lt;option_name&gt;<span class="w"> </span>&lt;value&gt;
+</pre></div>
+</div>
+<p>For example</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>ceph<span class="w"> </span>config<span class="w"> </span><span class="nb">set</span><span class="w"> </span>mgr<span class="w"> </span>mgr/cephadm/container_image_prometheus<span class="w"> </span>prom/prometheus:v1.4.1
+</pre></div>
+</div>
+<p>If there were already running monitoring stack daemon(s) of the type whose
+image you’ve changed, you must redeploy the daemon(s) in order to have them
+actually use the new image.</p>
+<p>For example, if you had changed the prometheus image</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>orch<span class="w"> </span>redeploy<span class="w"> </span>prometheus</span>
+</pre></div></div><div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>By setting a custom image, the default value will be overridden (but not
+overwritten).  The default value changes when updates become available.
+By setting a custom image, you will not be able to update the component
+you have set the custom image for automatically.  You will need to
+manually update the configuration (image name and tag) to be able to
+install updates.</p>
+<p>If you choose to go with the recommendations instead, you can reset the
+custom image you have set before.  After that, the default value will be
+used again.  Use <code class="docutils literal notranslate"><span class="pre">ceph</span> <span class="pre">config</span> <span class="pre">rm</span></code> to reset the configuration option</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>ceph<span class="w"> </span>config<span class="w"> </span>rm<span class="w"> </span>mgr<span class="w"> </span>mgr/cephadm/&lt;option_name&gt;
+</pre></div>
+</div>
+<p>For example</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>ceph<span class="w"> </span>config<span class="w"> </span>rm<span class="w"> </span>mgr<span class="w"> </span>mgr/cephadm/container_image_prometheus
+</pre></div>
+</div>
+</div>
+<p>See also <a class="reference internal" href="../../install/#cephadm-airgap"><span class="std std-ref">Deployment in an isolated environment</span></a>.</p>
+</section>
+<section id="using-custom-configuration-files">
+<span id="cephadm-overwrite-jinja2-templates"></span><h3>Using custom configuration files<a class="headerlink" href="#using-custom-configuration-files" title="Permalink to this heading">¶</a></h3>
+<p>By overriding cephadm templates, it is possible to completely customize the
+configuration files for monitoring services.</p>
+<p>Internally, cephadm already uses <a class="reference external" href="https://jinja.palletsprojects.com/en/2.11.x/">Jinja2</a> templates to generate the
+configuration files for all monitoring components. To be able to customize the
+configuration of Prometheus, Grafana or the Alertmanager it is possible to store
+a Jinja2 template for each service that will be used for configuration
+generation instead. This template will be evaluated every time a service of that
+kind is deployed or reconfigured. That way, the custom configuration is
+preserved and automatically applied on future deployments of these services.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The configuration of the custom template is also preserved when the default
+configuration of cephadm changes. If the updated configuration is to be used,
+the custom template needs to be migrated <em>manually</em> after each upgrade of Ceph.</p>
+</div>
+<section id="option-names">
+<h4>Option names<a class="headerlink" href="#option-names" title="Permalink to this heading">¶</a></h4>
+<p>The following templates for files that will be generated by cephadm can be
+overridden. These are the names to be used when storing with <code class="docutils literal notranslate"><span class="pre">ceph</span> <span class="pre">config-key</span>
+<span class="pre">set</span></code>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">services/alertmanager/alertmanager.yml</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">services/grafana/ceph-dashboard.yml</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">services/grafana/grafana.ini</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">services/prometheus/prometheus.yml</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">services/prometheus/alerting/custom_alerts.yml</span></code></p></li>
+</ul>
+<p>You can look up the file templates that are currently used by cephadm in
+<code class="docutils literal notranslate"><span class="pre">src/pybind/mgr/cephadm/templates</span></code>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">services/alertmanager/alertmanager.yml.j2</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">services/grafana/ceph-dashboard.yml.j2</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">services/grafana/grafana.ini.j2</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">services/prometheus/prometheus.yml.j2</span></code></p></li>
+</ul>
+</section>
+<section id="usage">
+<h4>Usage<a class="headerlink" href="#usage" title="Permalink to this heading">¶</a></h4>
+<p>The following command applies a single line value:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>ceph<span class="w"> </span>config-key<span class="w"> </span><span class="nb">set</span><span class="w"> </span>mgr/cephadm/&lt;option_name&gt;<span class="w"> </span>&lt;value&gt;
+</pre></div>
+</div>
+<p>To set contents of files as template use the <code class="docutils literal notranslate"><span class="pre">-i</span></code> argument:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>ceph<span class="w"> </span>config-key<span class="w"> </span><span class="nb">set</span><span class="w"> </span>mgr/cephadm/&lt;option_name&gt;<span class="w"> </span>-i<span class="w"> </span><span class="nv">$PWD</span>/&lt;filename&gt;
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>When using files as input to <code class="docutils literal notranslate"><span class="pre">config-key</span></code> an absolute path to the file must
+be used.</p>
+</div>
+<p>Then the configuration file for the service needs to be recreated.
+This is done using <cite>reconfig</cite>. For more details see the following example.</p>
+</section>
+<section id="example">
+<h4>Example<a class="headerlink" href="#example" title="Permalink to this heading">¶</a></h4>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># set the contents of ./prometheus.yml.j2 as template</span>
+ceph<span class="w"> </span>config-key<span class="w"> </span><span class="nb">set</span><span class="w"> </span>mgr/cephadm/services/prometheus/prometheus.yml<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-i<span class="w"> </span><span class="nv">$PWD</span>/prometheus.yml.j2
+
+<span class="c1"># reconfig the prometheus service</span>
+ceph<span class="w"> </span>orch<span class="w"> </span>reconfig<span class="w"> </span>prometheus
+</pre></div>
+</div>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># set additional custom alerting rules for Prometheus</span>
+ceph<span class="w"> </span>config-key<span class="w"> </span><span class="nb">set</span><span class="w"> </span>mgr/cephadm/services/prometheus/alerting/custom_alerts.yml<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-i<span class="w"> </span><span class="nv">$PWD</span>/custom_alerts.yml
+
+<span class="c1"># Note that custom alerting rules are not parsed by Jinja and hence escaping</span>
+<span class="c1"># will not be an issue.</span>
+</pre></div>
+</div>
+</section>
+</section>
+</section>
+<section id="deploying-monitoring-without-cephadm">
+<h2>Deploying monitoring without cephadm<a class="headerlink" href="#deploying-monitoring-without-cephadm" title="Permalink to this heading">¶</a></h2>
+<p>If you have an existing prometheus monitoring infrastructure, or would like
+to manage it yourself, you need to configure it to integrate with your Ceph
+cluster.</p>
+<ul>
+<li><p>Enable the prometheus module in the ceph-mgr daemon</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>ceph<span class="w"> </span>mgr<span class="w"> </span>module<span class="w"> </span><span class="nb">enable</span><span class="w"> </span>prometheus
+</pre></div>
+</div>
+<p>By default, ceph-mgr presents prometheus metrics on port 9283 on each host
+running a ceph-mgr daemon.  Configure prometheus to scrape these.</p>
+</li>
+<li><p>To enable the dashboard’s prometheus-based alerting, see <a class="reference internal" href="../../../mgr/dashboard/#dashboard-alerting"><span class="std std-ref">Enabling Prometheus Alerting</span></a>.</p></li>
+<li><p>To enable dashboard integration with Grafana, see <a class="reference internal" href="../../../mgr/dashboard/#dashboard-grafana"><span class="std std-ref">Enabling the Embedding of Grafana Dashboards</span></a>.</p></li>
+</ul>
+</section>
+<section id="disabling-monitoring">
+<h2>Disabling monitoring<a class="headerlink" href="#disabling-monitoring" title="Permalink to this heading">¶</a></h2>
+<p>To disable monitoring and remove the software that supports it, run the following commands:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>ceph<span class="w"> </span>orch<span class="w"> </span>rm<span class="w"> </span>grafana
+<span class="gp">$ </span>ceph<span class="w"> </span>orch<span class="w"> </span>rm<span class="w"> </span>prometheus<span class="w"> </span>--force<span class="w">   </span><span class="c1"># this will delete metrics data collected so far</span>
+<span class="gp">$ </span>ceph<span class="w"> </span>orch<span class="w"> </span>rm<span class="w"> </span>node-exporter
+<span class="gp">$ </span>ceph<span class="w"> </span>orch<span class="w"> </span>rm<span class="w"> </span>alertmanager
+<span class="gp">$ </span>ceph<span class="w"> </span>mgr<span class="w"> </span>module<span class="w"> </span>disable<span class="w"> </span>prometheus
+</pre></div>
+</div>
+<p>See also <a class="reference internal" href="../#orch-rm"><span class="std std-ref">Removing a Service</span></a>.</p>
+</section>
+<section id="setting-up-rbd-image-monitoring">
+<h2>Setting up RBD-Image monitoring<a class="headerlink" href="#setting-up-rbd-image-monitoring" title="Permalink to this heading">¶</a></h2>
+<p>Due to performance reasons, monitoring of RBD images is disabled by default. For more information please see
+<a class="reference internal" href="../../../mgr/prometheus/#prometheus-rbd-io-statistics"><span class="std std-ref">Ceph Health Checks</span></a>. If disabled, the overview and details dashboards will stay empty in Grafana
+and the metrics will not be visible in Prometheus.</p>
+</section>
+<section id="setting-up-prometheus">
+<h2>Setting up Prometheus<a class="headerlink" href="#setting-up-prometheus" title="Permalink to this heading">¶</a></h2>
+<section id="setting-prometheus-retention-size-and-time">
+<h3>Setting Prometheus Retention Size and Time<a class="headerlink" href="#setting-prometheus-retention-size-and-time" title="Permalink to this heading">¶</a></h3>
+<p>Cephadm can configure Prometheus TSDB retention by specifying <code class="docutils literal notranslate"><span class="pre">retention_time</span></code>
+and <code class="docutils literal notranslate"><span class="pre">retention_size</span></code> values in the Prometheus service spec.
+The retention time value defaults to 15 days (15d). Users can set a different value/unit where
+supported units are: ‘y’, ‘w’, ‘d’, ‘h’, ‘m’ and ‘s’. The retention size value defaults
+to 0 (disabled). Supported units in this case are: ‘B’, ‘KB’, ‘MB’, ‘GB’, ‘TB’, ‘PB’ and ‘EB’.</p>
+<p>In the following example spec we set the retention time to 1 year and the size to 1GB.</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">service_type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">prometheus</span>
+<span class="nt">placement</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">count</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">retention_time</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;1y&quot;</span>
+<span class="w">  </span><span class="nt">retention_size</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;1GB&quot;</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If you already had Prometheus daemon(s) deployed before and are updating an
+existent spec as opposed to doing a fresh Prometheus deployment, you must also
+tell cephadm to redeploy the Prometheus daemon(s) to put this change into effect.
+This can be done with a <code class="docutils literal notranslate"><span class="pre">ceph</span> <span class="pre">orch</span> <span class="pre">redeploy</span> <span class="pre">prometheus</span></code> command.</p>
+</div>
+</section>
+</section>
+<section id="setting-up-grafana">
+<h2>Setting up Grafana<a class="headerlink" href="#setting-up-grafana" title="Permalink to this heading">¶</a></h2>
+<section id="manually-setting-the-grafana-url">
+<h3>Manually setting the Grafana URL<a class="headerlink" href="#manually-setting-the-grafana-url" title="Permalink to this heading">¶</a></h3>
+<p>Cephadm automatically configures Prometheus, Grafana, and Alertmanager in
+all cases except one.</p>
+<p>In a some setups, the Dashboard user’s browser might not be able to access the
+Grafana URL that is configured in Ceph Dashboard. This can happen when the
+cluster and the accessing user are in different DNS zones.</p>
+<p>If this is the case, you can use a configuration option for Ceph Dashboard
+to set the URL that the user’s browser will use to access Grafana. This
+value will never be altered by cephadm. To set this configuration option,
+issue the following command:</p>
+<blockquote>
+<div><div class="highlight-default notranslate"><div class="highlight"><pre><style type="text/css">
+span.prompt2:before {
+  content: "$ ";
+}
+</style><span class="prompt2">ceph<span class="w"> </span>dashboard<span class="w"> </span>set-grafana-frontend-api-url<span class="w"> </span>&lt;grafana-server-api&gt;</span>
+</pre></div></div></div></blockquote>
+<p>It might take a minute or two for services to be deployed. After the
+services have been deployed, you should see something like this when you issue the command <code class="docutils literal notranslate"><span class="pre">ceph</span> <span class="pre">orch</span> <span class="pre">ls</span></code>:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>ceph<span class="w"> </span>orch<span class="w"> </span>ls
+<span class="go">NAME           RUNNING  REFRESHED  IMAGE NAME                                      IMAGE ID        SPEC</span>
+<span class="go">alertmanager       1/1  6s ago     docker.io/prom/alertmanager:latest              0881eb8f169f  present</span>
+<span class="go">crash              2/2  6s ago     docker.io/ceph/daemon-base:latest-master-devel  mix           present</span>
+<span class="go">grafana            1/1  0s ago     docker.io/pcuzner/ceph-grafana-el8:latest       f77afcf0bcf6   absent</span>
+<span class="go">node-exporter      2/2  6s ago     docker.io/prom/node-exporter:latest             e5a616e4b9cf  present</span>
+<span class="go">prometheus         1/1  6s ago     docker.io/prom/prometheus:latest                e935122ab143  present</span>
+</pre></div>
+</div>
+</section>
+<section id="configuring-ssl-tls-for-grafana">
+<h3>Configuring SSL/TLS for Grafana<a class="headerlink" href="#configuring-ssl-tls-for-grafana" title="Permalink to this heading">¶</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">cephadm</span></code> deploys Grafana using the certificate defined in the ceph
+key/value store. If no certificate is specified, <code class="docutils literal notranslate"><span class="pre">cephadm</span></code> generates a
+self-signed certificate during the deployment of the Grafana service.</p>
+<p>A custom certificate can be configured using the following commands:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>config-key<span class="w"> </span><span class="nb">set</span><span class="w"> </span>mgr/cephadm/grafana_key<span class="w"> </span>-i<span class="w"> </span><span class="nv">$PWD</span>/key.pem</span>
+<span class="prompt1">ceph<span class="w"> </span>config-key<span class="w"> </span><span class="nb">set</span><span class="w"> </span>mgr/cephadm/grafana_crt<span class="w"> </span>-i<span class="w"> </span><span class="nv">$PWD</span>/certificate.pem</span>
+</pre></div></div><p>If you have already deployed Grafana, run <code class="docutils literal notranslate"><span class="pre">reconfig</span></code> on the service to
+update its configuration:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>orch<span class="w"> </span>reconfig<span class="w"> </span>grafana</span>
+</pre></div></div><p>The <code class="docutils literal notranslate"><span class="pre">reconfig</span></code> command also sets the proper URL for Ceph Dashboard.</p>
+</section>
+<section id="setting-the-initial-admin-password">
+<h3>Setting the initial admin password<a class="headerlink" href="#setting-the-initial-admin-password" title="Permalink to this heading">¶</a></h3>
+<p>By default, Grafana will not create an initial
+admin user. In order to create the admin user, please create a file
+<code class="docutils literal notranslate"><span class="pre">grafana.yaml</span></code> with this content:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">service_type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">grafana</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">initial_admin_password</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">mypassword</span>
+</pre></div>
+</div>
+<p>Then apply this specification:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>ceph<span class="w"> </span>orch<span class="w"> </span>apply<span class="w"> </span>-i<span class="w"> </span>grafana.yaml
+ceph<span class="w"> </span>orch<span class="w"> </span>redeploy<span class="w"> </span>grafana
+</pre></div>
+</div>
+<p>Grafana will now create an admin user called <code class="docutils literal notranslate"><span class="pre">admin</span></code> with the
+given password.</p>
+</section>
+</section>
+<section id="setting-up-alertmanager">
+<h2>Setting up Alertmanager<a class="headerlink" href="#setting-up-alertmanager" title="Permalink to this heading">¶</a></h2>
+<section id="adding-alertmanager-webhooks">
+<h3>Adding Alertmanager webhooks<a class="headerlink" href="#adding-alertmanager-webhooks" title="Permalink to this heading">¶</a></h3>
+<p>To add new webhooks to the Alertmanager configuration, add additional
+webhook urls like so:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">service_type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">alertmanager</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">user_data</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">default_webhook_urls</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;https://foo&quot;</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;https://bar&quot;</span>
+</pre></div>
+</div>
+<p>Where <code class="docutils literal notranslate"><span class="pre">default_webhook_urls</span></code> is a list of additional URLs that are
+added to the default receivers’ <code class="docutils literal notranslate"><span class="pre">&lt;webhook_configs&gt;</span></code> configuration.</p>
+<p>Run <code class="docutils literal notranslate"><span class="pre">reconfig</span></code> on the service to update its configuration:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>orch<span class="w"> </span>reconfig<span class="w"> </span>alertmanager</span>
+</pre></div></div></section>
+<section id="turn-on-certificate-validation">
+<h3>Turn on Certificate Validation<a class="headerlink" href="#turn-on-certificate-validation" title="Permalink to this heading">¶</a></h3>
+<p>If you are using certificates for alertmanager and want to make sure
+these certs are verified, you should set the “secure” option to
+true in your alertmanager spec (this defaults to false).</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">service_type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">alertmanager</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">secure</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+</pre></div>
+</div>
+<p>If you already had alertmanager daemons running before applying the spec
+you must reconfigure them to update their configuration</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>orch<span class="w"> </span>reconfig<span class="w"> </span>alertmanager</span>
+</pre></div></div></section>
+</section>
+<section id="further-reading">
+<h2>Further Reading<a class="headerlink" href="#further-reading" title="Permalink to this heading">¶</a></h2>
+<ul class="simple">
+<li><p><a class="reference internal" href="../../../mgr/prometheus/#mgr-prometheus"><span class="std std-ref">Prometheus Module</span></a></p></li>
+</ul>
+</section>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../../">
+              <img class="logo" src="../../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../install/">Installing Ceph</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../">Cephadm</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../../compatibility/">Compatibility and Stability</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../install/">Deploying a new Ceph cluster</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../adoption/">Converting an existing cluster to cephadm</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../host-management/">Host Management</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../">Service Management</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../mon/">MON Service</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../mgr/">MGR Service</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../osd/">OSD Service</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rgw/">RGW Service</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../mds/">MDS Service</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../nfs/">NFS Service</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../iscsi/">iSCSI Service</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../custom-container/">Custom Container Service</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Monitoring Services</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#deploying-monitoring-with-cephadm">Deploying monitoring with cephadm</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#networks-and-ports">Networks and Ports</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#using-custom-images">Using custom images</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#using-custom-configuration-files">Using custom configuration files</a><ul>
+<li class="toctree-l6"><a class="reference internal" href="#option-names">Option names</a></li>
+<li class="toctree-l6"><a class="reference internal" href="#usage">Usage</a></li>
+<li class="toctree-l6"><a class="reference internal" href="#example">Example</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#deploying-monitoring-without-cephadm">Deploying monitoring without cephadm</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#disabling-monitoring">Disabling monitoring</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#setting-up-rbd-image-monitoring">Setting up RBD-Image monitoring</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#setting-up-prometheus">Setting up Prometheus</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#setting-prometheus-retention-size-and-time">Setting Prometheus Retention Size and Time</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#setting-up-grafana">Setting up Grafana</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#manually-setting-the-grafana-url">Manually setting the Grafana URL</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#configuring-ssl-tls-for-grafana">Configuring SSL/TLS for Grafana</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#setting-the-initial-admin-password">Setting the initial admin password</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#setting-up-alertmanager">Setting up Alertmanager</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#adding-alertmanager-webhooks">Adding Alertmanager webhooks</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#turn-on-certificate-validation">Turn on Certificate Validation</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#further-reading">Further Reading</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../snmp-gateway/">SNMP Gateway Service</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../#service-status">Service Status</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../#daemon-status">Daemon Status</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../#service-specification">Service Specification</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../#daemon-placement">Daemon Placement</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../#extra-container-arguments">Extra Container Arguments</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../#extra-entrypoint-arguments">Extra Entrypoint Arguments</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../#custom-config-files">Custom Config Files</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../#removing-a-service">Removing a Service</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../#disabling-automatic-deployment-of-daemons">Disabling automatic deployment of daemons</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../upgrade/">Upgrading Ceph</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../operations/">Cephadm operations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../client-setup/">Client Setup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../troubleshooting/">Troubleshooting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../dev/cephadm/">Cephadm Feature Planning</a></li>
+</ul>
+</li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../../rados/">Ceph Storage Cluster</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../../../rados/configuration/">Configuration</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../../">Deployment</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../../compatibility/">Compatibility and Stability</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../install/">Deploying a new Ceph cluster</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../adoption/">Converting an existing cluster to cephadm</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../host-management/">Host Management</a></li>
+<li class="toctree-l3 current"><a class="reference internal" href="../">Service Management</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="../mon/">MON Service</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../mgr/">MGR Service</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../osd/">OSD Service</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../rgw/">RGW Service</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../mds/">MDS Service</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../nfs/">NFS Service</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../iscsi/">iSCSI Service</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../custom-container/">Custom Container Service</a></li>
+<li class="toctree-l4 current"><a class="current reference internal" href="#">Monitoring Services</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#deploying-monitoring-with-cephadm">Deploying monitoring with cephadm</a><ul>
+<li class="toctree-l6"><a class="reference internal" href="#networks-and-ports">Networks and Ports</a></li>
+<li class="toctree-l6"><a class="reference internal" href="#using-custom-images">Using custom images</a></li>
+<li class="toctree-l6"><a class="reference internal" href="#using-custom-configuration-files">Using custom configuration files</a><ul>
+<li class="toctree-l7"><a class="reference internal" href="#option-names">Option names</a></li>
+<li class="toctree-l7"><a class="reference internal" href="#usage">Usage</a></li>
+<li class="toctree-l7"><a class="reference internal" href="#example">Example</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l5"><a class="reference internal" href="#deploying-monitoring-without-cephadm">Deploying monitoring without cephadm</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#disabling-monitoring">Disabling monitoring</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#setting-up-rbd-image-monitoring">Setting up RBD-Image monitoring</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#setting-up-prometheus">Setting up Prometheus</a><ul>
+<li class="toctree-l6"><a class="reference internal" href="#setting-prometheus-retention-size-and-time">Setting Prometheus Retention Size and Time</a></li>
+</ul>
+</li>
+<li class="toctree-l5"><a class="reference internal" href="#setting-up-grafana">Setting up Grafana</a><ul>
+<li class="toctree-l6"><a class="reference internal" href="#manually-setting-the-grafana-url">Manually setting the Grafana URL</a></li>
+<li class="toctree-l6"><a class="reference internal" href="#configuring-ssl-tls-for-grafana">Configuring SSL/TLS for Grafana</a></li>
+<li class="toctree-l6"><a class="reference internal" href="#setting-the-initial-admin-password">Setting the initial admin password</a></li>
+</ul>
+</li>
+<li class="toctree-l5"><a class="reference internal" href="#setting-up-alertmanager">Setting up Alertmanager</a><ul>
+<li class="toctree-l6"><a class="reference internal" href="#adding-alertmanager-webhooks">Adding Alertmanager webhooks</a></li>
+<li class="toctree-l6"><a class="reference internal" href="#turn-on-certificate-validation">Turn on Certificate Validation</a></li>
+</ul>
+</li>
+<li class="toctree-l5"><a class="reference internal" href="#further-reading">Further Reading</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="../snmp-gateway/">SNMP Gateway Service</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../#service-status">Service Status</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../#daemon-status">Daemon Status</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../#service-specification">Service Specification</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../#daemon-placement">Daemon Placement</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../#extra-container-arguments">Extra Container Arguments</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../#extra-entrypoint-arguments">Extra Entrypoint Arguments</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../#custom-config-files">Custom Config Files</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../#removing-a-service">Removing a Service</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../#disabling-automatic-deployment-of-daemons">Disabling automatic deployment of daemons</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../upgrade/">Upgrading Ceph</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../operations/">Cephadm operations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../client-setup/">Client Setup</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../troubleshooting/">Troubleshooting</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../dev/cephadm/">Cephadm Feature Planning</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../rados/operations/">Operations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../rados/man/">Man Pages</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../rados/troubleshooting/">Troubleshooting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../rados/api/">APIs</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cephfs/">Ceph File System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../rbd/">Ceph Block Device</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../radosgw/">Ceph Object Gateway</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../mgr/">Ceph Manager Daemon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../mgr/dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dev/developer_guide/">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dev/internals/">Ceph Internals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../../../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../snmp-gateway/" title="SNMP Gateway Service"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../custom-container/" title="Custom Container Service"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../" >Cephadm</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../" >Service Management</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Monitoring Services</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

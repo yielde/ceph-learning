@@ -1,0 +1,273 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>QAT Acceleration for Encryption and Compression &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css" />
+    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../genindex/" />
+    <link rel="search" title="Search" href="../../search/" />
+    <link rel="next" title="Ceph s3 select" href="../s3select/" />
+    <link rel="prev" title="radosgw-admin – rados REST gateway user administration utility" href="../../man/8/radosgw-admin/" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../s3select/" title="Ceph s3 select"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../../man/8/radosgw-admin/" title="radosgw-admin – rados REST gateway user administration utility"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../" accesskey="U">Ceph Object Gateway</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">QAT Acceleration for Encryption and Compression</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="qat-acceleration-for-encryption-and-compression">
+<h1>QAT Acceleration for Encryption and Compression<a class="headerlink" href="#qat-acceleration-for-encryption-and-compression" title="Permalink to this heading">¶</a></h1>
+<p>Intel QAT (QuickAssist Technology) can provide extended accelerated encryption
+and compression services by offloading the actual encryption and compression
+request(s) to the hardware QuickAssist accelerators, which are more efficient
+in terms of cost and power than general purpose CPUs for those specific
+compute-intensive workloads.</p>
+<p>See <a class="reference external" href="https://github.com/ceph/ceph/pull/19714">QAT Support for Compression</a> and <a class="reference external" href="https://github.com/ceph/ceph/pull/19386">QAT based Encryption for RGW</a>.</p>
+<section id="qat-in-the-software-stack">
+<h2>QAT in the Software Stack<a class="headerlink" href="#qat-in-the-software-stack" title="Permalink to this heading">¶</a></h2>
+<p>Application developers can access QuickAssist features through the QAT API.
+The QAT API is the top-level API for QuickAssist technology, and enables easy
+interfacing between the customer application and the QuickAssist acceleration
+driver.</p>
+<p>The QAT API accesses the QuickAssist driver, which in turn drives the
+QuickAssist Accelerator hardware. The QuickAssist driver is responsible for
+exposing the acceleration services to the application software.</p>
+<p>A user can write directly to the QAT API, or the use of QAT can be done via
+frameworks that have been enabled by others including Intel (for example, zlib*,
+OpenSSL* libcrypto*, and the Linux* Kernel Crypto Framework).</p>
+</section>
+<section id="qat-environment-setup">
+<h2>QAT Environment Setup<a class="headerlink" href="#qat-environment-setup" title="Permalink to this heading">¶</a></h2>
+<ol class="arabic simple">
+<li><p>QuickAssist Accelerator hardware is necessary to make use of accelerated
+encryption and compression services. And QAT driver in kernel space have to
+be loaded to drive the hardware.</p></li>
+</ol>
+<p>The driver package can be downloaded from <a class="reference external" href="https://01.org/intel-quickassist-technology">Intel Quickassist Technology</a>.</p>
+<ol class="arabic simple" start="2">
+<li><p>The implementation for QAT based encryption is directly base on QAT API which
+is included the driver package. But QAT support for compression depends on
+QATzip project, which is a user space library which builds on top of the QAT
+API. Currently, QATzip speeds up gzip compression and decompression at the
+time of writing.</p></li>
+</ol>
+<p>See <a class="reference external" href="https://github.com/intel/QATzip">QATzip</a>.</p>
+</section>
+<section id="implementation">
+<h2>Implementation<a class="headerlink" href="#implementation" title="Permalink to this heading">¶</a></h2>
+<ol class="arabic simple">
+<li><p>QAT based Encryption for RGW</p></li>
+</ol>
+<p><a class="reference external" href="https://github.com/ceph/ceph/pull/15168">OpenSSL support for RGW encryption</a> has been merged into Ceph, and Intel also
+provides one <a class="reference external" href="https://github.com/intel/QAT_Engine">QAT Engine</a> for OpenSSL. So, theoretically speaking, QAT based
+encryption in Ceph can be directly supported through OpenSSl+QAT Engine.</p>
+<p>But the QAT Engine for OpenSSL currently supports chained operations only, and
+so Ceph will not be able to utilize QAT hardware feature for crypto operations
+based on OpenSSL crypto plugin. As a result, one QAT plugin based on native
+QAT API is added into crypto framework.</p>
+<ol class="arabic simple" start="2">
+<li><p>QAT Support for Compression</p></li>
+</ol>
+<p>As mentioned above, QAT support for compression is based on QATzip library in
+user space, which is designed to take full advantage of the performance provided
+by QuickAssist Technology. Unlike QAT based encryption, QAT based compression
+is supported through a tool class for QAT acceleration rather than a compressor
+plugin. The common tool class can transparently accelerate the existing compression
+types, but only zlib compressor can be supported at the time of writing. So
+user is allowed to use it to speed up zlib compressor as long as the QAT
+hardware is available and QAT is capable to handle it.</p>
+</section>
+<section id="configuration">
+<h2>Configuration<a class="headerlink" href="#configuration" title="Permalink to this heading">¶</a></h2>
+<ol class="arabic simple">
+<li><p>QAT based Encryption for RGW</p></li>
+</ol>
+<p>Edit the Ceph configuration file to make use of QAT based crypto plugin:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">plugin</span> <span class="n">crypto</span> <span class="n">accelerator</span> <span class="o">=</span> <span class="n">crypto_qat</span>
+</pre></div>
+</div>
+<ol class="arabic simple" start="2">
+<li><p>QAT Support for Compression</p></li>
+</ol>
+<p>One CMake option have to be used to trigger QAT based compression:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">-</span><span class="n">DWITH_QATZIP</span><span class="o">=</span><span class="n">ON</span>
+</pre></div>
+</div>
+<p>Edit the Ceph configuration file to enable QAT support for compression:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">qat</span> <span class="n">compressor</span> <span class="n">enabled</span><span class="o">=</span><span class="n">true</span>
+</pre></div>
+</div>
+</section>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../">
+              <img class="logo" src="../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../install/">Installing Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cephadm/">Cephadm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rados/">Ceph Storage Cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cephfs/">Ceph File System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rbd/">Ceph Block Device</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../">Ceph Object Gateway</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../frontends/">HTTP Frontends</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../placement/">Pool Placement and Storage Classes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../multisite/">Multisite Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../multisite-sync-policy/">Multisite Sync Policy Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pools/">Configuring Pools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../config-ref/">Config Reference</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../admin/">Admin Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../s3/">S3 API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rgw-cache/">Data caching and CDN</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../swift/">Swift API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../adminops/">Admin Ops API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/">Python binding</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../nfs/">Export over NFS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../keystone/">OpenStack Keystone Integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../barbican/">OpenStack Barbican Integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../vault/">HashiCorp Vault Integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../kmip/">KMIP Integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../opa/">Open Policy Agent Integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../multitenancy/">Multi-tenancy</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../compression/">Compression</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../ldap-auth/">LDAP Authentication</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../encryption/">Server-Side Encryption</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../bucketpolicy/">Bucket Policy</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../dynamicresharding/">Dynamic bucket index resharding</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../mfa/">Multi factor authentication</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../sync-modules/">Sync Modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../notifications/">Bucket Notifications</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../layout/">Data Layout in RADOS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../STS/">STS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../STSLite/">STS Lite</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../keycloak/">Keycloak</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../session-tags/">Session Tags</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../role/">Role</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../orphans/">Orphan List and Associated Tooling</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../oidc/">OpenID Connect Provider</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../troubleshooting/">Troubleshooting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../man/8/radosgw/">Manpage radosgw</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../man/8/radosgw-admin/">Manpage radosgw-admin</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">QAT Acceleration for Encryption and Compression</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#qat-in-the-software-stack">QAT in the Software Stack</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#qat-environment-setup">QAT Environment Setup</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#implementation">Implementation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#configuration">Configuration</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../s3select/">S3-select</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../lua-scripting/">Lua Scripting</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/">Ceph Manager Daemon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dev/developer_guide/">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dev/internals/">Ceph Internals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../s3select/" title="Ceph s3 select"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../../man/8/radosgw-admin/" title="radosgw-admin – rados REST gateway user administration utility"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../" >Ceph Object Gateway</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">QAT Acceleration for Encryption and Compression</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

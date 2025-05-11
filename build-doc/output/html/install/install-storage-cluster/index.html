@@ -1,0 +1,247 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Install Ceph Storage Cluster &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css" />
+    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../genindex/" />
+    <link rel="search" title="Search" href="../../search/" />
+    <link rel="next" title="Install Virtualization for Block Device" href="../install-vm-cloud/" />
+    <link rel="prev" title="Deploying a new Ceph cluster" href="../../cephadm/install/" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../install-vm-cloud/" title="Install Virtualization for Block Device"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../../cephadm/install/" title="Deploying a new Ceph cluster"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../" >Installing Ceph</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../index_manual/" accesskey="U">Installation (Manual)</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Install Ceph Storage Cluster</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="install-ceph-storage-cluster">
+<h1>Install Ceph Storage Cluster<a class="headerlink" href="#install-ceph-storage-cluster" title="Permalink to this heading">¶</a></h1>
+<p>This guide describes installing Ceph packages manually. This procedure
+is only for users who are not installing with a deployment tool such as
+<code class="docutils literal notranslate"><span class="pre">cephadm</span></code>, <code class="docutils literal notranslate"><span class="pre">chef</span></code>, <code class="docutils literal notranslate"><span class="pre">juju</span></code>, etc.</p>
+<section id="installing-with-apt">
+<h2>Installing with APT<a class="headerlink" href="#installing-with-apt" title="Permalink to this heading">¶</a></h2>
+<p>Once you have added either release or development packages to APT, you should
+update APT’s database and install Ceph:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">sudo</span> <span class="n">apt</span><span class="o">-</span><span class="n">get</span> <span class="n">update</span> <span class="o">&amp;&amp;</span> <span class="n">sudo</span> <span class="n">apt</span><span class="o">-</span><span class="n">get</span> <span class="n">install</span> <span class="n">ceph</span> <span class="n">ceph</span><span class="o">-</span><span class="n">mds</span>
+</pre></div>
+</div>
+</section>
+<section id="installing-with-rpm">
+<h2>Installing with RPM<a class="headerlink" href="#installing-with-rpm" title="Permalink to this heading">¶</a></h2>
+<p>To install Ceph with RPMs, execute the following steps:</p>
+<ol class="arabic">
+<li><p>Install <code class="docutils literal notranslate"><span class="pre">yum-plugin-priorities</span></code>.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">sudo</span> <span class="n">yum</span> <span class="n">install</span> <span class="n">yum</span><span class="o">-</span><span class="n">plugin</span><span class="o">-</span><span class="n">priorities</span>
+</pre></div>
+</div>
+</li>
+<li><p>Ensure <code class="docutils literal notranslate"><span class="pre">/etc/yum/pluginconf.d/priorities.conf</span></code> exists.</p></li>
+<li><p>Ensure <code class="docutils literal notranslate"><span class="pre">priorities.conf</span></code> enables the plugin.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[</span><span class="n">main</span><span class="p">]</span>
+<span class="n">enabled</span> <span class="o">=</span> <span class="mi">1</span>
+</pre></div>
+</div>
+</li>
+<li><p>Ensure your YUM <code class="docutils literal notranslate"><span class="pre">ceph.repo</span></code> entry includes <code class="docutils literal notranslate"><span class="pre">priority=2</span></code>. See
+<a class="reference external" href="../get-packages">Get Packages</a> for details:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>[ceph]
+name=Ceph packages for $basearch
+baseurl=https://download.ceph.com/rpm-{ceph-release}/{distro}/$basearch
+enabled=1
+priority=2
+gpgcheck=1
+gpgkey=https://download.ceph.com/keys/release.asc
+
+[ceph-noarch]
+name=Ceph noarch packages
+baseurl=https://download.ceph.com/rpm-{ceph-release}/{distro}/noarch
+enabled=1
+priority=2
+gpgcheck=1
+gpgkey=https://download.ceph.com/keys/release.asc
+
+[ceph-source]
+name=Ceph source packages
+baseurl=https://download.ceph.com/rpm-{ceph-release}/{distro}/SRPMS
+enabled=0
+priority=2
+gpgcheck=1
+gpgkey=https://download.ceph.com/keys/release.asc
+</pre></div>
+</div>
+</li>
+<li><p>Install pre-requisite packages:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">sudo</span> <span class="n">yum</span> <span class="n">install</span> <span class="n">snappy</span> <span class="n">leveldb</span> <span class="n">gdisk</span> <span class="n">python</span><span class="o">-</span><span class="n">argparse</span> <span class="n">gperftools</span><span class="o">-</span><span class="n">libs</span>
+</pre></div>
+</div>
+</li>
+</ol>
+<p>Once you have added either release or development packages, or added a
+<code class="docutils literal notranslate"><span class="pre">ceph.repo</span></code> file to <code class="docutils literal notranslate"><span class="pre">/etc/yum.repos.d</span></code>, you can install Ceph packages.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">sudo</span> <span class="n">yum</span> <span class="n">install</span> <span class="n">ceph</span>
+</pre></div>
+</div>
+</section>
+<section id="installing-a-build">
+<h2>Installing a Build<a class="headerlink" href="#installing-a-build" title="Permalink to this heading">¶</a></h2>
+<p>If you build Ceph from source code, you may install Ceph in user space
+by executing the following:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">sudo</span> <span class="n">make</span> <span class="n">install</span>
+</pre></div>
+</div>
+<p>If you install Ceph locally, <code class="docutils literal notranslate"><span class="pre">make</span></code> will place the executables in
+<code class="docutils literal notranslate"><span class="pre">usr/local/bin</span></code>. You may add the Ceph configuration file to the
+<code class="docutils literal notranslate"><span class="pre">usr/local/bin</span></code> directory to run Ceph from a single directory.</p>
+</section>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../">
+              <img class="logo" src="../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../">Installing Ceph</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../#recommended-methods">Recommended methods</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../#other-methods">Other methods</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="../index_manual/">Installation (Manual)</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="../index_manual/#get-software">Get Software</a></li>
+<li class="toctree-l4 current"><a class="reference internal" href="../index_manual/#install-software">Install Software</a><ul class="current">
+<li class="toctree-l5"><a class="reference internal" href="../../cephadm/install/">     Install cephadm</a></li>
+<li class="toctree-l5 current"><a class="current reference internal" href="#">     Install Ceph Storage Cluster</a><ul>
+<li class="toctree-l6"><a class="reference internal" href="#installing-with-apt">Installing with APT</a></li>
+<li class="toctree-l6"><a class="reference internal" href="#installing-with-rpm">Installing with RPM</a></li>
+<li class="toctree-l6"><a class="reference internal" href="#installing-a-build">Installing a Build</a></li>
+</ul>
+</li>
+<li class="toctree-l5"><a class="reference internal" href="../install-vm-cloud/">     Install Virtualization for Block</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="../index_manual/#deploy-a-cluster-manually">Deploy a Cluster Manually</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../index_manual/#upgrade-software">Upgrade Software</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../#windows">Windows</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../cephadm/">Cephadm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rados/">Ceph Storage Cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cephfs/">Ceph File System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rbd/">Ceph Block Device</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../radosgw/">Ceph Object Gateway</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/">Ceph Manager Daemon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dev/developer_guide/">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dev/internals/">Ceph Internals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../install-vm-cloud/" title="Install Virtualization for Block Device"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../../cephadm/install/" title="Deploying a new Ceph cluster"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../" >Installing Ceph</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../index_manual/" >Installation (Manual)</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Install Ceph Storage Cluster</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

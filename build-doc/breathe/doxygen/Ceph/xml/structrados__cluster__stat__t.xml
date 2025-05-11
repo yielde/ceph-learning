@@ -1,0 +1,77 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.1" xml:lang="en-US">
+  <compounddef id="structrados__cluster__stat__t" kind="struct" language="C++" prot="public">
+    <compoundname>rados_cluster_stat_t</compoundname>
+    <includes refid="librados_8h" local="no">librados.h</includes>
+      <sectiondef kind="public-attrib">
+      <memberdef kind="variable" id="structrados__cluster__stat__t_1a37633ef0eb7d786d06869a7401167966" prot="public" static="no" mutable="no">
+        <type>uint64_t</type>
+        <definition>uint64_t rados_cluster_stat_t::kb</definition>
+        <argsstring></argsstring>
+        <name>kb</name>
+        <briefdescription>
+<para>total device size </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/data/ceph-learning/src/include/rados/librados.h" line="331" column="12" bodyfile="/data/ceph-learning/src/include/rados/librados.h" bodystart="331" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structrados__cluster__stat__t_1ac2c7d8f0977feed733742e5a1d046f5e" prot="public" static="no" mutable="no">
+        <type>uint64_t</type>
+        <definition>uint64_t rados_cluster_stat_t::kb_used</definition>
+        <argsstring></argsstring>
+        <name>kb_used</name>
+        <briefdescription>
+<para>total used </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/data/ceph-learning/src/include/rados/librados.h" line="333" column="12" bodyfile="/data/ceph-learning/src/include/rados/librados.h" bodystart="333" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structrados__cluster__stat__t_1aeb381150d5a01aeb57015512d820b302" prot="public" static="no" mutable="no">
+        <type>uint64_t</type>
+        <definition>uint64_t rados_cluster_stat_t::kb_avail</definition>
+        <argsstring></argsstring>
+        <name>kb_avail</name>
+        <briefdescription>
+<para>total available/free </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/data/ceph-learning/src/include/rados/librados.h" line="335" column="12" bodyfile="/data/ceph-learning/src/include/rados/librados.h" bodystart="335" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structrados__cluster__stat__t_1addd82ed2ef92adc7ecb8c051ad68bd66" prot="public" static="no" mutable="no">
+        <type>uint64_t</type>
+        <definition>uint64_t rados_cluster_stat_t::num_objects</definition>
+        <argsstring></argsstring>
+        <name>num_objects</name>
+        <briefdescription>
+<para>number of objects </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/data/ceph-learning/src/include/rados/librados.h" line="337" column="12" bodyfile="/data/ceph-learning/src/include/rados/librados.h" bodystart="337" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+<para>Cluster-wide usage information </para>
+    </detaileddescription>
+    <location file="/data/ceph-learning/src/include/rados/librados.h" line="329" column="1" bodyfile="/data/ceph-learning/src/include/rados/librados.h" bodystart="329" bodyend="338"/>
+    <listofallmembers>
+      <member refid="structrados__cluster__stat__t_1a37633ef0eb7d786d06869a7401167966" prot="public" virt="non-virtual"><scope>rados_cluster_stat_t</scope><name>kb</name></member>
+      <member refid="structrados__cluster__stat__t_1aeb381150d5a01aeb57015512d820b302" prot="public" virt="non-virtual"><scope>rados_cluster_stat_t</scope><name>kb_avail</name></member>
+      <member refid="structrados__cluster__stat__t_1ac2c7d8f0977feed733742e5a1d046f5e" prot="public" virt="non-virtual"><scope>rados_cluster_stat_t</scope><name>kb_used</name></member>
+      <member refid="structrados__cluster__stat__t_1addd82ed2ef92adc7ecb8c051ad68bd66" prot="public" virt="non-virtual"><scope>rados_cluster_stat_t</scope><name>num_objects</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

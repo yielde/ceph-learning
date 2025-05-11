@@ -1,0 +1,281 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Block Devices and CloudStack &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css" />
+    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../genindex/" />
+    <link rel="search" title="Search" href="../../search/" />
+    <link rel="next" title="Ceph iSCSI Gateway" href="../iscsi-overview/" />
+    <link rel="prev" title="Block Devices and OpenStack" href="../rbd-openstack/" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../iscsi-overview/" title="Ceph iSCSI Gateway"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../rbd-openstack/" title="Block Devices and OpenStack"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../" >Ceph Block Device</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../rbd-integrations/" accesskey="U">Ceph Block Device 3rd Party Integration</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Block Devices and CloudStack</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="block-devices-and-cloudstack">
+<h1>Block Devices and CloudStack<a class="headerlink" href="#block-devices-and-cloudstack" title="Permalink to this heading">¶</a></h1>
+<p>You may use Ceph Block Device images with CloudStack 4.0 and higher through
+<code class="docutils literal notranslate"><span class="pre">libvirt</span></code>, which configures the QEMU interface to <code class="docutils literal notranslate"><span class="pre">librbd</span></code>. Ceph stripes
+block device images as objects across the cluster, which means that large Ceph
+Block Device images have better performance than a standalone server!</p>
+<p>To use Ceph Block Devices with CloudStack 4.0 and higher, you must install QEMU,
+<code class="docutils literal notranslate"><span class="pre">libvirt</span></code>, and CloudStack first. We recommend using a separate physical host
+for your CloudStack installation. CloudStack recommends a minimum of 4GB of RAM
+and a dual-core processor, but more CPU and RAM will perform better. The
+following diagram depicts the CloudStack/Ceph technology stack.</p>
+<p class="ditaa">
+<img src="../../_images/ditaa-7b38dc591b42b911dce0d516dcd89df9347de0dc.png"/>
+</p>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>To use Ceph Block Devices with CloudStack, you must have
+access to a running Ceph Storage Cluster.</p>
+</div>
+<p>CloudStack integrates with Ceph’s block devices to provide CloudStack with a
+back end for CloudStack’s Primary Storage. The instructions below detail the
+setup for CloudStack Primary Storage.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>We recommend installing with Ubuntu 14.04 or later so that
+you can use package installation instead of having to compile
+libvirt from source.</p>
+</div>
+<p>Installing and configuring QEMU for use with CloudStack doesn’t require any
+special handling. Ensure that you have a running Ceph Storage Cluster. Install
+QEMU and configure it for use with Ceph; then, install <code class="docutils literal notranslate"><span class="pre">libvirt</span></code> version
+0.9.13 or higher (you may need to compile from source) and ensure it is running
+with Ceph.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Ubuntu 14.04 and CentOS 7.2 will have <code class="docutils literal notranslate"><span class="pre">libvirt</span></code> with RBD storage
+pool support enabled by default.</p>
+</div>
+<section id="create-a-pool">
+<span id="index-0"></span><h2>Create a Pool<a class="headerlink" href="#create-a-pool" title="Permalink to this heading">¶</a></h2>
+<p>By default, Ceph block devices use the <code class="docutils literal notranslate"><span class="pre">rbd</span></code> pool. Create a pool for
+CloudStack NFS Primary Storage. Ensure your Ceph cluster is running, then create
+the pool.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span> <span class="n">osd</span> <span class="n">pool</span> <span class="n">create</span> <span class="n">cloudstack</span>
+</pre></div>
+</div>
+<p>See <a class="reference external" href="../../rados/operations/pools#createpool">Create a Pool</a> for details on specifying the number of placement groups
+for your pools, and <a class="reference external" href="../../rados/operations/placement-groups">Placement Groups</a> for details on the number of placement
+groups you should set for your pools.</p>
+<p>A newly created pool must be initialized prior to use. Use the <code class="docutils literal notranslate"><span class="pre">rbd</span></code> tool
+to initialize the pool:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">rbd</span> <span class="n">pool</span> <span class="n">init</span> <span class="n">cloudstack</span>
+</pre></div>
+</div>
+</section>
+<section id="create-a-ceph-user">
+<h2>Create a Ceph User<a class="headerlink" href="#create-a-ceph-user" title="Permalink to this heading">¶</a></h2>
+<p>To access the Ceph cluster we require a Ceph user which has the correct
+credentials to access the <code class="docutils literal notranslate"><span class="pre">cloudstack</span></code> pool we just created. Although we could
+use <code class="docutils literal notranslate"><span class="pre">client.admin</span></code> for this, it’s recommended to create a user with only
+access to the <code class="docutils literal notranslate"><span class="pre">cloudstack</span></code> pool.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ceph</span> <span class="n">auth</span> <span class="n">get</span><span class="o">-</span><span class="ow">or</span><span class="o">-</span><span class="n">create</span> <span class="n">client</span><span class="o">.</span><span class="n">cloudstack</span> <span class="n">mon</span> <span class="s1">&#39;profile rbd&#39;</span> <span class="n">osd</span> <span class="s1">&#39;profile rbd pool=cloudstack&#39;</span>
+</pre></div>
+</div>
+<p>Use the information returned by the command in the next step when adding the
+Primary Storage.</p>
+<p>See <a class="reference external" href="../../rados/operations/user-management">User Management</a> for additional details.</p>
+</section>
+<section id="add-primary-storage">
+<h2>Add Primary Storage<a class="headerlink" href="#add-primary-storage" title="Permalink to this heading">¶</a></h2>
+<p>To add a Ceph block device as Primary Storage, the steps include:</p>
+<ol class="arabic simple">
+<li><p>Log in to the CloudStack UI.</p></li>
+<li><p>Click <strong>Infrastructure</strong> on the left side navigation bar.</p></li>
+<li><p>Select <strong>View All</strong> under <strong>Primary Storage</strong>.</p></li>
+<li><p>Click the <strong>Add Primary Storage</strong> button on the top right hand side.</p></li>
+<li><p>Fill in the following information, according to your infrastructure setup:</p>
+<ul class="simple">
+<li><p>Scope (i.e. Cluster or Zone-Wide).</p></li>
+<li><p>Zone.</p></li>
+<li><p>Pod.</p></li>
+<li><p>Cluster.</p></li>
+<li><p>Name of Primary Storage.</p></li>
+<li><p>For <strong>Protocol</strong>, select <code class="docutils literal notranslate"><span class="pre">RBD</span></code>.</p></li>
+<li><p>For <strong>Provider</strong>, select the appropriate provider type (i.e. DefaultPrimary, SolidFire, SolidFireShared, or CloudByte).  Depending on the provider chosen, fill out the information pertinent to your setup.</p></li>
+</ul>
+</li>
+<li><p>Add cluster information (<code class="docutils literal notranslate"><span class="pre">cephx</span></code> is supported).</p>
+<ul class="simple">
+<li><p>For <strong>RADOS Monitor</strong>, provide the IP address of a Ceph monitor node.</p></li>
+<li><p>For <strong>RADOS Pool</strong>, provide the name of an RBD pool.</p></li>
+<li><p>For <strong>RADOS User</strong>, provide a user that has sufficient rights to the RBD pool. Note: Do not include the <code class="docutils literal notranslate"><span class="pre">client.</span></code> part of the user.</p></li>
+<li><p>For <strong>RADOS Secret</strong>, provide the secret the user’s secret.</p></li>
+<li><p><strong>Storage Tags</strong> are optional. Use tags at your own discretion. For more information about storage tags in CloudStack, refer to <a class="reference external" href="http://docs.cloudstack.apache.org/en/latest/adminguide/storage.html#storage-tags">Storage Tags</a>.</p></li>
+</ul>
+</li>
+<li><p>Click <strong>OK</strong>.</p></li>
+</ol>
+</section>
+<section id="create-a-disk-offering">
+<h2>Create a Disk Offering<a class="headerlink" href="#create-a-disk-offering" title="Permalink to this heading">¶</a></h2>
+<p>To create a new disk offering, refer to <a class="reference external" href="http://docs.cloudstack.apache.org/en/latest/adminguide/service_offerings.html#creating-a-new-disk-offering">Create a New Disk Offering</a>.
+Create a disk offering so that it matches the <code class="docutils literal notranslate"><span class="pre">rbd</span></code> tag.
+The <code class="docutils literal notranslate"><span class="pre">StoragePoolAllocator</span></code> will choose the  <code class="docutils literal notranslate"><span class="pre">rbd</span></code>
+pool when searching for a suitable storage pool. If the disk offering doesn’t
+match the <code class="docutils literal notranslate"><span class="pre">rbd</span></code> tag, the <code class="docutils literal notranslate"><span class="pre">StoragePoolAllocator</span></code> may select the pool you
+created (e.g., <code class="docutils literal notranslate"><span class="pre">cloudstack</span></code>).</p>
+</section>
+<section id="limitations">
+<h2>Limitations<a class="headerlink" href="#limitations" title="Permalink to this heading">¶</a></h2>
+<ul class="simple">
+<li><p>CloudStack will only bind to one monitor (You can however create a Round Robin DNS record over multiple monitors)</p></li>
+</ul>
+</section>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../">
+              <img class="logo" src="../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../install/">Installing Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cephadm/">Cephadm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rados/">Ceph Storage Cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cephfs/">Ceph File System</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../">Ceph Block Device</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../rados-rbd-cmds/">Basic Commands</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rbd-operations/">Operations</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../rbd-integrations/">Integrations</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../rbd-ko/">Kernel Modules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../qemu-rbd/">QEMU</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../libvirt/">libvirt</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rbd-kubernetes/">Kubernetes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rbd-openstack/">OpenStack</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">CloudStack</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#create-a-pool">Create a Pool</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#create-a-ceph-user">Create a Ceph User</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#add-primary-storage">Add Primary Storage</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#create-a-disk-offering">Create a Disk Offering</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#limitations">Limitations</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../iscsi-overview/">LIO iSCSI Gateway</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rbd-windows/">Windows</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../man/">Manpages</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/">APIs</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../radosgw/">Ceph Object Gateway</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/">Ceph Manager Daemon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dev/developer_guide/">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dev/internals/">Ceph Internals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../iscsi-overview/" title="Ceph iSCSI Gateway"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../rbd-openstack/" title="Block Devices and OpenStack"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../" >Ceph Block Device</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../rbd-integrations/" >Ceph Block Device 3rd Party Integration</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Block Devices and CloudStack</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

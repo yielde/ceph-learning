@@ -1,0 +1,347 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>MDS States &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css" />
+    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../genindex/" />
+    <link rel="search" title="Search" href="../../search/" />
+    <link rel="next" title="Differences from POSIX" href="../posix/" />
+    <link rel="prev" title="mount.fuse.ceph – mount ceph-fuse from /etc/fstab." href="../../man/8/mount.fuse.ceph/" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../posix/" title="Differences from POSIX"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../../man/8/mount.fuse.ceph/" title="mount.fuse.ceph – mount ceph-fuse from /etc/fstab."
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../" accesskey="U">Ceph File System</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">MDS States</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="mds-states">
+<h1>MDS States<a class="headerlink" href="#mds-states" title="Permalink to this heading">¶</a></h1>
+<p>The Metadata Server (MDS) goes through several states during normal operation
+in CephFS. For example, some states indicate that the MDS is recovering from a
+failover by a previous instance of the MDS. Here we’ll document all of these
+states and include a state diagram to visualize the transitions.</p>
+<section id="state-descriptions">
+<h2>State Descriptions<a class="headerlink" href="#state-descriptions" title="Permalink to this heading">¶</a></h2>
+<section id="common-states">
+<h3>Common states<a class="headerlink" href="#common-states" title="Permalink to this heading">¶</a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">up</span><span class="p">:</span><span class="n">active</span>
+</pre></div>
+</div>
+<p>This is the normal operating state of the MDS. It indicates that the MDS
+and its rank in the file system is available.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">up</span><span class="p">:</span><span class="n">standby</span>
+</pre></div>
+</div>
+<p>The MDS is available to takeover for a failed rank (see also <a class="reference internal" href="../standby/#mds-standby"><span class="std std-ref">Terminology</span></a>).
+The monitor will automatically assign an MDS in this state to a failed rank
+once available.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">up</span><span class="p">:</span><span class="n">standby_replay</span>
+</pre></div>
+</div>
+<p>The MDS is following the journal of another <code class="docutils literal notranslate"><span class="pre">up:active</span></code> MDS. Should the
+active MDS fail, having a standby MDS in replay mode is desirable as the MDS is
+replaying the live journal and will more quickly takeover. A downside to having
+standby replay MDSs is that they are not available to takeover for any other
+MDS that fails, only the MDS they follow.</p>
+</section>
+<section id="less-common-or-transitory-states">
+<h3>Less common or transitory states<a class="headerlink" href="#less-common-or-transitory-states" title="Permalink to this heading">¶</a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">up</span><span class="p">:</span><span class="n">boot</span>
+</pre></div>
+</div>
+<p>This state is broadcast to the Ceph monitors during startup. This state is
+never visible as the Monitor immediately assign the MDS to an available rank or
+commands the MDS to operate as a standby. The state is documented here for
+completeness.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">up</span><span class="p">:</span><span class="n">creating</span>
+</pre></div>
+</div>
+<p>The MDS is creating a new rank (perhaps rank 0) by constructing some per-rank
+metadata (like the journal) and entering the MDS cluster.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">up</span><span class="p">:</span><span class="n">starting</span>
+</pre></div>
+</div>
+<p>The MDS is restarting a stopped rank. It opens associated per-rank metadata
+and enters the MDS cluster.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">up</span><span class="p">:</span><span class="n">stopping</span>
+</pre></div>
+</div>
+<p>When a rank is stopped, the monitors command an active MDS to enter the
+<code class="docutils literal notranslate"><span class="pre">up:stopping</span></code> state. In this state, the MDS accepts no new client
+connections, migrates all subtrees to other ranks in the file system, flush its
+metadata journal, and, if the last rank (0), evict all clients and shutdown
+(see also <a class="reference internal" href="../administration/#cephfs-administration"><span class="std std-ref">CephFS Administrative commands</span></a>).</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">up</span><span class="p">:</span><span class="n">replay</span>
+</pre></div>
+</div>
+<p>The MDS taking over a failed rank. This state represents that the MDS is
+recovering its journal and other metadata.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">up</span><span class="p">:</span><span class="n">resolve</span>
+</pre></div>
+</div>
+<p>The MDS enters this state from <code class="docutils literal notranslate"><span class="pre">up:replay</span></code> if the Ceph file system has
+multiple ranks (including this one), i.e. it’s not a single active MDS cluster.
+The MDS is resolving any uncommitted inter-MDS operations. All ranks in the
+file system must be in this state or later for progress to be made, i.e. no
+rank can be failed/damaged or <code class="docutils literal notranslate"><span class="pre">up:replay</span></code>.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">up</span><span class="p">:</span><span class="n">reconnect</span>
+</pre></div>
+</div>
+<p>An MDS enters this state from <code class="docutils literal notranslate"><span class="pre">up:replay</span></code> or <code class="docutils literal notranslate"><span class="pre">up:resolve</span></code>. This state is to
+solicit reconnections from clients. Any client which had a session with this
+rank must reconnect during this time, configurable via
+<code class="docutils literal notranslate"><span class="pre">mds_reconnect_timeout</span></code>.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">up</span><span class="p">:</span><span class="n">rejoin</span>
+</pre></div>
+</div>
+<p>The MDS enters this state from <code class="docutils literal notranslate"><span class="pre">up:reconnect</span></code>. In this state, the MDS is
+rejoining the MDS cluster cache. In particular, all inter-MDS locks on metadata
+are reestablished.</p>
+<p>If there are no known client requests to be replayed, the MDS directly becomes
+<code class="docutils literal notranslate"><span class="pre">up:active</span></code> from this state.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">up</span><span class="p">:</span><span class="n">clientreplay</span>
+</pre></div>
+</div>
+<p>The MDS may enter this state from <code class="docutils literal notranslate"><span class="pre">up:rejoin</span></code>. The MDS is replaying any
+client requests which were replied to but not yet durable (not journaled).
+Clients resend these requests during <code class="docutils literal notranslate"><span class="pre">up:reconnect</span></code> and the requests are
+replayed once again. The MDS enters <code class="docutils literal notranslate"><span class="pre">up:active</span></code> after completing replay.</p>
+</section>
+<section id="failed-states">
+<h3>Failed states<a class="headerlink" href="#failed-states" title="Permalink to this heading">¶</a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">down</span><span class="p">:</span><span class="n">failed</span>
+</pre></div>
+</div>
+<p>No MDS actually holds this state. Instead, it is applied to the rank in the file system. For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ ceph fs dump
+...
+max_mds 1
+in      0
+up      {}
+failed  0
+...
+</pre></div>
+</div>
+<p>Rank 0 is part of the failed set.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">down</span><span class="p">:</span><span class="n">damaged</span>
+</pre></div>
+</div>
+<p>No MDS actually holds this state. Instead, it is applied to the rank in the file system. For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ ceph fs dump
+...
+max_mds 1
+in      0
+up      {}
+failed
+damaged 0
+...
+</pre></div>
+</div>
+<p>Rank 0 has become damaged (see also <a class="reference internal" href="../disaster-recovery/#cephfs-disaster-recovery"><span class="std std-ref">Disaster recovery</span></a>) and placed in
+the <code class="docutils literal notranslate"><span class="pre">damaged</span></code> set. An MDS which was running as rank 0 found metadata damage
+that could not be automatically recovered. Operator intervention is required.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">down</span><span class="p">:</span><span class="n">stopped</span>
+</pre></div>
+</div>
+<p>No MDS actually holds this state. Instead, it is applied to the rank in the file system. For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ ceph fs dump
+...
+max_mds 1
+in      0
+up      {}
+failed
+damaged
+stopped 1
+...
+</pre></div>
+</div>
+<p>The rank has been stopped by reducing <code class="docutils literal notranslate"><span class="pre">max_mds</span></code> (see also <a class="reference internal" href="../multimds/#cephfs-multimds"><span class="std std-ref">Configuring multiple active MDS daemons</span></a>).</p>
+</section>
+</section>
+<section id="state-diagram">
+<h2>State Diagram<a class="headerlink" href="#state-diagram" title="Permalink to this heading">¶</a></h2>
+<p>This state diagram shows the possible state transitions for the MDS/rank. The legend is as follows:</p>
+<section id="color">
+<h3>Color<a class="headerlink" href="#color" title="Permalink to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>Green: MDS is active.</p></li>
+<li><p>Orange: MDS is in transient state trying to become active.</p></li>
+<li><p>Red: MDS is indicating a state that causes the rank to be marked failed.</p></li>
+<li><p>Purple: MDS and rank is stopping.</p></li>
+<li><p>Black: MDS is indicating a state that causes the rank to be marked damaged.</p></li>
+</ul>
+</section>
+<section id="shape">
+<h3>Shape<a class="headerlink" href="#shape" title="Permalink to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>Circle: an MDS holds this state.</p></li>
+<li><p>Hexagon: no MDS holds this state (it is applied to the rank).</p></li>
+</ul>
+</section>
+<section id="lines">
+<h3>Lines<a class="headerlink" href="#lines" title="Permalink to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>A double-lined shape indicates the rank is “in”.</p></li>
+</ul>
+<img alt="../../_images/mds-state-diagram.svg" src="../../_images/mds-state-diagram.svg" /></section>
+</section>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../">
+              <img class="logo" src="../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../install/">Installing Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cephadm/">Cephadm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rados/">Ceph Storage Cluster</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../">Ceph File System</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../#getting-started-with-cephfs">Getting Started with CephFS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../#administration">Administration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../#mounting-cephfs">Mounting CephFS</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../#cephfs-concepts">CephFS Concepts</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#"> MDS States</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#state-descriptions">State Descriptions</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#common-states">Common states</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#less-common-or-transitory-states">Less common or transitory states</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#failed-states">Failed states</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#state-diagram">State Diagram</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#color">Color</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#shape">Shape</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#lines">Lines</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../posix/"> POSIX compatibility</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../mds-journaling/"> MDS Journaling</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../file-layouts/"> File layouts</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../mdcache/"> Distributed Metadata Cache</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../dynamic-metadata-management/"> Dynamic Metadata Management in CephFS</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../cephfs-io-path/"> CephFS IO Path</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../lazyio/"> LazyIO</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../dirfrags/"> Directory fragmentation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../multimds/"> Multiple active MDS daemons</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../#troubleshooting-and-disaster-recovery">Troubleshooting and Disaster Recovery</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../#developer-guides">Developer Guides</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../#additional-details">Additional Details</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../rbd/">Ceph Block Device</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../radosgw/">Ceph Object Gateway</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/">Ceph Manager Daemon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dev/developer_guide/">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dev/internals/">Ceph Internals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../posix/" title="Differences from POSIX"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../../man/8/mount.fuse.ceph/" title="mount.fuse.ceph – mount ceph-fuse from /etc/fstab."
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../" >Ceph File System</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">MDS States</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

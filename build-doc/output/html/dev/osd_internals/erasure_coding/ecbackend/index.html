@@ -1,0 +1,451 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>ECBackend Implementation Strategy &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/css/custom.css" />
+    <script data-url_root="../../../../" id="documentation_options" src="../../../../_static/documentation_options.js"></script>
+    <script src="../../../../_static/jquery.js"></script>
+    <script src="../../../../_static/underscore.js"></script>
+    <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../../../_static/doctools.js"></script>
+    <script src="../../../../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../../../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../../../genindex/" />
+    <link rel="search" title="Search" href="../../../../search/" />
+    <link rel="next" title="last_epoch_started" href="../../last_epoch_started/" />
+    <link rel="prev" title="jerasure plugin" href="../jerasure/" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../../last_epoch_started/" title="last_epoch_started"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../jerasure/" title="jerasure plugin"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../../internals/" >Ceph Internals</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../../" >OSD developer documentation</a> &#187;</li>
+          <li class="nav-item nav-item-3"><a href="../" accesskey="U">Erasure Coded Placement Groups</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">ECBackend Implementation Strategy</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="ecbackend-implementation-strategy">
+<h1>ECBackend Implementation Strategy<a class="headerlink" href="#ecbackend-implementation-strategy" title="Permalink to this heading">¶</a></h1>
+<section id="misc-initial-design-notes">
+<h2>Misc initial design notes<a class="headerlink" href="#misc-initial-design-notes" title="Permalink to this heading">¶</a></h2>
+<p>The initial (and still true for ec pools without the hacky ec
+overwrites debug flag enabled) design for ec pools restricted
+EC pools to operations which can be easily rolled back:</p>
+<ul class="simple">
+<li><p>CEPH_OSD_OP_APPEND: We can roll back an append locally by
+including the previous object size as part of the PG log event.</p></li>
+<li><p>CEPH_OSD_OP_DELETE: The possibility of rolling back a delete
+requires that we retain the deleted object until all replicas have
+persisted the deletion event.  ErasureCoded backend will therefore
+need to store objects with the version at which they were created
+included in the key provided to the filestore.  Old versions of an
+object can be pruned when all replicas have committed up to the log
+event deleting the object.</p></li>
+<li><p>CEPH_OSD_OP_(SET|RM)ATTR: If we include the prior value of the attr
+to be set or removed, we can roll back these operations locally.</p></li>
+</ul>
+<p>Log entries contain a structure explaining how to locally undo the
+operation represented by the operation
+(see osd_types.h:TransactionInfo::LocalRollBack).</p>
+<section id="pgtemp-and-crush">
+<h3>PGTemp and Crush<a class="headerlink" href="#pgtemp-and-crush" title="Permalink to this heading">¶</a></h3>
+<p>Primaries are able to request a temp acting set mapping in order to
+allow an up-to-date OSD to serve requests while a new primary is
+backfilled (and for other reasons).  An erasure coded pg needs to be
+able to designate a primary for these reasons without putting it in
+the first position of the acting set.  It also needs to be able to
+leave holes in the requested acting set.</p>
+<p>Core Changes:</p>
+<ul class="simple">
+<li><p>OSDMap::pg_to_*_osds needs to separately return a primary.  For most
+cases, this can continue to be acting[0].</p></li>
+<li><p>MOSDPGTemp (and related OSD structures) needs to be able to specify
+a primary as well as an acting set.</p></li>
+<li><p>Much of the existing code base assumes that acting[0] is the primary
+and that all elements of acting are valid.  This needs to be cleaned
+up since the acting set may contain holes.</p></li>
+</ul>
+</section>
+<section id="distinguished-acting-set-positions">
+<h3>Distinguished acting set positions<a class="headerlink" href="#distinguished-acting-set-positions" title="Permalink to this heading">¶</a></h3>
+<p>With the replicated strategy, all replicas of a PG are
+interchangeable.  With erasure coding, different positions in the
+acting set have different pieces of the erasure coding scheme and are
+not interchangeable.  Worse, crush might cause chunk 2 to be written
+to an OSD which happens already to contain an (old) copy of chunk 4.
+This means that the OSD and PG messages need to work in terms of a
+type like pair&lt;shard_t, pg_t&gt; in order to distinguish different pg
+chunks on a single OSD.</p>
+<p>Because the mapping of object name to object in the filestore must
+be 1-to-1, we must ensure that the objects in chunk 2 and the objects
+in chunk 4 have different names.  To that end, the objectstore must
+include the chunk id in the object key.</p>
+<p>Core changes:</p>
+<ul class="simple">
+<li><p>The objectstore <a class="reference external" href="https://github.com/ceph/ceph/blob/firefly/src/common/hobject.h#L241">ghobject_t needs to also include a chunk id</a> making it more like
+tuple&lt;hobject_t, gen_t, shard_t&gt;.</p></li>
+<li><p>coll_t needs to include a shard_t.</p></li>
+<li><p>The OSD pg_map and similar pg mappings need to work in terms of a
+spg_t (essentially
+pair&lt;pg_t, shard_t&gt;).  Similarly, pg-&gt;pg messages need to include
+a shard_t</p></li>
+<li><p>For client-&gt;PG messages, the OSD will need a way to know which PG
+chunk should get the message since the OSD may contain both a
+primary and non-primary chunk for the same pg</p></li>
+</ul>
+</section>
+<section id="object-classes">
+<h3>Object Classes<a class="headerlink" href="#object-classes" title="Permalink to this heading">¶</a></h3>
+<p>Reads from object classes will return ENOTSUP on ec pools by invoking
+a special SYNC read.</p>
+</section>
+<section id="scrub">
+<h3>Scrub<a class="headerlink" href="#scrub" title="Permalink to this heading">¶</a></h3>
+<p>The main catch, however, for ec pools is that sending a crc32 of the
+stored chunk on a replica isn’t particularly helpful since the chunks
+on different replicas presumably store different data.  Because we
+don’t support overwrites except via DELETE, however, we have the
+option of maintaining a crc32 on each chunk through each append.
+Thus, each replica instead simply computes a crc32 of its own stored
+chunk and compares it with the locally stored checksum.  The replica
+then reports to the primary whether the checksums match.</p>
+<p>With overwrites, all scrubs are disabled for now until we work out
+what to do (see doc/dev/osd_internals/erasure_coding/proposals.rst).</p>
+</section>
+<section id="crush">
+<h3>Crush<a class="headerlink" href="#crush" title="Permalink to this heading">¶</a></h3>
+<p>If crush is unable to generate a replacement for a down member of an
+acting set, the acting set should have a hole at that position rather
+than shifting the other elements of the acting set out of position.</p>
+</section>
+</section>
+</section>
+<section id="ecbackend">
+<h1>ECBackend<a class="headerlink" href="#ecbackend" title="Permalink to this heading">¶</a></h1>
+<section id="main-operation-overview">
+<h2>MAIN OPERATION OVERVIEW<a class="headerlink" href="#main-operation-overview" title="Permalink to this heading">¶</a></h2>
+<p>A RADOS put operation can span
+multiple stripes of a single object. There must be code that
+tessellates the application level write into a set of per-stripe write
+operations – some whole-stripes and up to two partial
+stripes. Without loss of generality, for the remainder of this
+document we will focus exclusively on writing a single stripe (whole
+or partial). We will use the symbol “W” to represent the number of
+blocks within a stripe that are being written, i.e., W &lt;= K.</p>
+<p>There are three data flows for handling a write into an EC stripe. The
+choice of which of the three data flows to choose is based on the size
+of the write operation and the arithmetic properties of the selected
+parity-generation algorithm.</p>
+<ol class="arabic simple">
+<li><p>whole stripe is written/overwritten</p></li>
+<li><p>a read-modify-write operation is performed.</p></li>
+</ol>
+<section id="whole-stripe-write">
+<h3>WHOLE STRIPE WRITE<a class="headerlink" href="#whole-stripe-write" title="Permalink to this heading">¶</a></h3>
+<p>This is the simple case, and is already performed in the existing code
+(for appends, that is). The primary receives all of the data for the
+stripe in the RADOS request, computes the appropriate parity blocks
+and send the data and parity blocks to their destination shards which
+write them. This is essentially the current EC code.</p>
+</section>
+<section id="read-modify-write">
+<h3>READ-MODIFY-WRITE<a class="headerlink" href="#read-modify-write" title="Permalink to this heading">¶</a></h3>
+<p>The primary determines which of the K-W blocks are to be unmodified,
+and reads them from the shards. Once all of the data is received it is
+combined with the received new data and new parity blocks are
+computed. The modified blocks are sent to their respective shards and
+written. The RADOS operation is acknowledged.</p>
+</section>
+<section id="osd-object-write-and-consistency">
+<h3>OSD Object Write and Consistency<a class="headerlink" href="#osd-object-write-and-consistency" title="Permalink to this heading">¶</a></h3>
+<p>Regardless of the algorithm chosen above, writing of the data is a two
+phase process: commit and rollforward. The primary sends the log
+entries with the operation described (see
+osd_types.h:TransactionInfo::(LocalRollForward|LocalRollBack).
+In all cases, the “commit” is performed in place, possibly leaving some
+information required for a rollback in a write-aside object.  The
+rollforward phase occurs once all acting set replicas have committed
+the commit (sorry, overloaded term) and removes the rollback information.</p>
+<p>In the case of overwrites of exsting stripes, the rollback information
+has the form of a sparse object containing the old values of the
+overwritten extents populated using clone_range.  This is essentially
+a place-holder implementation, in real life, bluestore will have an
+efficient primitive for this.</p>
+<p>The rollforward part can be delayed since we report the operation as
+committed once all replicas have committed.  Currently, whenever we
+send a write, we also indicate that all previously committed
+operations should be rolled forward (see
+ECBackend::try_reads_to_commit).  If there aren’t any in the pipeline
+when we arrive at the waiting_rollforward queue, we start a dummy
+write to move things along (see the Pipeline section later on and
+ECBackend::try_finish_rmw).</p>
+</section>
+<section id="extentcache">
+<h3>ExtentCache<a class="headerlink" href="#extentcache" title="Permalink to this heading">¶</a></h3>
+<p>It’s pretty important to be able to pipeline writes on the same
+object.  For this reason, there is a cache of extents written by
+cacheable operations.  Each extent remains pinned until the operations
+referring to it are committed.  The pipeline prevents rmw operations
+from running until uncacheable transactions (clones, etc) are flushed
+from the pipeline.</p>
+<p>See ExtentCache.h for a detailed explanation of how the cache
+states correspond to the higher level invariants about the conditions
+under which cuncurrent operations can refer to the same object.</p>
+</section>
+<section id="pipeline">
+<h3>Pipeline<a class="headerlink" href="#pipeline" title="Permalink to this heading">¶</a></h3>
+<p>Reading src/osd/ExtentCache.h should have given a good idea of how
+operations might overlap.  There are several states involved in
+processing a write operation and an important invariant which
+isn’t enforced by PrimaryLogPG at a higher level which need to be
+managed by ECBackend.  The important invariant is that we can’t
+have uncacheable and rmw operations running at the same time
+on the same object.  For simplicity, we simply enforce that any
+operation which contains an rmw operation must wait until
+all in-progress uncacheable operations complete.</p>
+<p>There are improvements to be made here in the future.</p>
+<p>For more details, see ECBackend::waiting_* and
+ECBackend::try_&lt;from&gt;_to_&lt;to&gt;.</p>
+</section>
+</section>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../../../">
+              <img class="logo" src="../../../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../../../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../../../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../install/">Installing Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../cephadm/">Cephadm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../rados/">Ceph Storage Cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../cephfs/">Ceph File System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../rbd/">Ceph Block Device</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../radosgw/">Ceph Object Gateway</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../mgr/">Ceph Manager Daemon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../mgr/dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../developer_guide/">Developer Guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../../internals/">Ceph Internals</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../../../blkin/">Tracing Ceph With Blkin</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../bluestore/">BlueStore Internals</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../cache-pool/">Cache pool</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../ceph_krb_auth/">A Detailed Documentation on How to Set up Ceph Kerberos Authentication</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../cephfs-mirroring/">CephFS Mirroring</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../cephfs-reclaim/">CephFS Reclaim Interface</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../cephfs-snapshots/">CephFS Snapshots</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../cephx/">Cephx</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../cephx_protocol/">A Detailed Description of the Cephx Authentication Protocol</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../config/">Configuration Management System</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../config-key/">config-key layout</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../context/">CephContext</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../continuous-integration/">Continuous Integration Architecture</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../corpus/">Corpus structure</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../cpu-profiler/">Installing Oprofile</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../cxx/">C++17 and libstdc++ ABI</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../delayed-delete/">CephFS delayed deletion</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../dev_cluster_deployement/">Deploying a development cluster</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../dev_cluster_deployement/#deploying-multiple-development-clusters-on-the-same-machine">Deploying multiple development clusters on the same machine</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../development-workflow/">Development workflows</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../documenting/">Documenting Ceph</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../encoding/">Serialization (encode/decode)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../erasure-coded-pool/">Erasure Coded pool</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../file-striping/">File striping</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../freebsd/">FreeBSD Implementation details</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../generatedocs/">Building Ceph Documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../iana/">IANA Numbers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../kubernetes/">Hacking on Ceph in Kubernetes with Rook</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../libs/">Library architecture</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../logging/">Use of the cluster log</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../logs/">Debug logs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../macos/">build on MacOS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../messenger/">Messenger notes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../mon-bootstrap/">Monitor bootstrap</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../mon-elections/">Monitor Elections</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../mon-on-disk-formats/">ON-DISK FORMAT</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../mon-osdmap-prune/">FULL OSDMAP VERSION PRUNING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../msgr2/">msgr2 protocol (msgr2.0 and msgr2.1)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../network-encoding/">Network Encoding</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../network-protocol/">Network Protocol</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../object-store/">Object Store Architecture Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../osd-class-path/">OSD class path issues</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../peering/">Peering</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../perf/">Using perf</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../perf_counters/">Perf counters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../perf_histograms/">Perf histograms</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../placement-group/">PG (Placement Group) notes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../quick_guide/">Developer Guide (Quick)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../rados-client-protocol/">RADOS client protocol</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../rbd-diff/">RBD Incremental Backup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../rbd-export/">RBD Export &amp; Import</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../rbd-layering/">RBD Layering</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../release-checklists/">Release checklists</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../release-process/">Ceph Release Process</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../seastore/">SeaStore</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../sepia/">Sepia community test lab</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../session_authentication/">Session Authentication for the Cephx Protocol</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../testing/">Testing notes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../versions/">Public OSD Version</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../vstart-ganesha/">NFS CephFS-RGW Developer Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../wireshark/">Wireshark Dissector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../zoned-storage/">Zoned Storage Support</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../../">OSD developer documentation</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../../async_recovery/">Asynchronous Recovery</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../backfill_reservation/">Backfill Reservation</a></li>
+<li class="toctree-l3 current"><a class="reference internal" href="../">Erasure Coded Placement Groups</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="../#glossary">Glossary</a></li>
+<li class="toctree-l4 current"><a class="reference internal" href="../#table-of-contents">Table of contents</a><ul class="current">
+<li class="toctree-l5"><a class="reference internal" href="../developer_notes/">Developer notes</a></li>
+<li class="toctree-l5"><a class="reference internal" href="../jerasure/">Jerasure plugin</a></li>
+<li class="toctree-l5 current"><a class="current reference internal" href="#">ECBackend Implementation Strategy</a><ul>
+<li class="toctree-l6"><a class="reference internal" href="#misc-initial-design-notes">Misc initial design notes</a><ul>
+<li class="toctree-l7"><a class="reference internal" href="#pgtemp-and-crush">PGTemp and Crush</a></li>
+<li class="toctree-l7"><a class="reference internal" href="#distinguished-acting-set-positions">Distinguished acting set positions</a></li>
+<li class="toctree-l7"><a class="reference internal" href="#object-classes">Object Classes</a></li>
+<li class="toctree-l7"><a class="reference internal" href="#scrub">Scrub</a></li>
+<li class="toctree-l7"><a class="reference internal" href="#crush">Crush</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l5"><a class="reference internal" href="#ecbackend">ECBackend</a><ul>
+<li class="toctree-l6"><a class="reference internal" href="#main-operation-overview">MAIN OPERATION OVERVIEW</a><ul>
+<li class="toctree-l7"><a class="reference internal" href="#whole-stripe-write">WHOLE STRIPE WRITE</a></li>
+<li class="toctree-l7"><a class="reference internal" href="#read-modify-write">READ-MODIFY-WRITE</a></li>
+<li class="toctree-l7"><a class="reference internal" href="#osd-object-write-and-consistency">OSD Object Write and Consistency</a></li>
+<li class="toctree-l7"><a class="reference internal" href="#extentcache">ExtentCache</a></li>
+<li class="toctree-l7"><a class="reference internal" href="#pipeline">Pipeline</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../last_epoch_started/">last_epoch_started</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../log_based_pg/">Log Based PG</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../manifest/">Manifest</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../map_message_handling/">Map and PG Message handling</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../osd_overview/">OSD</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../osd_throttles/">OSD Throttles</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../partial_object_recovery/">Partial Object Recovery</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../past_intervals/">PastIntervals</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../pg/">PG</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../pg_removal/">PG Removal</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../pgpool/">PGPool</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../recovery_reservation/">Recovery Reservation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../refcount/">Refcount</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../scrub/">Scrub internals and diagnostics</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../snaps/">Snaps</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../stale_read/">Preventing Stale Reads</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../watch_notify/">Watch Notify</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../wbthrottle/">Writeback Throttle</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../mds_internals/">MDS developer documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../radosgw/">RADOS Gateway developer documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../ceph-volume/">ceph-volume developer documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../crimson/">Crimson developer documentation</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../../../../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../../last_epoch_started/" title="last_epoch_started"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../jerasure/" title="jerasure plugin"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../../internals/" >Ceph Internals</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../../" >OSD developer documentation</a> &#187;</li>
+          <li class="nav-item nav-item-3"><a href="../" >Erasure Coded Placement Groups</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">ECBackend Implementation Strategy</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

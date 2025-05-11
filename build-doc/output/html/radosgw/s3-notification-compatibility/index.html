@@ -1,0 +1,410 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>S3 Bucket Notifications Compatibility &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css" />
+    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../genindex/" />
+    <link rel="search" title="Search" href="../../search/" />
+    <link rel="next" title="Archive Sync Module" href="../archive-sync-module/" />
+    <link rel="prev" title="PubSub Sync Module" href="../pubsub-module/" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../archive-sync-module/" title="Archive Sync Module"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../pubsub-module/" title="PubSub Sync Module"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../" >Ceph Object Gateway</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../sync-modules/" >Sync Modules</a> &#187;</li>
+          <li class="nav-item nav-item-3"><a href="../pubsub-module/" accesskey="U">PubSub Sync Module</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">S3 Bucket Notifications Compatibility</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="s3-bucket-notifications-compatibility">
+<h1>S3 Bucket Notifications Compatibility<a class="headerlink" href="#s3-bucket-notifications-compatibility" title="Permalink to this heading">¶</a></h1>
+<p>Ceph’s <a class="reference external" href="../notifications">Bucket Notifications</a> and <a class="reference external" href="../pubsub-module">PubSub Module</a> APIs follow <a class="reference external" href="https://docs.aws.amazon.com/AmazonS3/latest/dev/NotificationHowTo.html">AWS S3 Bucket Notifications API</a>. However, some differences exist, as listed below.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Compatibility is different depending on which of the above mechanism is used</p>
+</div>
+<section id="supported-destination">
+<h2>Supported Destination<a class="headerlink" href="#supported-destination" title="Permalink to this heading">¶</a></h2>
+<p>AWS supports: <strong>SNS</strong>, <strong>SQS</strong> and <strong>Lambda</strong> as possible destinations (AWS internal destinations).
+Currently, we support: <strong>HTTP/S</strong>, <strong>Kafka</strong> and <strong>AMQP</strong>. And also support pulling and acking of events stored in Ceph (as an intrenal destination).</p>
+<p>We are using the <strong>SNS</strong> ARNs to represent the <strong>HTTP/S</strong>, <strong>Kafka</strong> and <strong>AMQP</strong> destinations.</p>
+</section>
+<section id="notification-configuration-xml">
+<h2>Notification Configuration XML<a class="headerlink" href="#notification-configuration-xml" title="Permalink to this heading">¶</a></h2>
+<p>Following tags (and the tags inside them) are not supported:</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 43%" />
+<col style="width: 57%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Tag</p></th>
+<th class="head"><p>Remaks</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">&lt;QueueConfiguration&gt;</span></code></p></td>
+<td><p>not needed, we treat all destinations as SNS</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">&lt;CloudFunctionConfiguration&gt;</span></code></p></td>
+<td><p>not needed, we treat all destinations as SNS</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="rest-api-extension">
+<h2>REST API Extension<a class="headerlink" href="#rest-api-extension" title="Permalink to this heading">¶</a></h2>
+<p>Ceph’s bucket notification API has the following extensions:</p>
+<ul class="simple">
+<li><p>Deletion of a specific notification, or all notifications on a bucket, using the <code class="docutils literal notranslate"><span class="pre">DELETE</span></code> verb</p></li>
+</ul>
+<blockquote>
+<div><ul class="simple">
+<li><p>In S3, all notifications are deleted when the bucket is deleted, or when an empty notification is set on the bucket</p></li>
+</ul>
+</div></blockquote>
+<ul class="simple">
+<li><p>Getting the information on a specific notification (when more than one exists on a bucket)</p>
+<ul>
+<li><p>In S3, it is only possible to fetch all notifications on a bucket</p></li>
+</ul>
+</li>
+<li><p>In addition to filtering based on prefix/suffix of object keys we support:</p>
+<ul>
+<li><p>Filtering based on regular expression matching</p></li>
+<li><p>Filtering based on metadata attributes attached to the object</p></li>
+<li><p>Filtering based on object tags</p></li>
+</ul>
+</li>
+<li><p>Each one of the additional filters extends the S3 API and using it will require extension of the client SDK (unless you are using plain HTTP).</p></li>
+<li><p>Filtering overlapping is allowed, so that same event could be sent as different notification</p></li>
+</ul>
+</section>
+<section id="unsupported-fields-in-the-event-record">
+<h2>Unsupported Fields in the Event Record<a class="headerlink" href="#unsupported-fields-in-the-event-record" title="Permalink to this heading">¶</a></h2>
+<p>The records sent for bucket notification follow format described in: <a class="reference external" href="https://docs.aws.amazon.com/AmazonS3/latest/dev/notification-content-structure.html">Event Message Structure</a>.
+However, the following fields may be sent empty, under the different deployment options (Notification/PubSub):</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 31%" />
+<col style="width: 11%" />
+<col style="width: 12%" />
+<col style="width: 47%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Field</p></th>
+<th class="head"><p>Notification</p></th>
+<th class="head"><p>PubSub</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">userIdentity.principalId</span></code></p></td>
+<td><p>Supported</p></td>
+<td><p>Not Supported</p></td>
+<td><p>The identity of the user that triggered the event</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">requestParameters.sourceIPAddress</span></code></p></td>
+<td colspan="2"><p>Not Supported</p></td>
+<td><p>The IP address of the client that triggered the event</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">requestParameters.x-amz-request-id</span></code></p></td>
+<td><p>Supported</p></td>
+<td><p>Not Supported</p></td>
+<td><p>The request id that triggered the event</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">requestParameters.x-amz-id-2</span></code></p></td>
+<td><p>Supported</p></td>
+<td><p>Not Supported</p></td>
+<td><p>The IP address of the RGW on which the event was triggered</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">s3.object.size</span></code></p></td>
+<td><p>Supported</p></td>
+<td><p>Not Supported</p></td>
+<td><p>The size of the object</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="event-types">
+<h2>Event Types<a class="headerlink" href="#event-types" title="Permalink to this heading">¶</a></h2>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 43%" />
+<col style="width: 16%" />
+<col style="width: 41%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Event</p></th>
+<th class="head"><p>Notification</p></th>
+<th class="head"><p>PubSub</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">s3:ObjectCreated:*</span></code></p></td>
+<td colspan="2"><p>Supported</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">s3:ObjectCreated:Put</span></code></p></td>
+<td><p>Supported</p></td>
+<td><p>Supported at <code class="docutils literal notranslate"><span class="pre">s3:ObjectCreated:*</span></code> level</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">s3:ObjectCreated:Post</span></code></p></td>
+<td><p>Supported</p></td>
+<td><p>Not Supported</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">s3:ObjectCreated:Copy</span></code></p></td>
+<td><p>Supported</p></td>
+<td><p>Supported at <code class="docutils literal notranslate"><span class="pre">s3:ObjectCreated:*</span></code> level</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">s3:ObjectCreated:CompleteMultipartUpload</span></code></p></td>
+<td><p>Supported</p></td>
+<td><p>Supported at <code class="docutils literal notranslate"><span class="pre">s3:ObjectCreated:*</span></code> level</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">s3:ObjectRemoved:*</span></code></p></td>
+<td><p>Supported</p></td>
+<td><p>Supported only the specific events below</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">s3:ObjectRemoved:Delete</span></code></p></td>
+<td colspan="2"><p>Supported</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">s3:ObjectRemoved:DeleteMarkerCreated</span></code></p></td>
+<td colspan="2"><p>Supported</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">s3:ObjectRestore:Post</span></code></p></td>
+<td colspan="2"><p>Not applicable to Ceph</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">s3:ObjectRestore:Complete</span></code></p></td>
+<td colspan="2"><p>Not applicable to Ceph</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">s3:ReducedRedundancyLostObject</span></code></p></td>
+<td colspan="2"><p>Not applicable to Ceph</p></td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">s3:ObjectRemoved:DeleteMarkerCreated</span></code> event presents information on the latest version of the object</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>In case of multipart upload, an <code class="docutils literal notranslate"><span class="pre">ObjectCreated:CompleteMultipartUpload</span></code> notification will be sent at the end of the process.</p>
+</div>
+</section>
+<section id="topic-configuration">
+<h2>Topic Configuration<a class="headerlink" href="#topic-configuration" title="Permalink to this heading">¶</a></h2>
+<p>In the case of bucket notifications, the topics management API will be derived from <a class="reference external" href="https://docs.aws.amazon.com/sns/latest/api/API_Operations.html">AWS Simple Notification Service API</a>.
+Note that most of the API is not applicable to Ceph, and only the following actions are implemented:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">CreateTopic</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">DeleteTopic</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ListTopics</span></code></p></li>
+</ul>
+</div></blockquote>
+<p>We also have the following extensions to topic configuration:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>In <code class="docutils literal notranslate"><span class="pre">GetTopic</span></code> we allow fetching a specific topic, instead of all user topics</p></li>
+<li><p>In <code class="docutils literal notranslate"><span class="pre">CreateTopic</span></code></p></li>
+</ul>
+<blockquote>
+<div><ul class="simple">
+<li><p>we allow setting endpoint attributes</p></li>
+<li><p>we allow setting opaque data thta will be sent to the endpoint in the notification</p></li>
+</ul>
+</div></blockquote>
+</div></blockquote>
+</section>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../">
+              <img class="logo" src="../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../install/">Installing Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cephadm/">Cephadm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rados/">Ceph Storage Cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cephfs/">Ceph File System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rbd/">Ceph Block Device</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../">Ceph Object Gateway</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../frontends/">HTTP Frontends</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../placement/">Pool Placement and Storage Classes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../multisite/">Multisite Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../multisite-sync-policy/">Multisite Sync Policy Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pools/">Configuring Pools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../config-ref/">Config Reference</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../admin/">Admin Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../s3/">S3 API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rgw-cache/">Data caching and CDN</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../swift/">Swift API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../adminops/">Admin Ops API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/">Python binding</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../nfs/">Export over NFS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../keystone/">OpenStack Keystone Integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../barbican/">OpenStack Barbican Integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../vault/">HashiCorp Vault Integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../kmip/">KMIP Integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../opa/">Open Policy Agent Integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../multitenancy/">Multi-tenancy</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../compression/">Compression</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../ldap-auth/">LDAP Authentication</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../encryption/">Server-Side Encryption</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../bucketpolicy/">Bucket Policy</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../dynamicresharding/">Dynamic bucket index resharding</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../mfa/">Multi factor authentication</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../sync-modules/">Sync Modules</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../elastic-sync-module/">ElasticSearch Sync Module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../cloud-sync-module/">Cloud Sync Module</a></li>
+<li class="toctree-l3 current"><a class="reference internal" href="../pubsub-module/">PubSub Module</a><ul class="current">
+<li class="toctree-l4 current"><a class="current reference internal" href="#">S3 Bucket Notification Compatibility</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#supported-destination">Supported Destination</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#notification-configuration-xml">Notification Configuration XML</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#rest-api-extension">REST API Extension</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#unsupported-fields-in-the-event-record">Unsupported Fields in the Event Record</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#event-types">Event Types</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#topic-configuration">Topic Configuration</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="../pubsub-module/#pubsub-zone-configuration">PubSub Zone Configuration</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../pubsub-module/#topic-and-subscription-management-via-cli">Topic and Subscription Management via CLI</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../pubsub-module/#pubsub-performance-stats">PubSub Performance Stats</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../pubsub-module/#pubsub-rest-api">PubSub REST API</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../archive-sync-module/">Archive Sync Module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../sync-modules/#requirements-and-assumptions">Requirements and Assumptions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../sync-modules/#configuring-sync-modules">Configuring Sync Modules</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../notifications/">Bucket Notifications</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../layout/">Data Layout in RADOS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../STS/">STS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../STSLite/">STS Lite</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../keycloak/">Keycloak</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../session-tags/">Session Tags</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../role/">Role</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../orphans/">Orphan List and Associated Tooling</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../oidc/">OpenID Connect Provider</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../troubleshooting/">Troubleshooting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../man/8/radosgw/">Manpage radosgw</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../man/8/radosgw-admin/">Manpage radosgw-admin</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../qat-accel/">QAT Acceleration for Encryption and Compression</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../s3select/">S3-select</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../lua-scripting/">Lua Scripting</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/">Ceph Manager Daemon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dev/developer_guide/">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dev/internals/">Ceph Internals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../archive-sync-module/" title="Archive Sync Module"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../pubsub-module/" title="PubSub Sync Module"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../" >Ceph Object Gateway</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../sync-modules/" >Sync Modules</a> &#187;</li>
+          <li class="nav-item nav-item-3"><a href="../pubsub-module/" >PubSub Sync Module</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">S3 Bucket Notifications Compatibility</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

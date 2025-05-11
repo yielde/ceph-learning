@@ -1,0 +1,358 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>CephFS Snapshots &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css" />
+    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../genindex/" />
+    <link rel="search" title="Search" href="../../search/" />
+    <link rel="next" title="Cephx" href="../cephx/" />
+    <link rel="prev" title="CephFS Reclaim Interface" href="../cephfs-reclaim/" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../cephx/" title="Cephx"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../cephfs-reclaim/" title="CephFS Reclaim Interface"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../internals/" accesskey="U">Ceph Internals</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">CephFS Snapshots</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="cephfs-snapshots">
+<h1>CephFS Snapshots<a class="headerlink" href="#cephfs-snapshots" title="Permalink to this heading">¶</a></h1>
+<p>CephFS supports snapshots, generally created by invoking mkdir within the
+<code class="docutils literal notranslate"><span class="pre">.snap</span></code> directory. Note this is a hidden, special directory, not visible
+during a directory listing.</p>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Permalink to this heading">¶</a></h2>
+<p>Generally, snapshots do what they sound like: they create an immutable view
+of the file system at the point in time they’re taken. There are some headline
+features that make CephFS snapshots different from what you might expect:</p>
+<ul class="simple">
+<li><p>Arbitrary subtrees. Snapshots are created within any directory you choose,
+and cover all data in the file system under that directory.</p></li>
+<li><p>Asynchronous. If you create a snapshot, buffered data is flushed out lazily,
+including from other clients. As a result, “creating” the snapshot is
+very fast.</p></li>
+</ul>
+</section>
+<section id="important-data-structures">
+<h2>Important Data Structures<a class="headerlink" href="#important-data-structures" title="Permalink to this heading">¶</a></h2>
+<ul class="simple">
+<li><p>SnapRealm: A <cite>SnapRealm</cite> is created whenever you create a snapshot at a new
+point in the hierarchy (or, when a snapshotted inode is move outside of its
+parent snapshot). SnapRealms contain an <cite>sr_t srnode</cite>, and <cite>inodes_with_caps</cite>
+that are part of the snapshot. Clients also have a SnapRealm concept that
+maintains less data but is used to associate a <cite>SnapContext</cite> with each open
+file for writing.</p></li>
+<li><p>sr_t: An <cite>sr_t</cite> is the on-disk snapshot metadata. It is part of the containing
+directory and contains sequence counters, timestamps, the list of associated
+snapshot IDs, and <cite>past_parent_snaps</cite>.</p></li>
+<li><p>SnapServer: SnapServer manages snapshot ID allocation, snapshot deletion and
+tracks list of effective snapshots in the file system. A file system only has
+one instance of snapserver.</p></li>
+<li><p>SnapClient: SnapClient is used to communicate with snapserver, each MDS rank
+has its own snapclient instance. SnapClient also caches effective snapshots
+locally.</p></li>
+</ul>
+</section>
+<section id="creating-a-snapshot">
+<h2>Creating a snapshot<a class="headerlink" href="#creating-a-snapshot" title="Permalink to this heading">¶</a></h2>
+<p>CephFS snapshot feature is enabled by default on new file system. To enable it
+on existing file systems, use command below.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ ceph fs set &lt;fs_name&gt; allow_new_snaps true
+</pre></div>
+</div>
+<p>When snapshots are enabled, all directories in CephFS will have a special
+<code class="docutils literal notranslate"><span class="pre">.snap</span></code> directory. (You may configure a different name with the <code class="docutils literal notranslate"><span class="pre">client</span>
+<span class="pre">snapdir</span></code> setting if you wish.)</p>
+<p>To create a CephFS snapshot, create a subdirectory under
+<code class="docutils literal notranslate"><span class="pre">.snap</span></code> with a name of your choice. For example, to create a snapshot on
+directory “/1/2/3/”, invoke <code class="docutils literal notranslate"><span class="pre">mkdir</span> <span class="pre">/1/2/3/.snap/my-snapshot-name</span></code> .</p>
+<p>This is transmitted to the MDS Server as a
+CEPH_MDS_OP_MKSNAP-tagged <cite>MClientRequest</cite>, and initially handled in
+Server::handle_client_mksnap(). It allocates a <cite>snapid</cite> from the <cite>SnapServer</cite>,
+projects a new inode with the new SnapRealm, and commits it to the MDLog as
+usual. When committed, it invokes
+<cite>MDCache::do_realm_invalidate_and_update_notify()</cite>, which notifies all clients
+with caps on files under “/1/2/3/”, about the new SnapRealm. When clients get
+the notifications, they update client-side SnapRealm hierarchy, link files
+under “/1/2/3/” to the new SnapRealm and generate a <cite>SnapContext</cite> for the
+new SnapRealm.</p>
+<p>Note that this <em>is not</em> a synchronous part of the snapshot creation!</p>
+</section>
+<section id="updating-a-snapshot">
+<h2>Updating a snapshot<a class="headerlink" href="#updating-a-snapshot" title="Permalink to this heading">¶</a></h2>
+<p>If you delete a snapshot, a similar process is followed. If you remove an inode
+out of its parent SnapRealm, the rename code creates a new SnapRealm for the
+renamed inode (if SnapRealm does not already exist), saves IDs of snapshots that
+are effective on the original parent SnapRealm into <cite>past_parent_snaps</cite> of the
+new SnapRealm, then follows a process similar to creating snapshot.</p>
+</section>
+<section id="generating-a-snapcontext">
+<h2>Generating a SnapContext<a class="headerlink" href="#generating-a-snapcontext" title="Permalink to this heading">¶</a></h2>
+<p>A RADOS <cite>SnapContext</cite> consists of a snapshot sequence ID (<cite>snapid</cite>) and all
+the snapshot IDs that an object is already part of. To generate that list, we
+combine <cite>snapids</cite> associated with the SnapRealm and all valid <cite>snapids</cite> in
+<cite>past_parent_snaps</cite>. Stale <cite>snapids</cite> are filtered out by SnapClient’s cached
+effective snapshots.</p>
+</section>
+<section id="storing-snapshot-data">
+<h2>Storing snapshot data<a class="headerlink" href="#storing-snapshot-data" title="Permalink to this heading">¶</a></h2>
+<p>File data is stored in RADOS “self-managed” snapshots. Clients are careful to
+use the correct <cite>SnapContext</cite> when writing file data to the OSDs.</p>
+</section>
+<section id="storing-snapshot-metadata">
+<h2>Storing snapshot metadata<a class="headerlink" href="#storing-snapshot-metadata" title="Permalink to this heading">¶</a></h2>
+<p>Snapshotted dentries (and their inodes) are stored in-line as part of the
+directory they were in at the time of the snapshot. <em>All dentries</em> include a
+<cite>first</cite> and <cite>last</cite> snapid for which they are valid. (Non-snapshotted dentries
+will have their <cite>last</cite> set to CEPH_NOSNAP).</p>
+</section>
+<section id="snapshot-writeback">
+<h2>Snapshot writeback<a class="headerlink" href="#snapshot-writeback" title="Permalink to this heading">¶</a></h2>
+<p>There is a great deal of code to handle writeback efficiently. When a Client
+receives an <cite>MClientSnap</cite> message, it updates the local <cite>SnapRealm</cite>
+representation and its links to specific <cite>Inodes</cite>, and generates a <cite>CapSnap</cite>
+for the <cite>Inode</cite>. The <cite>CapSnap</cite> is flushed out as part of capability writeback,
+and if there is dirty data the <cite>CapSnap</cite> is used to block fresh data writes
+until the snapshot is completely flushed to the OSDs.</p>
+<p>In the MDS, we generate snapshot-representing dentries as part of the regular
+process for flushing them. Dentries with outstanding <cite>CapSnap</cite> data is kept
+pinned and in the journal.</p>
+</section>
+<section id="deleting-snapshots">
+<h2>Deleting snapshots<a class="headerlink" href="#deleting-snapshots" title="Permalink to this heading">¶</a></h2>
+<p>Snapshots are deleted by invoking “rmdir” on the “.snap” directory they are
+rooted in. (Attempts to delete a directory which roots snapshots <em>will fail</em>;
+you must delete the snapshots first.) Once deleted, they are entered into the
+<cite>OSDMap</cite> list of deleted snapshots and the file data is removed by the OSDs.
+Metadata is cleaned up as the directory objects are read in and written back
+out again.</p>
+</section>
+<section id="hard-links">
+<h2>Hard links<a class="headerlink" href="#hard-links" title="Permalink to this heading">¶</a></h2>
+<p>Inode with multiple hard links is moved to a dummy global SnapRealm. The
+dummy SnapRealm covers all snapshots in the file system. The inode’s data
+will be preserved for any new snapshot. These preserved data will cover
+snapshots on any linkage of the inode.</p>
+</section>
+<section id="multi-fs">
+<h2>Multi-FS<a class="headerlink" href="#multi-fs" title="Permalink to this heading">¶</a></h2>
+<p>Snapshots and multiple file systems don’t interact well. Specifically, each
+MDS cluster allocates <cite>snapids</cite> independently; if you have multiple file systems
+sharing a single pool (via namespaces), their snapshots <em>will</em> collide and
+deleting one will result in missing file data for others. (This may even be
+invisible, not throwing errors to the user.) If each FS gets its own
+pool things probably work, but this isn’t tested and may not be true.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>To avoid snap id collision between mon-managed snapshots and file system
+snapshots, pools with mon-managed snapshots are not allowed to be attached
+to a file system. Also, mon-managed snapshots can’t be created in pools
+already attached to a file system either.</p>
+</div>
+</section>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../">
+              <img class="logo" src="../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../install/">Installing Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cephadm/">Cephadm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rados/">Ceph Storage Cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cephfs/">Ceph File System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rbd/">Ceph Block Device</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../radosgw/">Ceph Object Gateway</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/">Ceph Manager Daemon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../developer_guide/">Developer Guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../internals/">Ceph Internals</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../blkin/">Tracing Ceph With Blkin</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../bluestore/">BlueStore Internals</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cache-pool/">Cache pool</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../ceph_krb_auth/">A Detailed Documentation on How to Set up Ceph Kerberos Authentication</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cephfs-mirroring/">CephFS Mirroring</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cephfs-reclaim/">CephFS Reclaim Interface</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">CephFS Snapshots</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#overview">Overview</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#important-data-structures">Important Data Structures</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#creating-a-snapshot">Creating a snapshot</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#updating-a-snapshot">Updating a snapshot</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#generating-a-snapcontext">Generating a SnapContext</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#storing-snapshot-data">Storing snapshot data</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#storing-snapshot-metadata">Storing snapshot metadata</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#snapshot-writeback">Snapshot writeback</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#deleting-snapshots">Deleting snapshots</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#hard-links">Hard links</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#multi-fs">Multi-FS</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../cephx/">Cephx</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cephx_protocol/">A Detailed Description of the Cephx Authentication Protocol</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../config/">Configuration Management System</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../config-key/">config-key layout</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../context/">CephContext</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../continuous-integration/">Continuous Integration Architecture</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../corpus/">Corpus structure</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cpu-profiler/">Installing Oprofile</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cxx/">C++17 and libstdc++ ABI</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../delayed-delete/">CephFS delayed deletion</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../dev_cluster_deployement/">Deploying a development cluster</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../dev_cluster_deployement/#deploying-multiple-development-clusters-on-the-same-machine">Deploying multiple development clusters on the same machine</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../development-workflow/">Development workflows</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../documenting/">Documenting Ceph</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../encoding/">Serialization (encode/decode)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../erasure-coded-pool/">Erasure Coded pool</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../file-striping/">File striping</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../freebsd/">FreeBSD Implementation details</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../generatedocs/">Building Ceph Documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../iana/">IANA Numbers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../kubernetes/">Hacking on Ceph in Kubernetes with Rook</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../libs/">Library architecture</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../logging/">Use of the cluster log</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../logs/">Debug logs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../macos/">build on MacOS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../messenger/">Messenger notes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../mon-bootstrap/">Monitor bootstrap</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../mon-elections/">Monitor Elections</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../mon-on-disk-formats/">ON-DISK FORMAT</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../mon-osdmap-prune/">FULL OSDMAP VERSION PRUNING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../msgr2/">msgr2 protocol (msgr2.0 and msgr2.1)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../network-encoding/">Network Encoding</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../network-protocol/">Network Protocol</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../object-store/">Object Store Architecture Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../osd-class-path/">OSD class path issues</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../peering/">Peering</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../perf/">Using perf</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../perf_counters/">Perf counters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../perf_histograms/">Perf histograms</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../placement-group/">PG (Placement Group) notes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../quick_guide/">Developer Guide (Quick)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rados-client-protocol/">RADOS client protocol</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rbd-diff/">RBD Incremental Backup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rbd-export/">RBD Export &amp; Import</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../rbd-layering/">RBD Layering</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../release-checklists/">Release checklists</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../release-process/">Ceph Release Process</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../seastore/">SeaStore</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../sepia/">Sepia community test lab</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../session_authentication/">Session Authentication for the Cephx Protocol</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../testing/">Testing notes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../versions/">Public OSD Version</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../vstart-ganesha/">NFS CephFS-RGW Developer Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../wireshark/">Wireshark Dissector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../zoned-storage/">Zoned Storage Support</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../osd_internals/">OSD developer documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../mds_internals/">MDS developer documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../radosgw/">RADOS Gateway developer documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../ceph-volume/">ceph-volume developer documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../crimson/">Crimson developer documentation</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../cephx/" title="Cephx"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../cephfs-reclaim/" title="CephFS Reclaim Interface"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../internals/" >Ceph Internals</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">CephFS Snapshots</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

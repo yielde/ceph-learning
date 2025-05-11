@@ -1,0 +1,16 @@
+Metadata-Version: 2.1
+Name: rbd
+Version: 2.0.0
+Summary: Python bindings for the RBD library
+Home-page: https://github.com/ceph/ceph/tree/master/src/pybind/rbd
+License: LGPLv2+
+Platform: Linux
+Classifier: Intended Audience :: Developers
+Classifier: Intended Audience :: System Administrators
+Classifier: License :: OSI Approved :: GNU Lesser General Public License v2 or later (LGPLv2+)
+Classifier: Operating System :: POSIX :: Linux
+Classifier: Programming Language :: Cython
+Classifier: Programming Language :: Python :: 3
+
+This package contains Python bindings for interacting with the RADOS Block Device (RBD) library. rbd is a utility for manipulating rados block device images, used by the Linux rbd driver and the rbd storage driver for QEMU/KVM. RBD images are simple block devices that are striped over objects and stored in a RADOS object store. The size of the objects the image is striped over must be a power of two.
+

@@ -1,0 +1,201 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>RBD Replay &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css" />
+    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../genindex/" />
+    <link rel="search" title="Search" href="../../search/" />
+    <link rel="next" title="Ceph Block Device 3rd Party Integration" href="../rbd-integrations/" />
+    <link rel="prev" title="Config Settings" href="../rbd-config-ref/" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../rbd-integrations/" title="Ceph Block Device 3rd Party Integration"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../rbd-config-ref/" title="Config Settings"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../" >Ceph Block Device</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../rbd-operations/" accesskey="U">Ceph Block Device Operations</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">RBD Replay</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="rbd-replay">
+<h1>RBD Replay<a class="headerlink" href="#rbd-replay" title="Permalink to this heading">¶</a></h1>
+<p id="index-0">RBD Replay is a set of tools for capturing and replaying RADOS Block Device
+(RBD) workloads. To capture an RBD workload, <code class="docutils literal notranslate"><span class="pre">lttng-tools</span></code> must be installed
+on the client, and <code class="docutils literal notranslate"><span class="pre">librbd</span></code> on the client must be the v0.87 (Giant) release
+or later. To replay an RBD workload, <code class="docutils literal notranslate"><span class="pre">librbd</span></code> on the client must be the Giant
+release or later.</p>
+<p>Capture and replay takes three steps:</p>
+<ol class="arabic">
+<li><p>Capture the trace.  Make sure to capture <code class="docutils literal notranslate"><span class="pre">pthread_id</span></code> context:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">mkdir</span> <span class="o">-</span><span class="n">p</span> <span class="n">traces</span>
+<span class="n">lttng</span> <span class="n">create</span> <span class="o">-</span><span class="n">o</span> <span class="n">traces</span> <span class="n">librbd</span>
+<span class="n">lttng</span> <span class="n">enable</span><span class="o">-</span><span class="n">event</span> <span class="o">-</span><span class="n">u</span> <span class="s1">&#39;librbd:*&#39;</span>
+<span class="n">lttng</span> <span class="n">add</span><span class="o">-</span><span class="n">context</span> <span class="o">-</span><span class="n">u</span> <span class="o">-</span><span class="n">t</span> <span class="n">pthread_id</span>
+<span class="n">lttng</span> <span class="n">start</span>
+<span class="c1"># run RBD workload here</span>
+<span class="n">lttng</span> <span class="n">stop</span>
+</pre></div>
+</div>
+</li>
+<li><p>Process the trace with <a class="reference external" href="../../man/8/rbd-replay-prep">rbd-replay-prep</a>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">rbd</span><span class="o">-</span><span class="n">replay</span><span class="o">-</span><span class="n">prep</span> <span class="n">traces</span><span class="o">/</span><span class="n">ust</span><span class="o">/</span><span class="n">uid</span><span class="o">/*/*</span> <span class="n">replay</span><span class="o">.</span><span class="n">bin</span>
+</pre></div>
+</div>
+</li>
+<li><p>Replay the trace with <a class="reference external" href="../../man/8/rbd-replay">rbd-replay</a>. Use read-only until you know
+it’s doing what you want:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">rbd</span><span class="o">-</span><span class="n">replay</span> <span class="o">--</span><span class="n">read</span><span class="o">-</span><span class="n">only</span> <span class="n">replay</span><span class="o">.</span><span class="n">bin</span>
+</pre></div>
+</div>
+</li>
+</ol>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p><code class="docutils literal notranslate"><span class="pre">rbd-replay</span></code> will destroy data by default.  Do not use against
+an image you wish to keep, unless you use the <code class="docutils literal notranslate"><span class="pre">--read-only</span></code> option.</p>
+</div>
+<p>The replayed workload does not have to be against the same RBD image or even the
+same cluster as the captured workload. To account for differences, you may need
+to use the <code class="docutils literal notranslate"><span class="pre">--pool</span></code> and <code class="docutils literal notranslate"><span class="pre">--map-image</span></code> options of <code class="docutils literal notranslate"><span class="pre">rbd-replay</span></code>.</p>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../">
+              <img class="logo" src="../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../install/">Installing Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cephadm/">Cephadm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rados/">Ceph Storage Cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cephfs/">Ceph File System</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../">Ceph Block Device</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../rados-rbd-cmds/">Basic Commands</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../rbd-operations/">Operations</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../rbd-snapshot/">Snapshots</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rbd-exclusive-locks/">Exclusive Locking</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rbd-mirroring/">Mirroring</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rbd-live-migration/">Live-Migration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rbd-persistent-read-only-cache/">Persistent Read-only Cache</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rbd-persistent-write-back-cache/">Persistent Write-back Cache</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rbd-encryption/">Encryption</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../rbd-config-ref/">Config Settings (librbd)</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">RBD Replay</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../rbd-integrations/">Integrations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../man/">Manpages</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/">APIs</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../radosgw/">Ceph Object Gateway</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/">Ceph Manager Daemon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../mgr/dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dev/developer_guide/">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dev/internals/">Ceph Internals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../rbd-integrations/" title="Ceph Block Device 3rd Party Integration"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../rbd-config-ref/" title="Config Settings"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../" >Ceph Block Device</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../rbd-operations/" >Ceph Block Device Operations</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">RBD Replay</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

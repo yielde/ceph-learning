@@ -1,0 +1,632 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>rados – rados object storage utility &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/css/custom.css" />
+    <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/jquery.js"></script>
+    <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../../genindex/" />
+    <link rel="search" title="Search" href="../../../search/" />
+    <link rel="next" title="ceph-post-file – post files for ceph developers" href="../ceph-post-file/" />
+    <link rel="prev" title="osdmaptool – ceph osd cluster map manipulation tool" href="../osdmaptool/" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../ceph-post-file/" title="ceph-post-file – post files for ceph developers"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../osdmaptool/" title="osdmaptool – ceph osd cluster map manipulation tool"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../../rados/" >Ceph Storage Cluster</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../../../rados/man/" accesskey="U">Object Store Manpages</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">rados – rados object storage utility</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="rados-rados-object-storage-utility">
+<h1>rados – rados object storage utility<a class="headerlink" href="#rados-rados-object-storage-utility" title="Permalink to this heading">¶</a></h1>
+<section id="synopsis">
+<h2>Synopsis<a class="headerlink" href="#synopsis" title="Permalink to this heading">¶</a></h2>
+<div class="line-block">
+<div class="line"><strong>rados</strong> [ <em>options</em> ] [ <em>command</em> ]</div>
+</div>
+</section>
+<section id="description">
+<h2>Description<a class="headerlink" href="#description" title="Permalink to this heading">¶</a></h2>
+<p><strong>rados</strong> is a utility for interacting with a Ceph object storage
+cluster (RADOS), part of the Ceph distributed storage system.</p>
+</section>
+<section id="global-options">
+<h2>Global Options<a class="headerlink" href="#global-options" title="Permalink to this heading">¶</a></h2>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-rados-object-locator">
+<span class="sig-name descname"><span class="pre">--object-locator</span></span><span class="sig-prename descclassname"> <span class="pre">object_locator</span></span><a class="headerlink" href="#cmdoption-rados-object-locator" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set object_locator for operation.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-rados-p">
+<span id="cmdoption-rados-pool"></span><span class="sig-name descname"><span class="pre">-p</span></span><span class="sig-prename descclassname"> <span class="pre">pool</span></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--pool</span></span><span class="sig-prename descclassname"> <span class="pre">pool</span></span><a class="headerlink" href="#cmdoption-rados-p" title="Permalink to this definition">¶</a></dt>
+<dd><p>Interact with the given pool. Required by most commands.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-rados-target-pool">
+<span class="sig-name descname"><span class="pre">--target-pool</span></span><span class="sig-prename descclassname"> <span class="pre">pool</span></span><a class="headerlink" href="#cmdoption-rados-target-pool" title="Permalink to this definition">¶</a></dt>
+<dd><p>Select target pool by name.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-rados-pgid">
+<span class="sig-name descname"><span class="pre">--pgid</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-rados-pgid" title="Permalink to this definition">¶</a></dt>
+<dd><p>As an alternative to <code class="docutils literal notranslate"><span class="pre">--pool</span></code>, <code class="docutils literal notranslate"><span class="pre">--pgid</span></code> also allow users to specify the
+PG id to which the command will be directed. With this option, certain
+commands like <code class="docutils literal notranslate"><span class="pre">ls</span></code> allow users to limit the scope of the command to the given PG.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-rados-N">
+<span id="cmdoption-rados-n"></span><span id="cmdoption-rados-namespace"></span><span class="sig-name descname"><span class="pre">-N</span></span><span class="sig-prename descclassname"> <span class="pre">namespace</span></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--namespace</span></span><span class="sig-prename descclassname"> <span class="pre">namespace</span></span><a class="headerlink" href="#cmdoption-rados-N" title="Permalink to this definition">¶</a></dt>
+<dd><p>Specify the rados namespace to use for the object.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-rados-all">
+<span class="sig-name descname"><span class="pre">--all</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-rados-all" title="Permalink to this definition">¶</a></dt>
+<dd><p>Use with ls to list objects in all namespaces.
+Put in CEPH_ARGS environment variable to make this the default.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-rados-default">
+<span class="sig-name descname"><span class="pre">--default</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-rados-default" title="Permalink to this definition">¶</a></dt>
+<dd><p>Use with ls to list objects in default namespace.
+Takes precedence over –all in case –all is in environment.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-rados-s">
+<span id="cmdoption-rados-snap"></span><span class="sig-name descname"><span class="pre">-s</span></span><span class="sig-prename descclassname"> <span class="pre">snap</span></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--snap</span></span><span class="sig-prename descclassname"> <span class="pre">snap</span></span><a class="headerlink" href="#cmdoption-rados-s" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read from the given pool snapshot. Valid for all pool-specific read operations.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-rados-create">
+<span class="sig-name descname"><span class="pre">--create</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-rados-create" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create the pool or directory that was specified.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-rados-i">
+<span class="sig-name descname"><span class="pre">-i</span></span><span class="sig-prename descclassname"> <span class="pre">infile</span></span><a class="headerlink" href="#cmdoption-rados-i" title="Permalink to this definition">¶</a></dt>
+<dd><p>will specify an input file to be passed along as a payload with the
+command to the monitor cluster. This is only used for specific
+monitor commands.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-rados-m">
+<span class="sig-name descname"><span class="pre">-m</span></span><span class="sig-prename descclassname"> <span class="pre">monaddress[:port]</span></span><a class="headerlink" href="#cmdoption-rados-m" title="Permalink to this definition">¶</a></dt>
+<dd><p>Connect to specified monitor (instead of looking through ceph.conf).</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-rados-b">
+<span class="sig-name descname"><span class="pre">-b</span></span><span class="sig-prename descclassname"> <span class="pre">block_size</span></span><a class="headerlink" href="#cmdoption-rados-b" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the block size for put/get/append ops and for write benchmarking.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-rados-striper">
+<span class="sig-name descname"><span class="pre">--striper</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-rados-striper" title="Permalink to this definition">¶</a></dt>
+<dd><p>Uses the striping API of rados rather than the default one.
+Available for stat, stat2, get, put, append, truncate, rm, ls
+and all xattr related operation.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-rados-O">
+<span id="cmdoption-rados-o"></span><span id="cmdoption-rados-object-size"></span><span class="sig-name descname"><span class="pre">-O</span></span><span class="sig-prename descclassname"> <span class="pre">object_size</span></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--object-size</span></span><span class="sig-prename descclassname"> <span class="pre">object_size</span></span><a class="headerlink" href="#cmdoption-rados-O" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the object size for put/get ops and for write benchmarking.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-rados-max-objects">
+<span class="sig-name descname"><span class="pre">--max-objects</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-rados-max-objects" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the max number of objects for write benchmarking.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-rados-lock-cookie">
+<span class="sig-name descname"><span class="pre">--lock-cookie</span></span><span class="sig-prename descclassname"> <span class="pre">locker-cookie</span></span><a class="headerlink" href="#cmdoption-rados-lock-cookie" title="Permalink to this definition">¶</a></dt>
+<dd><p>Will set the lock cookie for acquiring advisory lock (lock get command).
+If the cookie is not empty, this option must be passed to lock break command
+to find the correct lock when releasing lock.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-rados-target-locator">
+<span class="sig-name descname"><span class="pre">--target-locator</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-rados-target-locator" title="Permalink to this definition">¶</a></dt>
+<dd><p>Use with cp to specify the locator of the new object.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-rados-target-nspace">
+<span class="sig-name descname"><span class="pre">--target-nspace</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-rados-target-nspace" title="Permalink to this definition">¶</a></dt>
+<dd><p>Use with cp to specify the namespace of the new object.</p>
+</dd></dl>
+
+</section>
+<section id="bench-options">
+<h2>Bench options<a class="headerlink" href="#bench-options" title="Permalink to this heading">¶</a></h2>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-rados-t">
+<span id="cmdoption-rados-concurrent-ios"></span><span class="sig-name descname"><span class="pre">-t</span></span><span class="sig-prename descclassname"> <span class="pre">N</span></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--concurrent-ios</span></span><span class="sig-prename descclassname"><span class="pre">=N</span></span><a class="headerlink" href="#cmdoption-rados-t" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set number of concurrent I/O operations.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-rados-show-time">
+<span class="sig-name descname"><span class="pre">--show-time</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-rados-show-time" title="Permalink to this definition">¶</a></dt>
+<dd><p>Prefix output with date/time.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-rados-no-verify">
+<span class="sig-name descname"><span class="pre">--no-verify</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-rados-no-verify" title="Permalink to this definition">¶</a></dt>
+<dd><p>Do not verify contents of read objects.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-rados-write-object">
+<span class="sig-name descname"><span class="pre">--write-object</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-rados-write-object" title="Permalink to this definition">¶</a></dt>
+<dd><p>Write contents to the objects.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-rados-write-omap">
+<span class="sig-name descname"><span class="pre">--write-omap</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-rados-write-omap" title="Permalink to this definition">¶</a></dt>
+<dd><p>Write contents to the omap.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-rados-write-xattr">
+<span class="sig-name descname"><span class="pre">--write-xattr</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-rados-write-xattr" title="Permalink to this definition">¶</a></dt>
+<dd><p>Write contents to the extended attributes.</p>
+</dd></dl>
+
+</section>
+<section id="load-gen-options">
+<h2>Load gen options<a class="headerlink" href="#load-gen-options" title="Permalink to this heading">¶</a></h2>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-rados-num-objects">
+<span class="sig-name descname"><span class="pre">--num-objects</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-rados-num-objects" title="Permalink to this definition">¶</a></dt>
+<dd><p>Total number of objects.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-rados-min-object-size">
+<span class="sig-name descname"><span class="pre">--min-object-size</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-rados-min-object-size" title="Permalink to this definition">¶</a></dt>
+<dd><p>Min object size.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-rados-max-object-size">
+<span class="sig-name descname"><span class="pre">--max-object-size</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-rados-max-object-size" title="Permalink to this definition">¶</a></dt>
+<dd><p>Max object size.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-rados-min-op-len">
+<span class="sig-name descname"><span class="pre">--min-op-len</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-rados-min-op-len" title="Permalink to this definition">¶</a></dt>
+<dd><p>Min io size of operations.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-rados-max-op-len">
+<span class="sig-name descname"><span class="pre">--max-op-len</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-rados-max-op-len" title="Permalink to this definition">¶</a></dt>
+<dd><p>Max io size of operations.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-rados-max-ops">
+<span class="sig-name descname"><span class="pre">--max-ops</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-rados-max-ops" title="Permalink to this definition">¶</a></dt>
+<dd><p>Max number of operations.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-rados-max-backlog">
+<span class="sig-name descname"><span class="pre">--max-backlog</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-rados-max-backlog" title="Permalink to this definition">¶</a></dt>
+<dd><p>Max backlog size.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-rados-read-percent">
+<span class="sig-name descname"><span class="pre">--read-percent</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-rados-read-percent" title="Permalink to this definition">¶</a></dt>
+<dd><p>Percent of operations that are read.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-rados-target-throughput">
+<span class="sig-name descname"><span class="pre">--target-throughput</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-rados-target-throughput" title="Permalink to this definition">¶</a></dt>
+<dd><p>Target throughput (in bytes).</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-rados-run-length">
+<span class="sig-name descname"><span class="pre">--run-length</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-rados-run-length" title="Permalink to this definition">¶</a></dt>
+<dd><p>Total time (in seconds).</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-rados-offset-align">
+<span class="sig-name descname"><span class="pre">--offset-align</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-rados-offset-align" title="Permalink to this definition">¶</a></dt>
+<dd><p>At what boundary to align random op offsets.</p>
+</dd></dl>
+
+</section>
+<section id="cache-pools-options">
+<h2>Cache pools options<a class="headerlink" href="#cache-pools-options" title="Permalink to this heading">¶</a></h2>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-rados-with-clones">
+<span class="sig-name descname"><span class="pre">--with-clones</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-rados-with-clones" title="Permalink to this definition">¶</a></dt>
+<dd><p>Include clones when doing flush or evict.</p>
+</dd></dl>
+
+</section>
+<section id="omap-options">
+<h2>OMAP options<a class="headerlink" href="#omap-options" title="Permalink to this heading">¶</a></h2>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-rados-omap-key-file">
+<span class="sig-name descname"><span class="pre">--omap-key-file</span></span><span class="sig-prename descclassname"> <span class="pre">file</span></span><a class="headerlink" href="#cmdoption-rados-omap-key-file" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read the omap key from a file.</p>
+</dd></dl>
+
+</section>
+<section id="generic-options">
+<h2>Generic options<a class="headerlink" href="#generic-options" title="Permalink to this heading">¶</a></h2>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-rados-c">
+<span id="cmdoption-rados-conf"></span><span class="sig-name descname"><span class="pre">-c</span></span><span class="sig-prename descclassname"> <span class="pre">FILE</span></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--conf</span></span><span class="sig-prename descclassname"> <span class="pre">FILE</span></span><a class="headerlink" href="#cmdoption-rados-c" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read configuration from the given configuration file.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-rados-id">
+<span class="sig-name descname"><span class="pre">--id</span></span><span class="sig-prename descclassname"> <span class="pre">ID</span></span><a class="headerlink" href="#cmdoption-rados-id" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set ID portion of my name.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-rados-0">
+<span id="cmdoption-rados-name"></span><span class="sig-name descname"><span class="pre">-n</span></span><span class="sig-prename descclassname"> <span class="pre">TYPE.ID</span></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--name</span></span><span class="sig-prename descclassname"> <span class="pre">TYPE.ID</span></span><a class="headerlink" href="#cmdoption-rados-0" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set cephx user name.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-rados-cluster">
+<span class="sig-name descname"><span class="pre">--cluster</span></span><span class="sig-prename descclassname"> <span class="pre">NAME</span></span><a class="headerlink" href="#cmdoption-rados-cluster" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set cluster name (default: ceph).</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-rados-setuser">
+<span class="sig-name descname"><span class="pre">--setuser</span></span><span class="sig-prename descclassname"> <span class="pre">USER</span></span><a class="headerlink" href="#cmdoption-rados-setuser" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set uid to user or uid (and gid to user’s gid).</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-rados-setgroup">
+<span class="sig-name descname"><span class="pre">--setgroup</span></span><span class="sig-prename descclassname"> <span class="pre">GROUP</span></span><a class="headerlink" href="#cmdoption-rados-setgroup" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set gid to group or gid.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-rados-version">
+<span class="sig-name descname"><span class="pre">--version</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-rados-version" title="Permalink to this definition">¶</a></dt>
+<dd><p>Show version and quit.</p>
+</dd></dl>
+
+</section>
+<section id="global-commands">
+<h2>Global commands<a class="headerlink" href="#global-commands" title="Permalink to this heading">¶</a></h2>
+<dl class="simple">
+<dt><strong class="command">lspools</strong></dt><dd><p>List object pools</p>
+</dd>
+<dt><strong class="command">df</strong></dt><dd><p>Show utilization statistics, including disk usage (bytes) and object
+counts, over the entire system and broken down by pool.</p>
+</dd>
+<dt><strong class="command">list-inconsistent-pg</strong> <em>pool</em></dt><dd><p>List inconsistent PGs in given pool.</p>
+</dd>
+<dt><strong class="command">list-inconsistent-obj</strong> <em>pgid</em></dt><dd><p>List inconsistent objects in given PG.</p>
+</dd>
+<dt><strong class="command">list-inconsistent-snapset</strong> <em>pgid</em></dt><dd><p>List inconsistent snapsets in given PG.</p>
+</dd>
+</dl>
+</section>
+<section id="pool-specific-commands">
+<h2>Pool specific commands<a class="headerlink" href="#pool-specific-commands" title="Permalink to this heading">¶</a></h2>
+<dl class="simple">
+<dt><strong class="command">get</strong> <em>name</em> <em>outfile</em></dt><dd><p>Read object name from the cluster and write it to outfile.</p>
+</dd>
+<dt><strong class="command">put</strong> <em>name</em> <em>infile</em> [–offset offset]</dt><dd><p>Write object name with start offset (default:0) to the cluster with contents from infile.
+<strong>Warning:</strong> The put command creates a single RADOS object, sized just as
+large as your input file. Unless your objects are of reasonable and consistent sizes, that
+is probably not what you want – consider using RGW/S3, CephFS, or RBD instead.</p>
+</dd>
+<dt><strong class="command">append</strong> <em>name</em> <em>infile</em></dt><dd><p>Append object name to the cluster with contents from infile.</p>
+</dd>
+<dt><strong class="command">rm</strong> [–force-full] <em>name</em> …</dt><dd><p>Remove object(s) with name(s). With <code class="docutils literal notranslate"><span class="pre">--force-full</span></code> will remove when cluster is marked full.</p>
+</dd>
+<dt><strong class="command">listwatchers</strong> <em>name</em></dt><dd><p>List the watchers of object name.</p>
+</dd>
+<dt><strong class="command">ls</strong> <em>outfile</em></dt><dd><p>List objects in the given pool and write to outfile. Instead of <code class="docutils literal notranslate"><span class="pre">--pool</span></code> if <code class="docutils literal notranslate"><span class="pre">--pgid</span></code> will be specified, <code class="docutils literal notranslate"><span class="pre">ls</span></code> will only list the objects in the given PG.</p>
+</dd>
+<dt><strong class="command">lssnap</strong></dt><dd><p>List snapshots for given pool.</p>
+</dd>
+<dt><strong class="command">clonedata</strong> <em>srcname</em> <em>dstname</em> –object-locator <em>key</em></dt><dd><p>Clone object byte data from <em>srcname</em> to <em>dstname</em>.  Both objects must be stored with the locator key <em>key</em> (usually either <em>srcname</em> or <em>dstname</em>).  Object attributes and omap keys are not copied or cloned.</p>
+</dd>
+<dt><strong class="command">mksnap</strong> <em>foo</em></dt><dd><p>Create pool snapshot named <em>foo</em>.</p>
+</dd>
+<dt><strong class="command">rmsnap</strong> <em>foo</em></dt><dd><p>Remove pool snapshot named <em>foo</em>.</p>
+</dd>
+<dt><strong class="command">bench</strong> <em>seconds</em> <em>mode</em> [ -b <em>objsize</em> ] [ -t <em>threads</em> ]</dt><dd><p>Benchmark for <em>seconds</em>. The mode can be <em>write</em>, <em>seq</em>, or
+<em>rand</em>. <em>seq</em> and <em>rand</em> are read benchmarks, either
+sequential or random. Before running one of the reading benchmarks,
+run a write benchmark with the <em>–no-cleanup</em> option. The default
+object size is 4 MB, and the default number of simulated threads
+(parallel writes) is 16. The <em>–run-name &lt;label&gt;</em> option is useful
+for benchmarking a workload test from multiple clients. The <em>&lt;label&gt;</em>
+is an arbitrary object name. It is “benchmark_last_metadata” by
+default, and is used as the underlying object name for “read” and
+“write” ops.
+Note: -b <em>objsize</em> option is valid only in <em>write</em> mode.
+Note: <em>write</em> and <em>seq</em> must be run on the same host otherwise the
+objects created by <em>write</em> will have names that will fail <em>seq</em>.</p>
+</dd>
+<dt><strong class="command">cleanup</strong> [ –run-name <em>run_name</em> ] [ –prefix <em>prefix</em> ]</dt><dd><p>Clean up a previous benchmark operation.
+Note: the default run-name is “benchmark_last_metadata”</p>
+</dd>
+<dt><strong class="command">listxattr</strong> <em>name</em></dt><dd><p>List all extended attributes of an object.</p>
+</dd>
+<dt><strong class="command">getxattr</strong> <em>name</em> <em>attr</em></dt><dd><p>Dump the extended attribute value of <em>attr</em> of an object.</p>
+</dd>
+<dt><strong class="command">setxattr</strong> <em>name</em> <em>attr</em> <em>value</em></dt><dd><p>Set the value of <em>attr</em> in the extended attributes of an object.</p>
+</dd>
+<dt><strong class="command">rmxattr</strong> <em>name</em> <em>attr</em></dt><dd><p>Remove <em>attr</em> from the extended attributes of an object.</p>
+</dd>
+<dt><strong class="command">stat</strong> <em>name</em></dt><dd><p>Get stat (ie. mtime, size) of given object</p>
+</dd>
+<dt><strong class="command">stat2</strong> <em>name</em></dt><dd><p>Get stat (similar to stat, but with high precision time) of given object</p>
+</dd>
+<dt><strong class="command">listomapkeys</strong> <em>name</em></dt><dd><p>List all the keys stored in the object map of object name.</p>
+</dd>
+<dt><strong class="command">listomapvals</strong> <em>name</em></dt><dd><p>List all key/value pairs stored in the object map of object name.
+The values are dumped in hexadecimal.</p>
+</dd>
+<dt><strong class="command">getomapval</strong> [ –omap-key-file <em>file</em> ] <em>name</em> <em>key</em> [ <em>out-file</em> ]</dt><dd><p>Dump the hexadecimal value of key in the object map of object name.
+If the optional <em>out-file</em> argument is not provided, the value will be
+written to standard output.</p>
+</dd>
+<dt><strong class="command">setomapval</strong> [ –omap-key-file <em>file</em> ] <em>name</em> <em>key</em> [ <em>value</em> ]</dt><dd><p>Set the value of key in the object map of object name. If the optional
+<em>value</em> argument is not provided, the value will be read from standard
+input.</p>
+</dd>
+<dt><strong class="command">rmomapkey</strong> [ –omap-key-file <em>file</em> ] <em>name</em> <em>key</em></dt><dd><p>Remove key from the object map of object name.</p>
+</dd>
+<dt><strong class="command">getomapheader</strong> <em>name</em></dt><dd><p>Dump the hexadecimal value of the object map header of object name.</p>
+</dd>
+<dt><strong class="command">setomapheader</strong> <em>name</em> <em>value</em></dt><dd><p>Set the value of the object map header of object name.</p>
+</dd>
+<dt><strong class="command">export</strong> <em>filename</em></dt><dd><p>Serialize pool contents to a file or standard output.n”</p>
+</dd>
+<dt><strong class="command">import</strong> [–dry-run] [–no-overwrite] &lt; filename | - &gt;</dt><dd><p>Load pool contents from a file or standard input</p>
+</dd>
+</dl>
+</section>
+<section id="examples">
+<h2>Examples<a class="headerlink" href="#examples" title="Permalink to this heading">¶</a></h2>
+<p>To view cluster utilization:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">rados</span> <span class="n">df</span>
+</pre></div>
+</div>
+<p>To get a list object in pool foo sent to stdout:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">rados</span> <span class="o">-</span><span class="n">p</span> <span class="n">foo</span> <span class="n">ls</span> <span class="o">-</span>
+</pre></div>
+</div>
+<p>To get a list of objects in PG 0.6:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">rados</span> <span class="o">--</span><span class="n">pgid</span> <span class="mf">0.6</span> <span class="n">ls</span>
+</pre></div>
+</div>
+<p>To write an object:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">rados</span> <span class="o">-</span><span class="n">p</span> <span class="n">foo</span> <span class="n">put</span> <span class="n">myobject</span> <span class="n">blah</span><span class="o">.</span><span class="n">txt</span>
+</pre></div>
+</div>
+<p>To create a snapshot:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">rados</span> <span class="o">-</span><span class="n">p</span> <span class="n">foo</span> <span class="n">mksnap</span> <span class="n">mysnap</span>
+</pre></div>
+</div>
+<p>To delete the object:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">rados</span> <span class="o">-</span><span class="n">p</span> <span class="n">foo</span> <span class="n">rm</span> <span class="n">myobject</span>
+</pre></div>
+</div>
+<p>To read a previously snapshotted version of an object:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">rados</span> <span class="o">-</span><span class="n">p</span> <span class="n">foo</span> <span class="o">-</span><span class="n">s</span> <span class="n">mysnap</span> <span class="n">get</span> <span class="n">myobject</span> <span class="n">blah</span><span class="o">.</span><span class="n">txt</span><span class="o">.</span><span class="n">old</span>
+</pre></div>
+</div>
+<p>To list inconsistent objects in PG 0.6:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">rados</span> <span class="nb">list</span><span class="o">-</span><span class="n">inconsistent</span><span class="o">-</span><span class="n">obj</span> <span class="mf">0.6</span> <span class="o">--</span><span class="nb">format</span><span class="o">=</span><span class="n">json</span><span class="o">-</span><span class="n">pretty</span>
+</pre></div>
+</div>
+</section>
+<section id="availability">
+<h2>Availability<a class="headerlink" href="#availability" title="Permalink to this heading">¶</a></h2>
+<p><strong>rados</strong> is part of Ceph, a massively scalable, open-source, distributed storage system. Please refer to
+the Ceph documentation at <a class="reference external" href="http://ceph.com/docs">http://ceph.com/docs</a> for more information.</p>
+</section>
+<section id="see-also">
+<h2>See also<a class="headerlink" href="#see-also" title="Permalink to this heading">¶</a></h2>
+<p><a class="reference internal" href="../ceph/"><span class="doc">ceph</span></a>(8)</p>
+</section>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../../">
+              <img class="logo" src="../../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../install/">Installing Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cephadm/">Cephadm</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../../rados/">Ceph Storage Cluster</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../../../rados/configuration/">Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../cephadm/">Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../rados/operations/">Operations</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../../../rados/man/">Man Pages</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../ceph-volume/">ceph-volume – Ceph OSD deployment and inspection tool</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../ceph-volume-systemd/">ceph-volume-systemd – systemd ceph-volume helper tool</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../ceph/">ceph – ceph administration tool</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../ceph-authtool/">ceph-authtool – ceph keyring manipulation tool</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../ceph-clsinfo/">ceph-clsinfo – show class object information</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../ceph-conf/">ceph-conf – ceph conf file tool</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../ceph-debugpack/">ceph-debugpack – ceph debug packer utility</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../ceph-dencoder/">ceph-dencoder – ceph encoder/decoder utility</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../ceph-mon/">ceph-mon – ceph monitor daemon</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../ceph-osd/">ceph-osd – ceph object storage daemon</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../ceph-kvstore-tool/">ceph-kvstore-tool – ceph kvstore manipulation tool</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../ceph-run/">ceph-run – restart daemon on core dump</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../ceph-syn/">ceph-syn – ceph synthetic workload generator</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../crushtool/">crushtool – CRUSH map manipulation tool</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../librados-config/">librados-config – display information about librados</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../monmaptool/">monmaptool – ceph monitor cluster map manipulation tool</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../osdmaptool/">osdmaptool – ceph osd cluster map manipulation tool</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">rados – rados object storage utility</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#synopsis">Synopsis</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#description">Description</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#global-options">Global Options</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#bench-options">Bench options</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#load-gen-options">Load gen options</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#cache-pools-options">Cache pools options</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#omap-options">OMAP options</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#generic-options">Generic options</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#global-commands">Global commands</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pool-specific-commands">Pool specific commands</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#examples">Examples</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#availability">Availability</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#see-also">See also</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../ceph-post-file/">ceph-post-file – post files for ceph developers</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../rados/troubleshooting/">Troubleshooting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../rados/api/">APIs</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cephfs/">Ceph File System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../rbd/">Ceph Block Device</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../radosgw/">Ceph Object Gateway</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../mgr/">Ceph Manager Daemon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../mgr/dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dev/developer_guide/">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dev/internals/">Ceph Internals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../../../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../ceph-post-file/" title="ceph-post-file – post files for ceph developers"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../osdmaptool/" title="osdmaptool – ceph osd cluster map manipulation tool"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../../rados/" >Ceph Storage Cluster</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../../../rados/man/" >Object Store Manpages</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">rados – rados object storage utility</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>

@@ -1,0 +1,363 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Balancer &#8212; Ceph Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/nature.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/css/custom.css" />
+    <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/jquery.js"></script>
+    <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/ceph.js"></script>
+    <link rel="shortcut icon" href="../../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../../genindex/" />
+    <link rel="search" title="Search" href="../../../search/" />
+    <link rel="next" title="Using pg-upmap" href="../upmap/" />
+    <link rel="prev" title="Placement Group Concepts" href="../pg-concepts/" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex/" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../upmap/" title="Using pg-upmap"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../pg-concepts/" title="Placement Group Concepts"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../" >Ceph Storage Cluster</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../" accesskey="U">Cluster Operations</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Balancer</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div id="docubetter" align="right" style="padding: 15px; font-weight: bold;">
+    <a href="https://pad.ceph.com/p/Report_Documentation_Bugs">Report a Documentation Bug</a>
+  </div>
+
+  
+  <section id="balancer">
+<span id="id1"></span><h1>Balancer<a class="headerlink" href="#balancer" title="Permalink to this heading">¶</a></h1>
+<p>The <em>balancer</em> can optimize the allocation of placement groups (PGs) across
+OSDs in order to achieve a balanced distribution. The balancer can operate
+either automatically or in a supervised fashion.</p>
+<section id="status">
+<h2>Status<a class="headerlink" href="#status" title="Permalink to this heading">¶</a></h2>
+<p>To check the current status of the balancer, run the following command:</p>
+<blockquote>
+<div><div class="highlight-default notranslate"><div class="highlight"><pre><style type="text/css">
+span.prompt1:before {
+  content: "$ ";
+}
+</style><span class="prompt1">ceph<span class="w"> </span>balancer<span class="w"> </span>status</span>
+</pre></div></div></div></blockquote>
+</section>
+<section id="automatic-balancing">
+<h2>Automatic balancing<a class="headerlink" href="#automatic-balancing" title="Permalink to this heading">¶</a></h2>
+<p>When the balancer is in <code class="docutils literal notranslate"><span class="pre">upmap</span></code> mode, the automatic balancing feature is
+enabled by default. For more details, see <a class="reference internal" href="../upmap/#upmap"><span class="std std-ref">Using pg-upmap</span></a>.  To disable the
+balancer, run the following command:</p>
+<blockquote>
+<div><div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>balancer<span class="w"> </span>off</span>
+</pre></div></div></div></blockquote>
+<p>The balancer mode can be changed from <code class="docutils literal notranslate"><span class="pre">upmap</span></code> mode to <code class="docutils literal notranslate"><span class="pre">crush-compat</span></code> mode.
+<code class="docutils literal notranslate"><span class="pre">crush-compat</span></code> mode is backward compatible with older clients.  In
+<code class="docutils literal notranslate"><span class="pre">crush-compat</span></code> mode, the balancer automatically makes small changes to the
+data distribution in order to ensure that OSDs are utilized equally.</p>
+</section>
+<section id="throttling">
+<h2>Throttling<a class="headerlink" href="#throttling" title="Permalink to this heading">¶</a></h2>
+<p>If the cluster is degraded (that is, if an OSD has failed and the system hasn’t
+healed itself yet), then the balancer will not make any adjustments to the PG
+distribution.</p>
+<p>When the cluster is healthy, the balancer will incrementally move a small
+fraction of unbalanced PGs in order to improve distribution.  This fraction
+will not exceed a certain threshold that defaults to 5%. To adjust this
+<code class="docutils literal notranslate"><span class="pre">target_max_misplaced_ratio</span></code> threshold setting, run the following command:</p>
+<blockquote>
+<div><div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>config<span class="w"> </span><span class="nb">set</span><span class="w"> </span>mgr<span class="w"> </span>target_max_misplaced_ratio<span class="w"> </span>.07<span class="w">   </span><span class="c1"># 7%</span></span>
+</pre></div></div></div></blockquote>
+<p>The balancer sleeps between runs. To set the number of seconds for this
+interval of sleep, run the following command:</p>
+<blockquote>
+<div><div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>config<span class="w"> </span><span class="nb">set</span><span class="w"> </span>mgr<span class="w"> </span>mgr/balancer/sleep_interval<span class="w"> </span><span class="m">60</span></span>
+</pre></div></div></div></blockquote>
+<p>To set the time of day (in HHMM format) at which automatic balancing begins,
+run the following command:</p>
+<blockquote>
+<div><div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>config<span class="w"> </span><span class="nb">set</span><span class="w"> </span>mgr<span class="w"> </span>mgr/balancer/begin_time<span class="w"> </span><span class="m">0000</span></span>
+</pre></div></div></div></blockquote>
+<p>To set the time of day (in HHMM format) at which automatic balancing ends, run
+the following command:</p>
+<blockquote>
+<div><div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>config<span class="w"> </span><span class="nb">set</span><span class="w"> </span>mgr<span class="w"> </span>mgr/balancer/end_time<span class="w"> </span><span class="m">2359</span></span>
+</pre></div></div></div></blockquote>
+<p>Automatic balancing can be restricted to certain days of the week.  To restrict
+it to a specific day of the week or later (as with crontab, <code class="docutils literal notranslate"><span class="pre">0</span></code> is Sunday,
+<code class="docutils literal notranslate"><span class="pre">1</span></code> is Monday, and so on), run the following command:</p>
+<blockquote>
+<div><div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>config<span class="w"> </span><span class="nb">set</span><span class="w"> </span>mgr<span class="w"> </span>mgr/balancer/begin_weekday<span class="w"> </span><span class="m">0</span></span>
+</pre></div></div></div></blockquote>
+<p>To restrict automatic balancing to a specific day of the week or earlier
+(again, <code class="docutils literal notranslate"><span class="pre">0</span></code> is Sunday, <code class="docutils literal notranslate"><span class="pre">1</span></code> is Monday, and so on), run the following
+command:</p>
+<blockquote>
+<div><div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>config<span class="w"> </span><span class="nb">set</span><span class="w"> </span>mgr<span class="w"> </span>mgr/balancer/end_weekday<span class="w"> </span><span class="m">6</span></span>
+</pre></div></div></div></blockquote>
+<p>Automatic balancing can be restricted to certain pools. By default, the value
+of this setting is an empty string, so that all pools are automatically
+balanced.  To restrict automatic balancing to specific pools, retrieve their
+numeric pool IDs (by running the <strong class="command">ceph osd pool ls detail</strong> command),
+and then run the following command:</p>
+<blockquote>
+<div><div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>config<span class="w"> </span><span class="nb">set</span><span class="w"> </span>mgr<span class="w"> </span>mgr/balancer/pool_ids<span class="w"> </span><span class="m">1</span>,2,3</span>
+</pre></div></div></div></blockquote>
+</section>
+<section id="modes">
+<h2>Modes<a class="headerlink" href="#modes" title="Permalink to this heading">¶</a></h2>
+<p>There are two supported balancer modes:</p>
+<ol class="arabic">
+<li><p><strong>crush-compat</strong>. This mode uses the compat weight-set feature (introduced
+in Luminous) to manage an alternative set of weights for devices in the
+CRUSH hierarchy. When the balancer is operating in this mode, the normal
+weights should remain set to the size of the device in order to reflect the
+target amount of data intended to be stored on the device. The balancer will
+then optimize the weight-set values, adjusting them up or down in small
+increments, in order to achieve a distribution that matches the target
+distribution as closely as possible. (Because PG placement is a pseudorandom
+process, it is subject to a natural amount of variation; optimizing the
+weights serves to counteract that natural variation.)</p>
+<p>Note that this mode is <em>fully backward compatible</em> with older clients: when
+an OSD Map and CRUSH map are shared with older clients, Ceph presents the
+optimized weights as the “real” weights.</p>
+<p>The primary limitation of this mode is that the balancer cannot handle
+multiple CRUSH hierarchies with different placement rules if the subtrees of
+the hierarchy share any OSDs. (Such sharing of OSDs is not typical and,
+because of the difficulty of managing the space utilization on the shared
+OSDs, is generally not recommended.)</p>
+</li>
+<li><p><strong>upmap</strong>. In Luminous and later releases, the OSDMap can store explicit
+mappings for individual OSDs as exceptions to the normal CRUSH placement
+calculation. These <code class="docutils literal notranslate"><span class="pre">upmap</span></code> entries provide fine-grained control over the
+PG mapping. This balancer mode optimizes the placement of individual PGs in
+order to achieve a balanced distribution.  In most cases, the resulting
+distribution is nearly perfect: that is, there is an equal number of PGs on
+each OSD (±1 PG, since the total number might not divide evenly).</p>
+<p>To use``upmap``, all clients must be Luminous or newer.</p>
+</li>
+</ol>
+<p>The default mode is <code class="docutils literal notranslate"><span class="pre">upmap</span></code>. The mode can be changed to <code class="docutils literal notranslate"><span class="pre">crush-compat</span></code> by
+running the following command:</p>
+<blockquote>
+<div><div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>balancer<span class="w"> </span>mode<span class="w"> </span>crush-compat</span>
+</pre></div></div></div></blockquote>
+</section>
+<section id="supervised-optimization">
+<h2>Supervised optimization<a class="headerlink" href="#supervised-optimization" title="Permalink to this heading">¶</a></h2>
+<p>Supervised use of the balancer can be understood in terms of three distinct
+phases:</p>
+<ol class="arabic simple">
+<li><p>building a plan</p></li>
+<li><p>evaluating the quality of the data distribution, either for the current PG
+distribution or for the PG distribution that would result after executing a
+plan</p></li>
+<li><p>executing the plan</p></li>
+</ol>
+<p>To evaluate the current distribution, run the following command:</p>
+<blockquote>
+<div><div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>balancer<span class="w"> </span><span class="nb">eval</span></span>
+</pre></div></div></div></blockquote>
+<p>To evaluate the distribution for a single pool, run the following command:</p>
+<blockquote>
+<div><div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>balancer<span class="w"> </span><span class="nb">eval</span><span class="w"> </span>&lt;pool-name&gt;</span>
+</pre></div></div></div></blockquote>
+<p>To see the evaluation in greater detail, run the following command:</p>
+<blockquote>
+<div><div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>balancer<span class="w"> </span>eval-verbose<span class="w"> </span>...</span>
+</pre></div></div></div></blockquote>
+<p>To instruct the balancer to generate a plan (using the currently configured
+mode), make up a name (any useful identifying string) for the plan, and run the
+following command:</p>
+<blockquote>
+<div><div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>balancer<span class="w"> </span>optimize<span class="w"> </span>&lt;plan-name&gt;</span>
+</pre></div></div></div></blockquote>
+<p>To see the contents of a plan, run the following command:</p>
+<blockquote>
+<div><div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>balancer<span class="w"> </span>show<span class="w"> </span>&lt;plan-name&gt;</span>
+</pre></div></div></div></blockquote>
+<p>To display all plans, run the following command:</p>
+<blockquote>
+<div><div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>balancer<span class="w"> </span>ls</span>
+</pre></div></div></div></blockquote>
+<p>To discard an old plan, run the following command:</p>
+<blockquote>
+<div><div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>balancer<span class="w"> </span>rm<span class="w"> </span>&lt;plan-name&gt;</span>
+</pre></div></div></div></blockquote>
+<p>To see currently recorded plans, examine the output of the following status
+command:</p>
+<blockquote>
+<div><div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>balancer<span class="w"> </span>status</span>
+</pre></div></div></div></blockquote>
+<p>To evaluate the distribution that would result from executing a specific plan,
+run the following command:</p>
+<blockquote>
+<div><div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>balancer<span class="w"> </span><span class="nb">eval</span><span class="w"> </span>&lt;plan-name&gt;</span>
+</pre></div></div></div></blockquote>
+<p>If a plan is expected to improve the distribution (that is, the plan’s score is
+lower than the current cluster state’s score), you can execute that plan by
+running the following command:</p>
+<blockquote>
+<div><div class="highlight-default notranslate"><div class="highlight"><pre><span class="prompt1">ceph<span class="w"> </span>balancer<span class="w"> </span>execute<span class="w"> </span>&lt;plan-name&gt;</span>
+</pre></div></div></div></blockquote>
+</section>
+</section>
+
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../../">
+              <img class="logo" src="../../../_static/logo.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../../">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../../start/intro/">Intro to Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../install/">Installing Ceph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cephadm/">Cephadm</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../">Ceph Storage Cluster</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../../configuration/">Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../cephadm/">Deployment</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../">Operations</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../operating/">Operating a Cluster</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../health-checks/">Health checks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../monitoring/">Monitoring a Cluster</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../monitoring-osd-pg/">Monitoring OSDs and PGs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../user-management/">User Management</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../pg-repair/">Repairing PG Inconsistencies</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../data-placement/">Data Placement Overview</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../pools/">Pools</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../erasure-code/">Erasure code</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../cache-tiering/">Cache Tiering</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../placement-groups/">Placement Groups</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Balancer</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#status">Status</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#automatic-balancing">Automatic balancing</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#throttling">Throttling</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#modes">Modes</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#supervised-optimization">Supervised optimization</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../upmap/">Using pg-upmap</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../crush-map/">CRUSH Maps</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../crush-map-edits/">Manually editing a CRUSH Map</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../stretch-mode/">Stretch Clusters</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../change-mon-elections/">Configure Monitor Election Strategies</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../add-or-rm-osds/">Adding/Removing OSDs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../add-or-rm-mons/">Adding/Removing Monitors</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../devices/">Device Management</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../bluestore-migration/">BlueStore Migration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../control/">Command Reference</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../troubleshooting/community/">The Ceph Community</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../troubleshooting/troubleshooting-mon/">Troubleshooting Monitors</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../troubleshooting/troubleshooting-osd/">Troubleshooting OSDs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../troubleshooting/troubleshooting-pg/">Troubleshooting PGs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../troubleshooting/log-and-debug/">Logging and Debugging</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../troubleshooting/cpu-profiling/">CPU Profiling</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../troubleshooting/memory-profiling/">Memory Profiling</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../man/">Man Pages</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../troubleshooting/">Troubleshooting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/">APIs</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cephfs/">Ceph File System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../rbd/">Ceph Block Device</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../radosgw/">Ceph Object Gateway</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../mgr/">Ceph Manager Daemon</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../mgr/dashboard/">Ceph Dashboard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../architecture/">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dev/developer_guide/">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dev/internals/">Ceph Internals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../governance/">Governance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../foundation/">Ceph Foundation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../ceph-volume/">ceph-volume</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/general/">Ceph Releases (general)</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.ceph.com/en/latest/releases/">Ceph Releases (index)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../security/">Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../glossary/">Glossary</a></li>
+</ul>
+
+
+<!-- ugly kludge to make genindex look like it's part of the toc -->
+<ul style="margin-top: -10px"><li class="toctree-l1"><a class="reference internal" href="../../../genindex/">Index</a></li></ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search/" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex/" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../http-routingtable/" title="HTTP Routing Table"
+             >routing table</a> |</li>
+        <li class="right" >
+          <a href="../../../py-modindex/" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../upmap/" title="Using pg-upmap"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../pg-concepts/" title="Placement Group Concepts"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../">Ceph Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../" >Ceph Storage Cluster</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../" >Cluster Operations</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Balancer</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Ceph authors and contributors. Licensed under Creative Commons Attribution Share Alike 3.0 (CC-BY-SA-3.0).
+    </div>
+  </body>
+</html>
