@@ -323,7 +323,7 @@ class CephadmUpgrade:
         running_mgr_count = len([daemon for daemon in self.mgr.cache.get_daemons_by_type(
             'mgr') if daemon.status == DaemonDescriptionStatus.running])
 
-        if running_mgr_count < 2:
+        if running_mgr_count < 2: # 至少需要2个mgr才能进行升级
             raise OrchestratorError('Need at least 2 running mgr daemons for upgrade')
 
         self.mgr.log.info('Upgrade: Started with target %s' % target_name)
@@ -950,7 +950,7 @@ class CephadmUpgrade:
         self.upgrade_state = None
         self._save_upgrade_state()
 
-    def _do_upgrade(self):
+    def _do_upgrade(self): # 更新逻辑
         # type: () -> None
         if not self.upgrade_state:
             logger.debug('_do_upgrade no state, exiting')
@@ -1017,7 +1017,7 @@ class CephadmUpgrade:
                 'detail': [version_error],
             })
             return
-
+        # global        basic     container_image                         127.0.0.1:6000/ceph@sha256:ff29ff3ede4c9e30bb361ff61e593dcfe55dc5956394474c982507b80b460e97  *
         image_settings = self.get_distinct_container_image_settings()
 
         # Older monitors (pre-v16.2.5) asserted that FSMap::compat ==
