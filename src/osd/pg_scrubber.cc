@@ -492,7 +492,7 @@ void PgScrubber::scrub_requested(scrub_level_t scrub_level,
 
   req_flags.must_scrub = true;
   req_flags.must_deep_scrub =
-    (scrub_level == scrub_level_t::deep) || (scrub_type == scrub_type_t::do_repair);
+    (scrub_level == scrub_level_t::deep) || (scrub_type == scrub_type_t::do_repair); // ceph pg deep-scrub 和 ceph pg repair都需要must_deep_scrub
   req_flags.must_repair = (scrub_type == scrub_type_t::do_repair);
   // User might intervene, so clear this
   req_flags.need_auto = false;
@@ -644,7 +644,7 @@ bool PgScrubber::select_range()
   return true;
 }
 
-void PgScrubber::select_range_n_notify()
+void PgScrubber::select_range_n_notify() // NewChunk构造
 {
   if (select_range()) {
     // the next chunk to handle is not blocked

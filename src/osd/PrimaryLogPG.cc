@@ -11868,7 +11868,7 @@ void PrimaryLogPG::add_object_context_to_pg_stat(ObjectContextRef obc, pg_stat_t
 }
 
 void PrimaryLogPG::kick_object_context_blocked(ObjectContextRef obc)
-{
+{// 解除block的
   const hobject_t& soid = obc->obs.oi.soid;
   if (obc->is_blocked()) {
     dout(10) << __func__ << " " << soid << " still blocked" << dendl;

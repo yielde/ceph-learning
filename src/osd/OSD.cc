@@ -7626,7 +7626,7 @@ double OSD::scrub_sleep_time(bool must_scrub)
   return std::max(extended_sleep, normal_sleep);
 }
 
-bool OSD::scrub_time_permit(utime_t now)
+bool OSD::scrub_time_permit(utime_t now) // 计算scrub的时间段
 {
   struct tm bdt;
   time_t tt = now.sec();

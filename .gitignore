@@ -84,3 +84,4 @@ GTAGS
 /src/python-common/build/
 .own_test/
 ceph-build-deps_16.2.15-1_arm64.buildinfo
+.cache/

@@ -55,7 +55,7 @@ std::string ScrubMachine::current_states_desc() const
 
 void ScrubMachine::assert_not_active() const
 {
-  ceph_assert(state_cast<const NotActive*>());
+  ceph_assert(state_cast<const NotActive*>()); // 如果当前不是NotActive状态，会返回nullptr
 }
 
 bool ScrubMachine::is_reserving() const

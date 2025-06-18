@@ -44,7 +44,7 @@ private:
   // a temp object holding mappings from seq-id to inconsistencies found in
   // scrubbing
   OSDriver driver;
-  mutable MapCacher::MapCacher<std::string, ceph::buffer::list> backend;
+  mutable MapCacher::MapCacher<std::string, ceph::buffer::list> backend; // 比对对象的临时缓存？
   std::map<std::string, ceph::buffer::list> results;
 };
 }
