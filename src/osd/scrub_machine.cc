@@ -103,7 +103,7 @@ ReservingReplicas::ReservingReplicas(my_context ctx) : my_base(ctx)
 {
   dout(10) << "-- state -->> ReservingReplicas" << dendl;
   DECLARE_LOCALS;  // 'scrbr' & 'pg_id' aliases
-  scrbr->reserve_replicas();
+  scrbr->reserve_replicas(); // 比如ceph config get osd osd_max_scrubs这个副本OSD是否还能进行scrub
 }
 
 sc::result ReservingReplicas::react(const ReservationFailure&)
@@ -202,7 +202,7 @@ NewChunk::NewChunk(my_context ctx) : my_base(ctx)
   dout(10) << "-- state -->> Act/NewChunk" << dendl;
   DECLARE_LOCALS;  // 'scrbr' & 'pg_id' aliases
 
-  scrbr->get_preemptor().adjust_parameters();
+  scrbr->get_preemptor().adjust_parameters(); // 设置 m_preemptable
 
   //  choose range to work on
   //  select_range_n_notify() will signal either SelectedChunkFree or
@@ -283,7 +283,7 @@ sc::result WaitLastUpdate::react(const InternalAllUpdates&)
   DECLARE_LOCALS;  // 'scrbr' & 'pg_id' aliases
   dout(10) << "WaitLastUpdate::react(const InternalAllUpdates&)" << dendl;
 
-  scrbr->get_replicas_maps(scrbr->get_preemptor().is_preemptable());
+  scrbr->get_replicas_maps(scrbr->get_preemptor().is_preemptable()); // 请求副本map
   return transit<BuildMap>();
 }
 

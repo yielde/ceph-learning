@@ -874,7 +874,7 @@ map<pg_shard_t, ScrubMap *>::const_iterator
       continue;
     shards.push_back(j->first);
   }
-  shards.push_front(get_parent()->whoami_shard());
+  shards.push_front(get_parent()->whoami_shard()); // primary osd 放在shards头部
 
   map<pg_shard_t, ScrubMap *>::const_iterator auth = maps.end();
   digest_match = true;
@@ -884,7 +884,7 @@ map<pg_shard_t, ScrubMap *>::const_iterator
     map<pg_shard_t, ScrubMap *>::const_iterator j = maps.find(l);
     map<hobject_t, ScrubMap::object>::iterator i =
       j->second->objects.find(obj);
-    if (i == j->second->objects.end()) {
+    if (i == j->second->objects.end()) { // 没有找到要校验的对象
       continue;
     }
     auto& shard_info = shard_map[j->first];
@@ -1007,7 +1007,7 @@ map<pg_shard_t, ScrubMap *>::const_iterator
     // This is automatically corrected in PG::_repair_oinfo_oid()
     ceph_assert(oi.soid == obj);
 
-    if (i->second.size != be_get_ondisk_size(oi.size)) {
+    if (i->second.size != be_get_ondisk_size(oi.size)) { // 比较对象的大小和元数据中保存的对象大小是否相等
       shard_info.set_obj_size_info_mismatch();
       if (error)
         shard_errorstream << ", ";
@@ -1017,7 +1017,7 @@ map<pg_shard_t, ScrubMap *>::const_iterator
     }
 
     // digest_match will only be true if computed digests are the same
-    if (auth_version != eversion_t()
+    if (auth_version != eversion_t() // 比较的对象的crc32c值
         && auth->second->objects[obj].digest_present
         && i->second.digest_present
         && auth->second->objects[obj].digest != i->second.digest) {
@@ -1031,7 +1031,7 @@ map<pg_shard_t, ScrubMap *>::const_iterator
     // XXX: For now we can't pick one shard for repair and another's object info or snapset
     if (shard_info.errors)
       goto out;
-
+    // 开始竞选权威obj，拥有data的digest和omap的digest，并且没有error的对象被选择为权威对象，第一次选走 auth_version == eversion_t()
     if (auth_version == eversion_t() || oi.version > auth_version ||
         (oi.version == auth_version && dcount(oi) > dcount(*auth_oi))) {
       auth = j;
@@ -1081,7 +1081,7 @@ void PGBackend::be_compare_scrubmaps(
     bool digest_match;
     map<pg_shard_t, ScrubMap *>::const_iterator auth =
       be_select_auth_object(*k, maps, &auth_oi, shard_map, digest_match,
-			    pgid, errorstream);
+			    pgid, errorstream); // 选择具有权威对象的副本
 
     list<pg_shard_t> auth_list;
     set<pg_shard_t> object_errors;
@@ -1089,7 +1089,7 @@ void PGBackend::be_compare_scrubmaps(
       object_error.set_version(0);
       object_error.set_auth_missing(*k, maps, shard_map, shallow_errors,
 	deep_errors, get_parent()->whoami_shard());
-      if (object_error.has_deep_errors())
+      if (object_error.has_deep_errors()) // DEEP_ERRORS = DATA_DIGEST_MISMATCH|OMAP_DIGEST_MISMATCH;
 	++deep_errors;
       else if (object_error.has_shallow_errors())
 	++shallow_errors;

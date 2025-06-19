@@ -164,7 +164,7 @@ struct ReservingReplicas : sc::state<ReservingReplicas, ScrubMachine> {
 
   explicit ReservingReplicas(my_context ctx);
   using reactions = mpl::list<sc::custom_reaction<FullReset>,
-			      // all replicas granted our resources request
+			      // all replicas granted our resources request，预留副本资源后走这里
 			      sc::transition<RemotesReserved, ActiveScrubbing>,
 			      sc::custom_reaction<ReservationFailure>>;
 
@@ -209,7 +209,7 @@ struct RangeBlocked : sc::state<RangeBlocked, ActiveScrubbing> {
 
 struct PendingTimer : sc::state<PendingTimer, ActiveScrubbing> {
 
-  explicit PendingTimer(my_context ctx);
+  explicit PendingTimer(my_context ctx); // 发送 InternalSchedScrub
 
   using reactions = mpl::list<sc::transition<InternalSchedScrub, NewChunk>>;
 };
@@ -234,7 +234,7 @@ struct NewChunk : sc::state<NewChunk, ActiveScrubbing> {
  */
 struct WaitPushes : sc::state<WaitPushes, ActiveScrubbing> {
 
-  explicit WaitPushes(my_context ctx);
+  explicit WaitPushes(my_context ctx); // 异步抛出ActivePushesUpd
 
   using reactions = mpl::list<sc::custom_reaction<ActivePushesUpd>>;
 
@@ -252,7 +252,7 @@ struct WaitLastUpdate : sc::state<WaitLastUpdate, ActiveScrubbing> {
 						    WaitLastUpdate,
 						    &WaitLastUpdate::on_new_updates>>;
 
-  sc::result react(const InternalAllUpdates&);
+  sc::result react(const InternalAllUpdates&); // 请求副本map
 };
 
 struct BuildMap : sc::state<BuildMap, ActiveScrubbing> {

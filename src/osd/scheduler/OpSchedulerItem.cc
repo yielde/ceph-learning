@@ -54,7 +54,7 @@ void PGSnapTrim::run(
 
 void PGScrub::run(OSD* osd, OSDShard* sdata, PGRef& pg, ThreadPool::TPHandle& handle)
 {
-  pg->scrub(epoch_queued, handle);
+  pg->scrub(epoch_queued, handle); // 发起StartScrub
   pg->unlock();
 }
 

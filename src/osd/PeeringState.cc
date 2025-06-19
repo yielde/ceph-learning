@@ -4067,7 +4067,7 @@ void PeeringState::update_stats(
   if (f(info.history, info.stats)) {
     pl->publish_stats_to_osd();
   }
-  pl->on_info_history_change();
+  pl->on_info_history_change(); // 开始下一个scrub
 
   if (t) {
     dirty_info = true;
@@ -4364,7 +4364,7 @@ void PeeringState::force_object_missing(
     }
   }
 
-  missing_loc.rebuild(
+  missing_loc.rebuild( // repair
     soid,
     pg_whoami,
     acting_recovery_backfill,
@@ -4912,7 +4912,7 @@ boost::statechart::result PeeringState::Primary::react(
 {
   DECLARE_LOCALS;
   if (ps->is_primary()) {
-    pl->scrub_requested(evt.deep, evt.repair);
+    pl->scrub_requested(evt.deep, evt.repair); // pg状态机接收事件并处理
     psdout(10) << "marking for scrub" << dendl;
   }
   return discard_event();

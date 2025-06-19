@@ -66,7 +66,7 @@ if [[ ! "$ARGS $@" =~ "-DBOOST_J" ]] ; then
     ncpu=$(getconf _NPROCESSORS_ONLN 2>&1)
     [ -n "$ncpu" -a "$ncpu" -gt 1 ] && ARGS+=" -DBOOST_J=$(expr $ncpu / 2)"
 fi
-ARGS+=" DCMAKE_EXPORT_COMPILE_COMMANDS=1"
+ARGS+=" -DCMAKE_EXPORT_COMPILE_COMMANDS=1"
 mkdir $BUILD_DIR
 cd $BUILD_DIR
 if type cmake3 > /dev/null 2>&1 ; then

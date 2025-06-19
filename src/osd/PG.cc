@@ -1333,7 +1333,7 @@ bool PG::sched_scrub()
 	  << (is_clean() ? " <clean>" : " <not-clean>") << dendl;
   ceph_assert(ceph_mutex_is_locked(_lock));
 
-  if (!is_primary() || !is_active() || !is_clean()) {
+  if (!is_primary() || !is_active() || !is_clean()) { // 主OSD，active+clean才可以调度
     return false;
   }
 
@@ -1344,7 +1344,7 @@ bool PG::sched_scrub()
   // analyse the combination of the requested scrub flags, the osd/pool configuration
   // and the PG status to determine whether we should scrub now, and what type of scrub
   // should that be.
-  auto updated_flags = verify_scrub_mode();
+  auto updated_flags = verify_scrub_mode(); // 是否开始scrub
   if (!updated_flags) {
     // the stars do not align for starting a scrub for this PG at this time
     // (due to configuration or priority issues)
@@ -1355,7 +1355,7 @@ bool PG::sched_scrub()
 
   // try to reserve the local OSD resources. If failing: no harm. We will
   // be retried by the OSD later on.
-  if (!m_scrubber->reserve_local()) {
+  if (!m_scrubber->reserve_local()) { // 允许单个OSD同时进行scrub的任务数量
     dout(10) << __func__ << ": failed to reserve locally" << dendl;
     return false;
   }
@@ -1371,7 +1371,7 @@ bool PG::sched_scrub()
   m_scrubber->set_op_parameters(m_planned_scrub);
 
   dout(10) << __func__ << ": queueing" << dendl;
-  m_scrubber->set_queued_or_active();
+  m_scrubber->set_queued_or_active(); // 防止二次发起scrub，等到inactive再清除
   osd->queue_for_scrub(this, Scrub::scrub_prio_t::low_priority);
   return true;
 }
@@ -1401,7 +1401,7 @@ bool PG::is_time_for_deep(bool allow_deep_scrub,
     return true;
   }
 
-  if (ceph_clock_now() >= next_deepscrub_interval()) {
+  if (ceph_clock_now() >= next_deepscrub_interval()) { // 当前时间戳比上次deepscrub时间戳+7天大，说明可以进行deepscrub
     dout(20) << __func__ << ": now (" << ceph_clock_now() << ") >= time for deep ("
 	     << next_deepscrub_interval() << ")" << dendl;
     return true;
@@ -1415,7 +1415,7 @@ bool PG::is_time_for_deep(bool allow_deep_scrub,
 
   // we only flip coins if 'allow_scrub' is asserted. Otherwise - as this function is
   // called often, we will probably be deep-scrubbing most of the time.
-  if (allow_scrub) {
+  if (allow_scrub) { // 15%的概率会进行deepscrub
     bool deep_coin_flip =
       (rand() % 100) < cct->_conf->osd_deep_scrub_randomize_ratio * 100;
 
@@ -1479,9 +1479,9 @@ std::optional<requested_scrub_t> PG::verify_scrub_mode() const
   dout(10) << __func__ << " processing pg " << info.pgid << dendl;
 
   bool allow_deep_scrub = !(get_osdmap()->test_flag(CEPH_OSDMAP_NODEEP_SCRUB) ||
-			    pool.info.has_flag(pg_pool_t::FLAG_NODEEP_SCRUB));
+			    pool.info.has_flag(pg_pool_t::FLAG_NODEEP_SCRUB)); // ceph osd set nodeep-scrub
   bool allow_regular_scrub = !(get_osdmap()->test_flag(CEPH_OSDMAP_NOSCRUB) ||
-			       pool.info.has_flag(pg_pool_t::FLAG_NOSCRUB));
+			       pool.info.has_flag(pg_pool_t::FLAG_NOSCRUB)); // ceph osd set noscrub
   bool has_deep_errors = (info.stats.stats.sum.num_deep_scrub_errors > 0);
   bool try_to_auto_repair =
     (cct->_conf->osd_scrub_auto_repair && get_pgbackend()->auto_repair_supported());
@@ -1504,7 +1504,7 @@ std::optional<requested_scrub_t> PG::verify_scrub_mode() const
     // always set for must_deep_scrub and must_repair.
 
     bool can_start_periodic =
-      verify_periodic_scrub_mode(allow_deep_scrub, try_to_auto_repair,
+      verify_periodic_scrub_mode(allow_deep_scrub, try_to_auto_repair, // 周期性的scrub
 				 allow_regular_scrub, has_deep_errors, upd_flags);
     if (!can_start_periodic) {
       return std::nullopt;

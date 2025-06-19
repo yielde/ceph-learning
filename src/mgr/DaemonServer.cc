@@ -1256,7 +1256,7 @@ bool DaemonServer::_handle_command(
 
   if (prefix == "pg scrub" ||
       prefix == "pg repair" ||
-      prefix == "pg deep-scrub") {
+      prefix == "pg deep-scrub") { // 接收手动scrub命令
     string scrubop = prefix.substr(3, string::npos);
     pg_t pgid;
     spg_t spgid;
@@ -1268,7 +1268,7 @@ bool DaemonServer::_handle_command(
       return true;
     }
     bool pg_exists = false;
-    cluster_state.with_osdmap([&](const OSDMap& osdmap) {
+    cluster_state.with_osdmap([&](const OSDMap& osdmap) { // 确认pg存在
 	pg_exists = osdmap.pg_exists(pgid);
       });
     if (!pg_exists) {
@@ -1280,7 +1280,7 @@ bool DaemonServer::_handle_command(
     epoch_t epoch;
     cluster_state.with_osdmap([&](const OSDMap& osdmap) {
 	epoch = osdmap.get_epoch();
-	osdmap.get_primary_shard(pgid, &acting_primary, &spgid);
+	osdmap.get_primary_shard(pgid, &acting_primary, &spgid); // 拿到acting primary osdid
       });
     if (acting_primary == -1) {
       ss << "pg " << pgid << " has no primary osd";
@@ -1304,7 +1304,7 @@ bool DaemonServer::_handle_command(
 					 scrubop == "deep-scrub"));
       } else {
 	vector<pg_t> pgs = { pgid };
-	con->send_message(new MOSDScrub(monc->get_fsid(),
+	con->send_message(new MOSDScrub(monc->get_fsid(), // 给这个acting primary OSD 连接发消息
 					pgs,
 					scrubop == "repair",
 					scrubop == "deep-scrub"));

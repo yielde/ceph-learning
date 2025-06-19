@@ -750,7 +750,7 @@ public:
   struct Incomplete;
   struct Down;
 
-  struct Primary : boost::statechart::state< Primary, Started, Peering >, NamedState {
+  struct Primary : boost::statechart::state< Primary, Started, Peering >, NamedState { // 可能是接收RequestScrub的地方
     explicit Primary(my_context ctx);
     void exit();
 

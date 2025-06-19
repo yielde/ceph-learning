@@ -295,7 +295,7 @@ public:
     ScrubJob scrub_job(cct, pgid, t, pool_scrub_min_interval, pool_scrub_max_interval,
 		       must);
     std::lock_guard l(OSDService::sched_scrub_lock);
-    sched_scrub_pg.insert(scrub_job);
+    sched_scrub_pg.insert(scrub_job); // scrub任务列表
     return scrub_job.sched_time;
   }
 

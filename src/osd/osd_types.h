@@ -6029,7 +6029,7 @@ struct PushOp {
 WRITE_CLASS_ENCODER_FEATURES(PushOp)
 std::ostream& operator<<(std::ostream& out, const PushOp &op);
 
-enum class scrub_level_t : bool { shallow = false, deep = true };
+enum class scrub_level_t : bool { shallow = false, deep = true }; // scrub还是deep-scrub
 enum class scrub_type_t : bool { not_repair = false, do_repair = true };
 
 /*

@@ -1287,7 +1287,7 @@ bool OSDService::inc_scrubs_local()
 {
   bool result = false;
   std::lock_guard l{sched_scrub_lock};
-  if (scrubs_local + scrubs_remote < cct->_conf->osd_max_scrubs) {
+  if (scrubs_local + scrubs_remote < cct->_conf->osd_max_scrubs) { // 允许同时执行的scrub任务数量
     dout(20) << __func__ << " " << scrubs_local << " -> " << (scrubs_local+1)
 	     << " (max " << cct->_conf->osd_max_scrubs << ", remote " << scrubs_remote << ")" << dendl;
     result = true;
@@ -1806,7 +1806,7 @@ void OSDService::queue_for_rep_scrub_resched(PG* pg,
 
 void OSDService::queue_for_scrub_granted(PG* pg, Scrub::scrub_prio_t with_priority)
 {
-  // Resulting scrub event: 'RemotesReserved'
+  // Resulting scrub event: 'RemotesReserved', send_all_done完成后发送
   queue_scrub_event_msg<PGScrubResourcesOK>(pg, with_priority);
 }
 
@@ -2053,7 +2053,7 @@ void OSDService::_queue_for_recovery(
   enqueue_back(
     OpSchedulerItem(
       unique_ptr<OpSchedulerItem::OpQueueable>(
-	new PGRecovery(
+	new PGRecovery( // 发起recovery
 	  p.second->get_pgid(), p.first, reserved_pushes)),
       cct->_conf->osd_recovery_cost,
       cct->_conf->osd_recovery_priority,
@@ -6079,7 +6079,7 @@ void OSD::tick()
   tick_timer.add_event_after(get_tick_interval(), new C_Tick(this));
 }
 
-void OSD::tick_without_osd_lock()
+void OSD::tick_without_osd_lock() // 定时器，0.95 ~ 1.05触发一次，检查心跳，调度scrub
 {
   ceph_assert(ceph_mutex_is_locked(tick_timer_lock));
   dout(10) << "tick_without_osd_lock" << dendl;
@@ -6129,7 +6129,7 @@ void OSD::tick_without_osd_lock()
 
   if (is_active()) {
     if (!scrub_random_backoff()) {
-      sched_scrub();
+      sched_scrub(); // 调度scrub
     }
     service.promote_throttle_recalibrate();
     resume_creating_pg();
@@ -7506,7 +7506,7 @@ void OSD::handle_scrub(MOSDScrub *m)
 	v.push_back(pcand);
       }
     }
-    spgs.swap(v);
+    spgs.swap(v); // 拿到需要scrub的pg和所在的primary osd
   }
 
   for (auto pgid : spgs) {
@@ -7574,7 +7574,7 @@ OSDService::ScrubJob::ScrubJob(CephContext* cct,
     double scrub_max_interval = pool_scrub_max_interval > 0 ?
       pool_scrub_max_interval : cct->_conf->osd_scrub_max_interval;
 
-    sched_time += scrub_min_interval;
+    sched_time += scrub_min_interval; // 并不是严格的1天调度间隔，会乘以随机因子，防止并发发起scrub
     double r = rand() / (double)RAND_MAX;
     sched_time +=
       scrub_min_interval * cct->_conf->osd_scrub_interval_randomize_ratio * r;
@@ -7683,7 +7683,7 @@ bool OSD::scrub_load_below_threshold()
   // allow scrub if below configured threshold
   long cpus = sysconf(_SC_NPROCESSORS_ONLN);
   double loadavg_per_cpu = cpus > 0 ? loadavgs[0] / cpus : loadavgs[0];
-  if (loadavg_per_cpu < cct->_conf->osd_scrub_load_threshold) {
+  if (loadavg_per_cpu < cct->_conf->osd_scrub_load_threshold) { // 平均每个CPU的负载，默认为0.5
     dout(20) << __func__ << " loadavg per cpu " << loadavg_per_cpu
 	     << " < max " << cct->_conf->osd_scrub_load_threshold
 	     << " = yes" << dendl;
@@ -7734,7 +7734,7 @@ void OSD::sched_scrub()
   dout(20) << "sched_scrub load_is_low=" << (int)load_is_low << dendl;
 
   OSDService::ScrubJob scrub_job;
-  if (service.first_scrub_stamp(&scrub_job)) {
+  if (service.first_scrub_stamp(&scrub_job)) { // reg_pg_scrub插入到std::set<ScrubJob> sched_scrub_pg;的任务，scrub_job是first iterator
     do {
       dout(30) << "sched_scrub examine " << scrub_job.pgid << " at " << scrub_job.sched_time << dendl;
 
@@ -7782,7 +7782,7 @@ void OSD::sched_scrub()
 	       << (pg->get_must_scrub() ? ", explicitly requested" :
 		   (load_is_low ? ", load_is_low" : " deadline < now"))
 	       << dendl;
-      if (pg->sched_scrub()) {
+      if (pg->sched_scrub()) { // scrub任务从osd转到pg
 	pg->unlock();
         dout(10) << __func__ << " scheduled a scrub!" << " (~" << scrub_job.pgid << "~)" << dendl;
 	break;
@@ -9742,7 +9742,7 @@ void OSDService::_maybe_queue_recovery() {
 	 _recover_now(&available_pushes)) {
     uint64_t to_start = std::min(
       available_pushes,
-      cct->_conf->osd_recovery_max_single_start);
+      cct->_conf->osd_recovery_max_single_start); // 允许recovering的线程
     _queue_for_recovery(awaiting_throttle.front(), to_start);
     awaiting_throttle.pop_front();
     dout(10) << __func__ << " starting " << to_start

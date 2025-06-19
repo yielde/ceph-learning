@@ -229,7 +229,7 @@ void PgScrubber::send_start_replica(epoch_t epoch_queued, Scrub::act_token_t tok
     // save us some time by not waiting for updates if there are none
     // to wait for. Affects the transition from NotActive into either
     // ReplicaWaitUpdates or ActiveReplica.
-    if (pending_active_pushes())
+    if (pending_active_pushes()) // replica OSD处理消息，从NoActive启动新的流程
       m_fsm->process_event(StartReplica{});
     else
       m_fsm->process_event(StartReplicaNoWait{});
@@ -465,7 +465,7 @@ void PgScrubber::reg_next_scrub(const requested_scrub_t& request_flags)
 
   // note the sched_time, so we can locate this scrub, and remove it later
   m_scrub_reg_stamp = m_osds->reg_pg_scrub(m_pg->info.pgid, reg_stamp, scrub_min_interval,
-					   scrub_max_interval, must);
+					   scrub_max_interval, must); // 注册一个scrub任务
   dout(15) << __func__ << " pg(" << m_pg_id << ") register next scrub, scrub time "
 	   << m_scrub_reg_stamp << ", must = " << (int)must << dendl;
 }
@@ -490,7 +490,7 @@ void PgScrubber::scrub_requested(scrub_level_t scrub_level,
 
   unreg_next_scrub();
 
-  req_flags.must_scrub = true;
+  req_flags.must_scrub = true; // 接收scrub命令后
   req_flags.must_deep_scrub =
     (scrub_level == scrub_level_t::deep) || (scrub_type == scrub_type_t::do_repair); // ceph pg deep-scrub 和 ceph pg repair都需要must_deep_scrub
   req_flags.must_repair = (scrub_type == scrub_type_t::do_repair);
@@ -565,7 +565,7 @@ void PgScrubber::on_applied_when_primary(const eversion_t& applied_version)
  * - end
  * - start
  */
-bool PgScrubber::select_range()
+bool PgScrubber::select_range() // 选择哪一段对象进行scrub
 {
   m_primary_scrubmap = ScrubMap{};
   m_received_maps.clear();
@@ -707,7 +707,7 @@ void PgScrubber::add_delayed_scheduling()
 
   milliseconds sleep_time{0ms};
   if (m_needs_sleep) {
-    double scrub_sleep = 1000.0 * m_osds->osd->scrub_sleep_time(m_flags.required);
+    double scrub_sleep = 1000.0 * m_osds->osd->scrub_sleep_time(m_flags.required); // 放入队列中睡眠
     sleep_time = milliseconds{long(scrub_sleep)};
   }
   dout(15) << __func__ << " sleep: " << sleep_time.count() << "ms. needed? "
@@ -793,7 +793,7 @@ void PgScrubber::get_replicas_maps(bool replica_can_preempt)
 
     m_maps_status.mark_replica_map_request(i);
     _request_scrub_map(i, m_subset_last_update, m_start, m_end, m_is_deep,
-		       replica_can_preempt);
+		       replica_can_preempt); // 请求副本map
   }
 
   dout(10) << __func__ << " awaiting" << m_maps_status << dendl;
@@ -1385,7 +1385,7 @@ ScrubMachineListener::MsgAndEpoch PgScrubber::prep_replica_map_msg(
   dout(10) << __func__ << " min epoch:" << m_replica_min_epoch << dendl;
 
   auto reply =
-    make_message<MOSDRepScrubMap>(spg_t(m_pg->info.pgid.pgid, m_pg->get_primary().shard),
+    make_message<MOSDRepScrubMap>(spg_t(m_pg->info.pgid.pgid, m_pg->get_primary().shard), // replica回复scrub map消息
 				  m_replica_min_epoch, m_pg_whoami);
 
   reply->preempted = (was_preempted == PreemptionNoted::preempted);
@@ -1646,12 +1646,12 @@ bool PgScrubber::is_queued_or_active() const
       state_set(PG_STATE_REPAIR);
       update_op_mode_text();
 
-      for (const auto& [hobj, shrd_list] : m_authoritative) {
+      for (const auto& [hobj, shrd_list] : m_authoritative) { // 对象，完整的副本OSD
 
 	auto missing_entry = m_missing.find(hobj);
 
 	if (missing_entry != m_missing.end()) {
-	  m_pg->repair_object(hobj, shrd_list, missing_entry->second);
+	  m_pg->repair_object(hobj, shrd_list, missing_entry->second); //修复object
 	  m_fixed_count += missing_entry->second.size();
 	}
 
@@ -2157,7 +2157,7 @@ ReplicaReservations::ReplicaReservations(PG* pg, pg_shard_t whoami)
       auto m = new MOSDScrubReserve(spg_t(m_pg->info.pgid.pgid, p.shard), epoch,
 				    MOSDScrubReserve::REQUEST, m_pg->pg_whoami);
       m_osds->send_message_osd_cluster(p.osd, m, epoch);
-      m_waited_for_peers.push_back(p);
+      m_waited_for_peers.push_back(p); // 如果全部成功会被case MOSDScrubReserve::GRANT:删除掉，发送完成后发送PGScrubResourcesOK
       dout(10) << __func__ << ": reserve " << p.osd << dendl;
     }
   }
@@ -2348,7 +2348,7 @@ auto MapsCollectionStatus::mark_arriving_map(pg_shard_t from)
   auto fe = std::find(m_maps_awaited_for.begin(), m_maps_awaited_for.end(), from);
   if (fe != m_maps_awaited_for.end()) {
     // we are indeed waiting for a map from this replica
-    m_maps_awaited_for.erase(fe);
+    m_maps_awaited_for.erase(fe); // primary osd收到replica scrub map就删除掉
     return std::tuple{true, ""sv};
   } else {
     return std::tuple{false, " unsolicited scrub-map"sv};
