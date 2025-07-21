@@ -323,7 +323,7 @@ int main(int argc, const char **argv)
 
   std::string journal_path = g_conf().get_val<std::string>("osd_journal");
   uint32_t flags = g_conf().get_val<uint64_t>("osd_os_flags");
-  ObjectStore *store = ObjectStore::create(g_ceph_context,
+  ObjectStore *store = ObjectStore::create(g_ceph_context, // 创建BlueStore
 					   store_type,
 					   data_path,
 					   journal_path,

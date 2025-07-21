@@ -369,7 +369,7 @@ private:
    *  BDEV_WAL  db.wal/  - a small, fast device, specifically for the WAL
    *  BDEV_SLOW db.slow/ - a big, slow device, to spill over to as BDEV_DB fills
    */
-  std::vector<BlockDevice*> bdev;                  ///< block devices we can use
+  std::vector<BlockDevice*> bdev;                  ///< block devices we can use，rocksdb操作结构，然后操作bluefs，再到bdev设备
   std::vector<IOContext*> ioc;                     ///< IOContexts for bdevs
   std::vector<uint64_t> block_reserved;            ///< starting reserve extent per device
   std::vector<Allocator*> alloc;                   ///< allocators for bdevs

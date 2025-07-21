@@ -106,7 +106,7 @@ using ceph::mono_clock;
 using ceph::mono_time;
 using ceph::timespan_str;
 
-// kv store prefixes
+// kv store prefixes, 存储在db中
 const string PREFIX_SUPER = "S";       // field -> value
 const string PREFIX_STAT = "T";        // field -> value(int64 array)
 const string PREFIX_COLL = "C";        // collection name -> cnode_t
@@ -4461,7 +4461,7 @@ BlueStore::BlueStore(CephContext *cct,
     min_alloc_size_order(ctz(_min_alloc_size)),
     mempool_thread(this)
 {
-  _init_logger();
+  _init_logger(); // ceph tell osd.0 perf dump|jq '.bluestore'
   cct->_conf.add_observer(this);
   set_cache_shards(1);
 }
@@ -5124,7 +5124,7 @@ int BlueStore::_read_bdev_label(CephContext* cct, string path,
   return 0;
 }
 
-int BlueStore::_check_or_set_bdev_label(
+int BlueStore::_check_or_set_bdev_label( // 设置块设备label， ceph-bluestore-tool show-label --dev /dev/xxx
   string path, uint64_t size, string desc, bool create)
 {
   bluestore_bdev_label_t label;
@@ -5938,7 +5938,7 @@ int BlueStore::_prepare_db_environment(bool create, bool read_only,
   std::shared_ptr<Int64ArrayMergeOperator> merge_op(new Int64ArrayMergeOperator);
 
   if (create) {
-    kv_backend = cct->_conf->bluestore_kvbackend;
+    kv_backend = cct->_conf->bluestore_kvbackend; // rocksdb
   } else {
     r = read_meta("kv_backend", &kv_backend);
     if (r < 0) {
@@ -5949,7 +5949,7 @@ int BlueStore::_prepare_db_environment(bool create, bool read_only,
   dout(10) << __func__ << " kv_backend = " << kv_backend << dendl;
 
   bool do_bluefs;
-  r = _is_bluefs(create, &do_bluefs);
+  r = _is_bluefs(create, &do_bluefs); // bluefs true
   if (r < 0) {
     return r;
   }
@@ -5966,7 +5966,7 @@ int BlueStore::_prepare_db_environment(bool create, bool read_only,
       return -EINVAL;
     }
 
-    r = _open_bluefs(create, read_only);
+    r = _open_bluefs(create, read_only); // 如果是创建osd，read_only为false
     if (r < 0) {
       return r;
     }
@@ -5983,7 +5983,7 @@ int BlueStore::_prepare_db_environment(bool create, bool read_only,
       }
       env = new rocksdb::EnvMirror(b, a, false, true);
     } else {
-      env = new BlueRocksEnv(bluefs);
+      env = new BlueRocksEnv(bluefs); // 创建bluefs
 
       // simplify the dir names, too, as "seen" by rocksdb
       fn = "db";
@@ -6003,7 +6003,7 @@ int BlueStore::_prepare_db_environment(bool create, bool read_only,
 
       }
       kv_options["db_paths"] = db_paths.str();
-      dout(1) << __func__ << " set db_paths to " << db_paths.str() << dendl;
+      dout(1) << __func__ << " set db_paths to " << db_paths.str() << dendl; // _prepare_db_environment set db_paths to db,1020054732 db.slow,102005473280
     }
 
     if (create) {
@@ -6409,7 +6409,7 @@ int BlueStore::mkfs()
 	derr << __func__ << " expected bluestore, but type is " << type << dendl;
 	return -EIO;
       }
-    } else {
+    } else { // 没有读到就写入
       r = write_meta("type", "bluestore");
       if (r < 0)
         return r;
@@ -6509,7 +6509,7 @@ int BlueStore::mkfs()
 
   {
     KeyValueDB::Transaction t = db->get_transaction();
-    r = _open_fm(t, true);
+    r = _open_fm(t, true); // freelistmanager
     if (r < 0)
       goto out_close_db;
     {

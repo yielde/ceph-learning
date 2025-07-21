@@ -1,4 +1,7 @@
 CompileFlags:
+  Add:
+    - "--include-directory=/data200/ceph-16.2.15-0-g618f4408920/src/rocksdb/include"
+    - "--include-directory=/data200/ceph-16.2.15-0-g618f4408920/src/rocksdb/"
   Remove:
     - -fno-new-ttp-matching
     - -Wstrict-null-sentinel

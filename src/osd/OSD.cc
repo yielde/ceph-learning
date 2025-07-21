@@ -2098,7 +2098,7 @@ int OSD::mkfs(CephContext *cct, ObjectStore *store, uuid_d fsid, int whoami, str
 
   store->set_cache_shards(1);  // doesn't matter for mkfs!
 
-  ret = store->mount();
+  ret = store->mount(); // 
   if (ret) {
     derr << "OSD::mkfs: couldn't mount ObjectStore: error "
          << cpp_strerror(ret) << dendl;

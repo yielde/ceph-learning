@@ -522,7 +522,7 @@ int RocksDBStore::load_rocksdb_options(bool create_if_missing, rocksdb::Options&
 	  return -EINVAL;
 	}
 	opt.db_paths.push_back(rocksdb::DbPath(path, size));
-	dout(10) << __func__ << " db_path " << path << " size " << size << dendl;
+	dout(10) << __func__ << " db_path " << path << " size " << size << dendl; //加载创建rocksdb需要的参数
       }
     }
   } catch (const std::system_error& e) {
@@ -558,7 +558,7 @@ int RocksDBStore::load_rocksdb_options(bool create_if_missing, rocksdb::Options&
   if (row_cache_size > 0)
     opt.row_cache = rocksdb::NewLRUCache(row_cache_size,
 				     cct->_conf->rocksdb_cache_shard_bits);
-  uint64_t bloom_bits = cct->_conf.get_val<uint64_t>("rocksdb_bloom_bits_per_key");
+  uint64_t bloom_bits = cct->_conf.get_val<uint64_t>("rocksdb_bloom_bits_per_key"); // 在布隆过滤器中每个key占多少个bit
   if (bloom_bits > 0) {
     dout(10) << __func__ << " set bloom filter bits per key to "
 	     << bloom_bits << dendl;
