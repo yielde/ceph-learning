@@ -1066,7 +1066,7 @@ int PgScrubber::build_replica_map_chunk()
   return ret;
 }
 
-int PgScrubber::build_scrub_map_chunk(
+int PgScrubber::build_scrub_map_chunk( // scrub流程里有对omap digest的设置
   ScrubMap& map, ScrubMapBuilder& pos, hobject_t start, hobject_t end, bool deep)
 {
   dout(10) << __func__ << " [" << start << "," << end << ") "

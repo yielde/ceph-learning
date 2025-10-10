@@ -1560,7 +1560,7 @@ int RocksDBStore::submit_common(rocksdb::WriteOptions& woptions, KeyValueDB::Tra
   _t->bat.Iterate(&bat_txc);
   *_dout << " Rocksdb transaction: " << bat_txc.seen.str() << dendl;
   
-  rocksdb::Status s = db->Write(woptions, &_t->bat);
+  rocksdb::Status s = db->Write(woptions, &_t->bat); // 写rocksdb
   if (!s.ok()) {
     RocksWBHandler rocks_txc(*this);
     _t->bat.Iterate(&rocks_txc);

@@ -359,7 +359,8 @@ public:
     Transaction& t) {
     std::list<Context*> contexts;
     contexts.splice(contexts.end(), t.on_applied);
-    contexts.splice(contexts.end(), t.on_commit);
+    contexts.splice(contexts.end(), t.on_commit); // contexts末尾追加op_t.register_on_commit(parent->bless_context(new C_OSD_OnOpCommit(this, &op)));
+
     contexts.splice(contexts.end(), t.on_applied_sync);
     return C_Contexts::list_to_context(contexts);
   }

@@ -5866,11 +5866,11 @@ struct object_info_t {
   bool has_manifest() const {
     return test_flag(FLAG_MANIFEST);
   }
-  void set_data_digest(__u32 d) {
+  void set_data_digest(__u32 d) { // set data digest
     set_flag(FLAG_DATA_DIGEST);
     data_digest = d;
   }
-  void set_omap_digest(__u32 d) {
+  void set_omap_digest(__u32 d) { // set omap digest
     set_flag(FLAG_OMAP_DIGEST);
     omap_digest = d;
   }

@@ -221,7 +221,7 @@ int KernelDevice::open(const string& p)
   // blksize doesn't strictly matter except that some file systems may
   // require a read/modify/write if we write something smaller than
   // it.
-  block_size = cct->_conf->bdev_block_size;
+  block_size = cct->_conf->bdev_block_size; // ceph操作块的大小，按照4k
   if (block_size != (unsigned)st.st_blksize) {
     dout(1) << __func__ << " backing device/file reports st_blksize "
 	    << st.st_blksize << ", using bdev_block_size "
@@ -472,7 +472,7 @@ int KernelDevice::flush()
     _exit(1);
   }
   utime_t start = ceph_clock_now();
-  int r = ::fdatasync(fd_directs[WRITE_LIFE_NOT_SET]);
+  int r = ::fdatasync(fd_directs[WRITE_LIFE_NOT_SET]); // 数据落盘
   utime_t end = ceph_clock_now();
   utime_t dur = end - start;
   if (r < 0) {
@@ -571,7 +571,7 @@ void KernelDevice::_aio_thread()
     int max = cct->_conf->bdev_aio_reap_max;
     aio_t *aio[max];
     int r = io_queue->get_next_completed(cct->_conf->bdev_aio_poll_ms,
-					 aio, max);
+					 aio, max); // 处理libaio的返回结果
     if (r < 0) {
       derr << __func__ << " got " << cpp_strerror(r) << dendl;
       ceph_abort_msg("got unexpected error from io_getevents");
@@ -592,13 +592,13 @@ void KernelDevice::_aio_thread()
 	// that an earlier, racing flush() could observe and clear this
 	// flag, but that also ensures that the IO will be stable before the
 	// later flush() occurs.
-	io_since_flush.store(true);
+	io_since_flush.store(true); // 上次flush之后又有新IO
 
 	long r = aio[i]->get_return_value();
         if (r < 0) {
           derr << __func__ << " got r=" << r << " (" << cpp_strerror(r) << ")"
 	       << dendl;
-          if (ioc->allow_eio && is_expected_ioerr(r)) {
+          if (ioc->allow_eio && is_expected_ioerr(r)) { // 不至于让OSD崩溃的错误，将错误码传到上层
             derr << __func__ << " translating the error to EIO for upper layer"
 		 << dendl;
             ioc->set_return_value(-EIO);
@@ -615,7 +615,7 @@ void KernelDevice::_aio_thread()
 #endif
 		aio[i]->offset,
 		aio[i]->length);
-	      ceph_abort_msg(
+	      ceph_abort_msg( // 不可恢复的I/O错误
 		"Unexpected IO error. "
 		"This may suggest a hardware issue. "
 		"Please check your kernel log!");
@@ -837,7 +837,7 @@ void KernelDevice::aio_submit(IOContext *ioc)
   int r, retries = 0;
   // num of pending aios should not overflow when passed to submit_batch()
   assert(pending <= std::numeric_limits<uint16_t>::max());
-  r = io_queue->submit_batch(ioc->running_aios.begin(), e,
+  r = io_queue->submit_batch(ioc->running_aios.begin(), e, // 加入到aio_queue
 			     pending, priv, &retries);
 
   if (retries)
@@ -1007,12 +1007,12 @@ int KernelDevice::aio_write(
 	    tmp.substr_of(bl, prev_len, bl.length() - prev_len);
 	  }
 	  auto len = tmp.length();
-	  ioc->pending_aios.push_back(aio_t(ioc, choose_fd(false, write_hint)));
+	  ioc->pending_aios.push_back(aio_t(ioc, choose_fd(false, write_hint))); // 将aio挂到pending_aios
 	  ++ioc->num_pending;
 	  auto& aio = ioc->pending_aios.back();
 	  tmp.prepare_iov(&aio.iov);
 	  aio.bl.claim_append(tmp);
-	  aio.pwritev(off + prev_len, len);
+	  aio.pwritev(off + prev_len, len); // 准备libaio的数据结构，包括数据
 	  dout(30) << aio << dendl;
 	  dout(5) << __func__ << " 0x" << std::hex << off + prev_len
 		  << "~" << len

@@ -266,7 +266,7 @@ public:
   std::ostream &print(std::ostream &rhs) const final {
     return rhs << "PGPeeringEvent(" << evt->get_desc() << ")";
   }
-  void run(OSD *osd, OSDShard *sdata, PGRef& pg, ThreadPool::TPHandle &handle) final;
+  void run(OSD *osd, OSDShard *sdata, PGRef& pg, ThreadPool::TPHandle &handle) final; // 开始执行
   bool is_peering() const override {
     return true;
   }

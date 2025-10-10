@@ -1,7 +1,14 @@
+#include "include/encoding.h"
 #include <functional>
 #include <iostream>
 
-bool is_equal(int a, int b) { return a > b; }
+void encode(int a, int b){
+
+}
+
+void encode(int a, int *b){
+
+}
 
 int main() {
   auto f = std::bind(is_equal, std::placeholders::_1, 10); // 绑定第二个参数为10

@@ -20,7 +20,7 @@
 
 namespace ceph::osd::scheduler {
 
-void PGOpItem::run(
+void PGOpItem::run( // 从OSD拿出 tp_handle，op
   OSD *osd,
   OSDShard *sdata,
   PGRef& pg,
@@ -223,7 +223,7 @@ void PGRecovery::run(
   PGRef& pg,
   ThreadPool::TPHandle &handle)
 {
-  osd->do_recovery(pg.get(), epoch_queued, reserved_pushes, handle);
+  osd->do_recovery(pg.get(), epoch_queued, reserved_pushes, handle); // 取出recovery任务进行恢复
   pg->unlock();
 }
 

@@ -358,6 +358,7 @@ TEST(bluestore_blob_t, calc_csum)
     b.calc_csum(0, bl);
     ASSERT_EQ(0, b.verify_csum(0, bl, &bad_off, &bad_csum));
     ASSERT_EQ(-1, bad_off);
+    cout << "  bad_off " << bad_csum << std::endl;
     ASSERT_EQ(-1, b.verify_csum(0, bl2, &bad_off, &bad_csum));
     ASSERT_EQ(0, bad_off);
 

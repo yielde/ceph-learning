@@ -4459,7 +4459,7 @@ std::vector<Option> get_global_options() {
     .set_flag(Option::FLAG_RUNTIME)
     .set_description("Ignore checksum errors on read and do not generate an EIO error"),
 
-    Option("bluestore_csum_type", Option::TYPE_STR, Option::LEVEL_ADVANCED)
+    Option("bluestore_csum_type", Option::TYPE_STR, Option::LEVEL_ADVANCED) // 设置crc32c类型
     .set_default("crc32c")
     .set_enum_allowed({"none", "crc32c", "crc32c_16", "crc32c_8", "xxhash32", "xxhash64"})
     .set_flag(Option::FLAG_RUNTIME)

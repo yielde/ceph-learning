@@ -6355,8 +6355,8 @@ void object_info_t::dump(Formatter *f) const
   f->close_section();
   f->dump_unsigned("truncate_seq", truncate_seq);
   f->dump_unsigned("truncate_size", truncate_size);
-  f->dump_format("data_digest", "0x%08x", data_digest);
-  f->dump_format("omap_digest", "0x%08x", omap_digest);
+  f->dump_format("data_digest", "0x%08x", data_digest); // attr里存储的data digest
+  f->dump_format("omap_digest", "0x%08x", omap_digest); // attr里存储的omap digest
   f->dump_unsigned("expected_object_size", expected_object_size);
   f->dump_unsigned("expected_write_size", expected_write_size);
   f->dump_unsigned("alloc_hint_flags", alloc_hint_flags);

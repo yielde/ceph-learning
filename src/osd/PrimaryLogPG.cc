@@ -18,6 +18,7 @@
 #include "boost/tuple/tuple.hpp"
 #include "boost/intrusive_ptr.hpp"
 #include "PG.h"
+#include "common/dout.h"
 #include "pg_scrubber.h"
 #include "PrimaryLogPG.h"
 #include "OSD.h"
@@ -1828,7 +1829,7 @@ void PrimaryLogPG::do_request(
 	osd->reply_op_error(op, -EOPNOTSUPP);
 	return;
       }
-      do_op(op);
+      do_op(op); // 解析op
       break;
     case CEPH_MSG_OSD_BACKOFF:
       // object-level backoff acks handled in osdop context
@@ -1898,7 +1899,7 @@ void PrimaryLogPG::do_request(
  * pg lock will be held (if multithreaded)
  * osd_lock NOT held.
  */
-void PrimaryLogPG::do_op(OpRequestRef& op)
+void PrimaryLogPG::do_op(OpRequestRef& op) // 主OSD解析参数，准备execute_ctx
 {
   FUNCTRACE(cct);
   // NOTE: take a non-const pointer here; we must be careful not to
@@ -2095,7 +2096,7 @@ void PrimaryLogPG::do_op(OpRequestRef& op)
   }
 #endif
   // missing object?
-  if (is_unreadable_object(head)) {
+  if (is_unreadable_object(head)) { // 修复对象中
     if (!is_primary()) {
       osd->reply_op_error(op, -EAGAIN);
       return;
@@ -2206,7 +2207,7 @@ void PrimaryLogPG::do_op(OpRequestRef& op)
 	osd->reply_op_error(op, -EINVAL);
 	return;
       }
-    }
+    } 
   }
 
   // io blocked on obc?
@@ -2346,7 +2347,7 @@ void PrimaryLogPG::do_op(OpRequestRef& op)
 
   dout(25) << __func__ << " oi " << obc->obs.oi << dendl;
 
-  OpContext *ctx = new OpContext(op, m->get_reqid(), &m->ops, obc, this);
+  OpContext *ctx = new OpContext(op, m->get_reqid(), &m->ops, obc, this); // 创建Op ctx
 
   if (m->has_flag(CEPH_OSD_FLAG_SKIPRWLOCKS)) {
     dout(20) << __func__ << ": skipping rw locks" << dendl;
@@ -2410,7 +2411,7 @@ void PrimaryLogPG::do_op(OpRequestRef& op)
 
   op->mark_started();
 
-  execute_ctx(ctx);
+  execute_ctx(ctx); // 执行
   utime_t prepare_latency = ceph_clock_now();
   prepare_latency -= op->get_dequeued_time();
   osd->logger->tinc(l_osd_op_prepare_lat, prepare_latency);
@@ -4003,7 +4004,7 @@ void PrimaryLogPG::execute_ctx(OpContext *ctx)
 
   // this method must be idempotent since we may call it several times
   // before we finally apply the resulting transaction.
-  ctx->op_t.reset(new PGTransaction);
+  ctx->op_t.reset(new PGTransaction); // 构造PGTransaction
 
   if (op->may_write() || op->may_cache()) {
     // snap
@@ -4058,7 +4059,7 @@ void PrimaryLogPG::execute_ctx(OpContext *ctx)
   }
 #endif
 
-  int result = prepare_transaction(ctx);
+  int result = prepare_transaction(ctx); // do_osd_ops 处理各种类型的OSD消息
 
   {
 #ifdef WITH_LTTNG
@@ -4107,7 +4108,7 @@ void PrimaryLogPG::execute_ctx(OpContext *ctx)
     }
   }
 
-  // prepare the reply
+  // prepare the reply，应答消息
   ctx->reply = new MOSDOpReply(m, result, get_osdmap_epoch(), 0,
 			       ignore_out_data);
   dout(20) << __func__ << " alloc reply " << ctx->reply
@@ -4174,7 +4175,7 @@ void PrimaryLogPG::execute_ctx(OpContext *ctx)
 
   // no need to capture PG ref, repop cancel will handle that
   // Can capture the ctx by pointer, it's owned by the repop
-  ctx->register_on_commit(
+  ctx->register_on_commit( // 注册回调函数, eval_repop中调用
     [m, ctx, this](){
       if (ctx->op)
 	log_op_stats(*ctx->op, ctx->bytes_written, ctx->bytes_read);
@@ -4204,7 +4205,7 @@ void PrimaryLogPG::execute_ctx(OpContext *ctx)
   // issue replica writes
   ceph_tid_t rep_tid = osd->get_tid();
 
-  RepGather *repop = new_repop(ctx, obc, rep_tid);
+  RepGather *repop = new_repop(ctx, obc, rep_tid); // 创建RepGather对象
 
   issue_repop(repop, ctx);
   eval_repop(repop);
@@ -5331,7 +5332,7 @@ struct C_ChecksumRead : public Context {
   }
 };
 
-int PrimaryLogPG::do_checksum(OpContext *ctx, OSDOp& osd_op,
+int PrimaryLogPG::do_checksum(OpContext *ctx, OSDOp& osd_op, // checksum函数
 			      bufferlist::const_iterator *bl_it)
 {
   dout(20) << __func__ << dendl;
@@ -5688,10 +5689,10 @@ int PrimaryLogPG::do_read(OpContext *ctx, OSDOp& osd_op) {
     int r = pgbackend->objects_read_sync(
       soid, op.extent.offset, op.extent.length, op.flags, &osd_op.outdata);
     // whole object?  can we verify the checksum?
-    if (r >= 0 && op.extent.offset == 0 &&
-        (uint64_t)r == oi.size && oi.is_data_digest()) {
+    if (r >= 0 && op.extent.offset == 0 && // 读整个对象
+        (uint64_t)r == oi.size && oi.is_data_digest()) { // 数据crc计算
       uint32_t crc = osd_op.outdata.crc32c(-1);
-      if (oi.data_digest != crc) {
+      if (oi.data_digest != crc) { // 通过rocksdb对比
         osd->clog->error() << info.pgid << std::hex
                            << " full-object read crc 0x" << crc
                            << " != expected 0x" << oi.data_digest
@@ -5700,7 +5701,7 @@ int PrimaryLogPG::do_read(OpContext *ctx, OSDOp& osd_op) {
       }
     }
     if (r == -EIO) {
-      r = rep_repair_primary_object(soid, ctx);
+      r = rep_repair_primary_object(soid, ctx); // 如果读的数据crc不对，发起恢复流程
     }
     if (r >= 0)
       op.extent.length = r;
@@ -5810,7 +5811,7 @@ int PrimaryLogPG::do_sparse_read(OpContext *ctx, OSDOp& osd_op) {
   return 0;
 }
 
-int PrimaryLogPG::do_osd_ops(OpContext *ctx, vector<OSDOp>& ops)
+int PrimaryLogPG::do_osd_ops(OpContext *ctx, vector<OSDOp>& ops) // PG执行客户端请求
 {
   int result = 0;
   SnapSetContext *ssc = ctx->obc->ssc;
@@ -5818,7 +5819,7 @@ int PrimaryLogPG::do_osd_ops(OpContext *ctx, vector<OSDOp>& ops)
   object_info_t& oi = obs.oi;
   const hobject_t& soid = oi.soid;
   const bool skip_data_digest = osd->store->has_builtin_csum() &&
-    osd->osd_skip_data_digest;
+    osd->osd_skip_data_digest; // 跳过checksum信息存储
 
   PGTransaction* t = ctx->op_t.get();
 
@@ -5901,7 +5902,7 @@ int PrimaryLogPG::do_osd_ops(OpContext *ctx, vector<OSDOp>& ops)
 
     switch (op.op) {
 
-      // --- READS ---
+      // --- READS --- 读取操作
 
     case CEPH_OSD_OP_CMPEXT:
       ++ctx->num_read;
@@ -6613,18 +6614,25 @@ int PrimaryLogPG::do_osd_ops(OpContext *ctx, vector<OSDOp>& ops)
 	  t->write(
 	    soid, op.extent.offset, op.extent.length, osd_op.indata, op.flags);
 	}
-
-	if (op.extent.offset == 0 && op.extent.length >= oi.size
+  dout(0) << "[MY-DEBUG][CEPH_OSD_OP_WRITE] write op info" << "oi-size: " <<oi.size  
+  <<"oi-digest: "<< oi.data_digest << "oi-soid: " << oi.soid<< "op-extent-offset: "<< 
+  op.extent.offset << "op-extent-length: " << op.extent.length << "op-extent-truncate_seq: " 
+  << op.extent.truncate_seq << "op-extent-truncate_size: " << op.extent.truncate_size << dendl;
+	if (op.extent.offset == 0 && op.extent.length >= oi.size // 从头全覆盖写和追加写会计算crc，其他情况会清除crc
             && !skip_data_digest) {
 	  obs.oi.set_data_digest(osd_op.indata.crc32c(-1));
+    dout(0) << "[MY-DEBUG][CEPH_OSD_OP_WRITE]all data digest " << obs.oi.data_digest << dendl;
 	} else if (op.extent.offset == oi.size && obs.oi.is_data_digest()) {
           if (skip_data_digest) {
             obs.oi.clear_data_digest();
+            dout(0) << "[MY-DEBUG][CEPH_OSD_OP_WRITE]skip data digest " << dendl;
           } else {
 	    obs.oi.set_data_digest(osd_op.indata.crc32c(obs.oi.data_digest));
+      dout(0) << "[MY-DEBUG][CEPH_OSD_OP_WRITE]append data digest " << obs.oi.data_digest << dendl;
           }
 	} else {
 	  obs.oi.clear_data_digest();
+    dout(0) << "[MY-DEBUG][CEPH_OSD_OP_WRITE]clear data digest " << dendl;
         }
 	write_update_size_and_usage(ctx->delta_stats, oi, ctx->modified_ranges,
 				    op.extent.offset, op.extent.length);
@@ -6652,7 +6660,7 @@ int PrimaryLogPG::do_osd_ops(OpContext *ctx, vector<OSDOp>& ops)
 	if (pool.info.has_flag(pg_pool_t::FLAG_WRITE_FADVISE_DONTNEED))
 	  op.flags = op.flags | CEPH_OSD_OP_FLAG_FADVISE_DONTNEED;
 
-	maybe_create_new_object(ctx);
+	maybe_create_new_object(ctx); // 构建新的object结构，设置exists = true
 	if (pool.info.is_erasure()) {
 	  t->truncate(soid, 0);
 	} else if (obs.exists && op.extent.length < oi.size) {
@@ -6662,7 +6670,8 @@ int PrimaryLogPG::do_osd_ops(OpContext *ctx, vector<OSDOp>& ops)
 	  t->write(soid, 0, op.extent.length, osd_op.indata, op.flags);
 	}
         if (!skip_data_digest) {
-	  obs.oi.set_data_digest(osd_op.indata.crc32c(-1));
+          obs.oi.set_data_digest(osd_op.indata.crc32c(-1));
+          dout(0) << "[MY-DEBUG][CEPH_OSD_OP_WRITEFULL]all data digest " << obs.oi.data_digest << dendl;
         } else {
 	  obs.oi.clear_data_digest();
 	}
@@ -7983,7 +7992,7 @@ int PrimaryLogPG::do_osd_ops(OpContext *ctx, vector<OSDOp>& ops)
       break;
   }
   if (result < 0) {
-    dout(10) << __func__ << " error: " << cpp_strerror(result) << dendl;
+    dout(0) << __func__ << " error: " << cpp_strerror(result) << dendl;
   }
   return result;
 }
@@ -8663,7 +8672,7 @@ int PrimaryLogPG::prepare_transaction(OpContext *ctx) // TODO: 是否会影响ba
   }
 
   // prepare the actual mutation
-  int result = do_osd_ops(ctx, *ctx->ops);
+  int result = do_osd_ops(ctx, *ctx->ops); // 具体处理osd的读写
   if (result < 0) {
     if (ctx->op->may_write() &&
 	get_osdmap()->require_osd_release >= ceph_release_t::kraken) {
@@ -8756,7 +8765,7 @@ void PrimaryLogPG::finish_ctx(OpContext *ctx, int log_op_type, int result)
   }
   ctx->bytes_written = ctx->op_t->get_bytes_written();
 
-  if (ctx->new_obs.exists) {
+  if (ctx->new_obs.exists) { // 写入新对象
     ctx->new_obs.oi.version = ctx->at_version;
     ctx->new_obs.oi.prior_version = ctx->obs->oi.version;
     ctx->new_obs.oi.last_reqid = ctx->reqid;
@@ -8773,7 +8782,7 @@ void PrimaryLogPG::finish_ctx(OpContext *ctx, int log_op_type, int result)
     bufferlist bv(sizeof(ctx->new_obs.oi));
     encode(ctx->new_obs.oi, bv,
 	     get_osdmap()->get_features(CEPH_ENTITY_TYPE_OSD, nullptr));
-    attrs[OI_ATTR] = std::move(bv);
+    attrs[OI_ATTR] = std::move(bv); // crc设置到attr里面
 
     // snapset
     if (soid.snap == CEPH_NOSNAP) {
@@ -11012,7 +11021,7 @@ void PrimaryLogPG::eval_repop(RepGather *repop)
     for (auto p = repop->on_committed.begin();
 	 p != repop->on_committed.end();
 	 repop->on_committed.erase(p++)) {
-      (*p)();
+      (*p)(); // 执行on_committed回调函数,reply->add_flags(CEPH_OSD_FLAG_ACK | CEPH_OSD_FLAG_ONDISK);
     }
     // send dup commits, in order
     auto it = waiting_for_ondisk.find(repop->v);
@@ -11073,7 +11082,7 @@ void PrimaryLogPG::issue_repop(RepGather *repop, OpContext *ctx)
     ctx->op_t->add_obc(ctx->head_obc);
   }
 
-  Context *on_all_commit = new C_OSD_RepopCommit(this, repop);
+  Context *on_all_commit = new C_OSD_RepopCommit(this, repop); // osd都写完后完成调用
   if (!(ctx->log.empty())) {
     ceph_assert(ctx->at_version >= projected_last_update);
     projected_last_update = ctx->at_version;
@@ -12898,7 +12907,7 @@ bool PrimaryLogPG::start_recovery_ops(
     // Recover the replicas.
     started = recover_replicas(max, handle, &recovery_started);
   }
-  if (!started) {
+  if (!started) { // Primary有缺失，从replicas OSD拉取
     // We still have missing objects that we should grab from replicas.
     started += recover_primary(max, handle);
   }
@@ -13156,7 +13165,7 @@ uint64_t PrimaryLogPG::recover_primary(uint64_t max, ThreadPool::TPHandle &handl
       if (recovering.count(head)) {
 	++skipped;
       } else {
-	int r = recover_missing(
+	int r = recover_missing( // 恢复missing object需要的上下文信息
 	  soid, need, get_recovery_op_priority(), h);
 	switch (r) {
 	case PULL_YES:
@@ -13180,7 +13189,7 @@ uint64_t PrimaryLogPG::recover_primary(uint64_t max, ThreadPool::TPHandle &handl
       recovery_state.set_last_requested(v);
   }
 
-  pgbackend->run_recovery_op(h, get_recovery_op_priority());
+  pgbackend->run_recovery_op(h, get_recovery_op_priority()); // 发出recovery op
   return started;
 }
 
@@ -13188,7 +13197,7 @@ bool PrimaryLogPG::primary_error(
   const hobject_t& soid, eversion_t v)
 {
   recovery_state.force_object_missing(pg_whoami, soid, v);
-  bool uhoh = recovery_state.get_missing_loc().is_unfound(soid);
+  bool uhoh = recovery_state.get_missing_loc().is_unfound(soid); // 找不到副本对象
   if (uhoh)
     osd->clog->error() << info.pgid << " missing primary copy of "
 		       << soid << ", unfound";
@@ -15177,7 +15186,7 @@ int PrimaryLogPG::rep_repair_primary_object(const hobject_t& soid, OpContext *ct
 	std::make_shared<PGPeeringEvent>(
 	get_osdmap_epoch(),
 	get_osdmap_epoch(),
-	PeeringState::DoRecovery())));
+	PeeringState::DoRecovery()))); // 发起恢复流程
 
   return -EAGAIN;
 }

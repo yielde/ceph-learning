@@ -5661,15 +5661,15 @@ PeeringState::WaitLocalRecoveryReserved::WaitLocalRecoveryReserved(my_context ct
   ps->state_clear(PG_STATE_RECOVERY_TOOFULL);
   ps->state_set(PG_STATE_RECOVERY_WAIT);
   pl->request_local_background_io_reservation(
-    ps->get_recovery_priority(),
+    ps->get_recovery_priority(), // recovery类型IO优先级
     std::make_unique<PGPeeringEvent>(
       ps->get_osdmap_epoch(),
       ps->get_osdmap_epoch(),
-      LocalRecoveryReserved()),
+      LocalRecoveryReserved()), // 预约到资源
     std::make_unique<PGPeeringEvent>(
       ps->get_osdmap_epoch(),
       ps->get_osdmap_epoch(),
-      DeferRecovery(0.0)));
+      DeferRecovery(0.0))); // 被其他IO抢占
   pl->publish_stats_to_osd();
 }
 
@@ -5745,7 +5745,7 @@ PeeringState::Recovering::Recovering(my_context ctx)
   ps->state_clear(PG_STATE_RECOVERY_WAIT);
   ps->state_clear(PG_STATE_RECOVERY_TOOFULL);
   ps->state_set(PG_STATE_RECOVERING);
-  pl->on_recovery_reserved();
+  pl->on_recovery_reserved(); // 预约资源完成后状态机跳转到了这里，把该PG的Recovery丢到OSD的消息队列里
   ceph_assert(!ps->state_test(PG_STATE_ACTIVATING));
   pl->publish_stats_to_osd();
 }

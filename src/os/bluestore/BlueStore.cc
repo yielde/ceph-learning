@@ -12,6 +12,7 @@
  *
  */
 
+#include <cstdint>
 #include <unistd.h>
 #include <stdlib.h>
 #include <sys/types.h>
@@ -22,6 +23,8 @@
 #include <boost/container/flat_set.hpp>
 #include <boost/algorithm/string.hpp>
 
+#include "common/dout.h"
+#include "include/buffer_fwd.h"
 #include "include/cpp-btree/btree_set.h"
 
 #include "BlueStore.h"
@@ -3209,7 +3212,7 @@ void BlueStore::ExtentMap::fault_range(
       generate_extent_shard_key_and_apply(
 	onode->key, p->shard_info->offset, &key,
         [&](const string& final_key) {
-          int r = db->get(PREFIX_OBJ, final_key, &v);
+          int r = db->get(PREFIX_OBJ, final_key, &v); // 查询对象的extents在块设备上的映射关系
           if (r < 0) {
 	    derr << __func__ << " missing shard 0x" << std::hex
 		 << p->shard_info->offset << std::dec << " for " << onode->oid
@@ -3385,7 +3388,7 @@ void BlueStore::ExtentMap::punch_hole(
   uint64_t length,
   old_extent_map_t *old_extents)
 {
-  auto p = seek_lextent(offset);
+  auto p = seek_lextent(offset); // 找到要写入的extent
   uint64_t end = offset + length;
   while (p != extent_map.end()) {
     if (p->logical_offset >= end) {
@@ -3421,7 +3424,7 @@ void BlueStore::ExtentMap::punch_hole(
       OldExtent* oe = OldExtent::create(c, p->logical_offset, p->blob_offset,
 				        p->length, p->blob);
       old_extents->push_back(*oe);
-      rm(p++);
+      rm(p++); // 全覆盖直接把旧的Extent删除
       continue;
     }
     // deref head
@@ -3949,7 +3952,7 @@ BlueStore::OnodeRef BlueStore::Collection::get_onode(
   int r = -ENOENT;
   Onode *on;
   if (!is_createop) {
-    r = store->db->get(PREFIX_OBJ, key.c_str(), key.size(), &v);
+    r = store->db->get(PREFIX_OBJ, key.c_str(), key.size(), &v); // 获取onode_t
     ldout(store->cct, 20) << " r " << r << " v.len " << v.length() << dendl;
   }
   if (v.length() == 0) {
@@ -4424,7 +4427,7 @@ bufferlist BlueStore::OmapIteratorImpl::value()
 #define dout_context cct
 
 
-static void aio_cb(void *priv, void *priv2)
+static void aio_cb(void *priv, void *priv2) // libaio刷盘之后调用的callback
 {
   BlueStore *store = static_cast<BlueStore*>(priv);
   BlueStore::AioContext *c = static_cast<BlueStore::AioContext*>(priv2);
@@ -10233,7 +10236,7 @@ int BlueStore::_do_read(
   return r;
 }
 
-int BlueStore::_verify_csum(OnodeRef& o,
+int BlueStore::_verify_csum(OnodeRef& o, // 校验csum
 			    const bluestore_blob_t* blob, uint64_t blob_xoffset,
 			    const bufferlist& bl,
 			    uint64_t logical_offset) const
@@ -11565,7 +11568,7 @@ void BlueStore::_txc_state_proc(TransContext *txc)
     switch (txc->get_state()) {
     case TransContext::STATE_PREPARE:
       throttle.log_state_latency(*txc, logger, l_bluestore_state_prepare_lat);
-      if (txc->ioc.has_pending_aios()) {
+      if (txc->ioc.has_pending_aios()) { // simple write
 	txc->set_state(TransContext::STATE_AIO_WAIT);
 #ifdef WITH_BLKIN
         if (txc->trace) {
@@ -11573,9 +11576,14 @@ void BlueStore::_txc_state_proc(TransContext *txc)
         }
 #endif
 	txc->had_ios = true;
-	_txc_aio_submit(txc);
+  dout(0) << __func__ << "[MY-DEBUG][TransContext::STATE_PREPARE]simple write(has pending aios): "<< txc << dendl;
+  for (auto o: txc->onodes){ 
+    dout(0) << __func__ << "[MY-DEBUG][TransContext::STATE_PREPARE]txc extents info: "<< o->extent_map.extent_map.get_size() << dendl;
+  }
+  _txc_aio_submit(txc); // 提交数据到块设备
 	return;
       }
+  dout(0) << __func__ << "[MY-DEBUG][TransContext::STATE_PREPARE]simple write(not has pending aios): "<< txc << dendl;
       // ** fall-thru **
 
     case TransContext::STATE_AIO_WAIT:
@@ -11640,7 +11648,7 @@ void BlueStore::_txc_state_proc(TransContext *txc)
 	kv_throttle_costs += txc->cost;
       }
       return;
-    case TransContext::STATE_KV_SUBMITTED:
+    case TransContext::STATE_KV_SUBMITTED: // 提交
       _txc_committed_kv(txc);
       // ** fall-thru **
 
@@ -11903,9 +11911,9 @@ void BlueStore::_txc_apply_kv(TransContext *txc, bool sync_submit_transaction)
     }
 #endif
 
-    int r = cct->_conf->bluestore_debug_omit_kv_commit ? 0 : db->submit_transaction(txc->t);
+    int r = cct->_conf->bluestore_debug_omit_kv_commit ? 0 : db->submit_transaction(txc->t); // 写rocksdb
     ceph_assert(r == 0);
-    txc->set_state(TransContext::STATE_KV_SUBMITTED);
+    txc->set_state(TransContext::STATE_KV_SUBMITTED); // 设置状态为submitted
     if (txc->osr->kv_submitted_waiters) {
       std::lock_guard l(txc->osr->qlock);
       txc->osr->qcond.notify_all();
@@ -11944,7 +11952,7 @@ void BlueStore::_txc_committed_kv(TransContext *txc)
     std::lock_guard l(txc->osr->qlock);
     txc->set_state(TransContext::STATE_KV_DONE);
     if (txc->ch->commit_queue) {
-      txc->ch->commit_queue->queue(txc->oncommits);
+      txc->ch->commit_queue->queue(txc->oncommits); // 
     } else {
       finisher.queue(txc->oncommits);
     }
@@ -12336,7 +12344,7 @@ void BlueStore::_kv_sync_thread()
 
       auto start = mono_clock::now();
 
-      bool force_flush = false;
+      bool force_flush = false; // flush的触发逻辑
       // if bluefs is sharing the same device as data (only), then we
       // can rely on the bluefs commit to flush the device and make
       // deferred aios stable.  that means that if we do have done deferred
@@ -12350,7 +12358,7 @@ void BlueStore::_kv_sync_thread()
 	  force_flush = true;
 	}
       } else {
-      	if (aios || !deferred_done.empty()) {
+      	if (aios || !deferred_done.empty()) { // deferred_done未落盘，落盘后会放入deferred_stable，deferred_stable中的dbh关联的WAL可以被清理了
 	  force_flush = true;
       	} else {
 	  dout(20) << __func__ << " skipping flush (no aios, no deferred_done)" << dendl;
@@ -12402,7 +12410,7 @@ void BlueStore::_kv_sync_thread()
 	throttle.log_state_latency(*txc, logger, l_bluestore_state_kv_queued_lat);
 	if (txc->get_state() == TransContext::STATE_KV_QUEUED) {
 	  ++kv_submitted;
-	  _txc_apply_kv(txc, false);
+	  _txc_apply_kv(txc, false); // 这里txc->set_state(TransContext::STATE_KV_SUBMITTED);
 	  --txc->osr->kv_committing_serially;
 	} else {
 	  ceph_assert(txc->get_state() == TransContext::STATE_KV_SUBMITTED);
@@ -13014,7 +13022,7 @@ int BlueStore::queue_transactions(
   ThreadPool::TPHandle *handle)
 {
   FUNCTRACE(cct);
-  list<Context *> on_applied, on_commit, on_applied_sync;
+  list<Context *> on_applied, on_commit, on_applied_sync; // parent->queue_transaction前注册的callback函数拿过来
   ObjectStore::Transaction::collect_contexts(
     tls, &on_applied, &on_commit, &on_applied_sync);
 
@@ -13039,20 +13047,21 @@ int BlueStore::queue_transactions(
   }
   for (vector<Transaction>::iterator p = tls.begin(); p != tls.end(); ++p) {
     txc->bytes += (*p).get_num_bytes();
-    _txc_add_transaction(txc, &(*p));
+    _txc_add_transaction(txc, &(*p)); // 添加事务
   }
   _txc_calc_cost(txc);
 
-  _txc_write_nodes(txc, txc->t);
+  _txc_write_nodes(txc, txc->t); // 更新元数据
 
   // journal deferred items
   if (txc->deferred_txn) {
+    dout(0) << __func__ << "[MY-DEBUG] have deferred_txn, journal deferred items" << dendl;
     txc->deferred_txn->seq = ++deferred_seq;
     bufferlist bl;
-    encode(*txc->deferred_txn, bl);
+    encode(*txc->deferred_txn, bl); // deferred数据encode到bufferlist中，写入rocksdb
     string key;
     get_deferred_key(txc->deferred_txn->seq, &key);
-    txc->t->set(PREFIX_DEFERRED, key, bl);
+    txc->t->set(PREFIX_DEFERRED, key, bl); // 写入Rocksdb
   }
 
   _txc_finalize_kv(txc, txc->t);
@@ -13082,7 +13091,7 @@ int BlueStore::queue_transactions(
       std::lock_guard l(kv_lock);
       if (!kv_sync_in_progress) {
 	kv_sync_in_progress = true;
-	kv_cond.notify_one();
+	kv_cond.notify_one(); // 唤醒线程_kv_sync_thread
       }
     }
     throttle.finish_start_transaction(*db, *txc, tstart);
@@ -13095,7 +13104,7 @@ int BlueStore::queue_transactions(
 
   logger->inc(l_bluestore_txc);
 
-  // execute (start)
+  // execute (start)，进入BlueStore的状态机
   _txc_state_proc(txc);
 
   if (bdev->is_smr()) {
@@ -13103,7 +13112,7 @@ int BlueStore::queue_transactions(
   }
 
   // we're immediately readable (unlike FileStore)
-  for (auto c : on_applied_sync) {
+  for (auto c : on_applied_sync) { // readable
     c->complete(0);
   }
   if (!on_applied.empty()) {
@@ -13287,7 +13296,7 @@ void BlueStore::_txc_add_transaction(TransContext *txc, Transaction *t)
       r = _touch(txc, c, o);
       break;
 
-    case Transaction::OP_WRITE:
+    case Transaction::OP_WRITE: // 写op
       {
         uint64_t off = op->off;
         uint64_t len = op->len;
@@ -13512,7 +13521,7 @@ void BlueStore::_txc_add_transaction(TransContext *txc, Transaction *t)
 // -----------------
 // write operations
 
-int BlueStore::_touch(TransContext *txc,
+int BlueStore:: _touch(TransContext *txc,
 		      CollectionRef& c,
 		      OnodeRef& o)
 {
@@ -13720,7 +13729,7 @@ void BlueStore::_do_write_small(
 			      wctx->buffered ? 0 : Buffer::FLAG_NOCACHE);
 
 	  if (!g_conf()->bluestore_debug_omit_block_device_write) {
-	    if (b_len < prefer_deferred_size) {
+	    if (b_len < prefer_deferred_size) { // bluestore_prefer_deferred_size_hdd 64k走deferred
 	      dout(20) << __func__ << " deferring small 0x" << std::hex
 		       << b_len << std::dec << " unused write via deferred" << dendl;
 	      bluestore_deferred_op_t *op = _get_deferred_op(txc, bl.length());
@@ -13737,7 +13746,7 @@ void BlueStore::_do_write_small(
 		b_off, bl,
 		[&](uint64_t offset, bufferlist& t) {
 		  bdev->aio_write(offset, t,
-				  &txc->ioc, wctx->buffered);
+				  &txc->ioc, wctx->buffered); // 否则直接准备libaio需要的item
 		});
 	    }
 	  }
@@ -14104,7 +14113,30 @@ void BlueStore::_do_write_big(
     //attempting to reuse existing blob
     if (!wctx->compress) {
       // enforce target blob alignment with max_bsize
-      l = max_bsize - p2phase(offset, max_bsize);
+      l = max_bsize - p2phase(offset, max_bsize); // 对齐内存边界，最多能写的长度不会超过max_bsize
+      /*
+      假设：
+
+        max_bsize = 4096
+        offset = 4100
+        length = 8000
+
+
+        计算距离边界：
+        l = 4096 - (4100 % 4096) = 4096 - 4 = 4092
+        → 表示这次最多写 4092，刚好把 offset=8192 对齐到 4K 边界。
+
+        剩余长度比较：
+        l = min(4092, 8000) = 4092
+
+        所以第一次写 4092，写完后：
+
+        offset = 8192
+        length = 3908
+
+
+        第二轮写时 offset 已经对齐，后续每次都能按 max_bsize 切分。
+      */
       l = std::min(uint64_t(l), length);
 
       auto end = o->extent_map.extent_map.end();
@@ -14214,7 +14246,7 @@ void BlueStore::_do_write_big(
       // search suitable extent in both forward and reverse direction in
       // [offset - target_max_blob_size, offset + target_max_blob_size] range
       // then check if blob can be reused via can_reuse_blob func.
-      bool any_change;
+      bool any_change; // 查找可以复用的blob
       do {
 	any_change = false;
 	if (ep != end && ep->logical_offset < offset + max_bsize) {
@@ -14376,7 +14408,7 @@ int BlueStore::_do_alloc_write(
       uint64_t compressed_len = t.length();
       // do an approximate (fast) estimation for resulting blob size
       // that doesn't take header overhead  into account
-      uint64_t result_len = p2roundup(compressed_len, min_alloc_size);
+      uint64_t result_len = p2roundup(compressed_len, min_alloc_size); // 内存对齐
       if (r == 0 && result_len <= want_len && result_len < wi.blob_length) {
 	bluestore_compression_header_t chdr;
 	chdr.type = c->get_type();
@@ -14565,7 +14597,7 @@ int BlueStore::_do_alloc_write(
       dblob.calc_csum(b_off, *l);
     }
 
-    if (wi.mark_unused) {
+    if (wi.mark_unused) { // 压缩不支持
       ceph_assert(!dblob.is_compressed());
       auto b_end = b_off + wi.bl.length();
       if (b_off) {
@@ -14603,11 +14635,11 @@ int BlueStore::_do_alloc_write(
 	  });
         ceph_assert(r == 0);
 	op->data = *l;
-      } else {
+      } else { // Simple Write
 	wi.b->get_blob().map_bl(
 	  b_off, *l,
 	  [&](uint64_t offset, bufferlist& t) {
-	    bdev->aio_write(offset, t, &txc->ioc, false);
+	    bdev->aio_write(offset, t, &txc->ioc, false); // 提交libaio，转到kernel
 	  });
 	logger->inc(l_bluestore_write_new);
       }
@@ -14689,7 +14721,7 @@ void BlueStore::_wctx_finish(
   }
 }
 
-void BlueStore::_do_write_data(
+void BlueStore::_do_write_data( // 写数据大写和小写
   TransContext *txc,
   CollectionRef& c,
   OnodeRef& o,
@@ -14702,7 +14734,7 @@ void BlueStore::_do_write_data(
   bufferlist::iterator p = bl.begin();
 
   if (offset / min_alloc_size == (end - 1) / min_alloc_size &&
-      (length != min_alloc_size)) {
+      (length != min_alloc_size)) { // 默认使用bluestore_min_alloc_size_ssd和bluestore_min_alloc_size_hdd，4096
     // we fall within the same block
     _do_write_small(txc, c, o, offset, length, p, wctx);
   } else {
@@ -14930,8 +14962,8 @@ int BlueStore::_do_write(
   WriteContext wctx;
   _choose_write_options(c, o, fadvise_flags, &wctx);
   o->extent_map.fault_range(db, offset, length);
-  _do_write_data(txc, c, o, offset, length, bl, &wctx);
-  r = _do_alloc_write(txc, c, o, &wctx);
+  _do_write_data(txc, c, o, offset, length, bl, &wctx); // 写数据到WriteContext【内存中】
+  r = _do_alloc_write(txc, c, o, &wctx); // 分配blob空间，puch hole，将数据构造为aio item
   if (r < 0) {
     derr << __func__ << " _do_alloc_write failed with " << cpp_strerror(r)
 	 << dendl;
@@ -15009,9 +15041,9 @@ int BlueStore::_write(TransContext *txc,
   if (offset + length >= OBJECT_MAX_SIZE) {
     r = -E2BIG;
   } else {
-    _assign_nid(txc, o);
-    r = _do_write(txc, c, o, offset, length, bl, fadvise_flags);
-    txc->write_onode(o);
+    _assign_nid(txc, o); //分配object id
+    r = _do_write(txc, c, o, offset, length, bl, fadvise_flags); // 写数据
+    txc->write_onode(o); // 写入onode元数据
   }
   dout(10) << __func__ << " " << c->cid << " " << o->oid
 	   << " 0x" << std::hex << offset << "~" << length << std::dec

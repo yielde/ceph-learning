@@ -2411,7 +2411,7 @@ void PG::do_peering_event(PGPeeringEventRef evt, PeeringCtx &rctx)
   if (old_peering_evt(evt)) {
     dout(10) << "discard old " << evt->get_desc() << dendl;
   } else {
-    recovery_state.handle_event(evt, &rctx);
+    recovery_state.handle_event(evt, &rctx); // 处理PGPeeringEvent
   }
   // write_if_dirty regardless of path above to ensure we capture any work
   // done by OSD::advance_pg().

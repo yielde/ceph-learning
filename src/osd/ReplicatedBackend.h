@@ -230,7 +230,7 @@ private:
   void _do_pull_response(OpRequestRef op);
   void do_push(OpRequestRef op) {
     if (is_primary()) {
-      _do_pull_response(op);
+      _do_pull_response(op); // 处理recovery的PUSH消息
     } else {
       _do_push(op);
     }

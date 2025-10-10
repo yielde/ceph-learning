@@ -20,6 +20,7 @@
 #include <vector>
 #include <array>
 #include "include/mempool.h"
+#include "include/buffer.h"
 #include "include/types.h"
 #include "include/interval_set.h"
 #include "include/utime.h"
@@ -93,7 +94,7 @@ struct bluestore_interval_t
 
 };
 
-/// pextent: physical extent
+/// pextent: physical extent，一段物理空间
 struct bluestore_pextent_t : public bluestore_interval_t<uint64_t, uint32_t> 
 {
   bluestore_pextent_t() {}
@@ -816,6 +817,26 @@ public:
       ceph_abort_msg("unrecognized csum word size");
     }
   }
+
+  uint64_t get_csum_item2(unsigned i, ceph::buffer::ptr csum_data) const {
+    size_t cs = get_csum_value_size();
+    const char *p = csum_data.c_str();
+    switch (cs) {
+    case 0:
+      ceph_abort_msg("no csum data, bad index");
+    case 1:
+      return reinterpret_cast<const uint8_t*>(p)[i];
+    case 2:
+      return reinterpret_cast<const ceph_le16*>(p)[i];
+    case 4:
+      return reinterpret_cast<const ceph_le32*>(p)[i];
+    case 8:
+      return reinterpret_cast<const ceph_le64*>(p)[i];
+    default:
+      ceph_abort_msg("unrecognized csum word size");
+    }
+  }
+
   const char *get_csum_item_ptr(unsigned i) const {
     size_t cs = get_csum_value_size();
     return csum_data.c_str() + (cs * i);
@@ -836,7 +857,7 @@ public:
 
   /// calculate csum for the buffer at the given b_off
   void calc_csum(uint64_t b_off, const ceph::buffer::list& bl);
-
+  void get_calc_csum(uint64_t b_off, const bufferlist& bl, ceph::buffer::ptr csum_data) const;
   /// verify csum: return -EOPNOTSUPP for unsupported checksum type;
   /// return -1 and valid(nonnegative) b_bad_off for checksum error;
   /// return 0 if all is well.
@@ -939,12 +960,12 @@ WRITE_CLASS_DENC(bluestore_shared_blob_t)
 
 std::ostream& operator<<(std::ostream& out, const bluestore_shared_blob_t& o);
 
-/// onode: per-object metadata
+/// onode: per-object metadata, 对象元数据
 struct bluestore_onode_t {
   uint64_t nid = 0;                    ///< numeric id (locally unique)
   uint64_t size = 0;                   ///< object size
   // mempool to be assigned to buffer::ptr manually
-  std::map<mempool::bluestore_cache_meta::string, ceph::buffer::ptr> attrs;
+  std::map<mempool::bluestore_cache_meta::string, ceph::buffer::ptr> attrs; // 属性
 
   struct shard_info {
     uint32_t offset = 0;  ///< logical offset for start of shard

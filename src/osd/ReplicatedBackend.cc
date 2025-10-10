@@ -122,7 +122,7 @@ ReplicatedBackend::ReplicatedBackend(
   CephContext *cct) :
   PGBackend(cct, pg, store, coll, c) {}
 
-void ReplicatedBackend::run_recovery_op(
+void ReplicatedBackend::run_recovery_op( // 执行恢复的入口
   PGBackend::RecoveryHandle *_h,
   int priority)
 {
@@ -143,7 +143,7 @@ int ReplicatedBackend::recover_object(
 {
   dout(10) << __func__ << ": " << hoid << dendl;
   RPGHandle *h = static_cast<RPGHandle *>(_h);
-  if (get_parent()->get_local_missing().is_missing(hoid)) {
+  if (get_parent()->get_local_missing().is_missing(hoid)) { // 从其他osd pull
     ceph_assert(!obc);
     // pull
     prepare_pull(
@@ -216,7 +216,7 @@ bool ReplicatedBackend::_handle_message(
     return true;
 
   case MSG_OSD_REPOP: {
-    do_repop(op);
+    do_repop(op); // 接收来自primary osd的请求
     return true;
   }
 
@@ -495,7 +495,7 @@ void ReplicatedBackend::submit_transaction(
     make_pair(
       tid,
       ceph::make_ref<InProgressOp>(
-	tid, on_all_commit,
+	tid, on_all_commit, // C_OSD_RepopCommit
 	orig_op, at_version)
       )
     );
@@ -509,7 +509,7 @@ void ReplicatedBackend::submit_transaction(
     parent->get_acting_recovery_backfill_shards().begin(),
     parent->get_acting_recovery_backfill_shards().end());
 
-  issue_op(
+  issue_op( // 发给副本
     soid,
     at_version,
     tid,
@@ -542,7 +542,7 @@ void ReplicatedBackend::submit_transaction(
   vector<ObjectStore::Transaction> tls;
   tls.push_back(std::move(op_t));
 
-  parent->queue_transactions(tls, op.op);
+  parent->queue_transactions(tls, op.op); // Primary osd 转发到bluestore
   if (at_version != eversion_t()) {
     parent->op_applied(at_version);
   }
@@ -621,14 +621,14 @@ void ReplicatedBackend::do_repop_reply(OpRequestRef op)
 
     if (ip_op.waiting_for_commit.empty() &&
         ip_op.on_commit) {
-      ip_op.on_commit->complete(0);
+      ip_op.on_commit->complete(0); // on_commit就是on_all_commit
       ip_op.on_commit = 0;
       in_progress_ops.erase(iter);
     }
   }
 }
 
-int ReplicatedBackend::be_deep_scrub(
+int ReplicatedBackend::be_deep_scrub( // deep scrub !!!
   const hobject_t &poid,
   ScrubMap &map,
   ScrubMapBuilder &pos,
@@ -727,7 +727,7 @@ int ReplicatedBackend::be_deep_scrub(
     bufferlist bl;
     encode(iter->key(), bl);
     encode(iter->value(), bl);
-    pos.omap_hash << bl;
+    pos.omap_hash << bl; // 重载了<<，通过omap的key和value计算crc，并保存到omap_hash
 
     iter->next();
 
@@ -756,7 +756,7 @@ int ReplicatedBackend::be_deep_scrub(
     map.has_large_omap_object_errors = true;
   }
 
-  o.omap_digest = pos.omap_hash.digest();
+  o.omap_digest = pos.omap_hash.digest(); // 保存到对象中
   o.omap_digest_present = true;
   dout(20) << __func__ << " done with " << poid << " omap_digest "
 	   << std::hex << o.omap_digest << std::dec << dendl;
@@ -895,7 +895,7 @@ void ReplicatedBackend::_do_pull_response(OpRequestRef op)
   get_parent()->queue_transaction(std::move(t));
 }
 
-void ReplicatedBackend::do_pull(OpRequestRef op)
+void ReplicatedBackend::do_pull(OpRequestRef op) // 处理pull请求？
 {
   MOSDPGPull *m = static_cast<MOSDPGPull *>(op->get_nonconst_req());
   ceph_assert(m->get_type() == MSG_OSD_PG_PULL);
@@ -906,7 +906,7 @@ void ReplicatedBackend::do_pull(OpRequestRef op)
     replies[from].push_back(PushOp());
     handle_pull(from, i, &(replies[from].back()));
   }
-  send_pushes(m->get_priority(), replies);
+  send_pushes(m->get_priority(), replies); // replies是PushOp *out_op
 }
 
 void ReplicatedBackend::do_push_reply(OpRequestRef op)
@@ -1037,7 +1037,7 @@ void ReplicatedBackend::issue_op(
       if (op->op && op->op->pg_trace)
 	wr->trace.init("replicated op", nullptr, &op->op->pg_trace);
       get_parent()->send_message_osd_cluster(
-	  shard.osd, wr, get_osdmap_epoch());
+	  shard.osd, wr, get_osdmap_epoch()); // 发给副本OSD
     }
   }
 }
@@ -1143,7 +1143,7 @@ void ReplicatedBackend::do_repop(OpRequestRef op)
   tls.reserve(2);
   tls.push_back(std::move(rm->localt));
   tls.push_back(std::move(rm->opt));
-  parent->queue_transactions(tls, op);
+  parent->queue_transactions(tls, op); // replicate写store
   // op is cleaned up by oncommit/onapply when both are executed
   dout(30) << __func__ << " missing after" << get_parent()->get_log().get_missing().get_items() << dendl;
 }
@@ -1172,7 +1172,7 @@ void ReplicatedBackend::repop_commit(RepModifyRef rm)
   reply->set_priority(CEPH_MSG_PRIO_HIGH); // this better match ack priority!
   reply->trace = rm->op->pg_trace;
   get_parent()->send_message_osd_cluster(
-    rm->ackerosd, reply, get_osdmap_epoch());
+    rm->ackerosd, reply, get_osdmap_epoch()); // replicate osd发送给primary osd
 
   log_subop_stats(get_parent()->get_logger(), rm->op, l_osd_sop_w);
 }
@@ -1992,7 +1992,7 @@ void ReplicatedBackend::send_pushes(int prio, map<pg_shard_t, vector<PushOp> > &
 
 void ReplicatedBackend::send_pulls(int prio, map<pg_shard_t, vector<PullOp> > &pulls)
 {
-  for (map<pg_shard_t, vector<PullOp> >::iterator i = pulls.begin();
+  for (map<pg_shard_t, vector<PullOp> >::iterator i = pulls.begin(); // 找第一个OSD去拿
        i != pulls.end();
        ++i) {
     ConnectionRef con = get_parent()->get_con_osd_cluster(
@@ -2010,7 +2010,7 @@ void ReplicatedBackend::send_pulls(int prio, map<pg_shard_t, vector<PullOp> > &p
     msg->min_epoch = get_parent()->get_last_peering_reset_epoch();
     msg->set_pulls(std::move(i->second));
     msg->compute_cost(cct);
-    get_parent()->send_message_osd_cluster(msg, con);
+    get_parent()->send_message_osd_cluster(msg, con); // pullop消息发给OSD
   }
 }
 
@@ -2158,7 +2158,7 @@ int ReplicatedBackend::build_push_op(const ObjectRecoveryInfo &recovery_info,
                          << " full-object read crc 0x" << crc
                          << " != expected 0x" << oi.data_digest
                          << std::dec << " on " << recovery_info.soid << dendl;
-      return -EIO;
+      return -EIO; // 给目标recovery的object数据也不正确
     }
   }
 
@@ -2288,7 +2288,7 @@ void ReplicatedBackend::handle_pull(pg_shard_t peer, PullOp &op, PushOp *reply)
       if (st.st_size) {
         interval_set<uint64_t> object_range;
         object_range.insert(0, st.st_size);
-        recovery_info.copy_subset.intersection_of(object_range);
+        recovery_info.copy_subset.intersection_of(object_range); // 需要recovery的object的有效数据区域
       } else {
         recovery_info.copy_subset.clear();
       }

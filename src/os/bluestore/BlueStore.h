@@ -698,11 +698,11 @@ public:
 
   /// a logical extent, pointing to (some portion of) a blob
   typedef boost::intrusive::set_base_hook<boost::intrusive::optimize_size<true> > ExtentBase; //making an alias to avoid build warnings
-  struct Extent : public ExtentBase {
+  struct Extent : public ExtentBase { // logic extent，对象内部的数据管理结构
     MEMPOOL_CLASS_HELPERS();
 
-    uint32_t logical_offset = 0;      ///< logical offset
-    uint32_t blob_offset = 0;         ///< blob offset
+    uint32_t logical_offset = 0;      ///< logical offset，不需要块对齐
+    uint32_t blob_offset = 0;         ///< blob offset，如果logical_offset是块对齐的，那么blob_offset=0，如果logical_offset不是块对齐，通过blob映射到物理盘时会产生物理段内的偏移量，值为blob_offset
     uint32_t length = 0;              ///< length
     BlobRef  blob;                    ///< the blob with our data
 
@@ -797,7 +797,7 @@ public:
     typedef boost::intrusive_ptr<Onode> OnodeRef;
 
     struct Shard {
-      bluestore_onode_t::shard_info *shard_info = nullptr;
+      bluestore_onode_t::shard_info *shard_info = nullptr; // ExtentMap碎片化过于严重需要对ExtentMap分片，加快Rocksdb访问效率。
       unsigned extents = 0;  ///< count extents in this shard
       bool loaded = false;   ///< true if shard is loaded
       bool dirty = false;    ///< true if shard is dirty and needs reencoding
@@ -1080,7 +1080,7 @@ public:
     bool cached;              ///< Onode is logically in the cache
                               /// (it can be pinned and hence physically out
                               /// of it at the moment though)
-    ExtentMap extent_map;
+    ExtentMap extent_map; // 有序存储在rocksdb中，映射lextent -> pextent
 
     // track txc's that have not been committed to kv store (and whose
     // effects cannot be read via the kvdb read methods)
@@ -1699,7 +1699,7 @@ private:
       }
     }
 
-    void aio_finish(BlueStore *store) override {
+    void aio_finish(BlueStore *store) override { // big_write的callback，aio_thread提交libaio后调用
       store->txc_aio_finish(this);
     }
   private:
@@ -1845,7 +1845,7 @@ private:
 		       ceph::buffer::list::const_iterator& p);
 
     void aio_finish(BlueStore *store) override {
-      store->_deferred_aio_finish(osr);
+      store->_deferred_aio_finish(osr); // deferred write的callback
     }
   };
 
@@ -3113,7 +3113,7 @@ private:
 private:
 
   // --------------------------------------------------------
-  // read processing internal methods
+  // read processing internal methods ,可以直接从这里校验csum？？？
   int _verify_csum(
     OnodeRef& o,
     const bluestore_blob_t* blob,

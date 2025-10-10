@@ -2593,7 +2593,7 @@ int print_obj_info(ObjectStore *store, coll_t coll, ghobject_t &ghobj, Formatter
   formatter->close_section();
 
   bufferlist attr;
-  int gr = store->getattr(ch, ghobj, OI_ATTR, attr);
+  int gr = store->getattr(ch, ghobj, OI_ATTR, attr); // _ 是object
   if (gr < 0) {
     r = gr;
     cerr << "Error getting attr on : " << make_pair(coll, ghobj) << ", "
@@ -2602,7 +2602,7 @@ int print_obj_info(ObjectStore *store, coll_t coll, ghobject_t &ghobj, Formatter
     object_info_t oi;
     auto bp = attr.cbegin();
     try {
-      decode(oi, bp);
+      decode(oi, bp); // 复制属性到object_info_t
       formatter->open_object_section("info");
       oi.dump(formatter);
       formatter->close_section();

@@ -7253,7 +7253,7 @@ void OSD::dispatch_session_waiting(const ceph::ref_t<Session>& session, OSDMapRe
 }
 
 void OSD::ms_fast_dispatch(Message *m)
-{
+{ // 将op放入消息队列
 
 #ifdef HAVE_JAEGER
   jaeger_tracing::init_tracer("osd-services-reinit");
@@ -7338,7 +7338,7 @@ void OSD::ms_fast_dispatch(Message *m)
   service.maybe_inject_dispatch_delay();
 
   if (m->get_connection()->has_features(CEPH_FEATUREMASK_RESEND_ON_SPLIT) ||
-      m->get_type() != CEPH_MSG_OSD_OP) {
+      m->get_type() != CEPH_MSG_OSD_OP) { // osd op
     // queue it directly
     enqueue_op(
       static_cast<MOSDFastDispatchOp*>(m)->get_spg(),
@@ -10040,7 +10040,7 @@ void OSD::dequeue_op(
   op->mark_reached_pg();
   op->osd_trace.event("dequeue_op");
 
-  pg->do_request(op, handle);
+  pg->do_request(op, handle); // 处理消息
 
   // finish
   dout(10) << "dequeue_op " << op << " finish" << dendl;
@@ -10066,7 +10066,7 @@ void OSD::dequeue_peering_evt(
       ceph_abort();
     }
   } else if (advance_pg(curmap->get_epoch(), pg, handle, rctx)) {
-    pg->do_peering_event(evt, rctx);
+    pg->do_peering_event(evt, rctx); // OSD转给PG进入recovery状态机
     if (pg->is_deleted()) {
       pg->unlock();
       return;
@@ -11002,7 +11002,7 @@ void OSD::ShardedOpWQ::_add_slot_waiter(
 #undef dout_prefix
 #define dout_prefix *_dout << "osd." << osd->whoami << " op_wq(" << shard_index << ") "
 
-void OSD::ShardedOpWQ::_process(uint32_t thread_index, heartbeat_handle_d *hb)
+void OSD::ShardedOpWQ::_process(uint32_t thread_index, heartbeat_handle_d *hb) // 处理消息队列的请求
 {
   uint32_t shard_index = thread_index % osd->num_shards;
   auto& sdata = osd->shards[shard_index];
@@ -11319,7 +11319,7 @@ void OSD::ShardedOpWQ::_process(uint32_t thread_index, heartbeat_handle_d *hb)
   delete f;
   *_dout << dendl;
 
-  qi.run(osd, sdata, pg, tp_handle);
+  qi.run(osd, sdata, pg, tp_handle); // 运行item，enqueue_peering_evt传入的OpSchedulerItem
 
   {
 #ifdef WITH_LTTNG

@@ -675,7 +675,7 @@ public:
 
     hobject_t new_temp_oid, discard_temp_oid;  ///< temp objects we should start/stop tracking
 
-    std::list<std::function<void()>> on_applied;
+    std::list<std::function<void()>> on_applied; // 主osd设置的callback函数
     std::list<std::function<void()>> on_committed;
     std::list<std::function<void()>> on_finish;
     std::list<std::function<void()>> on_success;

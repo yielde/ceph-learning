@@ -683,9 +683,9 @@ void bluestore_blob_t::dump(Formatter *f) const
   f->close_section();
   f->dump_unsigned("logical_length", logical_length);
   f->dump_unsigned("compressed_length", compressed_length);
-  f->dump_unsigned("flags", flags);
+  f->dump_unsigned("flags", flags); // FLAG_CSUM=4 表示blob有checksum
   f->dump_unsigned("csum_type", csum_type);
-  f->dump_unsigned("csum_chunk_order", csum_chunk_order);
+  f->dump_unsigned("csum_chunk_order", csum_chunk_order); // csum块大小，12是2^12 = 4k
   f->open_array_section("csum_data");
   size_t n = get_csum_count();
   for (unsigned i = 0; i < n; ++i)
@@ -735,6 +735,32 @@ ostream& operator<<(ostream& out, const bluestore_blob_t& o)
 }
 
 void bluestore_blob_t::calc_csum(uint64_t b_off, const bufferlist& bl)
+{
+  switch (csum_type) {
+  case Checksummer::CSUM_XXHASH32:
+    Checksummer::calculate<Checksummer::xxhash32>(
+      get_csum_chunk_size(), b_off, bl.length(), bl, &csum_data);
+    break;
+  case Checksummer::CSUM_XXHASH64:
+    Checksummer::calculate<Checksummer::xxhash64>(
+      get_csum_chunk_size(), b_off, bl.length(), bl, &csum_data);
+    break;;
+  case Checksummer::CSUM_CRC32C:
+    Checksummer::calculate<Checksummer::crc32c>(
+      get_csum_chunk_size(), b_off, bl.length(), bl, &csum_data);
+    break;
+  case Checksummer::CSUM_CRC32C_16:
+    Checksummer::calculate<Checksummer::crc32c_16>(
+      get_csum_chunk_size(), b_off, bl.length(), bl, &csum_data);
+    break;
+  case Checksummer::CSUM_CRC32C_8:
+    Checksummer::calculate<Checksummer::crc32c_8>(
+      get_csum_chunk_size(), b_off, bl.length(), bl, &csum_data);
+    break;
+  }
+}
+
+void bluestore_blob_t::get_calc_csum(uint64_t b_off, const bufferlist& bl, ceph::buffer::ptr csum_data) const
 {
   switch (csum_type) {
   case Checksummer::CSUM_XXHASH32:

@@ -888,7 +888,7 @@ public:
 
   struct Clean : boost::statechart::state< Clean, Active >, NamedState {
     typedef boost::mpl::list<
-      boost::statechart::transition< DoRecovery, WaitLocalRecoveryReserved >,
+      boost::statechart::transition< DoRecovery, WaitLocalRecoveryReserved >, // 发起恢复 queue_peering_event(PGPeeringEventRef(std::make_shared<PGPeeringEvent>(get_osdmap_epoch(),get_osdmap_epoch(),PeeringState::DoRecovery())));
       boost::statechart::custom_reaction<SetForceRecovery>,
       boost::statechart::custom_reaction<SetForceBackfill>
     > reactions;
@@ -1155,7 +1155,7 @@ public:
   struct WaitRemoteRecoveryReserved : boost::statechart::state< WaitRemoteRecoveryReserved, Active >, NamedState {
     typedef boost::mpl::list <
       boost::statechart::custom_reaction< RemoteRecoveryReserved >,
-      boost::statechart::transition< AllRemotesReserved, Recovering >
+      boost::statechart::transition< AllRemotesReserved, Recovering > // local和remote都预留了资源
       > reactions;
     std::set<pg_shard_t>::const_iterator remote_recovery_reservation_it;
     explicit WaitRemoteRecoveryReserved(my_context ctx);
@@ -1712,7 +1712,7 @@ public:
   void handle_event(PGPeeringEventRef evt,
 		    PeeringCtx *rctx) {
     start_handle(rctx);
-    machine.process_event(evt->get_event());
+    machine.process_event(evt->get_event()); // 发送DoRecovery事件，当然还有其他的，目前只关注恢复流程
     end_handle();
   }
 

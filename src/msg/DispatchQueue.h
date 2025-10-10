@@ -199,7 +199,7 @@ class DispatchQueue {
 
   bool can_fast_dispatch(const ceph::cref_t<Message> &m) const;
   void fast_dispatch(const ceph::ref_t<Message>& m);
-  void fast_dispatch(Message* m) {
+  void fast_dispatch(Message* m) { // 分发从客户端接收的消息给OSD
     return fast_dispatch(ceph::ref_t<Message>(m, false)); /* consume ref */
   }
   void fast_preprocess(const ceph::ref_t<Message>& m);

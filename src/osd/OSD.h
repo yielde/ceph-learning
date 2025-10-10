@@ -724,7 +724,7 @@ public:
     std::lock_guard l(recovery_lock);
 
     if (pg->is_forced_recovery_or_backfill()) {
-      awaiting_throttle.push_front(std::make_pair(pg->get_osdmap()->get_epoch(), pg));
+      awaiting_throttle.push_front(std::make_pair(pg->get_osdmap()->get_epoch(), pg)); // force或其他类型的recovery/backfill，取决于丢队列的头还是尾
     } else {
       awaiting_throttle.push_back(std::make_pair(pg->get_osdmap()->get_epoch(), pg));
     }
@@ -1642,7 +1642,7 @@ protected:
       OSDShardPGSlot *slot,
       OpSchedulerItem&& qi);
 
-    /// try to do some work
+    /// try to do some work 处理丢过来的PeeringState::DoRecovery()等事件
     void _process(uint32_t thread_index, ceph::heartbeat_handle_d *hb) override;
 
     /// enqueue a new item
