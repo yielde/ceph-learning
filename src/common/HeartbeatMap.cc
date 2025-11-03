@@ -68,7 +68,7 @@ void HeartbeatMap::remove_worker(const heartbeat_handle_d *h)
 
 bool HeartbeatMap::_check(const heartbeat_handle_d *h, const char *who,
 			  ceph::coarse_mono_time now)
-{
+{// !clock::is_zero(was) 是否开启了超时时钟；
   bool healthy = true;
   if (auto was = h->timeout.load(std::memory_order_relaxed);
       !clock::is_zero(was) && was < now) {

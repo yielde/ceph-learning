@@ -18,7 +18,7 @@
 #include <algorithm>
 #include <array>
 
-enum ceph_subsys_id_t {
+enum ceph_subsys_id_t { // ceph子系统，宏定义枚举，枚举值就是ceph_subsys_##name，例如ceph_subsys_osd
   ceph_subsys_,   // default
 #define SUBSYS(name, log, gather) \
   ceph_subsys_##name,

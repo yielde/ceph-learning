@@ -699,7 +699,7 @@ CephContext::CephContext(uint32_t module_type_,
   _heartbeat_map = new HeartbeatMap(this);
 
   _plugin_registry = new PluginRegistry(this);
-
+  // 注册给ceph tell osd.x 使用，直接跟.asok文件通信
   _admin_hook = new CephContextHook(this);
   _admin_socket->register_command("assert", _admin_hook, "");
   _admin_socket->register_command("abort", _admin_hook, "");
@@ -733,7 +733,7 @@ CephContext::CephContext(uint32_t module_type_,
   _crypto_aes = CryptoHandler::create(CEPH_CRYPTO_AES);
   _crypto_random.reset(new CryptoRandom());
 
-  lookup_or_create_singleton_object<MempoolObs>("mempool_obs", false, this);
+  lookup_or_create_singleton_object<MempoolObs>("mempool_obs", false, this); // ceph tell osd.0 dump_mempools
 }
 
 CephContext::~CephContext()
@@ -820,7 +820,7 @@ void CephContext::start_service_thread()
       return;
     }
     _service_thread = new CephContextServiceThread(this);
-    _service_thread->create("service");
+    _service_thread->create("service"); // ps -eLo pid,tid,comm,args |grep ceph-osd|grep service
   }
 
   if (!(get_init_flags() & CINIT_FLAG_NO_CCT_PERF_COUNTERS))

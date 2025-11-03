@@ -5095,8 +5095,8 @@ int BlueStore::_read_bdev_label(CephContext* cct, string path,
     return fd;
   }
   bufferlist bl;
-  int r = bl.read_fd(fd, BDEV_LABEL_BLOCK_SIZE);
-  VOID_TEMP_FAILURE_RETRY(::close(fd));
+  int r = bl.read_fd(fd, BDEV_LABEL_BLOCK_SIZE); // 读4k数据到bl中
+  VOID_TEMP_FAILURE_RETRY(::close(fd)); // 重试确保关闭文件描述符成功
   if (r < 0) {
     derr << __func__ << " failed to read from " << path
 	 << ": " << cpp_strerror(r) << dendl;
@@ -5106,10 +5106,10 @@ int BlueStore::_read_bdev_label(CephContext* cct, string path,
   uint32_t crc, expected_crc;
   auto p = bl.cbegin();
   try {
-    decode(*label, p);
+    decode(*label, p); // 填充到label中
     bufferlist t;
-    t.substr_of(bl, 0, p.get_off());
-    crc = t.crc32c(-1);
+    t.substr_of(bl, 0, p.get_off()); // 从bl中提取前p.get_off()字节的数据到t中
+    crc = t.crc32c(-1); // 计算t的crc32c校验和
     decode(expected_crc, p);
   }
   catch (ceph::buffer::error& e) {
@@ -6376,7 +6376,7 @@ int BlueStore::mkfs()
   int r;
   uuid_d old_fsid;
   uint64_t reserved;
-  if (cct->_conf->osd_max_object_size > OBJECT_MAX_SIZE) {
+  if (cct->_conf->osd_max_object_size > OBJECT_MAX_SIZE) { // 4GB
     derr << __func__ << " osd_max_object_size "
 	 << cct->_conf->osd_max_object_size << " > bluestore max "
 	 << OBJECT_MAX_SIZE << dendl;
