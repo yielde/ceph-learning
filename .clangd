@@ -1,0 +1,6 @@
+CompileFlags:
+  Add:
+    - "-std=c++2b"
+    - "-DCEPH_DEBUG_MUTEX"
+  Remove:
+    - "-std=c++23"
