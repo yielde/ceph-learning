@@ -11602,8 +11602,8 @@ void BlueStore::_txc_state_proc(TransContext *txc)
 
     case TransContext::STATE_IO_DONE:
       ceph_assert(ceph_mutex_is_locked(txc->osr->qlock));  // see _txc_finish_io
-      if (txc->had_ios) {
-	++txc->osr->txc_with_unstable_io;
+      if (txc->had_ios) { // IO还没有被提交kv
+  ++txc->osr->txc_with_unstable_io;
       }
       throttle.log_state_latency(*txc, logger, l_bluestore_state_io_done_lat);
       txc->set_state(TransContext::STATE_KV_QUEUED);
@@ -13051,7 +13051,7 @@ int BlueStore::queue_transactions(
   }
   _txc_calc_cost(txc);
 
-  _txc_write_nodes(txc, txc->t); // 更新元数据
+  _txc_write_nodes(txc, txc->t); // 更新内存onode
 
   // journal deferred items
   if (txc->deferred_txn) {
@@ -13064,7 +13064,7 @@ int BlueStore::queue_transactions(
     txc->t->set(PREFIX_DEFERRED, key, bl); // 写入Rocksdb
   }
 
-  _txc_finalize_kv(txc, txc->t);
+  _txc_finalize_kv(txc, txc->t); // 事务去重更新freelist、bitmap等
 
 #ifdef WITH_BLKIN
   if (txc->trace) {
@@ -13080,7 +13080,7 @@ int BlueStore::queue_transactions(
   if (!throttle.try_start_transaction(
 	*db,
 	*txc,
-	tstart)) {
+	tstart)) { // 主要用着deferred write，HDD默认小于64k走deferred write写入到kv，后续合并写入块设备，SSD不走deferred write
     // ensure we do not block here because of deferred writes
     dout(10) << __func__ << " failed get throttle_deferred_bytes, aggressive"
 	     << dendl;
@@ -13111,7 +13111,7 @@ int BlueStore::queue_transactions(
     atomic_alloc_and_submit_lock.unlock();
   }
 
-  // we're immediately readable (unlike FileStore)
+  // we're immediately readable (unlike FileStore)，可以立即读Bluestore处于STATE_WRITING状态的数据，即使现在数据还没有提交还在buffer中，看void BlueStore::BufferSpace::read
   for (auto c : on_applied_sync) { // readable
     c->complete(0);
   }
