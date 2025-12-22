@@ -1716,7 +1716,7 @@ void BlueStore::BufferSpace::read(
 	  offset += l;
 	  length -= l;
 	  if (!b->is_writing()) {
-	    cache->_touch(b);
+	    cache->_touch(b); // 删除当前buffer在LRU的位置，插入缓冲区列表的头部，表示最近使用
           }
 	  continue;
         }
@@ -9967,7 +9967,7 @@ int BlueStore::_prepare_read_ioc(
     regions2read_t& r2r = p.second;
     dout(20) << __func__ << "  blob " << *bptr << std::hex
              << " need " << r2r << std::dec << dendl;
-    if (bptr->get_blob().is_compressed()) {
+    if (bptr->get_blob().is_compressed()) { // 压缩内容需要全量读出
       // read the whole thing
       if (compressed_blob_bls->empty()) {
         // ensure we avoid any reallocation on subsequent blobs
@@ -10185,7 +10185,7 @@ int BlueStore::_do_read(
                              // The error isn't that much...
   vector<bufferlist> compressed_blob_bls;
   IOContext ioc(cct, NULL, true); // allow EIO
-  r = _prepare_read_ioc(blobs2read, &compressed_blob_bls, &ioc);
+  r = _prepare_read_ioc(blobs2read, &compressed_blob_bls, &ioc); // 未命中buffer的异步读盘
   // we always issue aio for reading, so errors other than EIO are not allowed
   if (r < 0)
     return r;
@@ -10195,7 +10195,7 @@ int BlueStore::_do_read(
     num_ios = ioc.get_num_ios();
     bdev->aio_submit(&ioc);
     dout(20) << __func__ << " waiting for aio" << dendl;
-    ioc.aio_wait();
+    ioc.aio_wait(); // 阻塞等待所有aio完成，condition释放CPU
     r = ioc.get_return_value();
     if (r < 0) {
       ceph_assert(r == -EIO); // no other errors allowed
@@ -11877,7 +11877,7 @@ void BlueStore::_txc_finalize_kv(TransContext *txc, KeyValueDB::Transaction t)
   }
 
   // update freelist with non-overlap sets
-  for (interval_set<uint64_t>::iterator p = pallocated->begin();
+  for (interval_set<uint64_t>::iterator p = pallocated->begin(); // 去除事务中操作freelist的重叠部分，例如对同一块区域分配又释放
        p != pallocated->end();
        ++p) {
     fm->allocate(p.get_start(), p.get_len(), t);
@@ -13051,7 +13051,7 @@ int BlueStore::queue_transactions(
   }
   _txc_calc_cost(txc);
 
-  _txc_write_nodes(txc, txc->t); // 更新内存onode
+  _txc_write_nodes(txc, txc->t); // encode元数据添加到txc->t
 
   // journal deferred items
   if (txc->deferred_txn) {
@@ -16156,7 +16156,7 @@ bool BlueStore::BlueStoreThrottle::try_start_transaction(
   TransContext &txc,
   mono_clock::time_point start_throttle_acquire)
 {
-  throttle_bytes.get(txc.cost);
+  throttle_bytes.get(txc.cost); // 【阻塞】可能cond阻塞
 
   if (!txc.deferred_txn || throttle_deferred_bytes.get_or_fail(txc.cost)) {
     emit_initial_tracepoint(db, txc, start_throttle_acquire);

@@ -55,7 +55,7 @@ void CommonSafeTimer<Mutex>::init()
 {
   ldout(cct,10) << "init" << dendl;
   thread = new CommonSafeTimerThread<Mutex>(this);
-  thread->create("safe_timer");
+  thread->create("safe_timer"); // timer线程开始运行
 }
 
 template <class Mutex>
@@ -83,11 +83,11 @@ void CommonSafeTimer<Mutex>::timer_thread()
   while (!stopping) {
     auto now = clock_t::now();
 
-    while (!schedule.empty()) {
+    while (!schedule.empty()) { // 把到期的任务都执行完毕
       auto p = schedule.begin();
 
       // is the future now?
-      if (p->first > now)
+      if (p->first > now) // 没有任务后跳出
 	break;
 
       Context *callback = p->second;
@@ -113,7 +113,7 @@ void CommonSafeTimer<Mutex>::timer_thread()
       cond.wait(l);
     } else {
       auto when = schedule.begin()->first;
-      cond.wait_until(l, when);
+      cond.wait_until(l, when); // 定时器时间设定
     }
     ldout(cct,20) << "timer_thread awake" << dendl;
   }
