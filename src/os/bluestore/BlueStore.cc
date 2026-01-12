@@ -3538,12 +3538,12 @@ BlueStore::Onode* BlueStore::Onode::create_decode(
   }
   on->exists = true;
   auto p = v.front().begin_deep();
-  on->onode.decode(p);
+  on->onode.decode(p); // 传入迭代器，decode
   for (auto& i : on->onode.attrs) {
     i.second.reassign_to_mempool(mempool::mempool_bluestore_cache_meta);
   }
 
-  // initialize extent_map
+  // initialize extent_map, 解码跨spanning_blob_map的blob，如果某个blob被两个相邻的extent共享，这两个extent又属于不同的extent_map_shards，此时会优先对该blob进行分裂，如果分裂失败会将该blob加入到spanning_blob_map
   on->extent_map.decode_spanning_blobs(p);
   if (on->onode.extent_map_shards.empty()) {
     denc(on->extent_map.inline_bl, p);
@@ -3964,7 +3964,7 @@ BlueStore::OnodeRef BlueStore::Collection::get_onode(
   }
 
   // new object, load onode if available
-  on = Onode::create_decode(this, oid, key, v, true);
+  on = Onode::create_decode(this, oid, key, v, true); // 创建对象
   o.reset(on);
   return onode_space.add_onode(oid, o);
 }
@@ -6170,7 +6170,7 @@ int BlueStore::_open_collections()
 	  this,
 	  onode_cache_shards[cid.hash_to_shard(onode_cache_shards.size())],
           buffer_cache_shards[cid.hash_to_shard(buffer_cache_shards.size())],
-	  cid);
+	  cid); // 通过 hash_to_shard() 将 collection 分配到不同缓存分片，减少锁竞争。
       bufferlist bl = it->value();
       auto p = bl.cbegin();
       try {
@@ -6182,8 +6182,8 @@ int BlueStore::_open_collections()
       }   
       dout(20) << __func__ << " opened " << cid << " " << c
 	       << " " << c->cnode << dendl;
-      _osr_attach(c.get());
-      coll_map[cid] = c;
+      _osr_attach(c.get()); // 给Collection一个OpSequencer
+      coll_map[cid] = c; // 将构建好的Collection放入内存
       load_cnt++;
     } else {
       derr << __func__ << " unrecognized collection " << it->key() << dendl;
@@ -13092,7 +13092,7 @@ int BlueStore::queue_transactions(
       if (!kv_sync_in_progress) {
 	kv_sync_in_progress = true;
 	kv_cond.notify_one(); // 唤醒线程_kv_sync_thread
-      }
+      } 
     }
     throttle.finish_start_transaction(*db, *txc, tstart);
     --deferred_aggressive;
@@ -13182,7 +13182,7 @@ void BlueStore::_txc_add_transaction(TransContext *txc, Transaction *t)
       txc->osd_pool_id = pgid.pool();
     }
 
-    switch (op->op) {
+    switch (op->op) { // 对pg的操作
     case Transaction::OP_RMCOLL:
       {
         const coll_t &cid = i.get_cid(op->cid);

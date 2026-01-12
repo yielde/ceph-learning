@@ -1054,7 +1054,7 @@ struct bluestore_onode_t {
     clear_flag(FLAG_OMAP);
   }
 
-  DENC(bluestore_onode_t, v, p) {
+  DENC(bluestore_onode_t, v, p) { // 解码onode
     DENC_START(1, 1, p);
     denc_varint(v.nid, p);
     denc_varint(v.size, p);

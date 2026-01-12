@@ -1861,7 +1861,7 @@ private:
 	&TransContext::sequencer_item> > q_list_t;
     q_list_t q;  ///< transactions
 
-    boost::intrusive::list_member_hook<> deferred_osr_queue_item;
+    boost::intrusive::list_member_hook<> deferred_osr_queue_item; // list节点，将OpSequencer连接到deferred_queue
 
     DeferredBatch *deferred_running = nullptr;
     DeferredBatch *deferred_pending = nullptr;
